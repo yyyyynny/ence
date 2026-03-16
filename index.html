@@ -1,0 +1,2039 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>화학반응식 트레이너</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #161920;
+    --surface2: #1e2230;
+    --border: #2a2f42;
+    --accent: #00e5ff;
+    --accent2: #7c3aed;
+    --accent3: #f59e0b;
+    --text: #e8eaf6;
+    --text-dim: #8892b0;
+    --correct: #10b981;
+    --wrong: #ef4444;
+    --grid-color: rgba(0,229,255,0.04);
+  }
+  .light {
+    --bg: #f0f4ff;
+    --surface: #ffffff;
+    --surface2: #e8edf8;
+    --border: #c8d0e8;
+    --accent: #0284c7;
+    --accent2: #7c3aed;
+    --accent3: #d97706;
+    --text: #0f172a;
+    --text-dim: #4a5568;
+    --grid-color: rgba(2,132,199,0.05);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+    overflow-x: hidden;
+  }
+
+  /* grid background */
+  body::before {
+    content:'';
+    position:fixed;
+    inset:0;
+    background-image:
+      linear-gradient(var(--grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  #app {
+    position:relative;
+    z-index:1;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .icon-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Streak ── */
+  .streak-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .streak-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Space Mono', monospace;
+  }
+  .streak-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent3);
+    line-height: 1;
+    transition: transform 0.15s;
+  }
+  .streak-count.bump { transform: scale(1.4); }
+  .streak-flames { font-size: 18px; }
+
+  /* ── Mode Tabs ── */
+  .mode-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .mode-tab {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-dim);
+    padding: 10px 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .mode-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+  .mode-tab .tab-icon { font-size: 16px; display: block; margin-bottom: 3px; }
+
+  /* ── Question Card ── */
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 12px;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .question-card::before {
+    content:'';
+    position:absolute;
+    top:-40px; right:-40px;
+    width:120px; height:120px;
+    border-radius:50%;
+    background: radial-gradient(circle, var(--accent)18, transparent 70%);
+    opacity:0.3;
+    pointer-events:none;
+  }
+
+  .q-label {
+    font-size: 11px;
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .equation-display {
+    font-family: 'Space Mono', monospace;
+    font-size: clamp(15px, 4vw, 20px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.8;
+  }
+
+  .eq-part { display: inline-flex; align-items: baseline; }
+
+  .blank-box {
+    display: inline-block;
+    min-width: 48px;
+    height: 36px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface2);
+    text-align: center;
+    line-height: 34px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+    padding: 0 8px;
+    vertical-align: middle;
+    font-family: 'Space Mono', monospace;
+  }
+  .blank-box.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.2);
+  }
+  .blank-box.correct {
+    border-color: var(--correct);
+    background: rgba(16,185,129,0.12);
+    color: var(--correct);
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.2);
+  }
+  .blank-box.wrong {
+    border-color: var(--wrong);
+    background: rgba(239,68,68,0.12);
+    color: var(--wrong);
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.2);
+    animation: shake 0.4s;
+  }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-6px)}
+    40%{transform:translateX(6px)}
+    60%{transform:translateX(-4px)}
+    80%{transform:translateX(4px)}
+  }
+
+  .eq-text { color: var(--text); }
+  .eq-arrow { color: var(--accent3); font-size: 18px; }
+  .eq-plus { color: var(--text-dim); }
+
+  sub { font-size: 0.65em; line-height: 0; vertical-align: sub; }
+
+  /* ── Result Banner ── */
+  .result-banner {
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+  .result-banner.show { display: flex; }
+  .result-banner.correct-banner { background: rgba(16,185,129,0.15); color: var(--correct); border: 1px solid var(--correct); }
+  .result-banner.wrong-banner { background: rgba(239,68,68,0.15); color: var(--wrong); border: 1px solid var(--wrong); }
+
+  /* ── Virtual Keyboard ── */
+  .keyboard-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+
+  .kb-section-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .kb-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .kb-key {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 12px;
+    min-width: 40px;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.1s;
+    flex: 0 0 auto;
+  }
+  .kb-key:active, .kb-key.pressed {
+    transform: scale(0.92);
+    background: var(--border);
+  }
+
+  .kb-key.num { color: var(--accent3); }
+  .kb-key.elem { color: var(--accent); }
+  .kb-key.del {
+    background: rgba(239,68,68,0.15);
+    border-color: var(--wrong);
+    color: var(--wrong);
+    flex:1;
+  }
+  .kb-key.confirm {
+    background: var(--correct);
+    border-color: var(--correct);
+    color: #000;
+    font-weight: 900;
+    flex:2;
+  }
+  .kb-key.next-q {
+    background: var(--accent2);
+    border-color: var(--accent2);
+    color: #fff;
+    font-weight: 900;
+    flex:2;
+  }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset:0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-overlay.show { display: flex; }
+
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .modal-title {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .reaction-list { display: flex; flex-direction: column; gap: 8px; }
+  .reaction-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+  }
+  .reaction-num {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .reaction-name {
+    font-size: 11px;
+    color: var(--accent3);
+    font-family: 'Noto Sans KR', sans-serif;
+    margin-bottom: 4px;
+  }
+  .reaction-eq { color: var(--text); }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">⚗ ChemTrainer</div>
+    <div class="header-right">
+      <button class="icon-btn" id="hintBtn" title="전체 반응식 보기">📋</button>
+      <button class="icon-btn" id="darkBtn" title="다크/라이트 모드">🌙</button>
+    </div>
+  </header>
+
+  <!-- Streak -->
+  <div class="streak-bar">
+    <div class="streak-label">Streak</div>
+    <div class="streak-count" id="streakCount">0</div>
+    <div class="streak-flames" id="streakFlames"></div>
+    <div style="flex:1"></div>
+    <div style="font-size:11px; color:var(--text-dim); font-family:'Space Mono',monospace;">
+      ✅ <span id="totalCorrect">0</span> &nbsp; ❌ <span id="totalWrong">0</span>
+    </div>
+  </div>
+
+  <!-- Mode Tabs -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" data-mode="1">
+      <span class="tab-icon">🔢</span>계수 맞추기
+    </button>
+    <button class="mode-tab" data-mode="2">
+      <span class="tab-icon">⚗</span>화학반응식
+    </button>
+    <button class="mode-tab" data-mode="3">
+      <span class="tab-icon">🔀</span>혼합
+    </button>
+  </div>
+
+  <!-- Question Card -->
+  <div class="question-card" id="questionCard">
+    <div class="q-label" id="qLabel">MODE 1 · LEVEL UP</div>
+    <div class="equation-display" id="equationDisplay"></div>
+    <div class="result-banner" id="resultBanner"></div>
+  </div>
+
+  <!-- Virtual Keyboard -->
+  <div class="keyboard-wrap">
+    <div class="kb-section-label">숫자</div>
+    <div class="kb-row" id="numRow"></div>
+    <div class="kb-section-label">원소 기호</div>
+    <div class="kb-row" id="elemRow"></div>
+    <div class="kb-row">
+      <button class="kb-key del" data-key="DEL">⌫ 지우기</button>
+      <button class="kb-key confirm" data-key="CONFIRM">✓ 확인</button>
+      <button class="kb-key next-q" data-key="NEXT">▶ 다음</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">📋 전체 반응식 목록</div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="reaction-list" id="reactionList"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// 16종 반응식 데이터
+// ══════════════════════════════════════════
+const REACTIONS = [
+  {
+    name: "일산화탄소 + 산소 → 이산화탄소",
+    reactants: [{coef:2,formula:[{sym:"CO"}]}, {coef:1,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"CO",sub:2}]}]
+  },
+  {
+    name: "메테인 + 산소 → 이산화탄소 + 물",
+    reactants: [{coef:1,formula:[{sym:"CH",sub:4}]}, {coef:2,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:1,formula:[{sym:"CO",sub:2}]}, {coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}]
+  },
+  {
+    name: "구리 + 산소 → 산화구리(Ⅱ)",
+    reactants: [{coef:2,formula:[{sym:"Cu"}]}, {coef:1,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"Cu"},{sym:"O"}]}]
+  },
+  {
+    name: "과산화수소 → 물 + 산소",
+    reactants: [{coef:2,formula:[{sym:"H",sub:2},{sym:"O",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}, {coef:1,formula:[{sym:"O",sub:2}]}]
+  },
+  {
+    name: "수소 + 염소 → 염화수소",
+    reactants: [{coef:1,formula:[{sym:"H",sub:2}]}, {coef:1,formula:[{sym:"Cl",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}]
+  },
+  {
+    name: "마그네슘 + 산소 → 산화마그네슘",
+    reactants: [{coef:2,formula:[{sym:"Mg"}]}, {coef:1,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"Mg"},{sym:"O"}]}]
+  },
+  {
+    name: "질소 + 산소 → 이산화질소",
+    reactants: [{coef:1,formula:[{sym:"N",sub:2}]}, {coef:2,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"N"},{sym:"O",sub:2}]}]
+  },
+  {
+    name: "질소 + 수소 → 암모니아",
+    reactants: [{coef:1,formula:[{sym:"N",sub:2}]}, {coef:3,formula:[{sym:"H",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"N"},{sym:"H",sub:3}]}]
+  },
+  {
+    name: "에탄올 + 산소 → 이산화탄소 + 물",
+    reactants: [{coef:1,formula:[{sym:"C",sub:2},{sym:"H",sub:5},{sym:"O"},{sym:"H"}]}, {coef:3,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"CO",sub:2}]}, {coef:3,formula:[{sym:"H",sub:2},{sym:"O"}]}]
+  },
+  {
+    name: "탄산나트륨 + 염화칼슘 → 염화나트륨 + 탄산칼슘",
+    reactants: [{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]}, {coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]}, {coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]}]
+  },
+  {
+    name: "탄산수소나트륨 → 탄산나트륨 + 이산화탄소 + 물",
+    reactants: [{coef:2,formula:[{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}]}],
+    products:  [{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]}, {coef:1,formula:[{sym:"CO",sub:2}]}, {coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}]
+  },
+  {
+    name: "프로페인 + 산소 → 이산화탄소 + 물",
+    reactants: [{coef:1,formula:[{sym:"C",sub:3},{sym:"H",sub:8}]}, {coef:5,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:3,formula:[{sym:"CO",sub:2}]}, {coef:4,formula:[{sym:"H",sub:2},{sym:"O"}]}]
+  },
+  {
+    name: "뷰테인 + 산소 → 이산화탄소 + 물",
+    reactants: [{coef:2,formula:[{sym:"C",sub:4},{sym:"H",sub:10}]}, {coef:13,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:8,formula:[{sym:"CO",sub:2}]}, {coef:10,formula:[{sym:"H",sub:2},{sym:"O"}]}]
+  },
+  {
+    name: "마그네슘 + 염화수소 → 염화마그네슘 + 수소",
+    reactants: [{coef:1,formula:[{sym:"Mg"}]}, {coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],
+    products:  [{coef:1,formula:[{sym:"Mg"},{sym:"Cl",sub:2}]}, {coef:1,formula:[{sym:"H",sub:2}]}]
+  },
+  {
+    name: "탄산칼슘 + 염화수소 → 염화칼슘 + 물 + 이산화탄소",
+    reactants: [{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]}, {coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],
+    products:  [{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]}, {coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}, {coef:1,formula:[{sym:"CO",sub:2}]}]
+  },
+  {
+    name: "염화나트륨 + 질산은 → 질산나트륨 + 염화은",
+    reactants: [{coef:1,formula:[{sym:"Na"},{sym:"Cl"}]}, {coef:1,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}],
+    products:  [{coef:1,formula:[{sym:"Na"},{sym:"NO",sub:3}]}, {coef:1,formula:[{sym:"Ag"},{sym:"Cl"}]}]
+  }
+];
+
+// ══════════════════════════════════════════
+// 계수 맞추기 모드용 무한 랜덤 생성
+// ══════════════════════════════════════════
+// 반응식 유형 템플릿: {reactants: [{sym, count: fn(a,b,c)}, ...], products: [...], genCoefs: fn => {a,b,c}}
+const COEF_TEMPLATES = [
+  // ( )A2 + ( )B2 → ( )AB4 : aA2 + bB2 → cAB4, 원자보존: 2a=c, 2b=4c → b=2c, a=c → a=1,b=2,c=1 * k
+  { label: "A₂ + B₂ → AB₄", gen: () => { const k=ri(1,3); return {a:k,b:2*k,c:k,
+    reactants:[[{s:"A",n:2*k}],[{s:"B",n:4*k}]],
+    products:[[{s:"A",n:k},{s:"B",n:4*k}]],
+    fmt:[ {coef:k,parts:[{sym:"A",sub:2}]}, {coef:2*k,parts:[{sym:"B",sub:2}]} ],
+    fmtP:[ {coef:k,parts:[{sym:"A"},{sym:"B",sub:4}]} ]
+  }; } },
+  // ( )A3 + ( )B2 → ( )A6B : 3a=6c → a=2c; 2b=c → b=c/2. c must be even. c=2k, a=4k, b=k
+  { label: "A₃ + B₂ → A₆B", gen: () => { const k=ri(1,2); const c=2*k,a=4*k,b=k; return {a,b,c,
+    fmt:[ {coef:a,parts:[{sym:"A",sub:3}]}, {coef:b,parts:[{sym:"B",sub:2}]} ],
+    fmtP:[ {coef:c,parts:[{sym:"A",sub:6},{sym:"B"}]} ]
+  }; } },
+  // ( )A2 + ( )B3 → ( )A2B : 2a=2c→a=c; 3b=c. c=3k, a=3k, b=k
+  { label: "A₂ + B₃ → A₂B", gen: () => { const k=ri(1,2); const c=3*k,a=3*k,b=k; return {a,b,c,
+    fmt:[ {coef:a,parts:[{sym:"A",sub:2}]}, {coef:b,parts:[{sym:"B",sub:3}]} ],
+    fmtP:[ {coef:c,parts:[{sym:"A",sub:2},{sym:"B"}]} ]
+  }; } },
+  // ( )A + ( )B3 → ( )A3B : a=3c; 3b=c. c=1k, a=3k, b=k... but 3b=c=k → b=k/3. k must be mult of 3. k=3: c=3,a=9,b=1
+  // simpler: a=3c, 3b=c → c=3,a=9,b=1 is base. Scale by m.
+  { label: "A + B₃ → A₃B", gen: () => { const m=ri(1,2); const c=3*m,a=9*m,b=m; return {a,b,c,
+    fmt:[ {coef:a,parts:[{sym:"A"}]}, {coef:b,parts:[{sym:"B",sub:3}]} ],
+    fmtP:[ {coef:c,parts:[{sym:"A",sub:3},{sym:"B"}]} ]
+  }; } },
+  // ( )A3 + ( )B → ( )AB2 : 3a=c; b=2c → b=2*3a=6a. Base: a=1,b=6,c=3. Scale m.
+  { label: "A₃ + B → AB₂", gen: () => { const m=ri(1,2); const a=m,c=3*m,b=6*m; return {a,b,c,
+    fmt:[ {coef:a,parts:[{sym:"A",sub:3}]}, {coef:b,parts:[{sym:"B"}]} ],
+    fmtP:[ {coef:c,parts:[{sym:"A"},{sym:"B",sub:2}]} ]
+  }; } },
+  // ( )A2 + ( )B → ( )AB3 : 2a=c; 3c=b. c=2a, b=6a. Base a=1,b=6,c=2.
+  { label: "A₂ + B → AB₃", gen: () => { const m=ri(1,2); const a=m,b=6*m,c=2*m; return {a,b,c,
+    fmt:[ {coef:a,parts:[{sym:"A",sub:2}]}, {coef:b,parts:[{sym:"B"}]} ],
+    fmtP:[ {coef:c,parts:[{sym:"A"},{sym:"B",sub:3}]} ]
+  }; } },
+  // ( )A + ( )B2 → ( )A2B3 : a=2c; 2b=3c. c=2k, a=4k, b=3k.
+  { label: "A + B₂ → A₂B₃", gen: () => { const k=ri(1,2); const c=2*k,a=4*k,b=3*k; return {a,b,c,
+    fmt:[ {coef:a,parts:[{sym:"A"}]}, {coef:b,parts:[{sym:"B",sub:2}]} ],
+    fmtP:[ {coef:c,parts:[{sym:"A",sub:2},{sym:"B",sub:3}]} ]
+  }; } },
+];
+
+function ri(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+// ══════════════════════════════════════════
+// 화학식 렌더링 유틸
+// ══════════════════════════════════════════
+function renderFormulaHTML(parts) {
+  return parts.map(p => {
+    let h = p.sym;
+    if(p.sub) h += `<sub>${p.sub}</sub>`;
+    return h;
+  }).join('');
+}
+
+function formatEqHTML(coef, parts) {
+  let h = '';
+  if(coef !== 1) h += coef;
+  h += renderFormulaHTML(parts);
+  return h;
+}
+
+function formatSimpleEq(fmt, fmtP) {
+  let r = fmt.map(f=>formatEqHTML(f.coef,f.parts)).join(' + ');
+  let p = fmtP.map(f=>formatEqHTML(f.coef,f.parts)).join(' + ');
+  return r + ' → ' + p;
+}
+
+// ══════════════════════════════════════════
+// 반응식 모드용 문제 생성
+// ══════════════════════════════════════════
+function generateReactionQuestion() {
+  const idx = Math.floor(Math.random()*REACTIONS.length);
+  const rx = REACTIONS[idx];
+  
+  // 모든 물질들 인덱스 수집 (reactant/product 구분)
+  const all = [];
+  rx.reactants.forEach((r,i)=>all.push({side:'R',idx:i,coef:r.coef,formula:r.formula}));
+  rx.products.forEach((p,i)=>all.push({side:'P',idx:i,coef:p.coef,formula:p.formula}));
+  
+  // 랜덤으로 1~2개 blank
+  const numBlanks = ri(1, Math.min(2, all.length));
+  const shuffled = [...all].sort(()=>Math.random()-0.5);
+  const blanks = shuffled.slice(0, numBlanks);
+  const blankKeys = new Set(blanks.map(b=>`${b.side}-${b.idx}`));
+
+  return { reactionIdx: idx, rx, blankKeys, blanks };
+}
+
+// ══════════════════════════════════════════
+// 가상 키보드 입력 버퍼
+// ══════════════════════════════════════════
+const ELEMENTS = ['H','C','O','N','Na','Mg','Cu','Cl','Ag','Ca','A','B'];
+
+let currentMode = 1;
+let streak = 0;
+let totalCorrect = 0;
+let totalWrong = 0;
+let isDark = true;
+
+// 현재 문제 상태
+let currentQuestion = null; 
+// {type:'coef'|'reaction', blanks:[{key,answer}], inputs:{key: bufferStr}, activeKey}
+
+function buildKeyboard() {
+  const numRow = document.getElementById('numRow');
+  const elemRow = document.getElementById('elemRow');
+  
+  // 숫자 패드
+  for(let i=1;i<=9;i++) {
+    const btn = document.createElement('button');
+    btn.className='kb-key num';
+    btn.dataset.key='NUM_'+i;
+    btn.textContent=i;
+    numRow.appendChild(btn);
+  }
+  const btn0=document.createElement('button');
+  btn0.className='kb-key num';btn0.dataset.key='NUM_0';btn0.textContent='0';
+  numRow.appendChild(btn0);
+
+  // 원소 기호
+  ELEMENTS.forEach(e=>{
+    const btn=document.createElement('button');
+    btn.className='kb-key elem';
+    btn.dataset.key='ELEM_'+e;
+    btn.innerHTML=e;
+    elemRow.appendChild(btn);
+  });
+}
+
+// ── 문제 생성 ──
+function generateQuestion() {
+  let type;
+  if(currentMode===1) type='coef';
+  else if(currentMode===2) type='reaction';
+  else type = Math.random()<0.5?'coef':'reaction';
+
+  if(type==='coef') {
+    const tmpl = COEF_TEMPLATES[Math.floor(Math.random()*COEF_TEMPLATES.length)];
+    const q = tmpl.gen();
+    // blanks: [{key:'R0'|'R1'|'P0', answer:number}]
+    // 모든 계수를 blank로 만들기 (3개)
+    const all3 = [
+      {key:'R0', answer: q.a},
+      {key:'R1', answer: q.b},
+      {key:'P0', answer: q.c}
+    ];
+    // 1~2개 blank, 나머지는 보임
+    const nb = ri(1,2);
+    const blanks = [...all3].sort(()=>Math.random()-0.5).slice(0,nb);
+    const blankSet = new Set(blanks.map(b=>b.key));
+    
+    currentQuestion = {
+      type:'coef',
+      templateLabel: tmpl.label,
+      q,
+      blanks: blanks,
+      blankSet,
+      inputs: {},
+      activeKey: blanks[0].key,
+      checked: false
+    };
+    blanks.forEach(b=>currentQuestion.inputs[b.key]='');
+  } else {
+    const {rx, blankKeys, blanks} = generateReactionQuestion();
+    const blankArr = blanks.map(b=>({key:`${b.side}-${b.idx}`, answer: b.coef}));
+    currentQuestion = {
+      type:'reaction',
+      rx,
+      blankKeys,
+      blanks: blankArr,
+      inputs: {},
+      activeKey: blankArr[0].key,
+      checked: false
+    };
+    blankArr.forEach(b=>currentQuestion.inputs[b.key]='');
+  }
+
+  renderQuestion();
+}
+
+// ── 렌더링 ──
+function renderQuestion() {
+  const q = currentQuestion;
+  const display = document.getElementById('equationDisplay');
+  const label = document.getElementById('qLabel');
+  const banner = document.getElementById('resultBanner');
+  banner.className='result-banner';
+  banner.innerHTML='';
+
+  if(q.type==='coef') {
+    label.textContent = `MODE 1 · 계수 맞추기`;
+    display.innerHTML = buildCoefHTML(q);
+  } else {
+    label.textContent = `MODE 2 · 화학반응식 (${q.rx.name})`;
+    display.innerHTML = buildReactionHTML(q);
+  }
+
+  // 첫 번째 blank 활성화
+  activateBlank(q.activeKey);
+}
+
+function buildCoefHTML(q) {
+  const {q:data, blankSet, inputs, activeKey, checked} = q;
+  const answers = {R0:data.a, R1:data.b, P0:data.c};
+  const fmt = data.fmt;
+  const fmtP = data.fmtP;
+
+  let html = '';
+  // Reactants
+  fmt.forEach((f,i)=>{
+    const key = i===0?'R0':'R1';
+    if(i>0) html+=`<span class="eq-plus">+</span>`;
+    html += blankSlot(key, answers[key], blankSet, inputs, checked, q);
+    html += renderFormulaHTML(f.parts);
+  });
+  html += `<span class="eq-arrow">→</span>`;
+  // Products
+  fmtP.forEach((f,i)=>{
+    if(i>0) html+=`<span class="eq-plus">+</span>`;
+    html += blankSlot('P'+i, answers['P'+i]||data.c, blankSet, inputs, checked, q);
+    html += renderFormulaHTML(f.parts);
+  });
+  return html;
+}
+
+function buildReactionHTML(q) {
+  const {rx, blankKeys, inputs, checked} = q;
+  let html='';
+  rx.reactants.forEach((r,i)=>{
+    if(i>0) html+=`<span class="eq-plus">+</span>`;
+    const key=`R-${i}`;
+    if(blankKeys.has(key)){
+      html += blankSlot(key, r.coef, blankKeys, inputs, checked, q);
+    } else {
+      if(r.coef!==1) html+=`<span class="eq-text">${r.coef}</span>`;
+    }
+    html += renderFormulaHTML(r.formula);
+  });
+  html+=`<span class="eq-arrow">→</span>`;
+  rx.products.forEach((p,i)=>{
+    if(i>0) html+=`<span class="eq-plus">+</span>`;
+    const key=`P-${i}`;
+    if(blankKeys.has(key)){
+      html += blankSlot(key, p.coef, blankKeys, inputs, checked, q);
+    } else {
+      if(p.coef!==1) html+=`<span class="eq-text">${p.coef}</span>`;
+    }
+    html += renderFormulaHTML(p.formula);
+  });
+  return html;
+}
+
+// blank 슬롯 HTML 생성
+function blankSlot(key, answer, blankSet, inputs, checked, q) {
+  if(!blankSet.has(key)) return '';
+  const val = inputs[key]||'';
+  let cls='blank-box';
+  if(q.activeKey===key) cls+=' active';
+  if(checked){
+    const numVal = parseInt(val||'0');
+    if(numVal===answer) cls+=' correct';
+    else cls+=' wrong';
+  }
+  const display = val===''? (checked?'?':'_') : renderInputVal(val);
+  return `<span class="${cls}" data-bkey="${key}" onclick="activateBlank('${key}')">${display}</span>`;
+}
+
+function renderInputVal(val){
+  // val은 숫자 문자열 (계수), 반응식 모드에서는 숫자만 입력
+  return val;
+}
+
+function activateBlank(key) {
+  if(!currentQuestion) return;
+  currentQuestion.activeKey = key;
+  // Re-render blanks only
+  refreshBlanks();
+}
+
+function refreshBlanks() {
+  // Re-render question to update active state
+  const display = document.getElementById('equationDisplay');
+  const q = currentQuestion;
+  if(q.type==='coef') display.innerHTML = buildCoefHTML(q);
+  else display.innerHTML = buildReactionHTML(q);
+  // Re-attach click events are inline
+}
+
+// ── 키보드 입력 처리 ──
+function handleKey(key) {
+  const q = currentQuestion;
+  if(!q || q.checked) return;
+
+  const akey = q.activeKey;
+  if(!akey) return;
+
+  if(key.startsWith('NUM_')) {
+    const num = key.replace('NUM_','');
+    q.inputs[akey] = (q.inputs[akey]||'') + num;
+    refreshBlanks();
+  } else if(key==='DEL') {
+    const cur = q.inputs[akey]||'';
+    q.inputs[akey] = cur.slice(0,-1);
+    refreshBlanks();
+  } else if(key==='CONFIRM') {
+    checkAnswer();
+  } else if(key==='NEXT') {
+    generateQuestion();
+  }
+  // ELEM keys are ignored in this numeric-only quiz context (for mode 1/2)
+}
+
+// ── 정답 확인 ──
+function checkAnswer() {
+  const q = currentQuestion;
+  if(!q || q.checked) return;
+  q.checked = true;
+
+  let allCorrect = true;
+  q.blanks.forEach(b=>{
+    const val = parseInt(q.inputs[b.key]||'0');
+    if(val !== b.answer) allCorrect = false;
+  });
+
+  refreshBlanks();
+
+  const banner = document.getElementById('resultBanner');
+  if(allCorrect) {
+    streak++;
+    totalCorrect++;
+    banner.className='result-banner correct-banner show';
+    banner.innerHTML=`✅ 정답! &nbsp;<span style="opacity:0.7;font-size:12px;">연속 ${streak}회 달성</span>`;
+  } else {
+    streak=0;
+    totalWrong++;
+    // show correct answers in banner
+    const ansStr = q.blanks.map(b=>`계수=${b.answer}`).join(', ');
+    banner.className='result-banner wrong-banner show';
+    banner.innerHTML=`❌ 오답 &nbsp;<span style="opacity:0.7;font-size:12px;">정답: ${ansStr}</span>`;
+  }
+  updateScore();
+}
+
+function updateScore() {
+  const sc = document.getElementById('streakCount');
+  sc.textContent = streak;
+  sc.classList.add('bump');
+  setTimeout(()=>sc.classList.remove('bump'),300);
+  
+  document.getElementById('totalCorrect').textContent = totalCorrect;
+  document.getElementById('totalWrong').textContent = totalWrong;
+
+  const flames = document.getElementById('streakFlames');
+  if(streak>=10) flames.textContent='🔥🔥🔥';
+  else if(streak>=5) flames.textContent='🔥🔥';
+  else if(streak>=3) flames.textContent='🔥';
+  else flames.textContent='';
+}
+
+// ── 모달 (전체 반응식 목록) ──
+function buildModal() {
+  const list = document.getElementById('reactionList');
+  list.innerHTML='';
+  REACTIONS.forEach((rx,i)=>{
+    const item = document.createElement('div');
+    item.className='reaction-item';
+    
+    // build equation string
+    let eqStr='';
+    rx.reactants.forEach((r,j)=>{
+      if(j>0) eqStr+=' + ';
+      if(r.coef!==1) eqStr+=r.coef;
+      eqStr+=r.formula.map(p=>p.sub?`${p.sym}<sub>${p.sub}</sub>`:p.sym).join('');
+    });
+    eqStr+=' → ';
+    rx.products.forEach((p,j)=>{
+      if(j>0) eqStr+=' + ';
+      if(p.coef!==1) eqStr+=p.coef;
+      eqStr+=p.formula.map(pp=>pp.sub?`${pp.sym}<sub>${pp.sub}</sub>`:pp.sym).join('');
+    });
+    
+    item.innerHTML=`<div class="reaction-num">#${i+1}</div><div class="reaction-name">${rx.name}</div><div class="reaction-eq">${eqStr}</div>`;
+    list.appendChild(item);
+  });
+}
+
+// ══════════════════════════════════════════
+// 초기화 및 이벤트 바인딩
+// ══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', ()=>{
+  buildKeyboard();
+  buildModal();
+
+  // Mode tabs
+  document.querySelectorAll('.mode-tab').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      currentMode = parseInt(tab.dataset.mode);
+      generateQuestion();
+    });
+  });
+
+  // Keyboard
+  document.addEventListener('click', e=>{
+    const btn = e.target.closest('[data-key]');
+    if(btn){
+      const key=btn.dataset.key;
+      btn.classList.add('pressed');
+      setTimeout(()=>btn.classList.remove('pressed'),120);
+      handleKey(key);
+    }
+  });
+
+  // Dark/Light toggle
+  document.getElementById('darkBtn').addEventListener('click',()=>{
+    isDark=!isDark;
+    document.body.classList.toggle('light',!isDark);
+    document.getElementById('darkBtn').textContent = isDark?'🌙':'☀️';
+  });
+
+  // Hint modal
+  document.getElementById('hintBtn').addEventListener('click',()=>{
+    document.getElementById('modalOverlay').classList.add('show');
+  });
+  document.getElementById('modalClose').addEventListener('click',()=>{
+    document.getElementById('modalOverlay').classList.remove('show');
+  });
+  document.getElementById('modalOverlay').addEventListener('click',e=>{
+    if(e.target===document.getElementById('modalOverlay'))
+      document.getElementById('modalOverlay').classList.remove('show');
+  });
+
+  // Physical keyboard support
+  document.addEventListener('keydown', e=>{
+    if(e.key>='0'&&e.key<='9') handleKey('NUM_'+e.key);
+    else if(e.key==='Backspace') handleKey('DEL');
+    else if(e.key==='Enter') {
+      if(!currentQuestion||!currentQuestion.checked) handleKey('CONFIRM');
+      else handleKey('NEXT');
+    }
+  });
+
+  generateQuestion();
+});
+</script>
+</body>
+</html><!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>화학반응식 트레이너</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+
+  :root {
+    --bg: #0d0f14;
+    --surface: #161920;
+    --surface2: #1e2230;
+    --border: #2a2f42;
+    --accent: #00e5ff;
+    --accent2: #7c3aed;
+    --accent3: #f59e0b;
+    --text: #e8eaf6;
+    --text-dim: #8892b0;
+    --correct: #10b981;
+    --wrong: #ef4444;
+    --grid-color: rgba(0,229,255,0.04);
+  }
+  .light {
+    --bg: #f0f4ff;
+    --surface: #ffffff;
+    --surface2: #e8edf8;
+    --border: #c8d0e8;
+    --accent: #0284c7;
+    --accent2: #7c3aed;
+    --accent3: #d97706;
+    --text: #0f172a;
+    --text-dim: #4a5568;
+    --grid-color: rgba(2,132,199,0.05);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background 0.3s, color 0.3s;
+    overflow-x: hidden;
+  }
+
+  /* grid background */
+  body::before {
+    content:'';
+    position:fixed;
+    inset:0;
+    background-image:
+      linear-gradient(var(--grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events:none;
+    z-index:0;
+  }
+
+  #app {
+    position:relative;
+    z-index:1;
+    max-width: 680px;
+    margin: 0 auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  /* ── Header ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+  }
+
+  .logo {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .icon-btn {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    width: 36px; height: 36px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+  }
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  /* ── Streak ── */
+  .streak-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .streak-label {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'Space Mono', monospace;
+  }
+  .streak-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent3);
+    line-height: 1;
+    transition: transform 0.15s;
+  }
+  .streak-count.bump { transform: scale(1.4); }
+  .streak-flames { font-size: 18px; }
+
+  /* ── Mode Tabs ── */
+  .mode-tabs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 6px;
+    margin-bottom: 14px;
+  }
+  .mode-tab {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    color: var(--text-dim);
+    padding: 10px 6px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    line-height: 1.3;
+  }
+  .mode-tab.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #000;
+  }
+  .mode-tab .tab-icon { font-size: 16px; display: block; margin-bottom: 3px; }
+
+  /* ── Question Card ── */
+  .question-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 12px;
+    min-height: 140px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .question-card::before {
+    content:'';
+    position:absolute;
+    top:-40px; right:-40px;
+    width:120px; height:120px;
+    border-radius:50%;
+    background: radial-gradient(circle, var(--accent)18, transparent 70%);
+    opacity:0.3;
+    pointer-events:none;
+  }
+
+  .q-label {
+    font-size: 11px;
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .equation-display {
+    font-family: 'Space Mono', monospace;
+    font-size: clamp(15px, 4vw, 20px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    line-height: 1.8;
+  }
+
+  .eq-part { display: inline-flex; align-items: baseline; }
+
+  .blank-box {
+    display: inline-block;
+    min-width: 48px;
+    height: 36px;
+    border: 2px solid var(--border);
+    border-radius: 8px;
+    background: var(--surface2);
+    text-align: center;
+    line-height: 34px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+    padding: 0 8px;
+    vertical-align: middle;
+    font-family: 'Space Mono', monospace;
+  }
+  .blank-box.active {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(0,229,255,0.2);
+  }
+  .blank-box.correct {
+    border-color: var(--correct);
+    background: rgba(16,185,129,0.12);
+    color: var(--correct);
+    box-shadow: 0 0 0 3px rgba(16,185,129,0.2);
+  }
+  .blank-box.wrong {
+    border-color: var(--wrong);
+    background: rgba(239,68,68,0.12);
+    color: var(--wrong);
+    box-shadow: 0 0 0 3px rgba(239,68,68,0.2);
+    animation: shake 0.4s;
+  }
+  @keyframes shake {
+    0%,100%{transform:translateX(0)}
+    20%{transform:translateX(-6px)}
+    40%{transform:translateX(6px)}
+    60%{transform:translateX(-4px)}
+    80%{transform:translateX(4px)}
+  }
+
+  .eq-text { color: var(--text); }
+  .eq-arrow { color: var(--accent3); font-size: 18px; }
+  .eq-plus { color: var(--text-dim); }
+
+  sub { font-size: 0.65em; line-height: 0; vertical-align: sub; }
+
+  /* ── Result Banner ── */
+  .result-banner {
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+  .result-banner.show { display: flex; }
+  .result-banner.correct-banner { background: rgba(16,185,129,0.15); color: var(--correct); border: 1px solid var(--correct); }
+  .result-banner.wrong-banner { background: rgba(239,68,68,0.15); color: var(--wrong); border: 1px solid var(--wrong); }
+
+  /* ── Virtual Keyboard ── */
+  .keyboard-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+
+  .kb-section-label {
+    font-size: 10px;
+    color: var(--text-dim);
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+
+  .kb-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .kb-key {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 12px;
+    min-width: 40px;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.1s;
+    flex: 0 0 auto;
+  }
+  .kb-key:active, .kb-key.pressed {
+    transform: scale(0.92);
+    background: var(--border);
+  }
+
+  .kb-key.num { color: var(--accent3); }
+  .kb-key.elem { color: var(--accent); }
+  .kb-key.del {
+    background: rgba(239,68,68,0.15);
+    border-color: var(--wrong);
+    color: var(--wrong);
+    flex:1;
+  }
+  .kb-key.confirm {
+    background: var(--correct);
+    border-color: var(--correct);
+    color: #000;
+    font-weight: 900;
+    flex:2;
+  }
+  .kb-key.next-q {
+    background: var(--accent2);
+    border-color: var(--accent2);
+    color: #fff;
+    font-weight: 900;
+    flex:2;
+  }
+
+  /* ── Modal ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset:0;
+    background: rgba(0,0,0,0.7);
+    z-index: 100;
+    backdrop-filter: blur(4px);
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-overlay.show { display: flex; }
+
+  .modal-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 85vh;
+    overflow-y: auto;
+    padding: 20px;
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+  }
+  .modal-title {
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--accent);
+    font-family: 'Space Mono', monospace;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-size: 24px;
+    cursor: pointer;
+    line-height: 1;
+  }
+
+  .reaction-list { display: flex; flex-direction: column; gap: 8px; }
+  .reaction-item {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+  }
+  .reaction-num {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+  }
+  .reaction-name {
+    font-size: 11px;
+    color: var(--accent3);
+    font-family: 'Noto Sans KR', sans-serif;
+    margin-bottom: 4px;
+  }
+  .reaction-eq { color: var(--text); }
+
+  /* ── Scrollbar ── */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Header -->
+  <header>
+    <div class="logo">⚗ ChemTrainer</div>
+    <div class="header-right">
+      <button class="icon-btn" id="hintBtn" title="전체 반응식 보기">📋</button>
+      <button class="icon-btn" id="darkBtn" title="다크/라이트 모드">🌙</button>
+    </div>
+  </header>
+
+  <!-- Streak -->
+  <div class="streak-bar">
+    <div class="streak-label">Streak</div>
+    <div class="streak-count" id="streakCount">0</div>
+    <div class="streak-flames" id="streakFlames"></div>
+    <div style="flex:1"></div>
+    <div style="font-size:11px; color:var(--text-dim); font-family:'Space Mono',monospace;">
+      ✅ <span id="totalCorrect">0</span> &nbsp; ❌ <span id="totalWrong">0</span>
+    </div>
+  </div>
+
+  <!-- Mode Tabs -->
+  <div class="mode-tabs">
+    <button class="mode-tab active" data-mode="1">
+      <span class="tab-icon">🔢</span>계수 맞추기
+    </button>
+    <button class="mode-tab" data-mode="2">
+      <span class="tab-icon">⚗</span>화학반응식
+    </button>
+    <button class="mode-tab" data-mode="3">
+      <span class="tab-icon">🔀</span>혼합
+    </button>
+  </div>
+
+  <!-- Question Card -->
+  <div class="question-card" id="questionCard">
+    <div class="q-label" id="qLabel">MODE 1 · LEVEL UP</div>
+    <div class="equation-display" id="equationDisplay"></div>
+    <div class="result-banner" id="resultBanner"></div>
+  </div>
+
+  <!-- Virtual Keyboard -->
+  <div class="keyboard-wrap">
+    <div class="kb-section-label">숫자</div>
+    <div class="kb-row" id="numRow"></div>
+    <div class="kb-section-label">원소 기호</div>
+    <div class="kb-row" id="elemRow"></div>
+    <div class="kb-row">
+      <button class="kb-key del" data-key="DEL">⌫ 지우기</button>
+      <button class="kb-key confirm" data-key="CONFIRM">✓ 확인</button>
+      <button class="kb-key next-q" data-key="NEXT">▶ 다음</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">📋 전체 반응식 목록</div>
+      <button class="modal-close" id="modalClose">✕</button>
+    </div>
+    <div class="reaction-list" id="reactionList"></div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+// 16종 반응식 데이터
+// ══════════════════════════════════════════
+const REACTIONS = [
+  {
+    name: "일산화탄소 + 산소 → 이산화탄소",
+    reactants: [{coef:2,formula:[{sym:"CO"}]}, {coef:1,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"CO",sub:2}]}]
+  },
+  {
+    name: "메테인 + 산소 → 이산화탄소 + 물",
+    reactants: [{coef:1,formula:[{sym:"CH",sub:4}]}, {coef:2,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:1,formula:[{sym:"CO",sub:2}]}, {coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}]
+  },
+  {
+    name: "구리 + 산소 → 산화구리(Ⅱ)",
+    reactants: [{coef:2,formula:[{sym:"Cu"}]}, {coef:1,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"Cu"},{sym:"O"}]}]
+  },
+  {
+    name: "과산화수소 → 물 + 산소",
+    reactants: [{coef:2,formula:[{sym:"H",sub:2},{sym:"O",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}, {coef:1,formula:[{sym:"O",sub:2}]}]
+  },
+  {
+    name: "수소 + 염소 → 염화수소",
+    reactants: [{coef:1,formula:[{sym:"H",sub:2}]}, {coef:1,formula:[{sym:"Cl",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}]
+  },
+  {
+    name: "마그네슘 + 산소 → 산화마그네슘",
+    reactants: [{coef:2,formula:[{sym:"Mg"}]}, {coef:1,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"Mg"},{sym:"O"}]}]
+  },
+  {
+    name: "질소 + 산소 → 이산화질소",
+    reactants: [{coef:1,formula:[{sym:"N",sub:2}]}, {coef:2,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"N"},{sym:"O",sub:2}]}]
+  },
+  {
+    name: "질소 + 수소 → 암모니아",
+    reactants: [{coef:1,formula:[{sym:"N",sub:2}]}, {coef:3,formula:[{sym:"H",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"N"},{sym:"H",sub:3}]}]
+  },
+  {
+    name: "에탄올 + 산소 → 이산화탄소 + 물",
+    reactants: [{coef:1,formula:[{sym:"C",sub:2},{sym:"H",sub:5},{sym:"O"},{sym:"H"}]}, {coef:3,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"CO",sub:2}]}, {coef:3,formula:[{sym:"H",sub:2},{sym:"O"}]}]
+  },
+  {
+    name: "탄산나트륨 + 염화칼슘 → 염화나트륨 + 탄산칼슘",
+    reactants: [{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]}, {coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]}],
+    products:  [{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]}, {coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]}]
+  },
+  {
+    name: "탄산수소나트륨 → 탄산나트륨 + 이산화탄소 + 물",
+    reactants: [{coef:2,formula:[{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}]}],
+    products:  [{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]}, {coef:1,formula:[{sym:"CO",sub:2}]}, {coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}]
+  },
+  {
+    name: "프로페인 + 산소 → 이산화탄소 + 물",
+    reactants: [{coef:1,formula:[{sym:"C",sub:3},{sym:"H",sub:8}]}, {coef:5,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:3,formula:[{sym:"CO",sub:2}]}, {coef:4,formula:[{sym:"H",sub:2},{sym:"O"}]}]
+  },
+  {
+    name: "뷰테인 + 산소 → 이산화탄소 + 물",
+    reactants: [{coef:2,formula:[{sym:"C",sub:4},{sym:"H",sub:10}]}, {coef:13,formula:[{sym:"O",sub:2}]}],
+    products:  [{coef:8,formula:[{sym:"CO",sub:2}]}, {coef:10,formula:[{sym:"H",sub:2},{sym:"O"}]}]
+  },
+  {
+    name: "마그네슘 + 염화수소 → 염화마그네슘 + 수소",
+    reactants: [{coef:1,formula:[{sym:"Mg"}]}, {coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],
+    products:  [{coef:1,formula:[{sym:"Mg"},{sym:"Cl",sub:2}]}, {coef:1,formula:[{sym:"H",sub:2}]}]
+  },
+  {
+    name: "탄산칼슘 + 염화수소 → 염화칼슘 + 물 + 이산화탄소",
+    reactants: [{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]}, {coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],
+    products:  [{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]}, {coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}, {coef:1,formula:[{sym:"CO",sub:2}]}]
+  },
+  {
+    name: "염화나트륨 + 질산은 → 질산나트륨 + 염화은",
+    reactants: [{coef:1,formula:[{sym:"Na"},{sym:"Cl"}]}, {coef:1,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}],
+    products:  [{coef:1,formula:[{sym:"Na"},{sym:"NO",sub:3}]}, {coef:1,formula:[{sym:"Ag"},{sym:"Cl"}]}]
+  }
+];
+
+// ══════════════════════════════════════════
+// 계수 맞추기 모드용 무한 랜덤 생성
+// ══════════════════════════════════════════
+// 반응식 유형 템플릿: {reactants: [{sym, count: fn(a,b,c)}, ...], products: [...], genCoefs: fn => {a,b,c}}
+const COEF_TEMPLATES = [
+  // ( )A2 + ( )B2 → ( )AB4 : aA2 + bB2 → cAB4, 원자보존: 2a=c, 2b=4c → b=2c, a=c → a=1,b=2,c=1 * k
+  { label: "A₂ + B₂ → AB₄", gen: () => { const k=ri(1,3); return {a:k,b:2*k,c:k,
+    reactants:[[{s:"A",n:2*k}],[{s:"B",n:4*k}]],
+    products:[[{s:"A",n:k},{s:"B",n:4*k}]],
+    fmt:[ {coef:k,parts:[{sym:"A",sub:2}]}, {coef:2*k,parts:[{sym:"B",sub:2}]} ],
+    fmtP:[ {coef:k,parts:[{sym:"A"},{sym:"B",sub:4}]} ]
+  }; } },
+  // ( )A3 + ( )B2 → ( )A6B : 3a=6c → a=2c; 2b=c → b=c/2. c must be even. c=2k, a=4k, b=k
+  { label: "A₃ + B₂ → A₆B", gen: () => { const k=ri(1,2); const c=2*k,a=4*k,b=k; return {a,b,c,
+    fmt:[ {coef:a,parts:[{sym:"A",sub:3}]}, {coef:b,parts:[{sym:"B",sub:2}]} ],
+    fmtP:[ {coef:c,parts:[{sym:"A",sub:6},{sym:"B"}]} ]
+  }; } },
+  // ( )A2 + ( )B3 → ( )A2B : 2a=2c→a=c; 3b=c. c=3k, a=3k, b=k
+  { label: "A₂ + B₃ → A₂B", gen: () => { const k=ri(1,2); const c=3*k,a=3*k,b=k; return {a,b,c,
+    fmt:[ {coef:a,parts:[{sym:"A",sub:2}]}, {coef:b,parts:[{sym:"B",sub:3}]} ],
+    fmtP:[ {coef:c,parts:[{sym:"A",sub:2},{sym:"B"}]} ]
+  }; } },
+  // ( )A + ( )B3 → ( )A3B : a=3c; 3b=c. c=1k, a=3k, b=k... but 3b=c=k → b=k/3. k must be mult of 3. k=3: c=3,a=9,b=1
+  // simpler: a=3c, 3b=c → c=3,a=9,b=1 is base. Scale by m.
+  { label: "A + B₃ → A₃B", gen: () => { const m=ri(1,2); const c=3*m,a=9*m,b=m; return {a,b,c,
+    fmt:[ {coef:a,parts:[{sym:"A"}]}, {coef:b,parts:[{sym:"B",sub:3}]} ],
+    fmtP:[ {coef:c,parts:[{sym:"A",sub:3},{sym:"B"}]} ]
+  }; } },
+  // ( )A3 + ( )B → ( )AB2 : 3a=c; b=2c → b=2*3a=6a. Base: a=1,b=6,c=3. Scale m.
+  { label: "A₃ + B → AB₂", gen: () => { const m=ri(1,2); const a=m,c=3*m,b=6*m; return {a,b,c,
+    fmt:[ {coef:a,parts:[{sym:"A",sub:3}]}, {coef:b,parts:[{sym:"B"}]} ],
+    fmtP:[ {coef:c,parts:[{sym:"A"},{sym:"B",sub:2}]} ]
+  }; } },
+  // ( )A2 + ( )B → ( )AB3 : 2a=c; 3c=b. c=2a, b=6a. Base a=1,b=6,c=2.
+  { label: "A₂ + B → AB₃", gen: () => { const m=ri(1,2); const a=m,b=6*m,c=2*m; return {a,b,c,
+    fmt:[ {coef:a,parts:[{sym:"A",sub:2}]}, {coef:b,parts:[{sym:"B"}]} ],
+    fmtP:[ {coef:c,parts:[{sym:"A"},{sym:"B",sub:3}]} ]
+  }; } },
+  // ( )A + ( )B2 → ( )A2B3 : a=2c; 2b=3c. c=2k, a=4k, b=3k.
+  { label: "A + B₂ → A₂B₃", gen: () => { const k=ri(1,2); const c=2*k,a=4*k,b=3*k; return {a,b,c,
+    fmt:[ {coef:a,parts:[{sym:"A"}]}, {coef:b,parts:[{sym:"B",sub:2}]} ],
+    fmtP:[ {coef:c,parts:[{sym:"A",sub:2},{sym:"B",sub:3}]} ]
+  }; } },
+];
+
+function ri(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+// ══════════════════════════════════════════
+// 화학식 렌더링 유틸
+// ══════════════════════════════════════════
+function renderFormulaHTML(parts) {
+  return parts.map(p => {
+    let h = p.sym;
+    if(p.sub) h += `<sub>${p.sub}</sub>`;
+    return h;
+  }).join('');
+}
+
+function formatEqHTML(coef, parts) {
+  let h = '';
+  if(coef !== 1) h += coef;
+  h += renderFormulaHTML(parts);
+  return h;
+}
+
+function formatSimpleEq(fmt, fmtP) {
+  let r = fmt.map(f=>formatEqHTML(f.coef,f.parts)).join(' + ');
+  let p = fmtP.map(f=>formatEqHTML(f.coef,f.parts)).join(' + ');
+  return r + ' → ' + p;
+}
+
+// ══════════════════════════════════════════
+// 반응식 모드용 문제 생성
+// ══════════════════════════════════════════
+function generateReactionQuestion() {
+  const idx = Math.floor(Math.random()*REACTIONS.length);
+  const rx = REACTIONS[idx];
+  
+  // 모든 물질들 인덱스 수집 (reactant/product 구분)
+  const all = [];
+  rx.reactants.forEach((r,i)=>all.push({side:'R',idx:i,coef:r.coef,formula:r.formula}));
+  rx.products.forEach((p,i)=>all.push({side:'P',idx:i,coef:p.coef,formula:p.formula}));
+  
+  // 랜덤으로 1~2개 blank
+  const numBlanks = ri(1, Math.min(2, all.length));
+  const shuffled = [...all].sort(()=>Math.random()-0.5);
+  const blanks = shuffled.slice(0, numBlanks);
+  const blankKeys = new Set(blanks.map(b=>`${b.side}-${b.idx}`));
+
+  return { reactionIdx: idx, rx, blankKeys, blanks };
+}
+
+// ══════════════════════════════════════════
+// 가상 키보드 입력 버퍼
+// ══════════════════════════════════════════
+const ELEMENTS = ['H','C','O','N','Na','Mg','Cu','Cl','Ag','Ca','A','B'];
+
+let currentMode = 1;
+let streak = 0;
+let totalCorrect = 0;
+let totalWrong = 0;
+let isDark = true;
+
+// 현재 문제 상태
+let currentQuestion = null; 
+// {type:'coef'|'reaction', blanks:[{key,answer}], inputs:{key: bufferStr}, activeKey}
+
+function buildKeyboard() {
+  const numRow = document.getElementById('numRow');
+  const elemRow = document.getElementById('elemRow');
+  
+  // 숫자 패드
+  for(let i=1;i<=9;i++) {
+    const btn = document.createElement('button');
+    btn.className='kb-key num';
+    btn.dataset.key='NUM_'+i;
+    btn.textContent=i;
+    numRow.appendChild(btn);
+  }
+  const btn0=document.createElement('button');
+  btn0.className='kb-key num';btn0.dataset.key='NUM_0';btn0.textContent='0';
+  numRow.appendChild(btn0);
+
+  // 원소 기호
+  ELEMENTS.forEach(e=>{
+    const btn=document.createElement('button');
+    btn.className='kb-key elem';
+    btn.dataset.key='ELEM_'+e;
+    btn.innerHTML=e;
+    elemRow.appendChild(btn);
+  });
+}
+
+// ── 문제 생성 ──
+function generateQuestion() {
+  let type;
+  if(currentMode===1) type='coef';
+  else if(currentMode===2) type='reaction';
+  else type = Math.random()<0.5?'coef':'reaction';
+
+  if(type==='coef') {
+    const tmpl = COEF_TEMPLATES[Math.floor(Math.random()*COEF_TEMPLATES.length)];
+    const q = tmpl.gen();
+    // blanks: [{key:'R0'|'R1'|'P0', answer:number}]
+    // 모든 계수를 blank로 만들기 (3개)
+    const all3 = [
+      {key:'R0', answer: q.a},
+      {key:'R1', answer: q.b},
+      {key:'P0', answer: q.c}
+    ];
+    // 1~2개 blank, 나머지는 보임
+    const nb = ri(1,2);
+    const blanks = [...all3].sort(()=>Math.random()-0.5).slice(0,nb);
+    const blankSet = new Set(blanks.map(b=>b.key));
+    
+    currentQuestion = {
+      type:'coef',
+      templateLabel: tmpl.label,
+      q,
+      blanks: blanks,
+      blankSet,
+      inputs: {},
+      activeKey: blanks[0].key,
+      checked: false
+    };
+    blanks.forEach(b=>currentQuestion.inputs[b.key]='');
+  } else {
+    const {rx, blankKeys, blanks} = generateReactionQuestion();
+    const blankArr = blanks.map(b=>({key:`${b.side}-${b.idx}`, answer: b.coef}));
+    currentQuestion = {
+      type:'reaction',
+      rx,
+      blankKeys,
+      blanks: blankArr,
+      inputs: {},
+      activeKey: blankArr[0].key,
+      checked: false
+    };
+    blankArr.forEach(b=>currentQuestion.inputs[b.key]='');
+  }
+
+  renderQuestion();
+}
+
+// ── 렌더링 ──
+function renderQuestion() {
+  const q = currentQuestion;
+  const display = document.getElementById('equationDisplay');
+  const label = document.getElementById('qLabel');
+  const banner = document.getElementById('resultBanner');
+  banner.className='result-banner';
+  banner.innerHTML='';
+
+  if(q.type==='coef') {
+    label.textContent = `MODE 1 · 계수 맞추기`;
+    display.innerHTML = buildCoefHTML(q);
+  } else {
+    label.textContent = `MODE 2 · 화학반응식 (${q.rx.name})`;
+    display.innerHTML = buildReactionHTML(q);
+  }
+
+  // 첫 번째 blank 활성화
+  activateBlank(q.activeKey);
+}
+
+function buildCoefHTML(q) {
+  const {q:data, blankSet, inputs, activeKey, checked} = q;
+  const answers = {R0:data.a, R1:data.b, P0:data.c};
+  const fmt = data.fmt;
+  const fmtP = data.fmtP;
+
+  let html = '';
+  // Reactants
+  fmt.forEach((f,i)=>{
+    const key = i===0?'R0':'R1';
+    if(i>0) html+=`<span class="eq-plus">+</span>`;
+    html += blankSlot(key, answers[key], blankSet, inputs, checked, q);
+    html += renderFormulaHTML(f.parts);
+  });
+  html += `<span class="eq-arrow">→</span>`;
+  // Products
+  fmtP.forEach((f,i)=>{
+    if(i>0) html+=`<span class="eq-plus">+</span>`;
+    html += blankSlot('P'+i, answers['P'+i]||data.c, blankSet, inputs, checked, q);
+    html += renderFormulaHTML(f.parts);
+  });
+  return html;
+}
+
+function buildReactionHTML(q) {
+  const {rx, blankKeys, inputs, checked} = q;
+  let html='';
+  rx.reactants.forEach((r,i)=>{
+    if(i>0) html+=`<span class="eq-plus">+</span>`;
+    const key=`R-${i}`;
+    if(blankKeys.has(key)){
+      html += blankSlot(key, r.coef, blankKeys, inputs, checked, q);
+    } else {
+      if(r.coef!==1) html+=`<span class="eq-text">${r.coef}</span>`;
+    }
+    html += renderFormulaHTML(r.formula);
+  });
+  html+=`<span class="eq-arrow">→</span>`;
+  rx.products.forEach((p,i)=>{
+    if(i>0) html+=`<span class="eq-plus">+</span>`;
+    const key=`P-${i}`;
+    if(blankKeys.has(key)){
+      html += blankSlot(key, p.coef, blankKeys, inputs, checked, q);
+    } else {
+      if(p.coef!==1) html+=`<span class="eq-text">${p.coef}</span>`;
+    }
+    html += renderFormulaHTML(p.formula);
+  });
+  return html;
+}
+
+// blank 슬롯 HTML 생성
+function blankSlot(key, answer, blankSet, inputs, checked, q) {
+  if(!blankSet.has(key)) return '';
+  const val = inputs[key]||'';
+  let cls='blank-box';
+  if(q.activeKey===key) cls+=' active';
+  if(checked){
+    const numVal = parseInt(val||'0');
+    if(numVal===answer) cls+=' correct';
+    else cls+=' wrong';
+  }
+  const display = val===''? (checked?'?':'_') : renderInputVal(val);
+  return `<span class="${cls}" data-bkey="${key}" onclick="activateBlank('${key}')">${display}</span>`;
+}
+
+function renderInputVal(val){
+  // val은 숫자 문자열 (계수), 반응식 모드에서는 숫자만 입력
+  return val;
+}
+
+function activateBlank(key) {
+  if(!currentQuestion) return;
+  currentQuestion.activeKey = key;
+  // Re-render blanks only
+  refreshBlanks();
+}
+
+function refreshBlanks() {
+  // Re-render question to update active state
+  const display = document.getElementById('equationDisplay');
+  const q = currentQuestion;
+  if(q.type==='coef') display.innerHTML = buildCoefHTML(q);
+  else display.innerHTML = buildReactionHTML(q);
+  // Re-attach click events are inline
+}
+
+// ── 키보드 입력 처리 ──
+function handleKey(key) {
+  const q = currentQuestion;
+  if(!q || q.checked) return;
+
+  const akey = q.activeKey;
+  if(!akey) return;
+
+  if(key.startsWith('NUM_')) {
+    const num = key.replace('NUM_','');
+    q.inputs[akey] = (q.inputs[akey]||'') + num;
+    refreshBlanks();
+  } else if(key==='DEL') {
+    const cur = q.inputs[akey]||'';
+    q.inputs[akey] = cur.slice(0,-1);
+    refreshBlanks();
+  } else if(key==='CONFIRM') {
+    checkAnswer();
+  } else if(key==='NEXT') {
+    generateQuestion();
+  }
+  // ELEM keys are ignored in this numeric-only quiz context (for mode 1/2)
+}
+
+// ── 정답 확인 ──
+function checkAnswer() {
+  const q = currentQuestion;
+  if(!q || q.checked) return;
+  q.checked = true;
+
+  let allCorrect = true;
+  q.blanks.forEach(b=>{
+    const val = parseInt(q.inputs[b.key]||'0');
+    if(val !== b.answer) allCorrect = false;
+  });
+
+  refreshBlanks();
+
+  const banner = document.getElementById('resultBanner');
+  if(allCorrect) {
+    streak++;
+    totalCorrect++;
+    banner.className='result-banner correct-banner show';
+    banner.innerHTML=`✅ 정답! &nbsp;<span style="opacity:0.7;font-size:12px;">연속 ${streak}회 달성</span>`;
+  } else {
+    streak=0;
+    totalWrong++;
+    // show correct answers in banner
+    const ansStr = q.blanks.map(b=>`계수=${b.answer}`).join(', ');
+    banner.className='result-banner wrong-banner show';
+    banner.innerHTML=`❌ 오답 &nbsp;<span style="opacity:0.7;font-size:12px;">정답: ${ansStr}</span>`;
+  }
+  updateScore();
+}
+
+function updateScore() {
+  const sc = document.getElementById('streakCount');
+  sc.textContent = streak;
+  sc.classList.add('bump');
+  setTimeout(()=>sc.classList.remove('bump'),300);
+  
+  document.getElementById('totalCorrect').textContent = totalCorrect;
+  document.getElementById('totalWrong').textContent = totalWrong;
+
+  const flames = document.getElementById('streakFlames');
+  if(streak>=10) flames.textContent='🔥🔥🔥';
+  else if(streak>=5) flames.textContent='🔥🔥';
+  else if(streak>=3) flames.textContent='🔥';
+  else flames.textContent='';
+}
+
+// ── 모달 (전체 반응식 목록) ──
+function buildModal() {
+  const list = document.getElementById('reactionList');
+  list.innerHTML='';
+  REACTIONS.forEach((rx,i)=>{
+    const item = document.createElement('div');
+    item.className='reaction-item';
+    
+    // build equation string
+    let eqStr='';
+    rx.reactants.forEach((r,j)=>{
+      if(j>0) eqStr+=' + ';
+      if(r.coef!==1) eqStr+=r.coef;
+      eqStr+=r.formula.map(p=>p.sub?`${p.sym}<sub>${p.sub}</sub>`:p.sym).join('');
+    });
+    eqStr+=' → ';
+    rx.products.forEach((p,j)=>{
+      if(j>0) eqStr+=' + ';
+      if(p.coef!==1) eqStr+=p.coef;
+      eqStr+=p.formula.map(pp=>pp.sub?`${pp.sym}<sub>${pp.sub}</sub>`:pp.sym).join('');
+    });
+    
+    item.innerHTML=`<div class="reaction-num">#${i+1}</div><div class="reaction-name">${rx.name}</div><div class="reaction-eq">${eqStr}</div>`;
+    list.appendChild(item);
+  });
+}
+
+// ══════════════════════════════════════════
+// 초기화 및 이벤트 바인딩
+// ══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', ()=>{
+  buildKeyboard();
+  buildModal();
+
+  // Mode tabs
+  document.querySelectorAll('.mode-tab').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      currentMode = parseInt(tab.dataset.mode);
+      generateQuestion();
+    });
+  });
+
+  // Keyboard
+  document.addEventListener('click', e=>{
+    const btn = e.target.closest('[data-key]');
+    if(btn){
+      const key=btn.dataset.key;
+      btn.classList.add('pressed');
+      setTimeout(()=>btn.classList.remove('pressed'),120);
+      handleKey(key);
+    }
+  });
+
+  // Dark/Light toggle
+  document.getElementById('darkBtn').addEventListener('click',()=>{
+    isDark=!isDark;
+    document.body.classList.toggle('light',!isDark);
+    document.getElementById('darkBtn').textContent = isDark?'🌙':'☀️';
+  });
+
+  // Hint modal
+  document.getElementById('hintBtn').addEventListener('click',()=>{
+    document.getElementById('modalOverlay').classList.add('show');
+  });
+  document.getElementById('modalClose').addEventListener('click',()=>{
+    document.getElementById('modalOverlay').classList.remove('show');
+  });
+  document.getElementById('modalOverlay').addEventListener('click',e=>{
+    if(e.target===document.getElementById('modalOverlay'))
+      document.getElementById('modalOverlay').classList.remove('show');
+  });
+
+  // Physical keyboard support
+  document.addEventListener('keydown', e=>{
+    if(e.key>='0'&&e.key<='9') handleKey('NUM_'+e.key);
+    else if(e.key==='Backspace') handleKey('DEL');
+    else if(e.key==='Enter') {
+      if(!currentQuestion||!currentQuestion.checked) handleKey('CONFIRM');
+      else handleKey('NEXT');
+    }
+  });
+
+  generateQuestion();
+});
+</script>
+</body>
+</html>
