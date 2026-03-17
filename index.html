@@ -20,8 +20,6 @@
     --c-accent-3: #F59E0B;
     --c-correct: #10B981;
     --c-wrong: #EF4444;
-    --c-shadow-1: rgba(0, 0, 0, 0.2);
-    --c-shadow-2: rgba(255, 255, 255, 0.1);
     --font-ui: 'Noto Sans KR', sans-serif;
     --font-mono: 'JetBrains Mono', monospace;
   }
@@ -39,469 +37,159 @@
     --c-accent-3: #D97706;
     --c-correct: #059669;
     --c-wrong: #DC2626;
-    --c-shadow-1: rgba(0, 0, 0, 0.1);
-    --c-shadow-2: rgba(255, 255, 255, 0.5);
   }
 
   * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    -webkit-tap-highlight-color: transparent;
+    margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent;
   }
 
-  html {
-    background: var(--c-bg);
-  }
+  html { background: var(--c-bg); }
 
   body {
-<div id="authOverlay" style="position:fixed; inset:0; z-index:9999999; background:var(--c-bg, #10141E); display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-family:'JetBrains Mono', 'Noto Sans KR', sans-serif;">
-  <h2 style="color:var(--c-accent-1, #00E5FF); margin-bottom:20px;">🔒 동아리 전용 접속</h2>
-  <p style="color:var(--c-text-secondary, #8896B0); font-size:13px; margin-bottom:20px;">비밀번호를 입력해야 접근할 수 있습니다.</p>
-  <input type="password" id="authInput" placeholder="Password" style="padding:12px; border-radius:8px; border:1px solid rgba(136,150,191,0.2); background:rgba(0,0,0,0.3); color:#fff; font-size:16px; margin-bottom:16px; text-align:center; outline:none; font-family:inherit;">
-  <button id="authBtn" style="padding:12px 24px; border-radius:8px; background:var(--c-accent-2, #7C3AED); border:none; color:#fff; font-weight:bold; cursor:pointer; font-size:14px; transition:0.2s;">접속하기</button>
-  <p id="authError" style="color:#ef4444; font-size:12px; margin-top:12px; display:none;">❌ 비밀번호가 틀렸습니다.</p>
-</div>
-
-<script>
-  (function() {
-    const overlay = document.getElementById('authOverlay');
-    const input = document.getElementById('authInput');
-    const btn = document.getElementById('authBtn');
-    const error = document.getElementById('authError');
-
-    // 잠금 해제용 비밀번호 설정
-    const CORRECT_PASSWORD = "ence"; 
-
-    // 1. 브라우저 로컬 스토리지 확인 (한 번 인증한 사용자는 창을 숨기고 즉시 통과)
-    if(localStorage.getItem('chem_auth') === 'true') {
-      overlay.style.display = 'none';
-      return;
-    }
-
-    // 2. 인증 검사 로직
-    const checkAuth = () => {
-      if(input.value === CORRECT_PASSWORD) {
-        localStorage.setItem('chem_auth', 'true'); // 브라우저에 인증 기록 영구 저장
-        overlay.style.opacity = '0';
-        setTimeout(() => overlay.style.display = 'none', 300); // 부드러운 전환 효과
-      } else {
-        error.style.display = 'block';
-        input.value = '';
-        input.focus();
-      }
-    };
-
-    btn.addEventListener('click', checkAuth);
-    input.addEventListener('keypress', (e) => { if(e.key === 'Enter') checkAuth(); });
-  })();
-</script>
-
     font-family: var(--font-ui);
     background: var(--c-bg);
     color: var(--c-text-primary);
-    min-height: 100vh;
-    min-height: 100dvh;
+    min-height: 100vh; min-height: 100dvh;
     transition: background 0.3s, color 0.3s;
     overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
   }
 
   body::before {
-    content: '';
-    position: fixed;
-    inset: 0;
+    content: ''; position: fixed; inset: 0;
     background-image:
       radial-gradient(circle at 25% 25%, var(--c-accent-1), transparent 30%),
       radial-gradient(circle at 75% 75%, var(--c-accent-2), transparent 30%);
-    opacity: 0.15;
-    filter: blur(100px);
-    pointer-events: none;
-    z-index: 0;
+    opacity: 0.15; filter: blur(100px); pointer-events: none; z-index: 0;
   }
 
   #app {
-    position: relative;
-    z-index: 1;
-    max-width: 720px;
-    margin: 0 auto;
-    padding: 16px;
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    min-height: 100dvh;
+    position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 16px;
+    display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh;
   }
 
-  header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 16px;
-  }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 
-  .logo {
-    font-family: var(--font-mono);
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--c-accent-1);
+  /* 기존 로고 대신 텍스트로 변경된 부분 */
+  .logo-egg {
+    font-family: var(--font-ui);
+    font-size: 16px;
+    font-weight: 900;
+    color: var(--c-wrong);
     letter-spacing: 1px;
-    text-transform: uppercase;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.2s;
   }
+  .logo-egg:active { transform: scale(0.9); }
 
-  .header-right {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
+  .header-right { display: flex; gap: 8px; align-items: center; }
 
   .icon-btn {
-    background: var(--c-surface-1);
-    border: 1px solid var(--c-border);
-    color: var(--c-text-secondary);
-    width: 44px;
-    height: 44px;
-    border-radius: 12px;
-    cursor: pointer;
-    font-size: 18px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
-    backdrop-filter: blur(10px);
+    background: var(--c-surface-1); border: 1px solid var(--c-border); color: var(--c-text-secondary);
+    width: 44px; height: 44px; border-radius: 12px; cursor: pointer; font-size: 18px;
+    display: flex; align-items: center; justify-content: center; transition: all 0.2s; backdrop-filter: blur(10px);
   }
-  .icon-btn:hover {
-    border-color: var(--c-border-active);
-    color: var(--c-accent-1);
-  }
+  .icon-btn:hover { border-color: var(--c-border-active); color: var(--c-accent-1); }
 
   .stat-bar {
-    background: var(--c-surface-1);
-    border: 1px solid var(--c-border);
-    border-radius: 16px;
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 16px;
-    backdrop-filter: blur(10px);
+    background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 16px;
+    padding: 12px 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 16px; backdrop-filter: blur(10px);
   }
   .stat-item { display: flex; align-items: center; gap: 8px; }
   .stat-label { font-size: 11px; color: var(--c-text-secondary); text-transform: uppercase; letter-spacing: 1px; font-family: var(--font-mono); }
-  .stat-value { font-family: var(--font-mono); font-size: 24px; font-weight: 700; line-height: 1; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .stat-value { font-family: var(--font-mono); font-size: 24px; font-weight: 700; line-height: 1; transition: transform 0.2s; }
   .stat-value.bump { transform: scale(1.4); }
   #streakCount { color: var(--c-accent-3); }
   #totalCorrect { color: var(--c-correct); }
   #totalWrong { color: var(--c-wrong); }
   .streak-flames { font-size: 20px; }
 
-  .mode-tabs {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-    margin-bottom: 16px;
-  }
+  .mode-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
   .mode-tab {
-    background: var(--c-surface-1);
-    border: 1px solid var(--c-border);
-    border-radius: 12px;
-    color: var(--c-text-secondary);
-    padding: 12px 8px;
-    font-size: 13px;
-    font-weight: 700;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: center;
-    line-height: 1.4;
-    backdrop-filter: blur(10px);
+    background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 12px;
+    color: var(--c-text-secondary); padding: 12px 8px; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; text-align: center; line-height: 1.4; backdrop-filter: blur(10px);
   }
-  .mode-tab.active {
-    background: var(--c-accent-1);
-    border-color: var(--c-accent-1);
-    color: var(--c-bg);
-    box-shadow: 0 4px 20px -5px var(--c-accent-1);
-  }
-  .mode-tab .tab-icon {
-    font-size: 20px;
-    display: block;
-    margin-bottom: 4px;
-  }
+  .mode-tab.active { background: var(--c-accent-1); border-color: var(--c-accent-1); color: var(--c-bg); }
+  .mode-tab .tab-icon { font-size: 20px; display: block; margin-bottom: 4px; }
 
   .question-card {
-    background: var(--c-surface-1);
-    border: 1px solid var(--c-border);
-    border-radius: 20px;
-    padding: 24px;
-    margin-bottom: 16px;
-    min-height: 160px;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    backdrop-filter: blur(10px);
-    flex-grow: 1;
+    background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px;
+    padding: 24px; margin-bottom: 16px; min-height: 160px; display: flex; flex-direction: column; gap: 16px; flex-grow: 1;
   }
+  .q-label { font-size: 12px; color: var(--c-accent-1); font-family: var(--font-mono); letter-spacing: 1px; font-weight: 700; }
+  .q-sublabel { font-size: 14px; color: var(--c-text-secondary); font-weight: 500; }
 
-  .q-label {
-    font-size: 12px;
-    color: var(--c-accent-1);
-    font-family: var(--font-mono);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    font-weight: 700;
-  }
-  .q-sublabel {
-    font-size: 14px;
-    color: var(--c-text-secondary);
-    font-weight: 500;
-  }
-
-  .equation-display {
-    font-family: var(--font-mono);
-    font-size: clamp(16px, 4.5vw, 24px);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
-    line-height: 2;
-    margin: auto 0;
-  }
+  .equation-display { font-family: var(--font-mono); font-size: clamp(16px, 4.5vw, 24px); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; line-height: 2; margin: auto 0; }
 
   .blank-box {
-    display: inline-block;
-    min-width: 48px;
-    height: 48px;
-    border: 2px solid var(--c-border);
-    border-radius: 10px;
-    background: var(--c-surface-2);
-    text-align: center;
-    line-height: 44px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-size: 1em;
-    font-weight: 700;
-    color: var(--c-text-primary);
-    padding: 0 12px;
-    vertical-align: middle;
-    font-family: var(--font-mono);
+    display: inline-block; min-width: 48px; height: 48px; border: 2px solid var(--c-border); border-radius: 10px;
+    background: var(--c-surface-2); text-align: center; line-height: 44px; cursor: pointer; transition: all 0.2s;
+    font-size: 1em; font-weight: 700; color: var(--c-text-primary); padding: 0 12px; font-family: var(--font-mono);
   }
-  .blank-box.active {
-    border-color: var(--c-border-active);
-    box-shadow: 0 0 0 4px rgba(0, 229, 255, 0.2);
-  }
-  .blank-box.correct {
-    border-color: var(--c-correct);
-    background: rgba(16, 185, 129, 0.15);
-    color: var(--c-correct);
-    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
-  }
-  .blank-box.wrong {
-    border-color: var(--c-wrong);
-    background: rgba(239, 68, 68, 0.15);
-    color: var(--c-wrong);
-    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
-    animation: shake 0.4s;
-  }
-  .blank-box.placeholder::before {
-    content: '?';
-    color: var(--c-text-secondary);
-    opacity: 0.5;
-  }
+  .blank-box.active { border-color: var(--c-border-active); box-shadow: 0 0 0 4px rgba(0, 229, 255, 0.2); }
+  .blank-box.correct { border-color: var(--c-correct); background: rgba(16, 185, 129, 0.15); color: var(--c-correct); }
+  .blank-box.wrong { border-color: var(--c-wrong); background: rgba(239, 68, 68, 0.15); color: var(--c-wrong); animation: shake 0.4s; }
+  .blank-box.placeholder::before { content: '?'; color: var(--c-text-secondary); opacity: 0.5; }
 
-  @keyframes shake {
-    0%, 100% { transform: translateX(0); }
-    20% { transform: translateX(-8px); }
-    40% { transform: translateX(8px); }
-    60% { transform: translateX(-5px); }
-    80% { transform: translateX(5px); }
-  }
+  @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
 
   .eq-text { color: var(--c-text-primary); }
   .eq-arrow { color: var(--c-accent-3); font-size: 1.2em; }
   .eq-plus { color: var(--c-text-secondary); }
   sub { font-size: 0.65em; line-height: 0; vertical-align: sub; }
 
-  .result-banner {
-    border-radius: 12px;
-    padding: 12px 16px;
-    font-size: 14px;
-    font-weight: 700;
-    display: none;
-    align-items: center;
-    gap: 10px;
-    margin-top: auto;
-  }
+  .result-banner { border-radius: 12px; padding: 12px 16px; font-size: 14px; font-weight: 700; display: none; align-items: center; gap: 10px; margin-top: auto; }
   .result-banner.show { display: flex; }
   .result-banner.correct-banner { background: rgba(16, 185, 129, 0.2); color: var(--c-correct); border: 1px solid var(--c-correct); }
   .result-banner.wrong-banner { background: rgba(239, 68, 68, 0.2); color: var(--c-wrong); border: 1px solid var(--c-wrong); }
+  .show-answer-btn { background: var(--c-wrong); color: var(--c-bg); border: none; border-radius: 8px; padding: 6px 12px; font-weight: 700; cursor: pointer; margin-left: auto; }
 
-  .show-answer-btn {
-    background: var(--c-wrong);
-    color: var(--c-bg);
-    border: none;
-    border-radius: 8px;
-    padding: 6px 12px;
-    font-family: var(--font-ui);
-    font-weight: 700;
-    font-size: 13px;
-    cursor: pointer;
-    margin-left: auto;
-    transition: opacity 0.2s;
-  }
-  .show-answer-btn:hover { opacity: 0.8; }
-
-  .keyboard-wrap {
-    background: var(--c-surface-1);
-    border: 1px solid var(--c-border);
-    border-radius: 20px;
-    padding: 16px;
-    backdrop-filter: blur(10px);
-  }
-
-  .kb-section-label {
-    font-size: 10px;
-    color: var(--c-text-secondary);
-    font-family: var(--font-mono);
-    letter-spacing: 1px;
-    text-transform: uppercase;
-    margin-bottom: 10px;
-    padding: 0 4px;
-  }
-
-  .kb-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin-bottom: 10px;
-  }
-  .kb-row:last-child { margin-bottom: 0; }
-
-  .kb-key {
-    background: var(--c-surface-2);
-    border: 1px solid var(--c-border);
-    border-radius: 10px;
-    color: var(--c-text-primary);
-    font-family: var(--font-mono);
-    font-size: 16px;
-    font-weight: 700;
-    min-height: 48px;
-    min-width: 44px;
-    text-align: center;
-    cursor: pointer;
-    user-select: none;
-    transition: all 0.1s;
-    flex: 1 1 auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  }
-  .kb-key:active, .kb-key.pressed {
-    transform: scale(0.95);
-    background: var(--c-border);
-  }
-
+  .keyboard-wrap { background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px; padding: 16px; }
+  .kb-section-label { font-size: 10px; color: var(--c-text-secondary); font-family: var(--font-mono); text-transform: uppercase; margin-bottom: 10px; }
+  .kb-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .kb-key { background: var(--c-surface-2); border: 1px solid var(--c-border); border-radius: 10px; font-family: var(--font-mono); font-size: 16px; font-weight: 700; min-height: 48px; min-width: 44px; flex: 1 1 auto; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .kb-key:active { transform: scale(0.95); }
   .kb-key.num { color: var(--c-accent-3); }
   .kb-key.elem { color: var(--c-accent-1); }
-  .kb-key.del { background: rgba(239, 68, 68, 0.2); border-color: var(--c-wrong); color: var(--c-wrong); flex-grow: 2; }
-  .kb-key.confirm { background: var(--c-correct); border-color: var(--c-correct); color: #000; font-weight: 900; flex-grow: 3; }
-  .kb-key.next-q { background: var(--c-accent-2); border-color: var(--c-accent-2); color: #fff; font-weight: 900; flex-grow: 3; }
+  .kb-key.del { color: var(--c-wrong); flex-grow: 2; }
+  .kb-key.confirm { background: var(--c-correct); color: #000; flex-grow: 3; }
+  .kb-key.next-q { background: var(--c-accent-2); color: #fff; flex-grow: 3; }
 
-  .modal-overlay {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.7);
-    z-index: 100;
-    backdrop-filter: blur(8px);
-    align-items: center;
-    justify-content: center;
-    padding: 16px;
-    opacity: 0;
-    transition: opacity 0.3s;
-  }
-  .modal-overlay.show {
-    display: flex;
-    opacity: 1;
-  }
-  .modal-box {
-    background: var(--c-surface-1);
-    border: 1px solid var(--c-border);
-    border-radius: 20px;
-    width: 100%;
-    max-width: 600px;
-    max-height: 85vh;
-    display: flex;
-    flex-direction: column;
-    padding: 24px;
-    transform: scale(0.95);
-    transition: transform 0.3s;
-  }
-  .modal-overlay.show .modal-box {
-      transform: scale(1);
-  }
-  .modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    flex-shrink: 0;
-  }
-  .modal-title {
-    font-size: 18px;
-    font-weight: 900;
-    color: var(--c-accent-1);
-    font-family: var(--font-mono);
-  }
-  .modal-close {
-    background: none;
-    border: none;
-    color: var(--c-text-secondary);
-    font-size: 28px;
-    cursor: pointer;
-    line-height: 1;
-    width: 44px;
-    height: 44px;
-  }
-  .modal-content {
-    overflow-y: auto;
-  }
-  .reaction-list {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-  }
-  .reaction-item {
-    background: var(--c-surface-2);
-    border: 1px solid var(--c-border);
-    border-radius: 12px;
-    padding: 12px 16px;
-    font-family: var(--font-mono);
-    font-size: 14px;
-  }
-  .reaction-num {
-    font-size: 10px;
-    color: var(--c-text-secondary);
-    margin-bottom: 6px;
-  }
-  .reaction-name {
-    font-size: 13px;
-    color: var(--c-accent-3);
-    font-family: var(--font-ui);
-    margin-bottom: 6px;
-    font-weight: 500;
-  }
-  .reaction-eq {
-    color: var(--c-text-primary);
-  }
+  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
+  .modal-overlay.show { display: flex; }
+  .modal-box { background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px; width: 100%; max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; padding: 24px; }
+  .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+  .modal-title { font-size: 18px; font-weight: 900; color: var(--c-accent-1); }
+  .modal-close { background: none; border: none; color: var(--c-text-secondary); font-size: 28px; cursor: pointer; }
+  .modal-content { overflow-y: auto; }
+  .reaction-item { background: var(--c-surface-2); border-radius: 12px; padding: 12px; margin-bottom: 10px; font-family: var(--font-mono); font-size: 14px; }
+  .reaction-name { color: var(--c-accent-3); font-size: 13px; margin-bottom: 6px; }
 
-  ::-webkit-scrollbar { width: 8px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 4px; }
+  /* 이스터에그 파티클 효과 */
+  .egg-particle {
+    position: fixed; pointer-events: none; z-index: 9999999; font-size: 24px;
+    animation: egg-pop 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+  }
+  @keyframes egg-pop {
+    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+    100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.5); opacity: 0; }
+  }
 </style>
 </head>
 <body>
+
+<div id="authOverlay" style="position:fixed; inset:0; z-index:99999999; background:var(--c-bg); display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-family:var(--font-ui); transition: opacity 0.3s;">
+  <h2 style="color:var(--c-accent-1); margin-bottom:20px;">🔒 동아리 전용 웹사이트</h2>
+  <p style="color:var(--c-text-secondary); font-size:13px; margin-bottom:20px;">접근 코드를 입력하십시오.</p>
+  <input type="password" id="authInput" placeholder="Password" style="padding:12px; border-radius:8px; border:1px solid var(--c-border); background:rgba(0,0,0,0.3); color:#fff; font-size:16px; margin-bottom:16px; text-align:center; outline:none;">
+  <button id="authBtn" style="padding:12px 24px; border-radius:8px; background:var(--c-accent-2); border:none; color:#fff; font-weight:bold; cursor:pointer; font-size:14px;">접속하기</button>
+  <p id="authError" style="color:#ef4444; font-size:12px; margin-top:12px; display:none;">❌ 코드가 틀렸습니다.</p>
+</div>
+
 <div id="app">
   <header>
-    <div class="logo">⚗️ ChemTrainer</div>
+    <div class="logo-egg" id="easterEggBtn">누루ズl ㅁトパㅔ요</div>
     <div class="header-right">
       <button class="icon-btn" id="hintBtn" title="전체 반응식 보기">📋</button>
       <button class="icon-btn" id="themeBtn" title="다크/라이트 모드">🌙</button>
@@ -560,14 +248,88 @@
       <div class="modal-title">📋 전체 반응식 목록</div>
       <button class="modal-close" id="modalClose">✕</button>
     </div>
-    <div class="modal-content">
-      <div class="reaction-list" id="reactionList"></div>
-    </div>
+    <div class="modal-content"><div class="reaction-list" id="reactionList"></div></div>
   </div>
 </div>
 
 <script>
-// --- 데이터 및 템플릿 영역 ---
+// --- 보안 잠금 로직 ---
+(function() {
+  const overlay = document.getElementById('authOverlay');
+  const input = document.getElementById('authInput');
+  const btn = document.getElementById('authBtn');
+  const error = document.getElementById('authError');
+  const CORRECT_PASSWORD = "ence"; 
+
+  // 로컬 스토리지 검사
+  if(localStorage.getItem('chem_auth') === 'true') {
+    overlay.style.display = 'none';
+  }
+
+  const checkAuth = () => {
+    if(input.value === CORRECT_PASSWORD) {
+      localStorage.setItem('chem_auth', 'true');
+      overlay.style.opacity = '0';
+      setTimeout(() => overlay.style.display = 'none', 300);
+    } else {
+      error.style.display = 'block';
+      input.value = ''; input.focus();
+    }
+  };
+
+  btn.addEventListener('click', checkAuth);
+  input.addEventListener('keypress', (e) => { if(e.key === 'Enter') checkAuth(); });
+
+  // --- 귀염뽀짝 이스터에그 로직 ---
+  document.getElementById('easterEggBtn').addEventListener('click', (e) => {
+    e.preventDefault();
+    const x = e.clientX || (e.touches ? e.touches[0].clientX : window.innerWidth/2);
+    const y = e.clientY || (e.touches ? e.touches[0].clientY : 50);
+    const emojis = ['🎆', '🌟', '✨', '💖', '🎉', '🌸', '🐰'];
+
+    // 1. 버튼 주위 파티클
+    for(let i=0; i<35; i++) {
+      const p = document.createElement('div');
+      p.className = 'egg-particle';
+      p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      p.style.left = x + 'px'; p.style.top = y + 'px';
+      const angle = Math.random() * Math.PI * 2;
+      const velocity = 60 + Math.random() * 120;
+      p.style.setProperty('--tx', Math.cos(angle) * velocity + 'px');
+      p.style.setProperty('--ty', Math.sin(angle) * velocity + 'px');
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 800);
+    }
+
+    // 2. 전체 화면 귀염뽀짝 플래시 효과
+    const flash = document.createElement('div');
+    Object.assign(flash.style, {
+      position: 'fixed', inset: 0, zIndex: 9999998,
+      background: 'linear-gradient(135deg, rgba(255,182,193,0.9), rgba(200,162,200,0.9))',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column',
+      opacity: 0, transition: 'opacity 0.5s ease-out', pointerEvents: 'none'
+    });
+    flash.innerHTML = '<div style="font-size:80px; animation:shake 0.5s infinite;">💖 깜짝이야! 💖</div>';
+    document.body.appendChild(flash);
+    
+    // 플래시 애니메이션 실행 후 잠금화면으로 강제 이동
+    setTimeout(() => { flash.style.opacity = 1; }, 50);
+    
+    setTimeout(() => {
+      flash.style.opacity = 0;
+      setTimeout(() => flash.remove(), 500);
+      
+      // 권한 몰수 및 비번창 팝업
+      localStorage.removeItem('chem_auth');
+      input.value = '';
+      error.style.display = 'none';
+      overlay.style.display = 'flex';
+      setTimeout(() => overlay.style.opacity = '1', 50);
+    }, 1200);
+  });
+})();
+
+// --- 메인 앱 로직 ---
 const REACTIONS = [
   { name: "일산화탄소 + 산소 → 이산화탄소", reactants: [{coef:2,formula:[{sym:"CO"}]}, {coef:1,formula:[{sym:"O",sub:2}]}], products: [{coef:2,formula:[{sym:"CO",sub:2}]}] },
   { name: "메테인 + 산소 → 이산화탄소 + 물", reactants: [{coef:1,formula:[{sym:"CH",sub:4}]}, {coef:2,formula:[{sym:"O",sub:2}]}], products: [{coef:1,formula:[{sym:"CO",sub:2}]}, {coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}] },
@@ -587,7 +349,6 @@ const REACTIONS = [
   { name: "염화나트륨 + 질산은 → 질산나트륨 + 염화은", reactants: [{coef:1,formula:[{sym:"Na"},{sym:"Cl"}]}, {coef:1,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}], products: [{coef:1,formula:[{sym:"Na"},{sym:"NO",sub:3}]}, {coef:1,formula:[{sym:"Ag"},{sym:"Cl"}]}] }
 ];
 
-// 임의 문자식 랜덤 생성 템플릿 복원
 function ri(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 const COEF_TEMPLATES = [
   { label: "A₂ + B₂ → AB₄", gen: () => { const k=ri(1,3); return {a:k,b:2*k,c:k, fmt:[ {coef:k,formula:[{sym:"A",sub:2}]}, {coef:2*k,formula:[{sym:"B",sub:2}]} ], fmtP:[ {coef:k,formula:[{sym:"A"},{sym:"B",sub:4}]} ]}; } },
@@ -602,79 +363,34 @@ const COEF_TEMPLATES = [
 const ELEMENTS = ['H', 'C', 'O', 'N', 'Na', 'Mg', 'Cu', 'Cl', 'Ag', 'Ca', 'A', 'B'];
 
 const App = {
-  // --- STATE ---
-  state: {
-    currentMode: 1,
-    score: { streak: 0, correct: 0, wrong: 0 },
-    currentQuestion: null,
-    isAnswerChecked: false,
-    isAnswerRevealed: false,
-    isDarkMode: true,
-  },
-
-  // --- DOM ELEMENTS ---
+  state: { currentMode: 1, score: { streak: 0, correct: 0, wrong: 0 }, currentQuestion: null, isAnswerChecked: false, isAnswerRevealed: false, isDarkMode: true },
   $: {
-    app: document.getElementById('app'),
-    streakCount: document.getElementById('streakCount'),
-    streakFlames: document.getElementById('streakFlames'),
-    totalCorrect: document.getElementById('totalCorrect'),
-    totalWrong: document.getElementById('totalWrong'),
-    modeTabs: document.querySelector('.mode-tabs'),
-    qLabel: document.getElementById('qLabel'),
-    qSubLabel: document.getElementById('qSubLabel'),
-    equationDisplay: document.getElementById('equationDisplay'),
-    resultBanner: document.getElementById('resultBanner'),
-    numRow: document.getElementById('numRow'),
-    elemRow: document.getElementById('elemRow'),
-    confirmBtn: document.querySelector('.kb-key.confirm'),
-    nextBtn: document.querySelector('.kb-key.next-q'),
-    modalOverlay: document.getElementById('modalOverlay'),
+    app: document.getElementById('app'), streakCount: document.getElementById('streakCount'), streakFlames: document.getElementById('streakFlames'),
+    totalCorrect: document.getElementById('totalCorrect'), totalWrong: document.getElementById('totalWrong'), modeTabs: document.querySelector('.mode-tabs'),
+    qLabel: document.getElementById('qLabel'), qSubLabel: document.getElementById('qSubLabel'), equationDisplay: document.getElementById('equationDisplay'),
+    resultBanner: document.getElementById('resultBanner'), numRow: document.getElementById('numRow'), elemRow: document.getElementById('elemRow'),
+    confirmBtn: document.querySelector('.kb-key.confirm'), nextBtn: document.querySelector('.kb-key.next-q'), modalOverlay: document.getElementById('modalOverlay'),
     reactionList: document.getElementById('reactionList'),
   },
 
-  // --- INITIALIZATION ---
-  init() {
-    this.buildKeyboard();
-    this.buildModalList();
-    this.attachEventListeners();
-    this.setMode(1);
-  },
+  init() { this.buildKeyboard(); this.buildModalList(); this.attachEventListeners(); this.setMode(1); },
 
-  // --- UI BUILDING ---
   buildKeyboard() {
-    this.$.numRow.innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
-      .map(n => `<button class="kb-key num" data-key="NUM_${n}">${n}</button>`)
-      .join('');
-    this.$.elemRow.innerHTML = ELEMENTS
-      .map(e => `<button class="kb-key elem" data-key="ELEM_${e}">${e}</button>`)
-      .join('');
+    this.$.numRow.innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(n => `<button class="kb-key num" data-key="NUM_${n}">${n}</button>`).join('');
+    this.$.elemRow.innerHTML = ELEMENTS.map(e => `<button class="kb-key elem" data-key="ELEM_${e}">${e}</button>`).join('');
   },
 
   buildModalList() {
     this.$.reactionList.innerHTML = REACTIONS.map((rx, i) => {
-      const formatSide = (side) => side.map(r => 
-        (r.coef > 1 ? r.coef : '') + r.formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join('')
-      ).join(' + ');
-      const eqStr = `${formatSide(rx.reactants)} <span class="eq-arrow">→</span> ${formatSide(rx.products)}`;
-      return `
-        <div class="reaction-item">
-          <div class="reaction-num">#${i + 1}</div>
-          <div class="reaction-name">${rx.name}</div>
-          <div class="reaction-eq">${eqStr}</div>
-        </div>`;
+      const formatSide = (side) => side.map(r => (r.coef > 1 ? r.coef : '') + r.formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join('')).join(' + ');
+      return `<div class="reaction-item"><div class="reaction-num">#${i + 1}</div><div class="reaction-name">${rx.name}</div><div class="reaction-eq">${formatSide(rx.reactants)} <span class="eq-arrow">→</span> ${formatSide(rx.products)}</div></div>`;
     }).join('');
   },
 
-  // --- EVENT HANDLING ---
   attachEventListeners() {
     this.$.app.addEventListener('click', e => {
-      const modeTab = e.target.closest('.mode-tab');
-      const blankBox = e.target.closest('.blank-box');
-      const keyBtn = e.target.closest('.kb-key');
-      const themeBtn = e.target.closest('#themeBtn');
-      const hintBtn = e.target.closest('#hintBtn');
-      const showAnswerBtn = e.target.closest('.show-answer-btn');
-
+      const modeTab = e.target.closest('.mode-tab'); const blankBox = e.target.closest('.blank-box'); const keyBtn = e.target.closest('.kb-key');
+      const themeBtn = e.target.closest('#themeBtn'); const hintBtn = e.target.closest('#hintBtn'); const showAnswerBtn = e.target.closest('.show-answer-btn');
       if (modeTab) this.setMode(parseInt(modeTab.dataset.mode));
       if (blankBox) this.setActiveBlank(blankBox.dataset.key);
       if (keyBtn) this.handleKeyPress(keyBtn.dataset.key);
@@ -683,22 +399,14 @@ const App = {
       if (showAnswerBtn) this.revealAnswers();
     });
 
-    this.$.modalOverlay.addEventListener('click', e => {
-      if (e.target === this.$.modalOverlay || e.target.closest('#modalClose')) {
-        this.showModal(false);
-      }
-    });
+    this.$.modalOverlay.addEventListener('click', e => { if (e.target === this.$.modalOverlay || e.target.closest('#modalClose')) this.showModal(false); });
 
     document.addEventListener('keydown', e => {
-      if (this.$.modalOverlay.classList.contains('show')) return;
+      if (this.$.modalOverlay.classList.contains('show') || document.getElementById('authOverlay').style.display !== 'none') return;
       if (e.key >= '0' && e.key <= '9') this.handleKeyPress(`NUM_${e.key}`);
       else if (e.key === 'Backspace') this.handleKeyPress('DEL');
-      else if (e.key === 'Enter') {
-        this.handleKeyPress(this.state.isAnswerChecked ? 'NEXT' : 'CONFIRM');
-      } else {
-        const key = e.key.charAt(0).toUpperCase() + e.key.slice(1);
-        if (ELEMENTS.includes(key)) this.handleKeyPress(`ELEM_${key}`);
-      }
+      else if (e.key === 'Enter') this.handleKeyPress(this.state.isAnswerChecked ? 'NEXT' : 'CONFIRM');
+      else { const key = e.key.charAt(0).toUpperCase() + e.key.slice(1); if (ELEMENTS.includes(key)) this.handleKeyPress(`ELEM_${key}`); }
     });
   },
 
@@ -707,403 +415,156 @@ const App = {
       if (this.state.isAnswerChecked) return;
       const q = this.state.currentQuestion;
       if (!q || !q.activeKey) return;
-
       const input = q.inputs[q.activeKey] || '';
-      if (key.startsWith('NUM_')) {
-        q.inputs[q.activeKey] = input + key.replace('NUM_', '');
-      } else if (key.startsWith('ELEM_')) {
-        q.inputs[q.activeKey] = input + key.replace('ELEM_', '');
-      } else if (key === 'DEL') {
-        q.inputs[q.activeKey] = input.slice(0, -1);
-      }
+      if (key.startsWith('NUM_')) q.inputs[q.activeKey] = input + key.replace('NUM_', '');
+      else if (key.startsWith('ELEM_')) q.inputs[q.activeKey] = input + key.replace('ELEM_', '');
+      else if (key === 'DEL') q.inputs[q.activeKey] = input.slice(0, -1);
       this.renderEquation();
-    } else if (key === 'CONFIRM') {
-      if (!this.state.isAnswerChecked) this.checkAnswer();
-    } else if (key === 'NEXT') {
-      if (this.state.isAnswerChecked) this.generateQuestion();
-    }
+    } else if (key === 'CONFIRM') { if (!this.state.isAnswerChecked) this.checkAnswer();
+    } else if (key === 'NEXT') { if (this.state.isAnswerChecked) this.generateQuestion(); }
   },
 
-  // --- STATE MANAGEMENT ---
   setMode(mode) {
     if (this.state.currentMode === mode) return;
     this.state.currentMode = mode;
-    this.$.modeTabs.querySelectorAll('.mode-tab').forEach(tab => {
-      tab.classList.toggle('active', parseInt(tab.dataset.mode) === mode);
-    });
+    this.$.modeTabs.querySelectorAll('.mode-tab').forEach(tab => { tab.classList.toggle('active', parseInt(tab.dataset.mode) === mode); });
     this.generateQuestion();
   },
 
-  setActiveBlank(key) {
-    if (this.state.isAnswerChecked) return;
-    const q = this.state.currentQuestion;
-    if (q) {
-      q.activeKey = key;
-      this.renderEquation();
-    }
-  },
+  setActiveBlank(key) { if (this.state.isAnswerChecked) return; const q = this.state.currentQuestion; if (q) { q.activeKey = key; this.renderEquation(); } },
 
-  // --- CORE LOGIC ---
   generateQuestion() {
-    this.state.isAnswerChecked = false;
-    this.state.isAnswerRevealed = false;
+    this.state.isAnswerChecked = false; this.state.isAnswerRevealed = false;
     const q = { blanks: [], inputs: {} };
-    const formulaToString = (chem) => {
-      let str = chem.coef > 1 ? chem.coef.toString() : '';
-      str += chem.formula.map(p => p.sym + (p.sub ? p.sub.toString() : '')).join('');
-      return str;
-    };
+    const formulaToString = (chem) => { let str = chem.coef > 1 ? chem.coef.toString() : ''; str += chem.formula.map(p => p.sym + (p.sub ? p.sub.toString() : '')).join(''); return str; };
 
     switch (this.state.currentMode) {
-      case 1: // 계수 맞추기 (임의 문자 A, B 복원 적용)
-        q.type = '계수 맞추기 (임의 문자)';
-        const tmpl = COEF_TEMPLATES[Math.floor(Math.random() * COEF_TEMPLATES.length)];
-        const data = tmpl.gen();
-        q.name = tmpl.label;
-        q.isAbstract = true; // 임의 문자식 렌더링을 위한 플래그
-        
+      case 1:
+        q.type = '계수 맞추기 (임의 문자)'; const tmpl = COEF_TEMPLATES[Math.floor(Math.random() * COEF_TEMPLATES.length)]; const data = tmpl.gen(); q.name = tmpl.label; q.isAbstract = true;
         const all3 = [ {key:'R0', answer: data.a.toString()}, {key:'R1', answer: data.b.toString()}, {key:'P0', answer: data.c.toString()} ];
-        // 1개에서 최대 3개까지 빈칸 뚫기 (랜덤)
-        const blanksCount = ri(1, 3);
-        const selectedBlanks = [...all3].sort(()=>Math.random()-0.5).slice(0, blanksCount);
-        const blankSet = new Set(selectedBlanks.map(b => b.key));
-        
-        q.displayReactants = data.fmt.map((f, i) => ({...f, isBlank: blankSet.has(`R${i}`)}));
-        q.displayProducts = data.fmtP.map((f, i) => ({...f, isBlank: blankSet.has(`P${i}`)}));
-        q.blanks = selectedBlanks;
-        // 빈칸이 아닌 곳은 정답 그대로 보존
-        q.answers = { R0: data.a.toString(), R1: data.b.toString(), P0: data.c.toString() }; 
+        const blanksCount = ri(1, 3); const selectedBlanks = [...all3].sort(()=>Math.random()-0.5).slice(0, blanksCount); const blankSet = new Set(selectedBlanks.map(b => b.key));
+        q.displayReactants = data.fmt.map((f, i) => ({...f, isBlank: blankSet.has(`R${i}`)})); q.displayProducts = data.fmtP.map((f, i) => ({...f, isBlank: blankSet.has(`P${i}`)}));
+        q.blanks = selectedBlanks; q.answers = { R0: data.a.toString(), R1: data.b.toString(), P0: data.c.toString() }; 
         break;
-
-      case 2: // 전체 반응식
-        const rx2 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)];
-        q.reaction = rx2; q.name = rx2.name; q.type = '전체 반응식';
-        q.displayReactants = rx2.reactants.map(() => ({ isBlank: true }));
-        q.displayProducts = rx2.products.map(() => ({ isBlank: true }));
-        rx2.reactants.forEach((r, i) => q.blanks.push({ key: `R${i}`, answer: formulaToString(r) }));
-        rx2.products.forEach((p, i) => q.blanks.push({ key: `P${i}`, answer: formulaToString(p) }));
+      case 2:
+        const rx2 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx2; q.name = rx2.name; q.type = '전체 반응식';
+        q.displayReactants = rx2.reactants.map(() => ({ isBlank: true })); q.displayProducts = rx2.products.map(() => ({ isBlank: true }));
+        rx2.reactants.forEach((r, i) => q.blanks.push({ key: `R${i}`, answer: formulaToString(r) })); rx2.products.forEach((p, i) => q.blanks.push({ key: `P${i}`, answer: formulaToString(p) }));
         break;
-
-      case 3: // 생성물 맞추기
-        const rx3 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)];
-        q.reaction = rx3; q.name = rx3.name; q.type = '생성물 맞추기';
-        q.displayReactants = rx3.reactants.map(r => ({...r, isBlank: false}));
-        q.displayProducts = rx3.products.map(() => ({ isBlank: true }));
+      case 3:
+        const rx3 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx3; q.name = rx3.name; q.type = '생성물 맞추기';
+        q.displayReactants = rx3.reactants.map(r => ({...r, isBlank: false})); q.displayProducts = rx3.products.map(() => ({ isBlank: true }));
         rx3.products.forEach((p, i) => q.blanks.push({ key: `P${i}`, answer: formulaToString(p) }));
         break;
-
-      case 4: // 빈칸 채우기
-        const rx4 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)];
-        q.reaction = rx4; q.name = rx4.name; q.type = '빈칸 채우기';
+      case 4:
+        const rx4 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx4; q.name = rx4.name; q.type = '빈칸 채우기';
         const tokens = [];
-        const addTokens = (chems, side) => {
-            chems.forEach((chem, cIdx) => {
-                if(chem.coef > 1) tokens.push({ id: `${side}${cIdx}_coef`, value: chem.coef.toString() });
-                chem.formula.forEach((part, pIdx) => {
-                    tokens.push({ id: `${side}${cIdx}_sym${pIdx}`, value: part.sym });
-                    if(part.sub) tokens.push({ id: `${side}${cIdx}_sub${pIdx}`, value: part.sub.toString() });
-                });
-            });
-        };
-        addTokens(rx4.reactants, 'R');
-        addTokens(rx4.products, 'P');
-
-        const shuffledTokens = tokens.sort(() => 0.5 - Math.random());
-        const blankCount4 = Math.min(tokens.length, Math.floor(Math.random() * 2) + 1);
-        const blankTokens = shuffledTokens.slice(0, blankCount4);
-
-        q.blankTokenIds = new Set(blankTokens.map(t => t.id));
-        q.blanks = blankTokens.map(t => ({ key: t.id, answer: t.value }));
+        const addTokens = (chems, side) => { chems.forEach((chem, cIdx) => { if(chem.coef > 1) tokens.push({ id: `${side}${cIdx}_coef`, value: chem.coef.toString() }); chem.formula.forEach((part, pIdx) => { tokens.push({ id: `${side}${cIdx}_sym${pIdx}`, value: part.sym }); if(part.sub) tokens.push({ id: `${side}${cIdx}_sub${pIdx}`, value: part.sub.toString() }); }); }); };
+        addTokens(rx4.reactants, 'R'); addTokens(rx4.products, 'P');
+        const shuffledTokens = tokens.sort(() => 0.5 - Math.random()); const blankCount4 = Math.min(tokens.length, Math.floor(Math.random() * 2) + 1); const blankTokens = shuffledTokens.slice(0, blankCount4);
+        q.blankTokenIds = new Set(blankTokens.map(t => t.id)); q.blanks = blankTokens.map(t => ({ key: t.id, answer: t.value }));
         break;
     }
-
-    if (q.blanks.length > 0) {
-      q.activeKey = q.blanks[0].key;
-    }
-
-    this.state.currentQuestion = q;
-    this.renderAll();
+    if (q.blanks.length > 0) q.activeKey = q.blanks[0].key;
+    this.state.currentQuestion = q; this.renderAll();
   },
 
   checkAnswer() {
-    const q = this.state.currentQuestion;
-    if (!q) return;
-
-    this.state.isAnswerChecked = true;
-    let allCorrect = true;
-    q.blanks.forEach(b => {
-      if ((q.inputs[b.key] || '') !== b.answer) {
-        allCorrect = false;
-      }
-    });
-
-    if (allCorrect) {
-      this.state.score.streak++;
-      this.state.score.correct++;
-    } else {
-      this.state.score.streak = 0;
-      this.state.score.wrong++;
-    }
-
+    const q = this.state.currentQuestion; if (!q) return;
+    this.state.isAnswerChecked = true; let allCorrect = true;
+    q.blanks.forEach(b => { if ((q.inputs[b.key] || '') !== b.answer) allCorrect = false; });
+    if (allCorrect) { this.state.score.streak++; this.state.score.correct++; } else { this.state.score.streak = 0; this.state.score.wrong++; }
     this.renderAll(allCorrect);
   },
 
-  revealAnswers() {
-    this.state.isAnswerRevealed = true;
-    this.renderEquation();
-    this.renderResultBanner(false);
-  },
+  revealAnswers() { this.state.isAnswerRevealed = true; this.renderEquation(); this.renderResultBanner(false); },
 
-  // --- RENDERING ---
   renderAll(isCorrect = null) {
-    this.renderScore();
-    this.renderQuestionHeader();
-    this.renderEquation();
-    this.renderKeyboard();
-    if (isCorrect !== null) {
-      this.renderResultBanner(isCorrect);
-    } else {
-      this.$.resultBanner.className = 'result-banner';
-    }
+    this.renderScore(); this.renderQuestionHeader(); this.renderEquation(); this.renderKeyboard();
+    if (isCorrect !== null) this.renderResultBanner(isCorrect); else this.$.resultBanner.className = 'result-banner';
   },
 
   renderScore() {
     const { streak, correct, wrong } = this.state.score;
-    const bump = (el) => {
-      el.classList.add('bump');
-      setTimeout(() => el.classList.remove('bump'), 200);
-    };
-
-    if (this.$.streakCount.textContent !== streak.toString()) {
-      this.$.streakCount.textContent = streak;
-      bump(this.$.streakCount);
-    }
-    if (this.$.totalCorrect.textContent !== correct.toString()) {
-      this.$.totalCorrect.textContent = correct;
-      bump(this.$.totalCorrect);
-    }
-    if (this.$.totalWrong.textContent !== wrong.toString()) {
-      this.$.totalWrong.textContent = wrong;
-      bump(this.$.totalWrong);
-    }
-
-    if (streak >= 10) this.$.streakFlames.textContent = '🔥🔥🔥';
-    else if (streak >= 5) this.$.streakFlames.textContent = '🔥🔥';
-    else if (streak >= 3) this.$.streakFlames.textContent = '🔥';
-    else this.$.streakFlames.textContent = '';
+    const bump = (el) => { el.classList.add('bump'); setTimeout(() => el.classList.remove('bump'), 200); };
+    if (this.$.streakCount.textContent !== streak.toString()) { this.$.streakCount.textContent = streak; bump(this.$.streakCount); }
+    if (this.$.totalCorrect.textContent !== correct.toString()) { this.$.totalCorrect.textContent = correct; bump(this.$.totalCorrect); }
+    if (this.$.totalWrong.textContent !== wrong.toString()) { this.$.totalWrong.textContent = wrong; bump(this.$.totalWrong); }
+    if (streak >= 10) this.$.streakFlames.textContent = '🔥🔥🔥'; else if (streak >= 5) this.$.streakFlames.textContent = '🔥🔥'; else if (streak >= 3) this.$.streakFlames.textContent = '🔥'; else this.$.streakFlames.textContent = '';
   },
 
-  renderQuestionHeader() {
-    const q = this.state.currentQuestion;
-    if (!q) return;
-    this.$.qLabel.textContent = `MODE ${this.state.currentMode} · ${q.type}`;
-    this.$.qSubLabel.textContent = q.name;
-  },
+  renderQuestionHeader() { const q = this.state.currentQuestion; if (!q) return; this.$.qLabel.textContent = `MODE ${this.state.currentMode} · ${q.type}`; this.$.qSubLabel.textContent = q.name; },
 
   renderEquation() {
-    const q = this.state.currentQuestion;
-    if (!q) {
-      this.$.equationDisplay.innerHTML = '';
-      return;
-    }
-
-    if (this.state.currentMode === 4) {
-      this.$.equationDisplay.innerHTML = this.renderMode4Equation();
-    } else {
-      this.$.equationDisplay.innerHTML = this.renderModes123Equation();
-    }
+    const q = this.state.currentQuestion; if (!q) { this.$.equationDisplay.innerHTML = ''; return; }
+    if (this.state.currentMode === 4) this.$.equationDisplay.innerHTML = this.renderMode4Equation(); else this.$.equationDisplay.innerHTML = this.renderModes123Equation();
   },
 
   renderModes123Equation() {
     const q = this.state.currentQuestion;
     const formatChemical = (chemList, keyPrefix) => {
       return chemList.map((c, i) => {
-        const key = `${keyPrefix}${i}`;
-        let content;
+        const key = `${keyPrefix}${i}`; let content;
         if (c.isBlank) {
-          const blankData = q.blanks.find(b => b.key === key);
-          content = this.renderBlankBox(key, blankData.answer);
+          const blankData = q.blanks.find(b => b.key === key); content = this.renderBlankBox(key, blankData.answer);
         } else {
-          // Mode 1 (isAbstract) 일 때 빈칸이 아닌 계수는 q.answers에서 가져와서 출력
           let coefStr = '';
-          if (q.isAbstract) {
-             coefStr = q.answers[key] > 1 || q.answers[key] == 1 ? `<span class="eq-text">${q.answers[key]}</span>` : '';
-          } else {
-             coefStr = c.coef > 1 ? `<span class="eq-text">${c.coef}</span>` : '';
-          }
+          if (q.isAbstract) coefStr = q.answers[key] > 1 || q.answers[key] == 1 ? `<span class="eq-text">${q.answers[key]}</span>` : '';
+          else coefStr = c.coef > 1 ? `<span class="eq-text">${c.coef}</span>` : '';
           content = coefStr + this.formatFormula(c.formula);
         }
         return (i > 0 ? '<span class="eq-plus">+</span>' : '') + content;
       }).join(' ');
     };
-    const reactantsHtml = formatChemical(q.displayReactants, 'R');
-    const productsHtml = formatChemical(q.displayProducts, 'P');
-    return `${reactantsHtml} <span class="eq-arrow">→</span> ${productsHtml}`;
+    return `${formatChemical(q.displayReactants, 'R')} <span class="eq-arrow">→</span> ${formatChemical(q.displayProducts, 'P')}`;
   },
 
   renderMode4Equation() {
     const q = this.state.currentQuestion;
     const renderSide = (chems, side) => {
       return chems.map((chem, cIdx) => {
-        let html = '';
-        const coefId = `${side}${cIdx}_coef`;
-        if (q.blankTokenIds.has(coefId)) {
-          html += this.renderBlankBox(coefId, q.blanks.find(b => b.key === coefId).answer);
-        } else if (chem.coef > 1) {
-          html += `<span class="eq-text">${chem.coef}</span>`;
-        }
-
+        let html = ''; const coefId = `${side}${cIdx}_coef`;
+        if (q.blankTokenIds.has(coefId)) html += this.renderBlankBox(coefId, q.blanks.find(b => b.key === coefId).answer); else if (chem.coef > 1) html += `<span class="eq-text">${chem.coef}</span>`;
         chem.formula.forEach((part, pIdx) => {
-          const symId = `${side}${cIdx}_sym${pIdx}`;
-          const subId = `${side}${cIdx}_sub${pIdx}`;
-          if (q.blankTokenIds.has(symId)) {
-            html += this.renderBlankBox(symId, q.blanks.find(b => b.key === symId).answer);
-          } else {
-            html += `<span class="eq-text">${part.sym}</span>`;
-          }
-          if (q.blankTokenIds.has(subId)) {
-            html += this.renderBlankBox(subId, q.blanks.find(b => b.key === subId).answer);
-          } else if (part.sub) {
-            html += `<sub>${part.sub}</sub>`;
-          }
-        });
-        return html;
+          const symId = `${side}${cIdx}_sym${pIdx}`; const subId = `${side}${cIdx}_sub${pIdx}`;
+          if (q.blankTokenIds.has(symId)) html += this.renderBlankBox(symId, q.blanks.find(b => b.key === symId).answer); else html += `<span class="eq-text">${part.sym}</span>`;
+          if (q.blankTokenIds.has(subId)) html += this.renderBlankBox(subId, q.blanks.find(b => b.key === subId).answer); else if (part.sub) html += `<sub>${part.sub}</sub>`;
+        }); return html;
       }).join(' <span class="eq-plus">+</span> ');
     };
-
-    const reactantsHtml = renderSide(q.reaction.reactants, 'R');
-    const productsHtml = renderSide(q.reaction.products, 'P');
-    return `${reactantsHtml} <span class="eq-arrow">→</span> ${productsHtml}`;
+    return `${renderSide(q.reaction.reactants, 'R')} <span class="eq-arrow">→</span> ${renderSide(q.reaction.products, 'P')}`;
   },
 
   renderBlankBox(key, answer) {
-    const q = this.state.currentQuestion;
-    const input = q.inputs[key] || '';
-    let classes = 'blank-box';
+    const q = this.state.currentQuestion; const input = q.inputs[key] || ''; let classes = 'blank-box';
     if (q.activeKey === key && !this.state.isAnswerChecked) classes += ' active';
-
     let displayContent = this.formatInput(input);
-
     if (this.state.isAnswerChecked) {
-      const isCorrect = input === answer;
-      classes += isCorrect ? ' correct' : ' wrong';
-      if (this.state.isAnswerRevealed && !isCorrect) {
-        displayContent = this.formatInput(answer);
-      }
+      const isCorrect = input === answer; classes += isCorrect ? ' correct' : ' wrong';
+      if (this.state.isAnswerRevealed && !isCorrect) displayContent = this.formatInput(answer);
     }
-
     if (input === '' && !this.state.isAnswerChecked) classes += ' placeholder';
-
     return `<span class="${classes}" data-key="${key}">${displayContent}</span>`;
   },
 
   renderResultBanner(isCorrect) {
-    if (isCorrect) {
-      this.$.resultBanner.className = 'result-banner correct-banner show';
-      this.$.resultBanner.innerHTML = `✅ 정답입니다! 연속 ${this.state.score.streak}회 성공!`;
+    if (isCorrect) { this.$.resultBanner.className = 'result-banner correct-banner show'; this.$.resultBanner.innerHTML = `✅ 정답입니다! 연속 ${this.state.score.streak}회 성공!`;
     } else {
       this.$.resultBanner.className = 'result-banner wrong-banner show';
-      if (this.state.isAnswerRevealed) {
-        const answerHtml = this.state.currentQuestion.blanks.map(b => `<strong>${this.formatInput(b.answer)}</strong>`).join(', ');
-        this.$.resultBanner.innerHTML = `❌ 오답입니다. 정답: ${answerHtml}`;
-      } else {
-        this.$.resultBanner.innerHTML = `❌ 오답입니다. <button class="show-answer-btn">답 보기</button>`;
-      }
+      if (this.state.isAnswerRevealed) { const answerHtml = this.state.currentQuestion.blanks.map(b => `<strong>${this.formatInput(b.answer)}</strong>`).join(', '); this.$.resultBanner.innerHTML = `❌ 오답입니다. 정답: ${answerHtml}`;
+      } else { this.$.resultBanner.innerHTML = `❌ 오답입니다. <button class="show-answer-btn">답 보기</button>`; }
     }
   },
 
-  renderKeyboard() {
-    const isChecked = this.state.isAnswerChecked;
-    this.$.confirmBtn.style.display = isChecked ? 'none' : 'flex';
-    this.$.nextBtn.style.display = isChecked ? 'flex' : 'none';
-  },
+  renderKeyboard() { const isChecked = this.state.isAnswerChecked; this.$.confirmBtn.style.display = isChecked ? 'none' : 'flex'; this.$.nextBtn.style.display = isChecked ? 'flex' : 'none'; },
 
-  // --- UTILITIES ---
-  formatFormula(formula) {
-    return formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join('');
-  },
-
-  formatInput(str) {
-    if (!str) return '';
-    return str.replace(/([A-Z][a-z]?)(\d+)/g, '$1<sub>$2</sub>');
-  },
-
-  toggleTheme() {
-    this.state.isDarkMode = !this.state.isDarkMode;
-    document.body.classList.toggle('light', !this.state.isDarkMode);
-    document.getElementById('themeBtn').textContent = this.state.isDarkMode ? '🌙' : '☀️';
-  },
-
-  showModal(show) {
-    this.$.modalOverlay.classList.toggle('show', show);
-  },
+  formatFormula(formula) { return formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join(''); },
+  formatInput(str) { if (!str) return ''; return str.replace(/([A-Z][a-z]?)(\d+)/g, '$1<sub>$2</sub>'); },
+  toggleTheme() { this.state.isDarkMode = !this.state.isDarkMode; document.body.classList.toggle('light', !this.state.isDarkMode); document.getElementById('themeBtn').textContent = this.state.isDarkMode ? '🌙' : '☀️'; },
+  showModal(show) { this.$.modalOverlay.classList.toggle('show', show); },
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
-</script>
-
-<script>
-(function() {
-  const oldBtn = document.getElementById('easterEggBtn');
-  if(oldBtn) oldBtn.style.display = 'none';
-
-  const eggBtn = document.createElement('div');
-  eggBtn.innerHTML = '누루ズl ㅁトパㅔ요';
-  Object.assign(eggBtn.style, {
-    position: 'fixed',
-    top: '20px',
-    left: '20px',
-    color: '#ef4444', 
-    fontWeight: '900',
-    fontSize: '15px',
-    cursor: 'pointer',
-    zIndex: '99999', 
-    userSelect: 'none',
-    padding: '15px', 
-    letterSpacing: '1px'
-  });
-  document.body.appendChild(eggBtn);
-
-  const style = document.createElement('style');
-  style.innerHTML = `
-    .egg-particle {
-      position: fixed; pointer-events: none; z-index: 999999; font-size: 24px;
-      animation: egg-pop 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-    }
-    @keyframes egg-pop {
-      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
-      100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.5); opacity: 0; }
-    }
-  `;
-  document.head.appendChild(style);
-
-  const fireExplosion = (e) => {
-    e.preventDefault(); 
-    const touch = e.touches ? e.touches[0] : e;
-    const x = touch.clientX;
-    const y = touch.clientY;
-    const emojis = ['🎆', '🌟', '✨', '🎉'];
-
-    for(let i=0; i<35; i++) {
-      const p = document.createElement('div');
-      p.className = 'egg-particle';
-      p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-      p.style.left = x + 'px';
-      p.style.top = y + 'px';
-
-      const angle = Math.random() * Math.PI * 2;
-      const velocity = 60 + Math.random() * 100;
-      p.style.setProperty('--tx', Math.cos(angle) * velocity + 'px');
-      p.style.setProperty('--ty', Math.sin(angle) * velocity + 'px');
-
-      document.body.appendChild(p);
-      setTimeout(() => p.remove(), 800); 
-    }
-  };
-
-  eggBtn.addEventListener('mousedown', fireExplosion);
-  eggBtn.addEventListener('touchstart', fireExplosion, {passive: false});
-})();
 </script>
 </body>
 </html>
