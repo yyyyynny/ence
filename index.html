@@ -69,7 +69,6 @@
 
   header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 
-  /* 기존 로고 대신 텍스트로 변경된 부분 */
   .logo-egg {
     font-family: var(--font-ui);
     font-size: 16px;
@@ -253,7 +252,7 @@
 </div>
 
 <script>
-// --- 보안 잠금 로직 ---
+// --- 보안 잠금 로직 및 이스터에그 ---
 (function() {
   const overlay = document.getElementById('authOverlay');
   const input = document.getElementById('authInput');
@@ -261,17 +260,16 @@
   const error = document.getElementById('authError');
   const CORRECT_PASSWORD = "yyyyynny"; 
 
-  // 1. 스토리지 차단 에러 방어 (try-catch 적용)
+  // 로컬 스토리지 검사
   try {
     if(localStorage.getItem('chem_auth') === 'true') {
       overlay.style.display = 'none';
     }
   } catch(e) {
-    console.warn('스토리지 접근이 차단된 환경입니다.');
+    console.warn('스토리지 접근 제한');
   }
 
   const checkAuth = () => {
-    // 2. 모바일 오타 방어: 대소문자 통일 및 앞뒤 공백 강제 제거
     const typedPassword = input.value.trim().toLowerCase();
 
     if(typedPassword === CORRECT_PASSWORD.toLowerCase()) {
@@ -287,13 +285,14 @@
   btn.addEventListener('click', checkAuth);
   input.addEventListener('keypress', (e) => { if(e.key === 'Enter') checkAuth(); });
 
-  // --- 귀염뽀짝 이스터에그 로직 ---
+  // 귀염뽀짝 이스터에그 로직
   document.getElementById('easterEggBtn').addEventListener('click', (e) => {
     e.preventDefault();
     const x = e.clientX || (e.touches ? e.touches[0].clientX : window.innerWidth/2);
     const y = e.clientY || (e.touches ? e.touches[0].clientY : 50);
     const emojis = ['🎆', '🌟', '✨', '💖', '🎉', '🌸', '🐰'];
 
+    // 1. 버튼 주위 파티클
     for(let i=0; i<35; i++) {
       const p = document.createElement('div');
       p.className = 'egg-particle';
@@ -307,6 +306,7 @@
       setTimeout(() => p.remove(), 800);
     }
 
+    // 2. 전체 화면 플래시 효과
     const flash = document.createElement('div');
     Object.assign(flash.style, {
       position: 'fixed', inset: 0, zIndex: 9999998,
@@ -323,7 +323,7 @@
       flash.style.opacity = 0;
       setTimeout(() => flash.remove(), 500);
       
-      // 3. 권한 몰수 시 스토리지 에러 방어
+      // 권한 몰수 및 비번창 팝업
       try { localStorage.removeItem('chem_auth'); } catch(e) {}
       input.value = '';
       error.style.display = 'none';
@@ -332,7 +332,6 @@
     }, 1200);
   });
 })();
-</script>
 
 // --- 메인 앱 로직 ---
 const REACTIONS = [
