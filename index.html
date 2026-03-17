@@ -2,256 +2,496 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>화학반응식 수행</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>화학반응식 트레이너</title>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
   :root {
-    --bg: #0d0f14;
-    --surface: #161920;
-    --surface2: #1e2230;
-    --border: #2a2f42;
-    --accent: #00e5ff;
-    --accent2: #7c3aed;
-    --accent3: #f59e0b;
-    --text: #e8eaf6;
-    --text-dim: #8892b0;
-    --correct: #10b981;
-    --wrong: #ef4444;
-    --grid-color: rgba(0,229,255,0.04);
-  }
-  .light {
-    --bg: #f0f4ff;
-    --surface: #ffffff;
-    --surface2: #e8edf8;
-    --border: #c8d0e8;
-    --accent: #0284c7;
-    --accent2: #7c3aed;
-    --accent3: #d97706;
-    --text: #0f172a;
-    --text-dim: #4a5568;
-    --grid-color: rgba(2,132,199,0.05);
+    --c-bg: #10141E;
+    --c-surface-1: rgba(30, 35, 50, 0.6);
+    --c-surface-2: rgba(30, 35, 50, 0.8);
+    --c-border: rgba(136, 150, 191, 0.2);
+    --c-border-active: rgba(0, 229, 255, 0.5);
+    --c-text-primary: #F0F4FF;
+    --c-text-secondary: #8896B0;
+    --c-accent-1: #00E5FF;
+    --c-accent-2: #7C3AED;
+    --c-accent-3: #F59E0B;
+    --c-correct: #10B981;
+    --c-wrong: #EF4444;
+    --c-shadow-1: rgba(0, 0, 0, 0.2);
+    --c-shadow-2: rgba(255, 255, 255, 0.1);
+    --font-ui: 'Noto Sans KR', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
   }
 
-  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  .light {
+    --c-bg: #F0F4FF;
+    --c-surface-1: rgba(255, 255, 255, 0.6);
+    --c-surface-2: rgba(255, 255, 255, 0.8);
+    --c-border: rgba(45, 60, 100, 0.15);
+    --c-border-active: rgba(2, 132, 199, 0.5);
+    --c-text-primary: #0F172A;
+    --c-text-secondary: #4A5568;
+    --c-accent-1: #0284C7;
+    --c-accent-2: #7C3AED;
+    --c-accent-3: #D97706;
+    --c-correct: #059669;
+    --c-wrong: #DC2626;
+    --c-shadow-1: rgba(0, 0, 0, 0.1);
+    --c-shadow-2: rgba(255, 255, 255, 0.5);
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html {
+    background: var(--c-bg);
+  }
 
   body {
-    font-family: 'Noto Sans KR', sans-serif;
-    background: var(--bg);
-    color: var(--text);
+    font-family: var(--font-ui);
+    background: var(--c-bg);
+    color: var(--c-text-primary);
     min-height: 100vh;
+    min-height: 100dvh;
     transition: background 0.3s, color 0.3s;
     overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
   body::before {
-    content:'';
-    position:fixed;
-    inset:0;
+    content: '';
+    position: fixed;
+    inset: 0;
     background-image:
-      linear-gradient(var(--grid-color) 1px, transparent 1px),
-      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
-    background-size: 40px 40px;
-    pointer-events:none;
-    z-index:0;
+      radial-gradient(circle at 25% 25%, var(--c-accent-1), transparent 30%),
+      radial-gradient(circle at 75% 75%, var(--c-accent-2), transparent 30%);
+    opacity: 0.15;
+    filter: blur(100px);
+    pointer-events: none;
+    z-index: 0;
   }
 
   #app {
-    position:relative;
-    z-index:1;
-    max-width: 680px;
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
     margin: 0 auto;
     padding: 16px;
     display: flex;
     flex-direction: column;
     min-height: 100vh;
+    min-height: 100dvh;
   }
 
   header {
-    display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
   }
 
   .logo {
-    font-family: 'Space Mono', monospace; font-size: 13px; color: var(--accent); letter-spacing: 2px; text-transform: uppercase;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--c-accent-1);
+    letter-spacing: 1px;
+    text-transform: uppercase;
   }
 
-  .header-right { display: flex; gap: 8px; align-items: center; }
+  .header-right {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
 
   .icon-btn {
-    background: var(--surface); border: 1px solid var(--border); color: var(--text-dim);
-    width: 36px; height: 36px; border-radius: 8px; cursor: pointer; font-size: 16px;
-    display: flex; align-items: center; justify-content: center; transition: all 0.2s;
+    background: var(--c-surface-1);
+    border: 1px solid var(--c-border);
+    color: var(--c-text-secondary);
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    backdrop-filter: blur(10px);
   }
-  .icon-btn:hover { border-color: var(--accent); color: var(--accent); }
+  .icon-btn:hover {
+    border-color: var(--c-border-active);
+    color: var(--c-accent-1);
+  }
 
-  .streak-bar {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
-    padding: 10px 16px; display: flex; align-items: center; gap: 12px; margin-bottom: 14px;
+  .stat-bar {
+    background: var(--c-surface-1);
+    border: 1px solid var(--c-border);
+    border-radius: 16px;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+    backdrop-filter: blur(10px);
   }
-  .streak-label {
-    font-size: 11px; color: var(--text-dim); text-transform: uppercase;
-    letter-spacing: 1px; font-family: 'Space Mono', monospace;
-  }
-  .streak-count {
-    font-family: 'Space Mono', monospace; font-size: 22px; font-weight: 700;
-    color: var(--accent3); line-height: 1; transition: transform 0.15s;
-  }
-  .streak-count.bump { transform: scale(1.4); }
-  .streak-flames { font-size: 18px; }
+  .stat-item { display: flex; align-items: center; gap: 8px; }
+  .stat-label { font-size: 11px; color: var(--c-text-secondary); text-transform: uppercase; letter-spacing: 1px; font-family: var(--font-mono); }
+  .stat-value { font-family: var(--font-mono); font-size: 24px; font-weight: 700; line-height: 1; transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+  .stat-value.bump { transform: scale(1.4); }
+  #streakCount { color: var(--c-accent-3); }
+  #totalCorrect { color: var(--c-correct); }
+  #totalWrong { color: var(--c-wrong); }
+  .streak-flames { font-size: 20px; }
 
   .mode-tabs {
-    display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 6px; margin-bottom: 14px;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
   }
   .mode-tab {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
-    color: var(--text-dim); padding: 10px 6px; font-size: 12px; font-weight: 700;
-    cursor: pointer; transition: all 0.2s; text-align: center; line-height: 1.3;
+    background: var(--c-surface-1);
+    border: 1px solid var(--c-border);
+    border-radius: 12px;
+    color: var(--c-text-secondary);
+    padding: 12px 8px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-align: center;
+    line-height: 1.4;
+    backdrop-filter: blur(10px);
   }
-  .mode-tab.active { background: var(--accent); border-color: var(--accent); color: #000; }
-  .mode-tab .tab-icon { font-size: 16px; display: block; margin-bottom: 3px; }
+  .mode-tab.active {
+    background: var(--c-accent-1);
+    border-color: var(--c-accent-1);
+    color: var(--c-bg);
+    box-shadow: 0 4px 20px -5px var(--c-accent-1);
+  }
+  .mode-tab .tab-icon {
+    font-size: 20px;
+    display: block;
+    margin-bottom: 4px;
+  }
 
   .question-card {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-    padding: 20px; margin-bottom: 12px; min-height: 140px; display: flex;
-    flex-direction: column; gap: 12px; position: relative; overflow: hidden;
-  }
-  .question-card::before {
-    content:''; position:absolute; top:-40px; right:-40px; width:120px; height:120px;
-    border-radius:50%; background: radial-gradient(circle, var(--accent)18, transparent 70%);
-    opacity:0.3; pointer-events:none;
+    background: var(--c-surface-1);
+    border: 1px solid var(--c-border);
+    border-radius: 20px;
+    padding: 24px;
+    margin-bottom: 16px;
+    min-height: 160px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    backdrop-filter: blur(10px);
+    flex-grow: 1;
   }
 
   .q-label {
-    font-size: 11px; color: var(--accent); font-family: 'Space Mono', monospace;
-    letter-spacing: 1px; text-transform: uppercase;
+    font-size: 12px;
+    color: var(--c-accent-1);
+    font-family: var(--font-mono);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .q-sublabel {
+    font-size: 14px;
+    color: var(--c-text-secondary);
+    font-weight: 500;
   }
 
   .equation-display {
-    font-family: 'Space Mono', monospace; font-size: clamp(15px, 4vw, 20px);
-    display: flex; flex-wrap: wrap; align-items: center; gap: 6px; line-height: 1.8;
+    font-family: var(--font-mono);
+    font-size: clamp(16px, 4.5vw, 24px);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    line-height: 2;
+    margin: auto 0;
   }
 
   .blank-box {
-    display: inline-block; min-width: 60px; height: 38px; border: 2px solid var(--border);
-    border-radius: 8px; background: var(--surface2); text-align: center; line-height: 34px;
-    cursor: pointer; transition: all 0.2s; font-size: 16px; font-weight: 700;
-    color: var(--accent); padding: 0 10px; vertical-align: middle; font-family: 'Space Mono', monospace;
+    display: inline-block;
+    min-width: 70px;
+    height: 48px;
+    border: 2px solid var(--c-border);
+    border-radius: 10px;
+    background: var(--c-surface-2);
+    text-align: center;
+    line-height: 44px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 1em;
+    font-weight: 700;
+    color: var(--c-text-primary);
+    padding: 0 12px;
+    vertical-align: middle;
+    font-family: var(--font-mono);
   }
-  .blank-box.active { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,229,255,0.2); }
-  .blank-box.correct { border-color: var(--correct); background: rgba(16,185,129,0.12); color: var(--correct); box-shadow: 0 0 0 3px rgba(16,185,129,0.2); }
-  .blank-box.wrong { border-color: var(--wrong); background: rgba(239,68,68,0.12); color: var(--wrong); box-shadow: 0 0 0 3px rgba(239,68,68,0.2); animation: shake 0.4s; }
-  
-  @keyframes shake {
-    0%,100%{transform:translateX(0)} 20%{transform:translateX(-6px)}
-    40%{transform:translateX(6px)} 60%{transform:translateX(-4px)} 80%{transform:translateX(4px)}
+  .blank-box.active {
+    border-color: var(--c-border-active);
+    box-shadow: 0 0 0 4px rgba(0, 229, 255, 0.2);
+  }
+  .blank-box.correct {
+    border-color: var(--c-correct);
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--c-correct);
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+  }
+  .blank-box.wrong {
+    border-color: var(--c-wrong);
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--c-wrong);
+    box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.2);
+    animation: shake 0.4s;
+  }
+  .blank-box.placeholder::before {
+    content: '?';
+    color: var(--c-text-secondary);
+    opacity: 0.5;
   }
 
-  .eq-text { color: var(--text); }
-  .eq-arrow { color: var(--accent3); font-size: 18px; }
-  .eq-plus { color: var(--text-dim); }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-8px); }
+    40% { transform: translateX(8px); }
+    60% { transform: translateX(-5px); }
+    80% { transform: translateX(5px); }
+  }
+
+  .eq-text { color: var(--c-text-primary); }
+  .eq-arrow { color: var(--c-accent-3); font-size: 1.2em; }
+  .eq-plus { color: var(--c-text-secondary); }
   sub { font-size: 0.65em; line-height: 0; vertical-align: sub; }
 
   .result-banner {
-    border-radius: 10px; padding: 10px 14px; font-size: 13px; font-weight: 700;
-    display: none; align-items: center; gap: 8px;
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 700;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    margin-top: auto;
   }
   .result-banner.show { display: flex; }
-  .result-banner.correct-banner { background: rgba(16,185,129,0.15); color: var(--correct); border: 1px solid var(--correct); }
-  .result-banner.wrong-banner { background: rgba(239,68,68,0.15); color: var(--wrong); border: 1px solid var(--wrong); }
+  .result-banner.correct-banner { background: rgba(16, 185, 129, 0.2); color: var(--c-correct); border: 1px solid var(--c-correct); }
+  .result-banner.wrong-banner { background: rgba(239, 68, 68, 0.2); color: var(--c-wrong); border: 1px solid var(--c-wrong); }
 
   .keyboard-wrap {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
-    padding: 14px; margin-bottom: 10px;
+    background: var(--c-surface-1);
+    border: 1px solid var(--c-border);
+    border-radius: 20px;
+    padding: 16px;
+    backdrop-filter: blur(10px);
   }
 
   .kb-section-label {
-    font-size: 10px; color: var(--text-dim); font-family: 'Space Mono', monospace;
-    letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px;
+    font-size: 10px;
+    color: var(--c-text-secondary);
+    font-family: var(--font-mono);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding: 0 4px;
   }
 
-  .kb-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .kb-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .kb-row:last-child { margin-bottom: 0; }
 
   .kb-key {
-    background: var(--surface2); border: 1px solid var(--border); border-radius: 8px;
-    color: var(--text); font-family: 'Space Mono', monospace; font-size: 14px; font-weight: 700;
-    padding: 10px 12px; min-width: 40px; text-align: center; cursor: pointer;
-    user-select: none; transition: all 0.1s; flex: 0 0 auto;
+    background: var(--c-surface-2);
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    color: var(--c-text-primary);
+    font-family: var(--font-mono);
+    font-size: 16px;
+    font-weight: 700;
+    min-height: 48px;
+    min-width: 44px;
+    text-align: center;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.1s;
+    flex: 1 1 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
-  .kb-key:active, .kb-key.pressed { transform: scale(0.92); background: var(--border); }
+  .kb-key:active, .kb-key.pressed {
+    transform: scale(0.95);
+    background: var(--c-border);
+  }
 
-  .kb-key.num { color: var(--accent3); }
-  .kb-key.elem { color: var(--accent); }
-  .kb-key.del { background: rgba(239,68,68,0.15); border-color: var(--wrong); color: var(--wrong); flex:1; }
-  .kb-key.confirm { background: var(--correct); border-color: var(--correct); color: #000; font-weight: 900; flex:2; }
-  .kb-key.next-q { background: var(--accent2); border-color: var(--accent2); color: #fff; font-weight: 900; flex:2; }
+  .kb-key.num { color: var(--c-accent-3); }
+  .kb-key.elem { color: var(--c-accent-1); }
+  .kb-key.del { background: rgba(239, 68, 68, 0.2); border-color: var(--c-wrong); color: var(--c-wrong); flex-grow: 2; }
+  .kb-key.confirm { background: var(--c-correct); border-color: var(--c-correct); color: #000; font-weight: 900; flex-grow: 3; }
+  .kb-key.next-q { background: var(--c-accent-2); border-color: var(--c-accent-2); color: #fff; font-weight: 900; flex-grow: 3; }
 
   .modal-overlay {
-    display: none; position: fixed; inset:0; background: rgba(0,0,0,0.7);
-    z-index: 100; backdrop-filter: blur(4px); align-items: center; justify-content: center; padding: 16px;
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.7);
+    z-index: 100;
+    backdrop-filter: blur(8px);
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    opacity: 0;
+    transition: opacity 0.3s;
   }
-  .modal-overlay.show { display: flex; }
-
+  .modal-overlay.show {
+    display: flex;
+    opacity: 1;
+  }
   .modal-box {
-    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
-    width: 100%; max-width: 600px; max-height: 85vh; overflow-y: auto; padding: 20px;
+    background: var(--c-surface-1);
+    border: 1px solid var(--c-border);
+    border-radius: 20px;
+    width: 100%;
+    max-width: 600px;
+    max-height: 85vh;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    transform: scale(0.95);
+    transition: transform 0.3s;
   }
-  .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-  .modal-title { font-size: 16px; font-weight: 900; color: var(--accent); font-family: 'Space Mono', monospace; }
-  .modal-close { background: none; border: none; color: var(--text-dim); font-size: 24px; cursor: pointer; line-height: 1; }
+  .modal-overlay.show .modal-box {
+      transform: scale(1);
+  }
+  .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-shrink: 0;
+  }
+  .modal-title {
+    font-size: 18px;
+    font-weight: 900;
+    color: var(--c-accent-1);
+    font-family: var(--font-mono);
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--c-text-secondary);
+    font-size: 28px;
+    cursor: pointer;
+    line-height: 1;
+    width: 44px;
+    height: 44px;
+  }
+  .modal-content {
+    overflow-y: auto;
+  }
+  .reaction-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+  .reaction-item {
+    background: var(--c-surface-2);
+    border: 1px solid var(--c-border);
+    border-radius: 12px;
+    padding: 12px 16px;
+    font-family: var(--font-mono);
+    font-size: 14px;
+  }
+  .reaction-num {
+    font-size: 10px;
+    color: var(--c-text-secondary);
+    margin-bottom: 6px;
+  }
+  .reaction-name {
+    font-size: 13px;
+    color: var(--c-accent-3);
+    font-family: var(--font-ui);
+    margin-bottom: 6px;
+    font-weight: 500;
+  }
+  .reaction-eq {
+    color: var(--c-text-primary);
+  }
 
-  .reaction-list { display: flex; flex-direction: column; gap: 8px; }
-  .reaction-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; font-family: 'Space Mono', monospace; font-size: 13px; }
-  .reaction-num { font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
-  .reaction-name { font-size: 11px; color: var(--accent3); font-family: 'Noto Sans KR', sans-serif; margin-bottom: 4px; }
-  .reaction-eq { color: var(--text); }
-
-  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar { width: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb { background: var(--c-border); border-radius: 4px; }
 </style>
 </head>
 <body>
 <div id="app">
   <header>
-    <div class="logo">⚗ ChemTrainer</div>
+    <div class="logo">⚗️ ChemTrainer</div>
     <div class="header-right">
       <button class="icon-btn" id="hintBtn" title="전체 반응식 보기">📋</button>
-      <button class="icon-btn" id="darkBtn" title="다크/라이트 모드">🌙</button>
+      <button class="icon-btn" id="themeBtn" title="다크/라이트 모드">🌙</button>
     </div>
   </header>
 
-  <div class="streak-bar">
-    <div class="streak-label">Streak</div>
-    <div class="streak-count" id="streakCount">0</div>
-    <div class="streak-flames" id="streakFlames"></div>
+  <div class="stat-bar">
+    <div class="stat-item">
+      <div class="stat-label">Streak</div>
+      <div class="stat-value" id="streakCount">0</div>
+      <div class="streak-flames" id="streakFlames"></div>
+    </div>
     <div style="flex:1"></div>
-    <div style="font-size:11px; color:var(--text-dim); font-family:'Space Mono',monospace;">
-      ✅ <span id="totalCorrect">0</span> &nbsp; ❌ <span id="totalWrong">0</span>
+    <div class="stat-item">
+      <div class="stat-label">Correct</div>
+      <div class="stat-value" id="totalCorrect">0</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-label">Wrong</div>
+      <div class="stat-value" id="totalWrong">0</div>
     </div>
   </div>
 
   <div class="mode-tabs">
-    <button class="mode-tab active" data-mode="1"><span class="tab-icon">🔢</span>계수 맞추기</button>
-    <button class="mode-tab" data-mode="2"><span class="tab-icon">⚗</span>화학반응식</button>
-    <button class="mode-tab" data-mode="3"><span class="tab-icon">🔀</span>혼합</button>
+    <button class="mode-tab" data-mode="1"><span class="tab-icon">🔢</span>계수 맞추기</button>
+    <button class="mode-tab" data-mode="2"><span class="tab-icon">⚗️</span>전체 반응식</button>
+    <button class="mode-tab" data-mode="3"><span class="tab-icon">🧪</span>생성물 맞추기</button>
   </div>
 
   <div class="question-card" id="questionCard">
-    <div class="q-label" id="qLabel">MODE 1 · LEVEL UP</div>
+    <div id="questionHeader">
+      <div class="q-label" id="qLabel"></div>
+      <div class="q-sublabel" id="qSubLabel"></div>
+    </div>
     <div class="equation-display" id="equationDisplay"></div>
     <div class="result-banner" id="resultBanner"></div>
   </div>
 
   <div class="keyboard-wrap">
-    <div class="kb-section-label">숫자</div>
+    <div class="kb-section-label">Numbers</div>
     <div class="kb-row" id="numRow"></div>
-    <div class="kb-section-label">원소 기호</div>
+    <div class="kb-section-label">Elements</div>
     <div class="kb-row" id="elemRow"></div>
     <div class="kb-row">
-      <button class="kb-key del" data-key="DEL">⌫ 지우기</button>
+      <button class="kb-key del" data-key="DEL">⌫</button>
       <button class="kb-key confirm" data-key="CONFIRM">✓ 확인</button>
-      <button class="kb-key next-q" data-key="NEXT">▶ 다음</button>
+      <button class="kb-key next-q" data-key="NEXT" style="display: none;">▶ 다음</button>
     </div>
   </div>
 </div>
@@ -262,7 +502,9 @@
       <div class="modal-title">📋 전체 반응식 목록</div>
       <button class="modal-close" id="modalClose">✕</button>
     </div>
-    <div class="reaction-list" id="reactionList"></div>
+    <div class="modal-content">
+      <div class="reaction-list" id="reactionList"></div>
+    </div>
   </div>
 </div>
 
@@ -281,319 +523,365 @@ const REACTIONS = [
   { name: "탄산수소나트륨 → 탄산나트륨 + 이산화탄소 + 물", reactants: [{coef:2,formula:[{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}]}], products: [{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]}, {coef:1,formula:[{sym:"CO",sub:2}]}, {coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}] },
   { name: "프로페인 + 산소 → 이산화탄소 + 물", reactants: [{coef:1,formula:[{sym:"C",sub:3},{sym:"H",sub:8}]}, {coef:5,formula:[{sym:"O",sub:2}]}], products: [{coef:3,formula:[{sym:"CO",sub:2}]}, {coef:4,formula:[{sym:"H",sub:2},{sym:"O"}]}] },
   { name: "뷰테인 + 산소 → 이산화탄소 + 물", reactants: [{coef:2,formula:[{sym:"C",sub:4},{sym:"H",sub:10}]}, {coef:13,formula:[{sym:"O",sub:2}]}], products: [{coef:8,formula:[{sym:"CO",sub:2}]}, {coef:10,formula:[{sym:"H",sub:2},{sym:"O"}]}] },
-  { name: "마그네슘 + 염화수소 → 염화마그네슘 + 수소", reactants: [{coef:1,formula:[{sym:"Mg"}]}, {coef:2,formula:[{sym:"H"},{sym:"Cl"}]}], products: [{coef:1,formula:[{sym:"Mg"},{sym:"Cl",sub:2}]}, {coef:1,formula:[{sym:"H",sub:2}]}] },
-  { name: "탄산칼슘 + 염화수소 → 염화칼슘 + 물 + 이산화탄소", reactants: [{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]}, {coef:2,formula:[{sym:"H"},{sym:"Cl"}]}], products: [{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]}, {coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}, {coef:1,formula:[{sym:"CO",sub:2}]}] },
+  { name: "마그네슘 + 염산 → 염화마그네슘 + 수소", reactants: [{coef:1,formula:[{sym:"Mg"}]}, {coef:2,formula:[{sym:"H"},{sym:"Cl"}]}], products: [{coef:1,formula:[{sym:"Mg"},{sym:"Cl",sub:2}]}, {coef:1,formula:[{sym:"H",sub:2}]}] },
+  { name: "탄산칼슘 + 염산 → 염화칼슘 + 물 + 이산화탄소", reactants: [{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]}, {coef:2,formula:[{sym:"H"},{sym:"Cl"}]}], products: [{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]}, {coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}, {coef:1,formula:[{sym:"CO",sub:2}]}] },
   { name: "염화나트륨 + 질산은 → 질산나트륨 + 염화은", reactants: [{coef:1,formula:[{sym:"Na"},{sym:"Cl"}]}, {coef:1,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}], products: [{coef:1,formula:[{sym:"Na"},{sym:"NO",sub:3}]}, {coef:1,formula:[{sym:"Ag"},{sym:"Cl"}]}] }
 ];
 
-const COEF_TEMPLATES = [
-  { label: "A₂ + B₂ → AB₄", gen: () => { const k=ri(1,3); return {a:k,b:2*k,c:k, fmt:[ {coef:k,parts:[{sym:"A",sub:2}]}, {coef:2*k,parts:[{sym:"B",sub:2}]} ], fmtP:[ {coef:k,parts:[{sym:"A"},{sym:"B",sub:4}]} ]}; } },
-  { label: "A₃ + B₂ → A₆B", gen: () => { const k=ri(1,2); const c=2*k,a=4*k,b=k; return {a,b,c, fmt:[ {coef:a,parts:[{sym:"A",sub:3}]}, {coef:b,parts:[{sym:"B",sub:2}]} ], fmtP:[ {coef:c,parts:[{sym:"A",sub:6},{sym:"B"}]} ]}; } },
-  { label: "A₂ + B₃ → A₂B", gen: () => { const k=ri(1,2); const c=3*k,a=3*k,b=k; return {a,b,c, fmt:[ {coef:a,parts:[{sym:"A",sub:2}]}, {coef:b,parts:[{sym:"B",sub:3}]} ], fmtP:[ {coef:c,parts:[{sym:"A",sub:2},{sym:"B"}]} ]}; } },
-  { label: "A + B₃ → A₃B", gen: () => { const m=ri(1,2); const c=3*m,a=9*m,b=m; return {a,b,c, fmt:[ {coef:a,parts:[{sym:"A"}]}, {coef:b,parts:[{sym:"B",sub:3}]} ], fmtP:[ {coef:c,parts:[{sym:"A",sub:3},{sym:"B"}]} ]}; } },
-  { label: "A₃ + B → AB₂", gen: () => { const m=ri(1,2); const a=m,c=3*m,b=6*m; return {a,b,c, fmt:[ {coef:a,parts:[{sym:"A",sub:3}]}, {coef:b,parts:[{sym:"B"}]} ], fmtP:[ {coef:c,parts:[{sym:"A"},{sym:"B",sub:2}]} ]}; } },
-  { label: "A₂ + B → AB₃", gen: () => { const m=ri(1,2); const a=m,b=6*m,c=2*m; return {a,b,c, fmt:[ {coef:a,parts:[{sym:"A",sub:2}]}, {coef:b,parts:[{sym:"B"}]} ], fmtP:[ {coef:c,parts:[{sym:"A"},{sym:"B",sub:3}]} ]}; } },
-  { label: "A + B₂ → A₂B₃", gen: () => { const k=ri(1,2); const c=2*k,a=4*k,b=3*k; return {a,b,c, fmt:[ {coef:a,parts:[{sym:"A"}]}, {coef:b,parts:[{sym:"B",sub:2}]} ], fmtP:[ {coef:c,parts:[{sym:"A",sub:2},{sym:"B",sub:3}]} ]}; } },
-];
+const ELEMENTS = ['H', 'C', 'O', 'N', 'Na', 'Mg', 'Cu', 'Cl', 'Ag', 'Ca'];
 
-function ri(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+const App = {
+  // --- STATE ---
+  state: {
+    currentMode: 1,
+    score: {
+      streak: 0,
+      correct: 0,
+      wrong: 0,
+    },
+    currentQuestion: null,
+    isAnswerChecked: false,
+    isDarkMode: true,
+  },
 
-function renderFormulaHTML(parts) {
-  return parts.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join('');
-}
+  // --- DOM ELEMENTS ---
+  $: {
+    app: document.getElementById('app'),
+    streakCount: document.getElementById('streakCount'),
+    streakFlames: document.getElementById('streakFlames'),
+    totalCorrect: document.getElementById('totalCorrect'),
+    totalWrong: document.getElementById('totalWrong'),
+    modeTabs: document.querySelector('.mode-tabs'),
+    qLabel: document.getElementById('qLabel'),
+    qSubLabel: document.getElementById('qSubLabel'),
+    equationDisplay: document.getElementById('equationDisplay'),
+    resultBanner: document.getElementById('resultBanner'),
+    numRow: document.getElementById('numRow'),
+    elemRow: document.getElementById('elemRow'),
+    confirmBtn: document.querySelector('.kb-key.confirm'),
+    nextBtn: document.querySelector('.kb-key.next-q'),
+    modalOverlay: document.getElementById('modalOverlay'),
+    reactionList: document.getElementById('reactionList'),
+  },
 
-function renderInputVal(val) {
-  return val.replace(/([a-zA-Z]+)(\d+)/g, (match, chars, nums) => chars + '<sub>' + nums + '</sub>');
-}
+  // --- INITIALIZATION ---
+  init() {
+    this.buildKeyboard();
+    this.buildModalList();
+    this.attachEventListeners();
+    this.setMode(1);
+  },
 
-const ELEMENTS = ['H','C','O','N','Na','Mg','Cu','Cl','Ag','Ca','A','B'];
+  // --- UI BUILDING ---
+  buildKeyboard() {
+    this.$.numRow.innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
+      .map(n => `<button class="kb-key num" data-key="NUM_${n}">${n}</button>`)
+      .join('');
+    this.$.elemRow.innerHTML = ELEMENTS
+      .map(e => `<button class="kb-key elem" data-key="ELEM_${e}">${e}</button>`)
+      .join('');
+  },
 
-let currentMode = 1;
-let streak = 0; let totalCorrect = 0; let totalWrong = 0; let isDark = true;
-let currentQuestion = null; 
+  buildModalList() {
+    this.$.reactionList.innerHTML = REACTIONS.map((rx, i) => {
+      const formatSide = (side) => side.map(r => 
+        (r.coef > 1 ? r.coef : '') + r.formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join('')
+      ).join(' + ');
+      const eqStr = `${formatSide(rx.reactants)} <span class="eq-arrow">→</span> ${formatSide(rx.products)}`;
+      return `
+        <div class="reaction-item">
+          <div class="reaction-num">#${i + 1}</div>
+          <div class="reaction-name">${rx.name}</div>
+          <div class="reaction-eq">${eqStr}</div>
+        </div>`;
+    }).join('');
+  },
 
-function buildKeyboard() {
-  const numRow = document.getElementById('numRow');
-  const elemRow = document.getElementById('elemRow');
-  
-  for(let i=1;i<=9;i++) {
-    const btn = document.createElement('button');
-    btn.className='kb-key num'; btn.dataset.key='NUM_'+i; btn.textContent=i; numRow.appendChild(btn);
-  }
-  const btn0=document.createElement('button');
-  btn0.className='kb-key num'; btn0.dataset.key='NUM_0'; btn0.textContent='0'; numRow.appendChild(btn0);
+  // --- EVENT HANDLING ---
+  attachEventListeners() {
+    // Event Delegation for dynamic elements
+    this.$.app.addEventListener('click', e => {
+      const modeTab = e.target.closest('.mode-tab');
+      const blankBox = e.target.closest('.blank-box');
+      const keyBtn = e.target.closest('.kb-key');
+      const themeBtn = e.target.closest('#themeBtn');
+      const hintBtn = e.target.closest('#hintBtn');
 
-  ELEMENTS.forEach(e=>{
-    const btn=document.createElement('button');
-    btn.className='kb-key elem'; btn.dataset.key='ELEM_'+e; btn.innerHTML=e; elemRow.appendChild(btn);
-  });
-}
+      if (modeTab) this.setMode(parseInt(modeTab.dataset.mode));
+      if (blankBox) this.setActiveBlank(blankBox.dataset.key);
+      if (keyBtn) this.handleKeyPress(keyBtn.dataset.key);
+      if (themeBtn) this.toggleTheme();
+      if (hintBtn) this.showModal(true);
+    });
 
-function generateQuestion() {
-  let type = currentMode === 3 ? (Math.random()<0.5 ? 'coef' : 'reaction') : (currentMode === 1 ? 'coef' : 'reaction');
+    // Modal closing events
+    this.$.modalOverlay.addEventListener('click', e => {
+      if (e.target === this.$.modalOverlay || e.target.closest('#modalClose')) {
+        this.showModal(false);
+      }
+    });
 
-  if(type === 'coef') {
-    const tmpl = COEF_TEMPLATES[Math.floor(Math.random()*COEF_TEMPLATES.length)];
-    const q = tmpl.gen();
-    const all3 = [ {key:'R0', answer: q.a}, {key:'R1', answer: q.b}, {key:'P0', answer: q.c} ];
-    const blanks = [...all3].sort(()=>Math.random()-0.5).slice(0, ri(1,2));
-    const blankArr = blanks.map(b=>({key: b.key, answer: b.answer.toString()}));
-    
-    currentQuestion = {
-      type:'coef', templateLabel: tmpl.label, q,
-      blanks: blankArr, inputs: {}, activeKey: blankArr[0].key, checked: false
+    // Physical keyboard events
+    document.addEventListener('keydown', e => {
+      if (this.$.modalOverlay.classList.contains('show')) return;
+      if (e.key >= '0' && e.key <= '9') this.handleKeyPress(`NUM_${e.key}`);
+      else if (e.key === 'Backspace') this.handleKeyPress('DEL');
+      else if (e.key === 'Enter') {
+        this.handleKeyPress(this.state.isAnswerChecked ? 'NEXT' : 'CONFIRM');
+      } else {
+        const key = e.key.charAt(0).toUpperCase() + e.key.slice(1);
+        if (ELEMENTS.includes(key)) this.handleKeyPress(`ELEM_${key}`);
+      }
+    });
+  },
+
+  handleKeyPress(key) {
+    if (key.startsWith('NUM_') || key.startsWith('ELEM_') || key === 'DEL') {
+      if (this.state.isAnswerChecked) return;
+      const q = this.state.currentQuestion;
+      if (!q || !q.activeKey) return;
+      
+      const input = q.inputs[q.activeKey] || '';
+      if (key.startsWith('NUM_')) {
+        q.inputs[q.activeKey] = input + key.replace('NUM_', '');
+      } else if (key.startsWith('ELEM_')) {
+        q.inputs[q.activeKey] = input + key.replace('ELEM_', '');
+      } else if (key === 'DEL') {
+        q.inputs[q.activeKey] = input.slice(0, -1);
+      }
+      this.renderEquation();
+    } else if (key === 'CONFIRM') {
+      if (!this.state.isAnswerChecked) this.checkAnswer();
+    } else if (key === 'NEXT') {
+      if (this.state.isAnswerChecked) this.generateQuestion();
+    }
+  },
+
+  // --- STATE MANAGEMENT ---
+  setMode(mode) {
+    if (this.state.currentMode === mode) return;
+    this.state.currentMode = mode;
+    this.$.modeTabs.querySelectorAll('.mode-tab').forEach(tab => {
+      tab.classList.toggle('active', parseInt(tab.dataset.mode) === mode);
+    });
+    this.generateQuestion();
+  },
+
+  setActiveBlank(key) {
+    if (this.state.isAnswerChecked) return;
+    const q = this.state.currentQuestion;
+    if (q) {
+      q.activeKey = key;
+      this.renderEquation();
+    }
+  },
+
+  // --- CORE LOGIC ---
+  generateQuestion() {
+    this.state.isAnswerChecked = false;
+    const q = {};
+    const reaction = REACTIONS[Math.floor(Math.random() * REACTIONS.length)];
+
+    const formulaToString = (chem) => {
+      let str = chem.coef > 1 ? chem.coef.toString() : '';
+      str += chem.formula.map(p => p.sym + (p.sub ? p.sub.toString() : '')).join('');
+      return str;
     };
-  } else {
-    const idx = Math.floor(Math.random()*REACTIONS.length);
-    const rx = REACTIONS[idx];
+
+    q.blanks = [];
+    q.inputs = {};
+    q.reactants = reaction.reactants;
+    q.products = reaction.products;
+    q.name = reaction.name;
+
+    switch (this.state.currentMode) {
+      case 1: // 계수 맞추기
+        q.type = '계수 맞추기';
+        const allChemicals = [...reaction.reactants, ...reaction.products];
+        const blankCount = Math.min(allChemicals.length -1, Math.floor(Math.random() * 2) + 1);
+        const blankIndices = new Set();
+        while(blankIndices.size < blankCount) {
+            blankIndices.add(Math.floor(Math.random() * allChemicals.length));
+        }
+        
+        q.displayReactants = reaction.reactants.map((r, i) => ({...r, isBlank: blankIndices.has(i)}));
+        q.displayProducts = reaction.products.map((p, i) => ({...p, isBlank: blankIndices.has(reaction.reactants.length + i)}));
+
+        q.displayReactants.forEach((r, i) => { if (r.isBlank) q.blanks.push({ key: `R${i}`, answer: r.coef.toString() }); });
+        q.displayProducts.forEach((p, i) => { if (p.isBlank) q.blanks.push({ key: `P${i}`, answer: p.coef.toString() }); });
+        break;
+      
+      case 2: // 전체 반응식
+        q.type = '전체 반응식';
+        q.displayReactants = reaction.reactants.map(() => ({ isBlank: true }));
+        q.displayProducts = reaction.products.map(() => ({ isBlank: true }));
+        reaction.reactants.forEach((r, i) => q.blanks.push({ key: `R${i}`, answer: formulaToString(r) }));
+        reaction.products.forEach((p, i) => q.blanks.push({ key: `P${i}`, answer: formulaToString(p) }));
+        break;
+
+      case 3: // 생성물 맞추기
+        q.type = '생성물 맞추기';
+        q.displayReactants = reaction.reactants.map(r => ({...r, isBlank: false}));
+        q.displayProducts = reaction.products.map(() => ({ isBlank: true }));
+        reaction.products.forEach((p, i) => q.blanks.push({ key: `P${i}`, answer: formulaToString(p) }));
+        break;
+    }
+
+    if (q.blanks.length > 0) {
+      q.activeKey = q.blanks[0].key;
+    } else { // In case a reaction has no blanks somehow, regenerate
+      this.generateQuestion();
+      return;
+    }
     
-    // 최고 관리자님의 지시에 따라 반응물은 보여주고 생성물 전체를 빈칸으로 설정
-    const blankArr = rx.products.map((p, i) => {
-      let ans = p.coef === 1 ? '' : p.coef.toString();
-      ans += p.formula.map(f => f.sym + (f.sub ? f.sub.toString() : '')).join('');
-      return {key: `P-${i}`, answer: ans};
+    this.state.currentQuestion = q;
+    this.renderAll();
+  },
+
+  checkAnswer() {
+    const q = this.state.currentQuestion;
+    if (!q) return;
+
+    this.state.isAnswerChecked = true;
+    let allCorrect = true;
+    q.blanks.forEach(b => {
+      if (q.inputs[b.key] !== b.answer) {
+        allCorrect = false;
+      }
     });
-    
-    currentQuestion = {
-      type:'reaction', rx, blankKeys: new Set(blankArr.map(b=>b.key)),
-      blanks: blankArr, inputs: {}, activeKey: blankArr[0].key, checked: false
+
+    if (allCorrect) {
+      this.state.score.streak++;
+      this.state.score.correct++;
+      this.$.resultBanner.className = 'result-banner correct-banner show';
+      this.$.resultBanner.innerHTML = `✅ 정답입니다! 연속 ${this.state.score.streak}회 성공!`;
+    } else {
+      this.state.score.streak = 0;
+      this.state.score.wrong++;
+      const answerHtml = q.blanks.map(b => `<strong>${this.formatInput(b.answer)}</strong>`).join(', ');
+      this.$.resultBanner.className = 'result-banner wrong-banner show';
+      this.$.resultBanner.innerHTML = `❌ 오답입니다. 정답: ${answerHtml}`;
+    }
+
+    this.renderAll();
+  },
+
+  // --- RENDERING ---
+  renderAll() {
+    this.renderScore();
+    this.renderQuestionHeader();
+    this.renderEquation();
+    this.renderKeyboard();
+  },
+
+  renderScore() {
+    const { streak, correct, wrong } = this.state.score;
+    const bump = (el) => {
+      el.classList.add('bump');
+      setTimeout(() => el.classList.remove('bump'), 200);
     };
-  }
-  
-  currentQuestion.blanks.forEach(b => currentQuestion.inputs[b.key] = '');
-  renderQuestion();
-}
-
-function renderQuestion() {
-  const q = currentQuestion;
-  const display = document.getElementById('equationDisplay');
-  const banner = document.getElementById('resultBanner');
-  banner.className='result-banner'; banner.innerHTML='';
-
-  if(q.type==='coef') {
-    document.getElementById('qLabel').textContent = `MODE 1 · 계수 맞추기`;
-    display.innerHTML = buildCoefHTML(q);
-  } else {
-    document.getElementById('qLabel').textContent = `MODE 2 · 화학반응식 (${q.rx.name})`;
-    display.innerHTML = buildReactionHTML(q);
-  }
-}
-
-function blankSlot(key, answer, inputs, checked, q) {
-  const val = inputs[key] || '';
-  let cls = 'blank-box';
-  if(q.activeKey === key) cls += ' active';
-  if(checked) {
-    if(val === answer) cls += ' correct';
-    else cls += ' wrong';
-  }
-  const display = val === '' ? (checked ? '?' : '_') : renderInputVal(val);
-  return `<span class="${cls}" data-bkey="${key}" onclick="activateBlank('${key}')">${display}</span>`;
-}
-
-function buildCoefHTML(q) {
-  const {q:data, blanks, inputs, checked} = q;
-  const answers = {R0:data.a.toString(), R1:data.b.toString(), P0:data.c.toString()};
-  const blankKeys = new Set(blanks.map(b=>b.key));
-  let html = '';
-  
-  data.fmt.forEach((f,i)=>{
-    const key = i===0 ? 'R0' : 'R1';
-    if(i>0) html+=`<span class="eq-plus">+</span>`;
-    if(blankKeys.has(key)) {
-      html += blankSlot(key, answers[key], inputs, checked, q);
-    } else {
-      if(f.coef !== 1) html += `<span class="eq-text">${f.coef}</span>`;
+    
+    if (this.$.streakCount.textContent !== streak.toString()) {
+      this.$.streakCount.textContent = streak;
+      bump(this.$.streakCount);
     }
-    html += renderFormulaHTML(f.parts);
-  });
-  html += `<span class="eq-arrow">→</span>`;
-  data.fmtP.forEach((f,i)=>{
-    const key = 'P'+i;
-    if(i>0) html+=`<span class="eq-plus">+</span>`;
-    if(blankKeys.has(key)) {
-      html += blankSlot(key, answers[key], inputs, checked, q);
-    } else {
-      if(answers[key] !== '1') html += `<span class="eq-text">${answers[key]}</span>`;
+    if (this.$.totalCorrect.textContent !== correct.toString()) {
+      this.$.totalCorrect.textContent = correct;
+      bump(this.$.totalCorrect);
     }
-    html += renderFormulaHTML(f.parts);
-  });
-  return html;
-}
-
-function buildReactionHTML(q) {
-  const {rx, blankKeys, inputs, checked} = q;
-  let html='';
-  
-  // 좌변(반응물)은 조건 없이 모두 출력
-  rx.reactants.forEach((r,i)=>{
-    if(i>0) html+=`<span class="eq-plus">+</span>`;
-    let txt = r.coef!==1 ? r.coef : '';
-    html += `<span class="eq-text">${txt}</span>` + renderFormulaHTML(r.formula);
-  });
-  
-  html+=`<span class="eq-arrow">→</span>`;
-  
-  // 우변(생성물)은 모두 빈칸 처리
-  rx.products.forEach((p,i)=>{
-    if(i>0) html+=`<span class="eq-plus">+</span>`;
-    const key=`P-${i}`;
-    const ans = q.blanks.find(b=>b.key===key).answer;
-    html += blankSlot(key, ans, inputs, checked, q);
-  });
-  return html;
-}
-
-function activateBlank(key) {
-  if(!currentQuestion) return;
-  currentQuestion.activeKey = key;
-  refreshBlanks();
-}
-
-function refreshBlanks() {
-  if(currentQuestion.type==='coef') document.getElementById('equationDisplay').innerHTML = buildCoefHTML(currentQuestion);
-  else document.getElementById('equationDisplay').innerHTML = buildReactionHTML(currentQuestion);
-}
-
-function handleKey(key) {
-  const q = currentQuestion;
-  if(!q) return;
-
-  if(key === 'NEXT') {
-    generateQuestion();
-    return;
-  }
-  
-  if(q.checked) return;
-
-  if(key === 'CONFIRM') {
-    checkAnswer();
-    return;
-  }
-
-  const akey = q.activeKey;
-  if(!akey) return;
-
-  if(key.startsWith('NUM_')) {
-    q.inputs[akey] = (q.inputs[akey]||'') + key.replace('NUM_','');
-    refreshBlanks();
-  } else if(key.startsWith('ELEM_')) {
-    q.inputs[akey] = (q.inputs[akey]||'') + key.replace('ELEM_','');
-    refreshBlanks();
-  } else if(key === 'DEL') {
-    const cur = q.inputs[akey]||'';
-    q.inputs[akey] = cur.slice(0,-1);
-    refreshBlanks();
-  }
-}
-
-function checkAnswer() {
-  const q = currentQuestion;
-  if(!q || q.checked) return;
-  q.checked = true;
-
-  let allCorrect = true;
-  q.blanks.forEach(b => {
-    const val = q.inputs[b.key] || '';
-    if(val !== b.answer) allCorrect = false;
-  });
-
-  refreshBlanks();
-
-  const banner = document.getElementById('resultBanner');
-  if(allCorrect) {
-    streak++; totalCorrect++;
-    banner.className='result-banner correct-banner show';
-    banner.innerHTML=`✅ 정답! &nbsp;<span style="opacity:0.7;font-size:12px;">연속 ${streak}회 달성</span>`;
-  } else {
-    streak=0; totalWrong++;
-    const ansStr = q.blanks.map(b=> renderInputVal(b.answer)).join(' / ');
-    banner.className='result-banner wrong-banner show';
-    banner.innerHTML=`❌ 오답 &nbsp;<span style="opacity:0.7;font-size:12px;">정답: ${ansStr}</span>`;
-  }
-  updateScore();
-}
-
-function updateScore() {
-  const sc = document.getElementById('streakCount');
-  sc.textContent = streak;
-  sc.classList.add('bump'); setTimeout(()=>sc.classList.remove('bump'),300);
-  document.getElementById('totalCorrect').textContent = totalCorrect;
-  document.getElementById('totalWrong').textContent = totalWrong;
-  const flames = document.getElementById('streakFlames');
-  if(streak>=10) flames.textContent='🔥🔥🔥';
-  else if(streak>=5) flames.textContent='🔥🔥';
-  else if(streak>=3) flames.textContent='🔥';
-  else flames.textContent='';
-}
-
-function buildModal() {
-  const list = document.getElementById('reactionList');
-  list.innerHTML='';
-  REACTIONS.forEach((rx,i)=>{
-    const item = document.createElement('div');
-    item.className='reaction-item';
-    let eqStr='';
-    rx.reactants.forEach((r,j)=>{
-      if(j>0) eqStr+=' + ';
-      if(r.coef!==1) eqStr+=r.coef;
-      eqStr+=r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('');
-    });
-    eqStr+=' → ';
-    rx.products.forEach((p,j)=>{
-      if(j>0) eqStr+=' + ';
-      if(p.coef!==1) eqStr+=p.coef;
-      eqStr+=p.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('');
-    });
-    item.innerHTML=`<div class="reaction-num">#${i+1}</div><div class="reaction-name">${rx.name}</div><div class="reaction-eq">${eqStr}</div>`;
-    list.appendChild(item);
-  });
-}
-
-document.addEventListener('DOMContentLoaded', ()=>{
-  buildKeyboard(); buildModal();
-
-  document.querySelectorAll('.mode-tab').forEach(tab=>{
-    tab.addEventListener('click',()=>{
-      document.querySelectorAll('.mode-tab').forEach(t=>t.classList.remove('active'));
-      tab.classList.add('active');
-      currentMode = parseInt(tab.dataset.mode);
-      generateQuestion();
-    });
-  });
-
-  document.addEventListener('click', e=>{
-    const btn = e.target.closest('[data-key]');
-    if(btn){
-      btn.classList.add('pressed'); setTimeout(()=>btn.classList.remove('pressed'),120);
-      handleKey(btn.dataset.key);
+    if (this.$.totalWrong.textContent !== wrong.toString()) {
+      this.$.totalWrong.textContent = wrong;
+      bump(this.$.totalWrong);
     }
-  });
 
-  document.getElementById('darkBtn').addEventListener('click',()=>{
-    isDark=!isDark; document.body.classList.toggle('light',!isDark);
-    document.getElementById('darkBtn').textContent = isDark?'🌙':'☀️';
-  });
+    if (streak >= 10) this.$.streakFlames.textContent = '🔥🔥🔥';
+    else if (streak >= 5) this.$.streakFlames.textContent = '🔥🔥';
+    else if (streak >= 3) this.$.streakFlames.textContent = '🔥';
+    else this.$.streakFlames.textContent = '';
+  },
 
-  document.getElementById('hintBtn').addEventListener('click',()=>document.getElementById('modalOverlay').classList.add('show'));
-  document.getElementById('modalClose').addEventListener('click',()=>document.getElementById('modalOverlay').classList.remove('show'));
-  document.getElementById('modalOverlay').addEventListener('click',e=>{
-    if(e.target===document.getElementById('modalOverlay')) document.getElementById('modalOverlay').classList.remove('show');
-  });
+  renderQuestionHeader() {
+    const q = this.state.currentQuestion;
+    if (!q) return;
+    this.$.qLabel.textContent = `MODE ${this.state.currentMode} · ${q.type}`;
+    this.$.qSubLabel.textContent = q.name;
+  },
 
-  document.addEventListener('keydown', e=>{
-    if(e.key>='0'&&e.key<='9') handleKey('NUM_'+e.key);
-    else if(e.key==='Backspace') handleKey('DEL');
-    else if(e.key==='Enter') {
-      if(!currentQuestion||!currentQuestion.checked) handleKey('CONFIRM');
-      else handleKey('NEXT');
-    } else if(/^[a-zA-Z]$/.test(e.key)) {
-      handleKey('ELEM_' + e.key);
+  renderEquation() {
+    const q = this.state.currentQuestion;
+    if (!q) {
+      this.$.equationDisplay.innerHTML = '';
+      return;
     }
-  });
 
-  generateQuestion();
-});
+    const formatChemical = (chem, keyPrefix) => {
+      return chem.map((c, i) => {
+        const key = `${keyPrefix}${i}`;
+        let content;
+        if (c.isBlank) {
+          const blankData = q.blanks.find(b => b.key === key);
+          content = this.renderBlankBox(key, blankData.answer);
+        } else {
+          if (this.state.currentMode === 1) { // 계수 맞추기 모드
+            content = (c.coef > 1 ? `<span class="eq-text">${c.coef}</span>` : '') + this.formatFormula(c.formula);
+          } else {
+            content = `<span class="eq-text">${c.coef > 1 ? c.coef : ''}${this.formatFormula(c.formula)}</span>`;
+          }
+        }
+        return (i > 0 ? '<span class="eq-plus">+</span>' : '') + content;
+      }).join(' ');
+    };
+
+    const reactantsHtml = formatChemical(q.displayReactants, 'R');
+    const productsHtml = formatChemical(q.displayProducts, 'P');
+    this.$.equationDisplay.innerHTML = `${reactantsHtml} <span class="eq-arrow">→</span> ${productsHtml}`;
+    
+    if (!this.state.isAnswerChecked) {
+        this.$.resultBanner.className = 'result-banner';
+    }
+  },
+
+  renderBlankBox(key, answer) {
+    const q = this.state.currentQuestion;
+    const input = q.inputs[key] || '';
+    let classes = 'blank-box';
+    if (q.activeKey === key && !this.state.isAnswerChecked) classes += ' active';
+    if (this.state.isAnswerChecked) {
+      classes += input === answer ? ' correct' : ' wrong';
+    }
+    if (input === '' && !this.state.isAnswerChecked) classes += ' placeholder';
+    
+    return `<span class="${classes}" data-key="${key}">${this.formatInput(input)}</span>`;
+  },
+  
+  renderKeyboard() {
+    const isChecked = this.state.isAnswerChecked;
+    this.$.confirmBtn.style.display = isChecked ? 'none' : 'flex';
+    this.$.nextBtn.style.display = isChecked ? 'flex' : 'none';
+  },
+
+  // --- UTILITIES ---
+  formatFormula(formula) {
+    return formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join('');
+  },
+
+  formatInput(str) {
+    if (!str) return '';
+    return str.replace(/([A-Z][a-z]?)(\d+)/g, '$1<sub>$2</sub>');
+  },
+
+  toggleTheme() {
+    this.state.isDarkMode = !this.state.isDarkMode;
+    document.body.classList.toggle('light', !this.state.isDarkMode);
+    document.getElementById('themeBtn').textContent = this.state.isDarkMode ? '🌙' : '☀️';
+  },
+
+  showModal(show) {
+    this.$.modalOverlay.classList.toggle('show', show);
+  },
+};
+
+document.addEventListener('DOMContentLoaded', () => App.init());
 </script>
 </body>
-</html>
+  </html>
