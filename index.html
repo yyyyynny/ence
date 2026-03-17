@@ -155,7 +155,7 @@
 
   .mode-tabs {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 8px;
     margin-bottom: 16px;
   }
@@ -226,7 +226,7 @@
 
   .blank-box {
     display: inline-block;
-    min-width: 70px;
+    min-width: 48px;
     height: 48px;
     border: 2px solid var(--c-border);
     border-radius: 10px;
@@ -291,6 +291,21 @@
   .result-banner.show { display: flex; }
   .result-banner.correct-banner { background: rgba(16, 185, 129, 0.2); color: var(--c-correct); border: 1px solid var(--c-correct); }
   .result-banner.wrong-banner { background: rgba(239, 68, 68, 0.2); color: var(--c-wrong); border: 1px solid var(--c-wrong); }
+  
+  .show-answer-btn {
+    background: var(--c-wrong);
+    color: var(--c-bg);
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: var(--font-ui);
+    font-weight: 700;
+    font-size: 13px;
+    cursor: pointer;
+    margin-left: auto;
+    transition: opacity 0.2s;
+  }
+  .show-answer-btn:hover { opacity: 0.8; }
 
   .keyboard-wrap {
     background: var(--c-surface-1);
@@ -444,9 +459,10 @@
 <body>
 <div id="app">
   <header>
+      <span id="easterEggBtn" style="cursor:pointer; font-size:12px; color:var(--wrong); margin-right:10px; font-weight:900; user-select:none;">누루ズl ㅁトパㅔ요</span>
+
     <div class="logo">⚗️ ChemTrainer</div>
     <div class="header-right">
-      <span id="easterEggBtn" style="cursor:pointer; font-size:12px; color:var(--wrong); margin-right:10px; font-weight:900; user-select:none;">누루ズl ㅁトパㅔ요</span>
       <button class="icon-btn" id="hintBtn" title="전체 반응식 보기">📋</button>
       <button class="icon-btn" id="themeBtn" title="다크/라이트 모드">🌙</button>
     </div>
@@ -473,6 +489,7 @@
     <button class="mode-tab" data-mode="1"><span class="tab-icon">🔢</span>계수 맞추기</button>
     <button class="mode-tab" data-mode="2"><span class="tab-icon">⚗️</span>전체 반응식</button>
     <button class="mode-tab" data-mode="3"><span class="tab-icon">🧪</span>생성물 맞추기</button>
+    <button class="mode-tab" data-mode="4"><span class="tab-icon">✏️</span>빈칸 채우기</button>
   </div>
 
   <div class="question-card" id="questionCard">
@@ -542,6 +559,7 @@ const App = {
     },
     currentQuestion: null,
     isAnswerChecked: false,
+    isAnswerRevealed: false,
     isDarkMode: true,
   },
 
@@ -600,29 +618,28 @@ const App = {
 
   // --- EVENT HANDLING ---
   attachEventListeners() {
-    // Event Delegation for dynamic elements
     this.$.app.addEventListener('click', e => {
       const modeTab = e.target.closest('.mode-tab');
       const blankBox = e.target.closest('.blank-box');
       const keyBtn = e.target.closest('.kb-key');
       const themeBtn = e.target.closest('#themeBtn');
       const hintBtn = e.target.closest('#hintBtn');
+      const showAnswerBtn = e.target.closest('.show-answer-btn');
 
       if (modeTab) this.setMode(parseInt(modeTab.dataset.mode));
       if (blankBox) this.setActiveBlank(blankBox.dataset.key);
       if (keyBtn) this.handleKeyPress(keyBtn.dataset.key);
       if (themeBtn) this.toggleTheme();
       if (hintBtn) this.showModal(true);
+      if (showAnswerBtn) this.revealAnswers();
     });
 
-    // Modal closing events
     this.$.modalOverlay.addEventListener('click', e => {
       if (e.target === this.$.modalOverlay || e.target.closest('#modalClose')) {
         this.showModal(false);
       }
     });
 
-    // Physical keyboard events
     document.addEventListener('keydown', e => {
       if (this.$.modalOverlay.classList.contains('show')) return;
       if (e.key >= '0' && e.key <= '9') this.handleKeyPress(`NUM_${e.key}`);
@@ -680,6 +697,7 @@ const App = {
   // --- CORE LOGIC ---
   generateQuestion() {
     this.state.isAnswerChecked = false;
+    this.state.isAnswerRevealed = false;
     const q = {};
     const reaction = REACTIONS[Math.floor(Math.random() * REACTIONS.length)];
 
@@ -691,17 +709,16 @@ const App = {
 
     q.blanks = [];
     q.inputs = {};
-    q.reactants = reaction.reactants;
-    q.products = reaction.products;
+    q.reaction = reaction;
     q.name = reaction.name;
 
     switch (this.state.currentMode) {
       case 1: // 계수 맞추기
         q.type = '계수 맞추기';
         const allChemicals = [...reaction.reactants, ...reaction.products];
-        const blankCount = Math.min(allChemicals.length -1, Math.floor(Math.random() * 2) + 1);
+        const blankCount1 = Math.min(allChemicals.length - 1, Math.floor(Math.random() * 2) + 1);
         const blankIndices = new Set();
-        while(blankIndices.size < blankCount) {
+        while(blankIndices.size < blankCount1) {
             blankIndices.add(Math.floor(Math.random() * allChemicals.length));
         }
         
@@ -726,13 +743,33 @@ const App = {
         q.displayProducts = reaction.products.map(() => ({ isBlank: true }));
         reaction.products.forEach((p, i) => q.blanks.push({ key: `P${i}`, answer: formulaToString(p) }));
         break;
+        
+      case 4: // 빈칸 채우기
+        q.type = '빈칸 채우기';
+        const tokens = [];
+        const addTokens = (chems, side) => {
+            chems.forEach((chem, cIdx) => {
+                if(chem.coef > 1) tokens.push({ id: `${side}${cIdx}_coef`, value: chem.coef.toString() });
+                chem.formula.forEach((part, pIdx) => {
+                    tokens.push({ id: `${side}${cIdx}_sym${pIdx}`, value: part.sym });
+                    if(part.sub) tokens.push({ id: `${side}${cIdx}_sub${pIdx}`, value: part.sub.toString() });
+                });
+            });
+        };
+        addTokens(reaction.reactants, 'R');
+        addTokens(reaction.products, 'P');
+        
+        const shuffledTokens = tokens.sort(() => 0.5 - Math.random());
+        const blankCount4 = Math.min(tokens.length, Math.floor(Math.random() * 2) + 1);
+        const blankTokens = shuffledTokens.slice(0, blankCount4);
+
+        q.blankTokenIds = new Set(blankTokens.map(t => t.id));
+        q.blanks = blankTokens.map(t => ({ key: t.id, answer: t.value }));
+        break;
     }
 
     if (q.blanks.length > 0) {
       q.activeKey = q.blanks[0].key;
-    } else { // In case a reaction has no blanks somehow, regenerate
-      this.generateQuestion();
-      return;
     }
     
     this.state.currentQuestion = q;
@@ -746,7 +783,7 @@ const App = {
     this.state.isAnswerChecked = true;
     let allCorrect = true;
     q.blanks.forEach(b => {
-      if (q.inputs[b.key] !== b.answer) {
+      if ((q.inputs[b.key] || '') !== b.answer) {
         allCorrect = false;
       }
     });
@@ -754,25 +791,31 @@ const App = {
     if (allCorrect) {
       this.state.score.streak++;
       this.state.score.correct++;
-      this.$.resultBanner.className = 'result-banner correct-banner show';
-      this.$.resultBanner.innerHTML = `✅ 정답입니다! 연속 ${this.state.score.streak}회 성공!`;
     } else {
       this.state.score.streak = 0;
       this.state.score.wrong++;
-      const answerHtml = q.blanks.map(b => `<strong>${this.formatInput(b.answer)}</strong>`).join(', ');
-      this.$.resultBanner.className = 'result-banner wrong-banner show';
-      this.$.resultBanner.innerHTML = `❌ 오답입니다. 정답: ${answerHtml}`;
     }
+    
+    this.renderAll(allCorrect);
+  },
 
-    this.renderAll();
+  revealAnswers() {
+    this.state.isAnswerRevealed = true;
+    this.renderEquation();
+    this.renderResultBanner(false); // Re-render banner to show answers
   },
 
   // --- RENDERING ---
-  renderAll() {
+  renderAll(isCorrect = null) {
     this.renderScore();
     this.renderQuestionHeader();
     this.renderEquation();
     this.renderKeyboard();
+    if (isCorrect !== null) {
+      this.renderResultBanner(isCorrect);
+    } else {
+      this.$.resultBanner.className = 'result-banner';
+    }
   },
 
   renderScore() {
@@ -815,6 +858,15 @@ const App = {
       return;
     }
 
+    if (this.state.currentMode === 4) {
+      this.$.equationDisplay.innerHTML = this.renderMode4Equation();
+    } else {
+      this.$.equationDisplay.innerHTML = this.renderModes123Equation();
+    }
+  },
+  
+  renderModes123Equation() {
+    const q = this.state.currentQuestion;
     const formatChemical = (chem, keyPrefix) => {
       return chem.map((c, i) => {
         const key = `${keyPrefix}${i}`;
@@ -823,23 +875,49 @@ const App = {
           const blankData = q.blanks.find(b => b.key === key);
           content = this.renderBlankBox(key, blankData.answer);
         } else {
-          if (this.state.currentMode === 1) { // 계수 맞추기 모드
-            content = (c.coef > 1 ? `<span class="eq-text">${c.coef}</span>` : '') + this.formatFormula(c.formula);
-          } else {
-            content = `<span class="eq-text">${c.coef > 1 ? c.coef : ''}${this.formatFormula(c.formula)}</span>`;
-          }
+          content = (c.coef > 1 ? `<span class="eq-text">${c.coef}</span>` : '') + this.formatFormula(c.formula);
         }
         return (i > 0 ? '<span class="eq-plus">+</span>' : '') + content;
       }).join(' ');
     };
-
     const reactantsHtml = formatChemical(q.displayReactants, 'R');
     const productsHtml = formatChemical(q.displayProducts, 'P');
-    this.$.equationDisplay.innerHTML = `${reactantsHtml} <span class="eq-arrow">→</span> ${productsHtml}`;
-    
-    if (!this.state.isAnswerChecked) {
-        this.$.resultBanner.className = 'result-banner';
-    }
+    return `${reactantsHtml} <span class="eq-arrow">→</span> ${productsHtml}`;
+  },
+
+  renderMode4Equation() {
+    const q = this.state.currentQuestion;
+    const renderSide = (chems, side) => {
+      return chems.map((chem, cIdx) => {
+        let html = '';
+        const coefId = `${side}${cIdx}_coef`;
+        if (q.blankTokenIds.has(coefId)) {
+          html += this.renderBlankBox(coefId, q.blanks.find(b => b.key === coefId).answer);
+        } else if (chem.coef > 1) {
+          html += `<span class="eq-text">${chem.coef}</span>`;
+        }
+        
+        chem.formula.forEach((part, pIdx) => {
+          const symId = `${side}${cIdx}_sym${pIdx}`;
+          const subId = `${side}${cIdx}_sub${pIdx}`;
+          if (q.blankTokenIds.has(symId)) {
+            html += this.renderBlankBox(symId, q.blanks.find(b => b.key === symId).answer);
+          } else {
+            html += `<span class="eq-text">${part.sym}</span>`;
+          }
+          if (q.blankTokenIds.has(subId)) {
+            html += this.renderBlankBox(subId, q.blanks.find(b => b.key === subId).answer);
+          } else if (part.sub) {
+            html += `<sub>${part.sub}</sub>`;
+          }
+        });
+        return html;
+      }).join(' <span class="eq-plus">+</span> ');
+    };
+
+    const reactantsHtml = renderSide(q.reaction.reactants, 'R');
+    const productsHtml = renderSide(q.reaction.products, 'P');
+    return `${reactantsHtml} <span class="eq-arrow">→</span> ${productsHtml}`;
   },
 
   renderBlankBox(key, answer) {
@@ -847,12 +925,35 @@ const App = {
     const input = q.inputs[key] || '';
     let classes = 'blank-box';
     if (q.activeKey === key && !this.state.isAnswerChecked) classes += ' active';
+    
+    let displayContent = this.formatInput(input);
+
     if (this.state.isAnswerChecked) {
-      classes += input === answer ? ' correct' : ' wrong';
+      const isCorrect = input === answer;
+      classes += isCorrect ? ' correct' : ' wrong';
+      if (this.state.isAnswerRevealed && !isCorrect) {
+        displayContent = this.formatInput(answer);
+      }
     }
+    
     if (input === '' && !this.state.isAnswerChecked) classes += ' placeholder';
     
-    return `<span class="${classes}" data-key="${key}">${this.formatInput(input)}</span>`;
+    return `<span class="${classes}" data-key="${key}">${displayContent}</span>`;
+  },
+
+  renderResultBanner(isCorrect) {
+    if (isCorrect) {
+      this.$.resultBanner.className = 'result-banner correct-banner show';
+      this.$.resultBanner.innerHTML = `✅ 정답입니다! 연속 ${this.state.score.streak}회 성공!`;
+    } else {
+      this.$.resultBanner.className = 'result-banner wrong-banner show';
+      if (this.state.isAnswerRevealed) {
+        const answerHtml = this.state.currentQuestion.blanks.map(b => `<strong>${this.formatInput(b.answer)}</strong>`).join(', ');
+        this.$.resultBanner.innerHTML = `❌ 오답입니다. 정답: ${answerHtml}`;
+      } else {
+        this.$.resultBanner.innerHTML = `❌ 오답입니다. <button class="show-answer-btn">답 보기</button>`;
+      }
+    }
   },
   
   renderKeyboard() {
