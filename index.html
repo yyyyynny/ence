@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>반응물이 반응하면 생성물</title>
+<title>화학 반응식 훈련소</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
 
@@ -72,7 +72,6 @@
 
   .question-card { background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px; padding: 24px; margin-bottom: 16px; min-height: 180px; display: flex; flex-direction: column; gap: 16px; flex-grow: 1; position: relative; overflow: hidden; }
   
-  /* 타임어택 바 UI */
   .timer-container { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: rgba(0,0,0,0.2); }
   .timer-bar { height: 100%; background: var(--c-accent-1); width: 100%; transition: background 0.3s; }
   .timer-bar.danger { background: var(--c-wrong); }
@@ -96,19 +95,18 @@
   sub { font-size: 0.65em; line-height: 0; vertical-align: sub; }
 
   .result-banner { border-radius: 12px; padding: 12px 16px; font-size: 14px; font-weight: 700; display: none; align-items: center; gap: 10px; margin-top: auto; }
-  .result-banner.show { display: flex; }
-  .result-banner.correct-banner { background: rgba(16, 185, 129, 0.2); color: var(--c-correct); border: 1px solid var(--c-correct); }
+  .result-banner.show { display: flex; flex-direction: column; align-items: flex-start; }
+  .result-banner.correct-banner { background: rgba(16, 185, 129, 0.2); color: var(--c-correct); border: 1px solid var(--c-correct); flex-direction: row; }
   .result-banner.wrong-banner { background: rgba(239, 68, 68, 0.2); color: var(--c-wrong); border: 1px solid var(--c-wrong); }
-  .show-answer-btn { background: var(--c-wrong); color: var(--c-bg); border: none; border-radius: 8px; padding: 6px 12px; font-weight: 700; cursor: pointer; margin-left: auto; }
+  .show-answer-btn { background: var(--c-wrong); color: var(--c-bg); border: none; border-radius: 8px; padding: 6px 12px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; align-self: flex-end; margin-top: 8px; }
 
   .keyboard-wrap { background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px; padding: 16px; }
   .kb-section-label { font-size: 10px; color: var(--c-text-secondary); font-family: var(--font-mono); text-transform: uppercase; margin-bottom: 8px; margin-top: 4px; }
   .kb-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-  .kb-key { background: var(--c-surface-2); border: 1px solid var(--c-border); border-radius: 10px; font-family: var(--font-mono); font-size: 15px; font-weight: 700; min-height: 44px; min-width: 38px; flex: 1 1 auto; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .kb-key { background: var(--c-surface-2); border: 1px solid var(--c-border); border-radius: 10px; font-family: var(--font-mono); font-size: 15px; font-weight: 700; min-height: 44px; min-width: 38px; flex: 1 1 auto; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.1s; }
   .kb-key:active { transform: scale(0.95); }
   .kb-key.num { color: var(--c-accent-3); }
-  .kb-key.elem { color: var(--c-accent-1); }
-  .kb-key.lower { color: var(--c-text-primary); font-weight: 500; }
+  .kb-key.elem { color: var(--c-text-primary); font-weight: 500; }
   .kb-key.del { color: var(--c-wrong); flex-grow: 2; }
   .kb-key.confirm { background: var(--c-correct); color: #000; flex-grow: 3; }
   .kb-key.next-q { background: var(--c-accent-2); color: #fff; flex-grow: 3; }
@@ -116,14 +114,21 @@
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
   .modal-overlay.show { display: flex; }
   .modal-box { background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px; width: 100%; max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; padding: 24px; position: relative; }
-  .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
+  .modal-header { display: flex; justify-content: space-between; margin-bottom: 16px; align-items: center; }
   .modal-title { font-size: 18px; font-weight: 900; color: var(--c-accent-1); }
   .modal-close { background: none; border: none; color: var(--c-text-secondary); font-size: 28px; cursor: pointer; }
-  .modal-content { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-  .reaction-item { background: var(--c-surface-2); border-radius: 12px; padding: 12px; font-family: var(--font-mono); font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
-  .reaction-info { flex-grow: 1; }
-  .reaction-name { color: var(--c-accent-3); font-size: 13px; margin-bottom: 6px; font-family: var(--font-ui); }
-  .delete-note-btn { background: rgba(239,68,68,0.2); border: 1px solid var(--c-wrong); color: var(--c-wrong); border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 12px; font-weight: bold; margin-left: 10px; }
+  .modal-content { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
+  
+  .filter-chips { display: flex; overflow-x: auto; gap: 6px; margin-bottom: 16px; padding-bottom: 4px; scrollbar-width: none; }
+  .filter-chips::-webkit-scrollbar { display: none; }
+  .filter-chip { flex: 0 0 auto; background: var(--c-surface-2); border: 1px solid var(--c-border); color: var(--c-text-secondary); border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
+  .filter-chip.active { background: var(--c-accent-1); color: var(--c-bg); border-color: var(--c-accent-1); }
+  
+  .reaction-item { background: var(--c-surface-2); border-radius: 12px; padding: 16px; font-family: var(--font-mono); font-size: 14px; display: flex; flex-direction: column; gap: 10px; }
+  .reaction-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .reaction-name { color: var(--c-accent-3); font-size: 12px; font-family: var(--font-ui); font-weight: 700; }
+  .reaction-eq { color: var(--c-text-primary); font-size: 15px; line-height: 1.6; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid var(--c-border); text-align: center; }
+  .delete-note-btn { background: rgba(239,68,68,0.1); border: 1px solid var(--c-wrong); color: var(--c-wrong); border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 11px; font-weight: bold; }
   .clear-all-btn { background: var(--c-wrong); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-weight: bold; cursor: pointer; margin-bottom: 16px; align-self: flex-end; }
 
   .egg-particle { position: fixed; pointer-events: none; z-index: 9999999; font-size: 24px; animation: egg-pop 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
@@ -188,10 +193,8 @@
   <div class="keyboard-wrap">
     <div class="kb-section-label">Numbers</div>
     <div class="kb-row" id="numRow"></div>
-    <div class="kb-section-label">Elements & Upper</div>
-    <div class="kb-row" id="elemUpperRow"></div>
-    <div class="kb-section-label">Lowercase</div>
-    <div class="kb-row" id="elemLowerRow"></div>
+    <div class="kb-section-label" id="elemRowLabel">Elements</div>
+    <div class="kb-row" id="elemRow"></div>
     <div class="kb-row" style="margin-top: 12px;">
       <button class="kb-key del" data-key="DEL">⌫ 지우기</button>
       <button class="kb-key confirm" data-key="CONFIRM">✓ 확인</button>
@@ -211,10 +214,18 @@
 </div>
 
 <div class="modal-overlay" id="wrongNoteModalOverlay">
-  <div class="modal-box">
+  <div class="modal-box" style="height: 90vh;">
     <div class="modal-header">
-      <div class="modal-title">📓 오답 노트 (영구 보존)</div>
+      <div class="modal-title">📓 오답 노트</div>
       <button class="modal-close" id="wrongNoteModalClose">✕</button>
+    </div>
+    <div class="filter-chips" id="wrongNoteFilters">
+      <button class="filter-chip active" data-filter="all">전체</button>
+      <button class="filter-chip" data-filter="1">모드 1</button>
+      <button class="filter-chip" data-filter="2">모드 2</button>
+      <button class="filter-chip" data-filter="3">모드 3</button>
+      <button class="filter-chip" data-filter="4">모드 4</button>
+      <button class="filter-chip" data-filter="5">모드 5</button>
     </div>
     <button class="clear-all-btn" id="clearAllNotesBtn">🗑 전체 삭제</button>
     <div class="modal-content" id="wrongNoteList"></div>
@@ -222,7 +233,6 @@
 </div>
 
 <script>
-// --- 보안 잠금 로직 및 이스터에그 ---
 (function() {
   const overlay = document.getElementById('authOverlay');
   const input = document.getElementById('authInput');
@@ -288,7 +298,6 @@
   });
 })();
 
-// --- 메인 앱 로직 ---
 const REACTIONS = [
   { name: "일산화탄소 + 산소 → 이산화탄소", reactants: [{coef:2,formula:[{sym:"CO"}]}, {coef:1,formula:[{sym:"O",sub:2}]}], products: [{coef:2,formula:[{sym:"CO",sub:2}]}] },
   { name: "메테인 + 산소 → 이산화탄소 + 물", reactants: [{coef:1,formula:[{sym:"CH",sub:4}]}, {coef:2,formula:[{sym:"O",sub:2}]}], products: [{coef:1,formula:[{sym:"CO",sub:2}]}, {coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}] },
@@ -322,26 +331,25 @@ const CHEMICALS = [
   { name: "염화나트륨", formula: [{sym:"Na"},{sym:"Cl"}] }, { name: "탄산칼슘", formula: [{sym:"Ca"},{sym:"CO",sub:3}] },
   { name: "탄산수소나트륨", formula: [{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}] }, { name: "질산은", formula: [{sym:"Ag"},{sym:"NO",sub:3}] },
   { name: "염화은", formula: [{sym:"Ag"},{sym:"Cl"}] }, { name: "질산나트륨", formula: [{sym:"Na"},{sym:"NO",sub:3}] },
-  { name: "프로페인", formula: [{sym:"C",sub:3},{sym:"H",sub:8}] }, { name: "뷰테인", formula: [{sym:"C",sub:4},{sym:"H",sub:10}] }
+  { name: "프로페인", formula: [{sym:"C",sub:3},{sym:"H",sub:8}] }, { name: "뷰테인", formula: [{sym:"C",sub:4},{sym:"H",sub:10}] },
+  { name: "황", formula: [{sym:"S"}] }, { name: "인", formula: [{sym:"P"}] }
 ];
 
-function ri(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 const COEF_TEMPLATES = [
-  { label: "A₂ + B₂ → AB₄", gen: () => { const k=ri(1,3); return {a:k,b:2*k,c:k, fmt:[ {coef:k,formula:[{sym:"A",sub:2}]}, {coef:2*k,formula:[{sym:"B",sub:2}]} ], fmtP:[ {coef:k,formula:[{sym:"A"},{sym:"B",sub:4}]} ]}; } },
-  { label: "A₃ + B₂ → A₆B", gen: () => { const k=ri(1,2); const c=2*k,a=4*k,b=k; return {a,b,c, fmt:[ {coef:a,formula:[{sym:"A",sub:3}]}, {coef:b,formula:[{sym:"B",sub:2}]} ], fmtP:[ {coef:c,formula:[{sym:"A",sub:6},{sym:"B"}]} ]}; } },
-  { label: "A₂ + B₃ → A₂B", gen: () => { const k=ri(1,2); const c=3*k,a=3*k,b=k; return {a,b,c, fmt:[ {coef:a,formula:[{sym:"A",sub:2}]}, {coef:b,formula:[{sym:"B",sub:3}]} ], fmtP:[ {coef:c,formula:[{sym:"A",sub:2},{sym:"B"}]} ]}; } },
-  { label: "A + B₃ → A₃B", gen: () => { const m=ri(1,2); const c=3*m,a=9*m,b=m; return {a,b,c, fmt:[ {coef:a,formula:[{sym:"A"}]}, {coef:b,formula:[{sym:"B",sub:3}]} ], fmtP:[ {coef:c,formula:[{sym:"A",sub:3},{sym:"B"}]} ]}; } },
-  { label: "A₃ + B → AB₂", gen: () => { const m=ri(1,2); const a=m,c=3*m,b=6*m; return {a,b,c, fmt:[ {coef:a,formula:[{sym:"A",sub:3}]}, {coef:b,formula:[{sym:"B"}]} ], fmtP:[ {coef:c,formula:[{sym:"A"},{sym:"B",sub:2}]} ]}; } },
-  { label: "A₂ + B → AB₃", gen: () => { const m=ri(1,2); const a=m,b=6*m,c=2*m; return {a,b,c, fmt:[ {coef:a,formula:[{sym:"A",sub:2}]}, {coef:b,formula:[{sym:"B"}]} ], fmtP:[ {coef:c,formula:[{sym:"A"},{sym:"B",sub:3}]} ]}; } },
-  { label: "A + B₂ → A₂B₃", gen: () => { const k=ri(1,2); const c=2*k,a=4*k,b=3*k; return {a,b,c, fmt:[ {coef:a,formula:[{sym:"A"}]}, {coef:b,formula:[{sym:"B",sub:2}]} ], fmtP:[ {coef:c,formula:[{sym:"A",sub:2},{sym:"B",sub:3}]} ]}; } },
+  { label: "A₂ + B₂ → AB₂", gen: () => { return { fmt:[ {coef:1,formula:[{sym:"A",sub:2}]}, {coef:2,formula:[{sym:"B",sub:2}]} ], fmtP:[ {coef:2,formula:[{sym:"A"},{sym:"B",sub:2}]} ]}; } },
+  { label: "A₃ + B₂ → A₆B", gen: () => { return { fmt:[ {coef:4,formula:[{sym:"A",sub:3}]}, {coef:1,formula:[{sym:"B",sub:2}]} ], fmtP:[ {coef:2,formula:[{sym:"A",sub:6},{sym:"B"}]} ]}; } },
+  { label: "A₂ + B₃ → A₂B", gen: () => { return { fmt:[ {coef:3,formula:[{sym:"A",sub:2}]}, {coef:1,formula:[{sym:"B",sub:3}]} ], fmtP:[ {coef:3,formula:[{sym:"A",sub:2},{sym:"B"}]} ]}; } },
+  { label: "A + B₃ → A₃B", gen: () => { return { fmt:[ {coef:9,formula:[{sym:"A"}]}, {coef:1,formula:[{sym:"B",sub:3}]} ], fmtP:[ {coef:3,formula:[{sym:"A",sub:3},{sym:"B"}]} ]}; } },
+  { label: "A₃ + B → AB₂", gen: () => { return { fmt:[ {coef:1,formula:[{sym:"A",sub:3}]}, {coef:6,formula:[{sym:"B"}]} ], fmtP:[ {coef:3,formula:[{sym:"A"},{sym:"B",sub:2}]} ]}; } },
+  { label: "A₂ + B → AB₃", gen: () => { return { fmt:[ {coef:1,formula:[{sym:"A",sub:2}]}, {coef:6,formula:[{sym:"B"}]} ], fmtP:[ {coef:2,formula:[{sym:"A"},{sym:"B",sub:3}]} ]}; } },
+  { label: "A + B₂ → A₂B₃", gen: () => { return { fmt:[ {coef:4,formula:[{sym:"A"}]}, {coef:3,formula:[{sym:"B",sub:2}]} ], fmtP:[ {coef:2,formula:[{sym:"A",sub:2},{sym:"B",sub:3}]} ]}; } }
 ];
 
-const UPPER_ELEMENTS = ['H', 'C', 'O', 'N', 'S', 'P', 'Na', 'Mg', 'Ca', 'Cu', 'Ag', 'Cl', 'A', 'B'];
-const LOWER_LETTERS = ['a', 'b', 'c', 'l', 'g', 'u', 'e', 'r', 'x', 'y'];
+const CORE_ELEMENTS = ['H', 'C', 'O', 'N', 'S', 'P', 'Na', 'Mg', 'Ca', 'Cu', 'Ag', 'Cl', 'A', 'B'];
 
 const App = {
   state: { 
-    currentMode: null, // 버그 1 픽스: 초기화 락킹 방지
+    currentMode: null, 
     score: { streak: 0, correct: 0, wrong: 0 }, 
     currentQuestion: null, 
     isAnswerChecked: false, 
@@ -349,18 +357,19 @@ const App = {
     isDarkMode: true,
     timerLeft: 15000,
     timerInterval: null,
-    wrongNotes: []
+    wrongNotes: [],
+    noteFilter: 'all'
   },
   $: {
     app: document.getElementById('app'), streakCount: document.getElementById('streakCount'), streakFlames: document.getElementById('streakFlames'),
     totalCorrect: document.getElementById('totalCorrect'), totalWrong: document.getElementById('totalWrong'), modeTabs: document.querySelector('.mode-tabs'),
     qLabel: document.getElementById('qLabel'), qSubLabel: document.getElementById('qSubLabel'), equationDisplay: document.getElementById('equationDisplay'),
     resultBanner: document.getElementById('resultBanner'), numRow: document.getElementById('numRow'), 
-    elemUpperRow: document.getElementById('elemUpperRow'), elemLowerRow: document.getElementById('elemLowerRow'),
+    elemRowLabel: document.getElementById('elemRowLabel'), elemRow: document.getElementById('elemRow'),
     confirmBtn: document.querySelector('.kb-key.confirm'), nextBtn: document.querySelector('.kb-key.next-q'), 
     hintModalOverlay: document.getElementById('hintModalOverlay'), wrongNoteModalOverlay: document.getElementById('wrongNoteModalOverlay'),
     reactionList: document.getElementById('reactionList'), wrongNoteList: document.getElementById('wrongNoteList'),
-    timerBar: document.getElementById('timerBar')
+    timerBar: document.getElementById('timerBar'), wrongNoteFilters: document.getElementById('wrongNoteFilters')
   },
 
   init() { 
@@ -373,57 +382,64 @@ const App = {
 
   loadWrongNotes() {
     try {
-      const data = localStorage.getItem('chem_wrong_notes');
+      const data = localStorage.getItem('chem_wrong_notes_v3');
       this.state.wrongNotes = data ? JSON.parse(data) : [];
     } catch(e) { this.state.wrongNotes = []; }
   },
 
-  saveWrongNote(qStr, aStr) {
+  saveWrongNote(modeNum, title, equationHtml) {
     const id = Date.now().toString();
-    this.state.wrongNotes.push({ id, q: qStr, a: aStr });
-    try { localStorage.setItem('chem_wrong_notes', JSON.stringify(this.state.wrongNotes)); } catch(e) {}
+    this.state.wrongNotes.unshift({ id, mode: modeNum, title, html: equationHtml });
+    try { localStorage.setItem('chem_wrong_notes_v3', JSON.stringify(this.state.wrongNotes)); } catch(e) {}
     this.renderWrongNotes();
   },
 
   deleteWrongNote(id) {
     this.state.wrongNotes = this.state.wrongNotes.filter(n => n.id !== id);
-    try { localStorage.setItem('chem_wrong_notes', JSON.stringify(this.state.wrongNotes)); } catch(e) {}
+    try { localStorage.setItem('chem_wrong_notes_v3', JSON.stringify(this.state.wrongNotes)); } catch(e) {}
     this.renderWrongNotes();
   },
 
   clearWrongNotes() {
     if(!confirm("오답 노트를 전부 삭제하시겠습니까?")) return;
     this.state.wrongNotes = [];
-    try { localStorage.removeItem('chem_wrong_notes'); } catch(e) {}
+    try { localStorage.removeItem('chem_wrong_notes_v3'); } catch(e) {}
     this.renderWrongNotes();
   },
 
   buildKeyboard() {
     this.$.numRow.innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(n => `<button class="kb-key num" data-key="NUM_${n}">${n}</button>`).join('');
-    this.$.elemUpperRow.innerHTML = UPPER_ELEMENTS.map(e => `<button class="kb-key elem" data-key="ELEM_${e}">${e}</button>`).join('');
-    this.$.elemLowerRow.innerHTML = LOWER_LETTERS.map(e => `<button class="kb-key lower" data-key="ELEM_${e}">${e}</button>`).join('');
+    this.$.elemRow.innerHTML = CORE_ELEMENTS.map(e => `<button class="kb-key elem" data-key="ELEM_${e}">${e}</button>`).join('');
   },
 
   buildModalList() {
     this.$.reactionList.innerHTML = REACTIONS.map((rx, i) => {
-      const formatSide = (side) => side.map(r => (r.coef > 1 ? r.coef : '') + r.formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join('')).join(' + ');
-      return `<div class="reaction-item"><div class="reaction-info"><div class="reaction-name">#${i + 1} ${rx.name}</div><div class="reaction-eq">${formatSide(rx.reactants)} <span class="eq-arrow">→</span> ${formatSide(rx.products)}</div></div></div>`;
+      const formatSide = (side) => side.map(r => (r.coef > 1 ? `<span class="eq-text">${r.coef}</span>` : '') + r.formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join('')).join(' <span class="eq-plus">+</span> ');
+      return `<div class="reaction-item"><div class="reaction-info" style="width:100%;"><div class="reaction-header"><div class="reaction-name" style="margin-bottom:8px;">#${i + 1} ${rx.name}</div></div><div class="reaction-eq">${formatSide(rx.reactants)} <span class="eq-arrow">→</span> ${formatSide(rx.products)}</div></div></div>`;
     }).join('');
     this.renderWrongNotes();
   },
 
   renderWrongNotes() {
-    if (this.state.wrongNotes.length === 0) {
-      this.$.wrongNoteList.innerHTML = `<p style="color:var(--c-text-secondary); text-align:center; padding: 20px;">틀린 문제가 없습니다.</p>`;
+    let filtered = this.state.wrongNotes;
+    if (this.state.noteFilter !== 'all') {
+      filtered = filtered.filter(n => n.mode.toString() === this.state.noteFilter);
+    }
+    
+    if (filtered.length === 0) {
+      this.$.wrongNoteList.innerHTML = `<p style="color:var(--c-text-secondary); text-align:center; padding: 40px 20px;">이 모드의 오답 기록이 없습니다.</p>`;
       return;
     }
-    this.$.wrongNoteList.innerHTML = this.state.wrongNotes.map(n => `
+    
+    this.$.wrongNoteList.innerHTML = filtered.map(n => `
       <div class="reaction-item">
-        <div class="reaction-info">
-          <div class="reaction-name">${n.q}</div>
-          <div class="reaction-eq" style="color:var(--c-wrong)">정답: ${this.formatInput(n.a)}</div>
+        <div class="reaction-info" style="width:100%;">
+          <div class="reaction-header">
+            <div class="reaction-name">[모드 ${n.mode}] ${n.title}</div>
+            <button class="delete-note-btn" data-id="${n.id}">삭제</button>
+          </div>
+          <div class="reaction-eq" style="border-color:var(--c-wrong);">${n.html}</div>
         </div>
-        <button class="delete-note-btn" data-id="${n.id}">삭제</button>
       </div>
     `).join('');
   },
@@ -443,6 +459,16 @@ const App = {
       if (showAnswerBtn) this.revealAnswers();
     });
 
+    this.$.wrongNoteFilters.addEventListener('click', e => {
+      const chip = e.target.closest('.filter-chip');
+      if (chip) {
+        this.$.wrongNoteFilters.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        this.state.noteFilter = chip.dataset.filter;
+        this.renderWrongNotes();
+      }
+    });
+
     document.getElementById('hintModalClose').addEventListener('click', () => this.$.hintModalOverlay.classList.remove('show'));
     document.getElementById('wrongNoteModalClose').addEventListener('click', () => this.$.wrongNoteModalOverlay.classList.remove('show'));
     document.getElementById('clearAllNotesBtn').addEventListener('click', () => this.clearWrongNotes());
@@ -456,7 +482,6 @@ const App = {
       if (e.key >= '0' && e.key <= '9') this.handleKeyPress(`NUM_${e.key}`);
       else if (e.key === 'Backspace') this.handleKeyPress('DEL');
       else if (e.key === 'Enter') this.handleKeyPress(this.state.isAnswerChecked ? 'NEXT' : 'CONFIRM');
-      else if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) { this.handleKeyPress(`ELEM_${e.key}`); }
     });
   },
 
@@ -467,7 +492,6 @@ const App = {
     this.$.timerBar.style.width = '100%';
     this.$.timerBar.classList.remove('danger');
     
-    // Force reflow
     void this.$.timerBar.offsetWidth;
     this.$.timerBar.style.transition = 'width 0.1s linear, background 0.3s';
 
@@ -498,11 +522,11 @@ const App = {
     this.state.score.wrong++;
     
     const q = this.state.currentQuestion;
-    const ansStr = q.blanks.map(b => b.answer).join(' / ');
-    this.saveWrongNote(`[시간초과] ${q.name}`, ansStr);
+    this.generateBeautifulWrongNote(q);
     
-    this.renderAll(false);
-    this.$.resultBanner.innerHTML = `⏰ 시간 초과! 연속 정답이 초기화되었습니다. <button class="show-answer-btn">답 보기</button>`;
+    this.renderAll(null);
+    this.$.resultBanner.className = 'result-banner wrong-banner show';
+    this.$.resultBanner.innerHTML = `<span style="color:var(--c-wrong)">⏰ 시간 초과!</span> <span style="font-weight:400; margin-left:10px;">연속 정답이 초기화되었습니다.</span> <button class="show-answer-btn">정답 확인</button>`;
   },
 
   handleKeyPress(key) {
@@ -511,9 +535,13 @@ const App = {
       const q = this.state.currentQuestion;
       if (!q || !q.activeKey) return;
       const input = q.inputs[q.activeKey] || '';
+      
       if (key.startsWith('NUM_')) q.inputs[q.activeKey] = input + key.replace('NUM_', '');
-      else if (key.startsWith('ELEM_')) q.inputs[q.activeKey] = input + key.replace('ELEM_', '');
+      else if (key.startsWith('ELEM_')) {
+        q.inputs[q.activeKey] = input + key.replace('ELEM_', '');
+      }
       else if (key === 'DEL') q.inputs[q.activeKey] = input.slice(0, -1);
+      
       this.renderEquation();
     } else if (key === 'CONFIRM') { if (!this.state.isAnswerChecked) this.checkAnswer();
     } else if (key === 'NEXT') { if (this.state.isAnswerChecked) this.generateQuestion(); }
@@ -523,6 +551,15 @@ const App = {
     if (this.state.currentMode === mode) return;
     this.state.currentMode = mode;
     this.$.modeTabs.querySelectorAll('.mode-tab').forEach(tab => { tab.classList.toggle('active', parseInt(tab.dataset.mode) === mode); });
+    
+    if (mode === 1) {
+      this.$.elemRowLabel.style.display = 'none';
+      this.$.elemRow.style.display = 'none';
+    } else {
+      this.$.elemRowLabel.style.display = 'block';
+      this.$.elemRow.style.display = 'flex';
+    }
+    
     this.generateQuestion();
   },
 
@@ -536,17 +573,18 @@ const App = {
     switch (this.state.currentMode) {
       case 1:
         if (Math.random() < 0.5) {
-          const tmpl = COEF_TEMPLATES[Math.floor(Math.random() * COEF_TEMPLATES.length)];
-          const data = tmpl.gen(); q.name = tmpl.label;
-          q.displayReactants = data.fmt.map(f => ({...f})); q.displayProducts = data.fmtP.map(f => ({...f}));
-          data.fmt.forEach((f, i) => q.blanks.push({key: `R${i}`, answer: f.coef.toString()}));
-          data.fmtP.forEach((f, i) => q.blanks.push({key: `P${i}`, answer: f.coef.toString()}));
+            const tmpl = COEF_TEMPLATES[Math.floor(Math.random() * COEF_TEMPLATES.length)];
+            const data = tmpl.gen(); q.name = tmpl.label; q.isAbstract = true;
+            q.displayReactants = data.fmt.map(f => ({...f})); q.displayProducts = data.fmtP.map(f => ({...f}));
+            data.fmt.forEach((f, i) => { if(f.coef > 1) { q.blanks.push({key: `R${i}`, answer: f.coef.toString()}); } });
+            data.fmtP.forEach((f, i) => { if(f.coef > 1) { q.blanks.push({key: `P${i}`, answer: f.coef.toString()}); } });
         } else {
-          const rx = REACTIONS[Math.floor(Math.random() * REACTIONS.length)];
-          q.name = rx.name;
-          q.displayReactants = rx.reactants.map(f => ({...f})); q.displayProducts = rx.products.map(f => ({...f}));
-          rx.reactants.forEach((r, i) => q.blanks.push({key: `R${i}`, answer: r.coef.toString()}));
-          rx.products.forEach((p, i) => q.blanks.push({key: `P${i}`, answer: p.coef.toString()}));
+            const validRx = REACTIONS.filter(r => r.reactants.some(x => x.coef > 1) || r.products.some(x => x.coef > 1));
+            const rx = validRx[Math.floor(Math.random() * validRx.length)];
+            q.name = rx.name; q.isAbstract = false;
+            q.displayReactants = rx.reactants.map(f => ({...f})); q.displayProducts = rx.products.map(f => ({...f}));
+            rx.reactants.forEach((r, i) => { if(r.coef > 1) { q.blanks.push({key: `R${i}`, answer: r.coef.toString()}); } });
+            rx.products.forEach((p, i) => { if(p.coef > 1) { q.blanks.push({key: `P${i}`, answer: p.coef.toString()}); } });
         }
         q.type = '계수 맞추기';
         break;
@@ -583,19 +621,48 @@ const App = {
 
   checkAnswer() {
     const q = this.state.currentQuestion; if (!q) return;
-    this.state.isAnswerChecked = true; let allCorrect = true;
-    q.blanks.forEach(b => { if ((q.inputs[b.key] || '') !== b.answer) allCorrect = false; });
+    this.state.isAnswerChecked = true; 
+    let allCorrect = true;
+    let hasCoefficientOneError = false;
+
+    q.blanks.forEach(b => { 
+      const val = q.inputs[b.key] || '';
+      if (val !== b.answer) {
+        allCorrect = false;
+        if (this.state.currentMode !== 1 && val === '1' + b.answer) {
+          hasCoefficientOneError = true;
+        }
+      } 
+    });
     
     if (allCorrect) { 
       this.state.score.streak++; this.state.score.correct++; 
     } else { 
       this.state.score.streak = 0; this.state.score.wrong++; 
-      const ansStr = q.blanks.map(b => b.answer).join(' / ');
-      this.saveWrongNote(`[${q.type}] ${q.name}`, ansStr);
+      this.generateBeautifulWrongNote(q);
+      q.coefOneErrorFlag = hasCoefficientOneError;
     }
     
     clearInterval(this.state.timerInterval);
     this.renderAll(allCorrect);
+  },
+
+  generateBeautifulWrongNote(q) {
+    let fullEqHtml = '';
+    if (q.isMode5) {
+      fullEqHtml = `<span class="eq-text" style="font-size:20px; font-weight:bold; color:var(--c-correct);">${this.formatInput(q.blanks[0].answer)}</span>`;
+    } else {
+      const formatSide = (side) => side.map(c => (c.coef > 1 ? `<span class="eq-text">${c.coef}</span>` : '') + c.formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join('')).join(' <span class="eq-plus">+</span> ');
+      if(!q.isAbstract) {
+        const rx = REACTIONS.find(r => r.name === q.name);
+        fullEqHtml = `${formatSide(rx.reactants)} <span class="eq-arrow">→</span> ${formatSide(rx.products)}`;
+      } else {
+        const rSide = q.displayReactants.map(c => (c.coef>1?`<span class="eq-text">${c.coef}</span>`:'') + this.formatFormula(c.formula)).join(' <span class="eq-plus">+</span> ');
+        const pSide = q.displayProducts.map(c => (c.coef>1?`<span class="eq-text">${c.coef}</span>`:'') + this.formatFormula(c.formula)).join(' <span class="eq-plus">+</span> ');
+        fullEqHtml = `${rSide} <span class="eq-arrow">→</span> ${pSide}`;
+      }
+    }
+    this.saveWrongNote(this.state.currentMode, q.name, fullEqHtml);
   },
 
   revealAnswers() { this.state.isAnswerRevealed = true; this.renderEquation(); this.renderResultBanner(false); },
@@ -627,14 +694,17 @@ const App = {
     const formatChemical = (chemList, keyPrefix) => {
       return chemList.map((c, i) => {
         const key = `${keyPrefix}${i}`;
+        const blankData = q.blanks.find(b => b.key === key);
+        
         if (this.state.currentMode === 1) {
-          const blankData = q.blanks.find(b => b.key === key);
-          const box = this.renderBlankBox(key, blankData.answer);
-          return box + this.formatFormula(c.formula);
+          if (blankData) {
+            return this.renderBlankBox(key, blankData.answer) + this.formatFormula(c.formula);
+          } else {
+            return this.formatFormula(c.formula);
+          }
         } else {
-          if (c.isBlank) {
-            const blankData = q.blanks.find(b => b.key === key);
-            return this.renderBlankBox(key, blankData.answer);
+          if (c.isBlank || blankData) {
+            return this.renderBlankBox(key, blankData ? blankData.answer : '');
           } else {
             const coefStr = c.coef > 1 ? `<span class="eq-text">${c.coef}</span>` : '';
             return coefStr + this.formatFormula(c.formula);
@@ -659,11 +729,22 @@ const App = {
   },
 
   renderResultBanner(isCorrect) {
-    if (isCorrect) { this.$.resultBanner.className = 'result-banner correct-banner show'; this.$.resultBanner.innerHTML = `✅ 정답입니다! 연속 ${this.state.score.streak}회 성공!`;
+    if (isCorrect) { 
+      this.$.resultBanner.className = 'result-banner correct-banner show'; 
+      this.$.resultBanner.innerHTML = `✅ 정답입니다! 연속 ${this.state.score.streak}회 성공!`;
     } else {
       this.$.resultBanner.className = 'result-banner wrong-banner show';
-      if (this.state.isAnswerRevealed) { const answerHtml = this.state.currentQuestion.blanks.map(b => `<strong>${this.formatInput(b.answer)}</strong>`).join(', '); this.$.resultBanner.innerHTML = `❌ 오답입니다. 정답: ${answerHtml}`;
-      } else { this.$.resultBanner.innerHTML = `❌ 오답입니다. <button class="show-answer-btn">답 보기</button>`; }
+      
+      let errorWarningHtml = '';
+      if (this.state.currentQuestion.coefOneErrorFlag) {
+        errorWarningHtml = `<div style="color:var(--c-wrong); font-size:13px; margin-bottom:8px; width:100%;">⚠️ 주의: 화학에서 계수 '1'은 생략해야 합니다.</div>`;
+      }
+
+      if (this.state.isAnswerRevealed) { 
+        this.$.resultBanner.innerHTML = `${errorWarningHtml}<div style="display:flex; align-items:center; width:100%;">❌ 오답입니다. 정답이 표시되었습니다.</div>`;
+      } else { 
+        this.$.resultBanner.innerHTML = `${errorWarningHtml}<div style="display:flex; align-items:center; width:100%; justify-content:space-between;"><span>❌ 오답입니다.</span><button class="show-answer-btn">정답 확인</button></div>`; 
+      }
     }
   },
 
@@ -671,7 +752,7 @@ const App = {
 
   formatFormula(formula) { return formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join(''); },
   formatInput(str) { if (!str) return ''; return str.replace(/([a-zA-Z]+)(\d+)/g, '$1<sub>$2</sub>'); },
-  toggleTheme() { this.state.isDarkMode = !this.state.isDarkMode; document.body.classList.toggle('light', !this.state.isDarkMode); document.getElementById('themeBtn').textContent = this.state.isDarkMode ? '🌙' : '☀️'; },
+  toggleTheme() { this.state.isDarkMode = !this.state.isDarkMode; document.body.classList.toggle('light', !this.state.isDarkMode); document.getElementById('themeBtn').textContent = this.state.isDarkMode ? '🌙' : '☀️'; }
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
