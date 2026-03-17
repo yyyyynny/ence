@@ -261,14 +261,21 @@
   const error = document.getElementById('authError');
   const CORRECT_PASSWORD = "ence"; 
 
-  // 로컬 스토리지 검사
-  if(localStorage.getItem('chem_auth') === 'true') {
-    overlay.style.display = 'none';
+  // 1. 스토리지 차단 에러 방어 (try-catch 적용)
+  try {
+    if(localStorage.getItem('chem_auth') === 'true') {
+      overlay.style.display = 'none';
+    }
+  } catch(e) {
+    console.warn('스토리지 접근이 차단된 환경입니다.');
   }
 
   const checkAuth = () => {
-    if(input.value === CORRECT_PASSWORD) {
-      localStorage.setItem('chem_auth', 'true');
+    // 2. 모바일 오타 방어: 대소문자 통일 및 앞뒤 공백 강제 제거
+    const typedPassword = input.value.trim().toLowerCase();
+
+    if(typedPassword === CORRECT_PASSWORD.toLowerCase()) {
+      try { localStorage.setItem('chem_auth', 'true'); } catch(e) {}
       overlay.style.opacity = '0';
       setTimeout(() => overlay.style.display = 'none', 300);
     } else {
@@ -287,7 +294,6 @@
     const y = e.clientY || (e.touches ? e.touches[0].clientY : 50);
     const emojis = ['🎆', '🌟', '✨', '💖', '🎉', '🌸', '🐰'];
 
-    // 1. 버튼 주위 파티클
     for(let i=0; i<35; i++) {
       const p = document.createElement('div');
       p.className = 'egg-particle';
@@ -300,6 +306,32 @@
       document.body.appendChild(p);
       setTimeout(() => p.remove(), 800);
     }
+
+    const flash = document.createElement('div');
+    Object.assign(flash.style, {
+      position: 'fixed', inset: 0, zIndex: 9999998,
+      background: 'linear-gradient(135deg, rgba(255,182,193,0.9), rgba(200,162,200,0.9))',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column',
+      opacity: 0, transition: 'opacity 0.5s ease-out', pointerEvents: 'none'
+    });
+    flash.innerHTML = '<div style="font-size:80px; animation:shake 0.5s infinite;">💖 깜짝이야! 💖</div>';
+    document.body.appendChild(flash);
+    
+    setTimeout(() => { flash.style.opacity = 1; }, 50);
+    
+    setTimeout(() => {
+      flash.style.opacity = 0;
+      setTimeout(() => flash.remove(), 500);
+      
+      // 3. 권한 몰수 시 스토리지 에러 방어
+      try { localStorage.removeItem('chem_auth'); } catch(e) {}
+      input.value = '';
+      error.style.display = 'none';
+      overlay.style.display = 'flex';
+      setTimeout(() => overlay.style.opacity = '1', 50);
+    }, 1200);
+  });
+})();
 
     // 2. 전체 화면 귀염뽀짝 플래시 효과
     const flash = document.createElement('div');
