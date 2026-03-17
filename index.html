@@ -39,56 +39,22 @@
     --c-wrong: #DC2626;
   }
 
-  * {
-    margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent;
-  }
-
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html { background: var(--c-bg); }
+  body { font-family: var(--font-ui); background: var(--c-bg); color: var(--c-text-primary); min-height: 100vh; min-height: 100dvh; transition: background 0.3s, color 0.3s; overflow-x: hidden; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: radial-gradient(circle at 25% 25%, var(--c-accent-1), transparent 30%), radial-gradient(circle at 75% 75%, var(--c-accent-2), transparent 30%); opacity: 0.15; filter: blur(100px); pointer-events: none; z-index: 0; }
 
-  body {
-    font-family: var(--font-ui);
-    background: var(--c-bg);
-    color: var(--c-text-primary);
-    min-height: 100vh; min-height: 100dvh;
-    transition: background 0.3s, color 0.3s;
-    overflow-x: hidden;
-  }
-
-  body::before {
-    content: ''; position: fixed; inset: 0;
-    background-image:
-      radial-gradient(circle at 25% 25%, var(--c-accent-1), transparent 30%),
-      radial-gradient(circle at 75% 75%, var(--c-accent-2), transparent 30%);
-    opacity: 0.15; filter: blur(100px); pointer-events: none; z-index: 0;
-  }
-
-  #app {
-    position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 16px;
-    display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh;
-  }
-
+  #app { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
   header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 
-  .logo-egg {
-    font-family: var(--font-ui); font-size: 16px; font-weight: 900;
-    color: var(--c-wrong); letter-spacing: 1px; cursor: pointer;
-    user-select: none; transition: transform 0.2s;
-  }
+  .logo-egg { font-family: var(--font-ui); font-size: 16px; font-weight: 900; color: var(--c-wrong); letter-spacing: 1px; cursor: pointer; user-select: none; transition: transform 0.2s; }
   .logo-egg:active { transform: scale(0.9); }
 
   .header-right { display: flex; gap: 8px; align-items: center; }
-
-  .icon-btn {
-    background: var(--c-surface-1); border: 1px solid var(--c-border); color: var(--c-text-secondary);
-    width: 44px; height: 44px; border-radius: 12px; cursor: pointer; font-size: 18px;
-    display: flex; align-items: center; justify-content: center; transition: all 0.2s; backdrop-filter: blur(10px);
-  }
+  .icon-btn { background: var(--c-surface-1); border: 1px solid var(--c-border); color: var(--c-text-secondary); width: 44px; height: 44px; border-radius: 12px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; backdrop-filter: blur(10px); }
   .icon-btn:hover { border-color: var(--c-border-active); color: var(--c-accent-1); }
 
-  .stat-bar {
-    background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 16px;
-    padding: 12px 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 16px; backdrop-filter: blur(10px);
-  }
+  .stat-bar { background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 16px; padding: 12px 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 16px; backdrop-filter: blur(10px); }
   .stat-item { display: flex; align-items: center; gap: 8px; }
   .stat-label { font-size: 11px; color: var(--c-text-secondary); text-transform: uppercase; letter-spacing: 1px; font-family: var(--font-mono); }
   .stat-value { font-family: var(--font-mono); font-size: 24px; font-weight: 700; line-height: 1; transition: transform 0.2s; }
@@ -98,29 +64,25 @@
   #totalWrong { color: var(--c-wrong); }
   .streak-flames { font-size: 20px; }
 
-  .mode-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
-  .mode-tab {
-    background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 12px;
-    color: var(--c-text-secondary); padding: 12px 6px; font-size: 12px; font-weight: 700;
-    cursor: pointer; transition: all 0.2s; text-align: center; line-height: 1.4; backdrop-filter: blur(10px);
-  }
+  .mode-tabs { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 16px; padding-bottom: 4px; scrollbar-width: none; }
+  .mode-tabs::-webkit-scrollbar { display: none; }
+  .mode-tab { flex: 0 0 auto; background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 12px; color: var(--c-text-secondary); padding: 12px 14px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: center; line-height: 1.4; backdrop-filter: blur(10px); }
   .mode-tab.active { background: var(--c-accent-1); border-color: var(--c-accent-1); color: var(--c-bg); }
   .mode-tab .tab-icon { font-size: 18px; display: block; margin-bottom: 4px; }
 
-  .question-card {
-    background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px;
-    padding: 24px; margin-bottom: 16px; min-height: 160px; display: flex; flex-direction: column; gap: 16px; flex-grow: 1;
-  }
-  .q-label { font-size: 12px; color: var(--c-accent-1); font-family: var(--font-mono); letter-spacing: 1px; font-weight: 700; }
+  .question-card { background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px; padding: 24px; margin-bottom: 16px; min-height: 180px; display: flex; flex-direction: column; gap: 16px; flex-grow: 1; position: relative; overflow: hidden; }
+  
+  /* 타임어택 바 UI */
+  .timer-container { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: rgba(0,0,0,0.2); }
+  .timer-bar { height: 100%; background: var(--c-accent-1); width: 100%; transition: background 0.3s; }
+  .timer-bar.danger { background: var(--c-wrong); }
+
+  .q-label { font-size: 12px; color: var(--c-accent-1); font-family: var(--font-mono); letter-spacing: 1px; font-weight: 700; margin-top: 4px; }
   .q-sublabel { font-size: 14px; color: var(--c-text-secondary); font-weight: 500; }
 
   .equation-display { font-family: var(--font-mono); font-size: clamp(16px, 4.5vw, 24px); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; line-height: 2; margin: auto 0; }
 
-  .blank-box {
-    display: inline-block; min-width: 44px; height: 44px; border: 2px solid var(--c-border); border-radius: 10px;
-    background: var(--c-surface-2); text-align: center; line-height: 40px; cursor: pointer; transition: all 0.2s;
-    font-size: 1em; font-weight: 700; color: var(--c-text-primary); padding: 0 10px; font-family: var(--font-mono);
-  }
+  .blank-box { display: inline-block; min-width: 44px; height: 44px; border: 2px solid var(--c-border); border-radius: 10px; background: var(--c-surface-2); text-align: center; line-height: 40px; cursor: pointer; transition: all 0.2s; font-size: 1em; font-weight: 700; color: var(--c-text-primary); padding: 0 10px; font-family: var(--font-mono); }
   .blank-box.active { border-color: var(--c-border-active); box-shadow: 0 0 0 4px rgba(0, 229, 255, 0.2); }
   .blank-box.correct { border-color: var(--c-correct); background: rgba(16, 185, 129, 0.15); color: var(--c-correct); }
   .blank-box.wrong { border-color: var(--c-wrong); background: rgba(239, 68, 68, 0.15); color: var(--c-wrong); animation: shake 0.4s; }
@@ -153,30 +115,26 @@
 
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
   .modal-overlay.show { display: flex; }
-  .modal-box { background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px; width: 100%; max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; padding: 24px; }
-  .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; }
+  .modal-box { background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px; width: 100%; max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; padding: 24px; position: relative; }
+  .modal-header { display: flex; justify-content: space-between; margin-bottom: 20px; align-items: center; }
   .modal-title { font-size: 18px; font-weight: 900; color: var(--c-accent-1); }
   .modal-close { background: none; border: none; color: var(--c-text-secondary); font-size: 28px; cursor: pointer; }
-  .modal-content { overflow-y: auto; }
-  .reaction-item { background: var(--c-surface-2); border-radius: 12px; padding: 12px; margin-bottom: 10px; font-family: var(--font-mono); font-size: 14px; }
-  .reaction-name { color: var(--c-accent-3); font-size: 13px; margin-bottom: 6px; }
+  .modal-content { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+  .reaction-item { background: var(--c-surface-2); border-radius: 12px; padding: 12px; font-family: var(--font-mono); font-size: 14px; display: flex; justify-content: space-between; align-items: center; }
+  .reaction-info { flex-grow: 1; }
+  .reaction-name { color: var(--c-accent-3); font-size: 13px; margin-bottom: 6px; font-family: var(--font-ui); }
+  .delete-note-btn { background: rgba(239,68,68,0.2); border: 1px solid var(--c-wrong); color: var(--c-wrong); border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 12px; font-weight: bold; margin-left: 10px; }
+  .clear-all-btn { background: var(--c-wrong); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-weight: bold; cursor: pointer; margin-bottom: 16px; align-self: flex-end; }
 
-  /* 이스터에그 파티클 효과 */
-  .egg-particle {
-    position: fixed; pointer-events: none; z-index: 9999999; font-size: 24px;
-    animation: egg-pop 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
-  }
-  @keyframes egg-pop {
-    0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
-    100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.5); opacity: 0; }
-  }
+  .egg-particle { position: fixed; pointer-events: none; z-index: 9999999; font-size: 24px; animation: egg-pop 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+  @keyframes egg-pop { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.5); opacity: 0; } }
 </style>
 </head>
 <body>
 
 <div id="authOverlay" style="position:fixed; inset:0; z-index:99999999; background:var(--c-bg); display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-family:var(--font-ui); transition: opacity 0.3s;">
-  <h2 style="color:var(--c-accent-1); margin-bottom:20px;">🔒 반응물이 반응하면 생성물</h2>
-  <p style="color:var(--c-text-secondary); font-size:13px; margin-bottom:20px;">접근 코드를 입력해라.</p>
+  <h2 style="color:var(--c-accent-1); margin-bottom:20px;">🔒 화학 반응식 날먹 생성기</h2>
+  <p style="color:var(--c-text-secondary); font-size:13px; margin-bottom:20px;">인가된 인원만 접근 가능합니다.</p>
   <input type="password" id="authInput" placeholder="Password" style="padding:12px; border-radius:8px; border:1px solid var(--c-border); background:rgba(0,0,0,0.3); color:#fff; font-size:16px; margin-bottom:16px; text-align:center; outline:none;">
   <button id="authBtn" style="padding:12px 24px; border-radius:8px; background:var(--c-accent-2); border:none; color:#fff; font-weight:bold; cursor:pointer; font-size:14px;">접속하기</button>
   <p id="authError" style="color:#ef4444; font-size:12px; margin-top:12px; display:none;">❌ 코드가 틀렸습니다 ㅋ.</p>
@@ -186,6 +144,7 @@
   <header>
     <div class="logo-egg" id="easterEggBtn">누루ズl ㅁトパㅔ요</div>
     <div class="header-right">
+      <button class="icon-btn" id="wrongNoteBtn" title="오답 노트">📓</button>
       <button class="icon-btn" id="hintBtn" title="전체 반응식 보기">📋</button>
       <button class="icon-btn" id="themeBtn" title="다크/라이트 모드">🌙</button>
     </div>
@@ -213,9 +172,11 @@
     <button class="mode-tab" data-mode="2"><span class="tab-icon">🧪</span>반응물 맞추기</button>
     <button class="mode-tab" data-mode="3"><span class="tab-icon">⚗️</span>생성물 맞추기</button>
     <button class="mode-tab" data-mode="4"><span class="tab-icon">📝</span>전체 반응식</button>
+    <button class="mode-tab" data-mode="5"><span class="tab-icon">🧠</span>화학식 암기</button>
   </div>
 
   <div class="question-card" id="questionCard">
+    <div class="timer-container"><div class="timer-bar" id="timerBar"></div></div>
     <div id="questionHeader">
       <div class="q-label" id="qLabel"></div>
       <div class="q-sublabel" id="qSubLabel"></div>
@@ -239,13 +200,24 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="modalOverlay">
+<div class="modal-overlay" id="hintModalOverlay">
   <div class="modal-box">
     <div class="modal-header">
       <div class="modal-title">📋 전체 반응식 목록</div>
-      <button class="modal-close" id="modalClose">✕</button>
+      <button class="modal-close" id="hintModalClose">✕</button>
     </div>
-    <div class="modal-content"><div class="reaction-list" id="reactionList"></div></div>
+    <div class="modal-content" id="reactionList"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="wrongNoteModalOverlay">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div class="modal-title">📓 오답 노트 (영구 보존)</div>
+      <button class="modal-close" id="wrongNoteModalClose">✕</button>
+    </div>
+    <button class="clear-all-btn" id="clearAllNotesBtn">🗑 전체 삭제</button>
+    <div class="modal-content" id="wrongNoteList"></div>
   </div>
 </div>
 
@@ -258,11 +230,7 @@
   const error = document.getElementById('authError');
   const CORRECT_PASSWORD = "yyyyynny"; 
 
-  try {
-    if(localStorage.getItem('chem_auth') === 'true') {
-      overlay.style.display = 'none';
-    }
-  } catch(e) {}
+  try { if(localStorage.getItem('chem_auth') === 'true') overlay.style.display = 'none'; } catch(e) {}
 
   const checkAuth = () => {
     const typedPassword = input.value.trim().toLowerCase();
@@ -309,7 +277,6 @@
     document.body.appendChild(flash);
     
     setTimeout(() => { flash.style.opacity = 1; }, 50);
-    
     setTimeout(() => {
       flash.style.opacity = 0;
       setTimeout(() => flash.remove(), 500);
@@ -341,6 +308,23 @@ const REACTIONS = [
   { name: "염화나트륨 + 질산은 → 질산나트륨 + 염화은", reactants: [{coef:1,formula:[{sym:"Na"},{sym:"Cl"}]}, {coef:1,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}], products: [{coef:1,formula:[{sym:"Na"},{sym:"NO",sub:3}]}, {coef:1,formula:[{sym:"Ag"},{sym:"Cl"}]}] }
 ];
 
+const CHEMICALS = [
+  { name: "일산화탄소", formula: [{sym:"CO"}] }, { name: "이산화탄소", formula: [{sym:"CO",sub:2}] },
+  { name: "산소", formula: [{sym:"O",sub:2}] }, { name: "물", formula: [{sym:"H",sub:2},{sym:"O"}] },
+  { name: "메테인", formula: [{sym:"CH",sub:4}] }, { name: "구리", formula: [{sym:"Cu"}] },
+  { name: "산화구리(Ⅱ)", formula: [{sym:"Cu"},{sym:"O"}] }, { name: "과산화수소", formula: [{sym:"H",sub:2},{sym:"O",sub:2}] },
+  { name: "수소", formula: [{sym:"H",sub:2}] }, { name: "염소", formula: [{sym:"Cl",sub:2}] },
+  { name: "염화수소(염산)", formula: [{sym:"H"},{sym:"Cl"}] }, { name: "마그네슘", formula: [{sym:"Mg"}] },
+  { name: "산화마그네슘", formula: [{sym:"Mg"},{sym:"O"}] }, { name: "염화마그네슘", formula: [{sym:"Mg"},{sym:"Cl",sub:2}] },
+  { name: "질소", formula: [{sym:"N",sub:2}] }, { name: "이산화질소", formula: [{sym:"N"},{sym:"O",sub:2}] },
+  { name: "암모니아", formula: [{sym:"N"},{sym:"H",sub:3}] }, { name: "에탄올", formula: [{sym:"C",sub:2},{sym:"H",sub:5},{sym:"O"},{sym:"H"}] },
+  { name: "탄산나트륨", formula: [{sym:"Na",sub:2},{sym:"CO",sub:3}] }, { name: "염화칼슘", formula: [{sym:"Ca"},{sym:"Cl",sub:2}] },
+  { name: "염화나트륨", formula: [{sym:"Na"},{sym:"Cl"}] }, { name: "탄산칼슘", formula: [{sym:"Ca"},{sym:"CO",sub:3}] },
+  { name: "탄산수소나트륨", formula: [{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}] }, { name: "질산은", formula: [{sym:"Ag"},{sym:"NO",sub:3}] },
+  { name: "염화은", formula: [{sym:"Ag"},{sym:"Cl"}] }, { name: "질산나트륨", formula: [{sym:"Na"},{sym:"NO",sub:3}] },
+  { name: "프로페인", formula: [{sym:"C",sub:3},{sym:"H",sub:8}] }, { name: "뷰테인", formula: [{sym:"C",sub:4},{sym:"H",sub:10}] }
+];
+
 function ri(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
 const COEF_TEMPLATES = [
   { label: "A₂ + B₂ → AB₄", gen: () => { const k=ri(1,3); return {a:k,b:2*k,c:k, fmt:[ {coef:k,formula:[{sym:"A",sub:2}]}, {coef:2*k,formula:[{sym:"B",sub:2}]} ], fmtP:[ {coef:k,formula:[{sym:"A"},{sym:"B",sub:4}]} ]}; } },
@@ -356,18 +340,63 @@ const UPPER_ELEMENTS = ['H', 'C', 'O', 'N', 'S', 'P', 'Na', 'Mg', 'Ca', 'Cu', 'A
 const LOWER_LETTERS = ['a', 'b', 'c', 'l', 'g', 'u', 'e', 'r', 'x', 'y'];
 
 const App = {
-  state: { currentMode: 1, score: { streak: 0, correct: 0, wrong: 0 }, currentQuestion: null, isAnswerChecked: false, isAnswerRevealed: false, isDarkMode: true },
+  state: { 
+    currentMode: null, // 버그 1 픽스: 초기화 락킹 방지
+    score: { streak: 0, correct: 0, wrong: 0 }, 
+    currentQuestion: null, 
+    isAnswerChecked: false, 
+    isAnswerRevealed: false, 
+    isDarkMode: true,
+    timerLeft: 15000,
+    timerInterval: null,
+    wrongNotes: []
+  },
   $: {
     app: document.getElementById('app'), streakCount: document.getElementById('streakCount'), streakFlames: document.getElementById('streakFlames'),
     totalCorrect: document.getElementById('totalCorrect'), totalWrong: document.getElementById('totalWrong'), modeTabs: document.querySelector('.mode-tabs'),
     qLabel: document.getElementById('qLabel'), qSubLabel: document.getElementById('qSubLabel'), equationDisplay: document.getElementById('equationDisplay'),
     resultBanner: document.getElementById('resultBanner'), numRow: document.getElementById('numRow'), 
     elemUpperRow: document.getElementById('elemUpperRow'), elemLowerRow: document.getElementById('elemLowerRow'),
-    confirmBtn: document.querySelector('.kb-key.confirm'), nextBtn: document.querySelector('.kb-key.next-q'), modalOverlay: document.getElementById('modalOverlay'),
-    reactionList: document.getElementById('reactionList'),
+    confirmBtn: document.querySelector('.kb-key.confirm'), nextBtn: document.querySelector('.kb-key.next-q'), 
+    hintModalOverlay: document.getElementById('hintModalOverlay'), wrongNoteModalOverlay: document.getElementById('wrongNoteModalOverlay'),
+    reactionList: document.getElementById('reactionList'), wrongNoteList: document.getElementById('wrongNoteList'),
+    timerBar: document.getElementById('timerBar')
   },
 
-  init() { this.buildKeyboard(); this.buildModalList(); this.attachEventListeners(); this.setMode(1); },
+  init() { 
+    this.loadWrongNotes();
+    this.buildKeyboard(); 
+    this.buildModalList(); 
+    this.attachEventListeners(); 
+    this.setMode(1); 
+  },
+
+  loadWrongNotes() {
+    try {
+      const data = localStorage.getItem('chem_wrong_notes');
+      this.state.wrongNotes = data ? JSON.parse(data) : [];
+    } catch(e) { this.state.wrongNotes = []; }
+  },
+
+  saveWrongNote(qStr, aStr) {
+    const id = Date.now().toString();
+    this.state.wrongNotes.push({ id, q: qStr, a: aStr });
+    try { localStorage.setItem('chem_wrong_notes', JSON.stringify(this.state.wrongNotes)); } catch(e) {}
+    this.renderWrongNotes();
+  },
+
+  deleteWrongNote(id) {
+    this.state.wrongNotes = this.state.wrongNotes.filter(n => n.id !== id);
+    try { localStorage.setItem('chem_wrong_notes', JSON.stringify(this.state.wrongNotes)); } catch(e) {}
+    this.renderWrongNotes();
+  },
+
+  clearWrongNotes() {
+    if(!confirm("오답 노트를 전부 삭제하시겠습니까?")) return;
+    this.state.wrongNotes = [];
+    try { localStorage.removeItem('chem_wrong_notes'); } catch(e) {}
+    this.renderWrongNotes();
+  },
 
   buildKeyboard() {
     this.$.numRow.innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(n => `<button class="kb-key num" data-key="NUM_${n}">${n}</button>`).join('');
@@ -378,33 +407,102 @@ const App = {
   buildModalList() {
     this.$.reactionList.innerHTML = REACTIONS.map((rx, i) => {
       const formatSide = (side) => side.map(r => (r.coef > 1 ? r.coef : '') + r.formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join('')).join(' + ');
-      return `<div class="reaction-item"><div class="reaction-num">#${i + 1}</div><div class="reaction-name">${rx.name}</div><div class="reaction-eq">${formatSide(rx.reactants)} <span class="eq-arrow">→</span> ${formatSide(rx.products)}</div></div>`;
+      return `<div class="reaction-item"><div class="reaction-info"><div class="reaction-name">#${i + 1} ${rx.name}</div><div class="reaction-eq">${formatSide(rx.reactants)} <span class="eq-arrow">→</span> ${formatSide(rx.products)}</div></div></div>`;
     }).join('');
+    this.renderWrongNotes();
+  },
+
+  renderWrongNotes() {
+    if (this.state.wrongNotes.length === 0) {
+      this.$.wrongNoteList.innerHTML = `<p style="color:var(--c-text-secondary); text-align:center; padding: 20px;">틀린 문제가 없습니다.</p>`;
+      return;
+    }
+    this.$.wrongNoteList.innerHTML = this.state.wrongNotes.map(n => `
+      <div class="reaction-item">
+        <div class="reaction-info">
+          <div class="reaction-name">${n.q}</div>
+          <div class="reaction-eq" style="color:var(--c-wrong)">정답: ${this.formatInput(n.a)}</div>
+        </div>
+        <button class="delete-note-btn" data-id="${n.id}">삭제</button>
+      </div>
+    `).join('');
   },
 
   attachEventListeners() {
     this.$.app.addEventListener('click', e => {
       const modeTab = e.target.closest('.mode-tab'); const blankBox = e.target.closest('.blank-box'); const keyBtn = e.target.closest('.kb-key');
-      const themeBtn = e.target.closest('#themeBtn'); const hintBtn = e.target.closest('#hintBtn'); const showAnswerBtn = e.target.closest('.show-answer-btn');
+      const themeBtn = e.target.closest('#themeBtn'); const hintBtn = e.target.closest('#hintBtn'); const wrongNoteBtn = e.target.closest('#wrongNoteBtn');
+      const showAnswerBtn = e.target.closest('.show-answer-btn');
+      
       if (modeTab) this.setMode(parseInt(modeTab.dataset.mode));
       if (blankBox) this.setActiveBlank(blankBox.dataset.key);
       if (keyBtn) this.handleKeyPress(keyBtn.dataset.key);
       if (themeBtn) this.toggleTheme();
-      if (hintBtn) this.showModal(true);
+      if (hintBtn) this.$.hintModalOverlay.classList.add('show');
+      if (wrongNoteBtn) { this.renderWrongNotes(); this.$.wrongNoteModalOverlay.classList.add('show'); }
       if (showAnswerBtn) this.revealAnswers();
     });
 
-    this.$.modalOverlay.addEventListener('click', e => { if (e.target === this.$.modalOverlay || e.target.closest('#modalClose')) this.showModal(false); });
+    document.getElementById('hintModalClose').addEventListener('click', () => this.$.hintModalOverlay.classList.remove('show'));
+    document.getElementById('wrongNoteModalClose').addEventListener('click', () => this.$.wrongNoteModalOverlay.classList.remove('show'));
+    document.getElementById('clearAllNotesBtn').addEventListener('click', () => this.clearWrongNotes());
+    
+    this.$.wrongNoteList.addEventListener('click', e => {
+      if(e.target.classList.contains('delete-note-btn')) this.deleteWrongNote(e.target.dataset.id);
+    });
 
     document.addEventListener('keydown', e => {
-      if (this.$.modalOverlay.classList.contains('show') || document.getElementById('authOverlay').style.display !== 'none') return;
+      if (this.$.hintModalOverlay.classList.contains('show') || this.$.wrongNoteModalOverlay.classList.contains('show') || document.getElementById('authOverlay').style.display !== 'none') return;
       if (e.key >= '0' && e.key <= '9') this.handleKeyPress(`NUM_${e.key}`);
       else if (e.key === 'Backspace') this.handleKeyPress('DEL');
       else if (e.key === 'Enter') this.handleKeyPress(this.state.isAnswerChecked ? 'NEXT' : 'CONFIRM');
-      else if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
-         this.handleKeyPress(`ELEM_${e.key}`);
-      }
+      else if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) { this.handleKeyPress(`ELEM_${e.key}`); }
     });
+  },
+
+  startTimer() {
+    clearInterval(this.state.timerInterval);
+    this.state.timerLeft = 15000;
+    this.$.timerBar.style.transition = 'none';
+    this.$.timerBar.style.width = '100%';
+    this.$.timerBar.classList.remove('danger');
+    
+    // Force reflow
+    void this.$.timerBar.offsetWidth;
+    this.$.timerBar.style.transition = 'width 0.1s linear, background 0.3s';
+
+    let lastTime = Date.now();
+    this.state.timerInterval = setInterval(() => {
+      if (this.state.isAnswerChecked) { clearInterval(this.state.timerInterval); return; }
+      
+      const now = Date.now();
+      this.state.timerLeft -= (now - lastTime);
+      lastTime = now;
+
+      if (this.state.timerLeft <= 0) {
+        this.state.timerLeft = 0;
+        clearInterval(this.state.timerInterval);
+        this.$.timerBar.style.width = '0%';
+        this.timeOutForceWrong();
+      } else {
+        const pct = (this.state.timerLeft / 15000) * 100;
+        this.$.timerBar.style.width = `${pct}%`;
+        if (pct < 30) this.$.timerBar.classList.add('danger');
+      }
+    }, 50);
+  },
+
+  timeOutForceWrong() {
+    this.state.isAnswerChecked = true;
+    this.state.score.streak = 0;
+    this.state.score.wrong++;
+    
+    const q = this.state.currentQuestion;
+    const ansStr = q.blanks.map(b => b.answer).join(' / ');
+    this.saveWrongNote(`[시간초과] ${q.name}`, ansStr);
+    
+    this.renderAll(false);
+    this.$.resultBanner.innerHTML = `⏰ 시간 초과! 연속 정답이 초기화되었습니다. <button class="show-answer-btn">답 보기</button>`;
   },
 
   handleKeyPress(key) {
@@ -468,16 +566,35 @@ const App = {
         rx4.reactants.forEach((r, i) => q.blanks.push({ key: `R${i}`, answer: formulaToString(r) }));
         rx4.products.forEach((p, i) => q.blanks.push({ key: `P${i}`, answer: formulaToString(p) }));
         break;
+      case 5:
+        const chem = CHEMICALS[Math.floor(Math.random() * CHEMICALS.length)];
+        q.name = chem.name; q.type = '화학식 암기';
+        q.isMode5 = true;
+        const fStr = chem.formula.map(p => p.sym + (p.sub ? p.sub.toString() : '')).join('');
+        q.blanks.push({ key: 'M5', answer: fStr });
+        break;
     }
     if (q.blanks.length > 0) q.activeKey = q.blanks[0].key;
-    this.state.currentQuestion = q; this.renderAll();
+    this.state.currentQuestion = q; 
+    
+    this.renderAll();
+    this.startTimer();
   },
 
   checkAnswer() {
     const q = this.state.currentQuestion; if (!q) return;
     this.state.isAnswerChecked = true; let allCorrect = true;
     q.blanks.forEach(b => { if ((q.inputs[b.key] || '') !== b.answer) allCorrect = false; });
-    if (allCorrect) { this.state.score.streak++; this.state.score.correct++; } else { this.state.score.streak = 0; this.state.score.wrong++; }
+    
+    if (allCorrect) { 
+      this.state.score.streak++; this.state.score.correct++; 
+    } else { 
+      this.state.score.streak = 0; this.state.score.wrong++; 
+      const ansStr = q.blanks.map(b => b.answer).join(' / ');
+      this.saveWrongNote(`[${q.type}] ${q.name}`, ansStr);
+    }
+    
+    clearInterval(this.state.timerInterval);
     this.renderAll(allCorrect);
   },
 
@@ -502,6 +619,11 @@ const App = {
   renderEquation() {
     const q = this.state.currentQuestion; if (!q) { this.$.equationDisplay.innerHTML = ''; return; }
     
+    if (q.isMode5) {
+      this.$.equationDisplay.innerHTML = this.renderBlankBox('M5', q.blanks[0].answer);
+      return;
+    }
+
     const formatChemical = (chemList, keyPrefix) => {
       return chemList.map((c, i) => {
         const key = `${keyPrefix}${i}`;
@@ -550,7 +672,6 @@ const App = {
   formatFormula(formula) { return formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join(''); },
   formatInput(str) { if (!str) return ''; return str.replace(/([a-zA-Z]+)(\d+)/g, '$1<sub>$2</sub>'); },
   toggleTheme() { this.state.isDarkMode = !this.state.isDarkMode; document.body.classList.toggle('light', !this.state.isDarkMode); document.getElementById('themeBtn').textContent = this.state.isDarkMode ? '🌙' : '☀️'; },
-  showModal(show) { this.$.modalOverlay.classList.toggle('show', show); },
 };
 
 document.addEventListener('DOMContentLoaded', () => App.init());
