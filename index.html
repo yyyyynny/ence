@@ -986,4 +986,73 @@ const App = {
 document.addEventListener('DOMContentLoaded', () => App.init());
 </script>
 </body>
+<script>
+(function() {
+  // 1. 기존에 잘못 생성된 텍스트 숨김 (충돌 방지)
+  const oldBtn = document.getElementById('easterEggBtn');
+  if(oldBtn) oldBtn.style.display = 'none';
+
+  // 2. 최상단 레이어에 강제로 터치 전용 텍스트 생성
+  const eggBtn = document.createElement('div');
+  eggBtn.innerHTML = '누루ズl ㅁトパㅔ요';
+  Object.assign(eggBtn.style, {
+    position: 'fixed',
+    top: '20px',
+    left: '20px',
+    color: '#ef4444', // 붉은색 강제 지정
+    fontWeight: '900',
+    fontSize: '15px',
+    cursor: 'pointer',
+    zIndex: '99999', // 무조건 맨 위에 배치
+    userSelect: 'none',
+    padding: '15px', // 모바일 터치 인식 영역 대폭 확대
+    letterSpacing: '1px'
+  });
+  document.body.appendChild(eggBtn);
+
+  // 3. 파티클 애니메이션 CSS 동적 주입
+  const style = document.createElement('style');
+  style.innerHTML = `
+    .egg-particle {
+      position: fixed; pointer-events: none; z-index: 999999; font-size: 24px;
+      animation: egg-pop 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+    }
+    @keyframes egg-pop {
+      0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; }
+      100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.5); opacity: 0; }
+    }
+  `;
+  document.head.appendChild(style);
+
+  // 4. 모바일 터치 및 클릭 동시 대응 폭죽 로직
+  const fireExplosion = (e) => {
+    e.preventDefault(); // 모바일 화면 더블탭 줌 등 불필요한 기본 동작 차단
+    const touch = e.touches ? e.touches[0] : e;
+    const x = touch.clientX;
+    const y = touch.clientY;
+    const emojis = ['🎆', '🌟', '✨', '🎉'];
+    
+    for(let i=0; i<35; i++) {
+      const p = document.createElement('div');
+      p.className = 'egg-particle';
+      p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+      p.style.left = x + 'px';
+      p.style.top = y + 'px';
+      
+      const angle = Math.random() * Math.PI * 2;
+      const velocity = 60 + Math.random() * 100;
+      p.style.setProperty('--tx', Math.cos(angle) * velocity + 'px');
+      p.style.setProperty('--ty', Math.sin(angle) * velocity + 'px');
+      
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 800); // 0.8초 후 가비지 컬렉션
+    }
+  };
+
+  // 마우스 클릭(PC)과 터치(모바일) 이벤트 모두에 연결
+  eggBtn.addEventListener('mousedown', fireExplosion);
+  eggBtn.addEventListener('touchstart', fireExplosion, {passive: false});
+})();
+</script>
+
 </html>
