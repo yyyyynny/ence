@@ -70,14 +70,9 @@
   header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 
   .logo-egg {
-    font-family: var(--font-ui);
-    font-size: 16px;
-    font-weight: 900;
-    color: var(--c-wrong);
-    letter-spacing: 1px;
-    cursor: pointer;
-    user-select: none;
-    transition: transform 0.2s;
+    font-family: var(--font-ui); font-size: 16px; font-weight: 900;
+    color: var(--c-wrong); letter-spacing: 1px; cursor: pointer;
+    user-select: none; transition: transform 0.2s;
   }
   .logo-egg:active { transform: scale(0.9); }
 
@@ -106,11 +101,11 @@
   .mode-tabs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 16px; }
   .mode-tab {
     background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 12px;
-    color: var(--c-text-secondary); padding: 12px 8px; font-size: 13px; font-weight: 700;
+    color: var(--c-text-secondary); padding: 12px 6px; font-size: 12px; font-weight: 700;
     cursor: pointer; transition: all 0.2s; text-align: center; line-height: 1.4; backdrop-filter: blur(10px);
   }
   .mode-tab.active { background: var(--c-accent-1); border-color: var(--c-accent-1); color: var(--c-bg); }
-  .mode-tab .tab-icon { font-size: 20px; display: block; margin-bottom: 4px; }
+  .mode-tab .tab-icon { font-size: 18px; display: block; margin-bottom: 4px; }
 
   .question-card {
     background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px;
@@ -122,9 +117,9 @@
   .equation-display { font-family: var(--font-mono); font-size: clamp(16px, 4.5vw, 24px); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; line-height: 2; margin: auto 0; }
 
   .blank-box {
-    display: inline-block; min-width: 48px; height: 48px; border: 2px solid var(--c-border); border-radius: 10px;
-    background: var(--c-surface-2); text-align: center; line-height: 44px; cursor: pointer; transition: all 0.2s;
-    font-size: 1em; font-weight: 700; color: var(--c-text-primary); padding: 0 12px; font-family: var(--font-mono);
+    display: inline-block; min-width: 44px; height: 44px; border: 2px solid var(--c-border); border-radius: 10px;
+    background: var(--c-surface-2); text-align: center; line-height: 40px; cursor: pointer; transition: all 0.2s;
+    font-size: 1em; font-weight: 700; color: var(--c-text-primary); padding: 0 10px; font-family: var(--font-mono);
   }
   .blank-box.active { border-color: var(--c-border-active); box-shadow: 0 0 0 4px rgba(0, 229, 255, 0.2); }
   .blank-box.correct { border-color: var(--c-correct); background: rgba(16, 185, 129, 0.15); color: var(--c-correct); }
@@ -134,8 +129,8 @@
   @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
 
   .eq-text { color: var(--c-text-primary); }
-  .eq-arrow { color: var(--c-accent-3); font-size: 1.2em; }
-  .eq-plus { color: var(--c-text-secondary); }
+  .eq-arrow { color: var(--c-accent-3); font-size: 1.2em; margin: 0 4px; }
+  .eq-plus { color: var(--c-text-secondary); margin: 0 4px; }
   sub { font-size: 0.65em; line-height: 0; vertical-align: sub; }
 
   .result-banner { border-radius: 12px; padding: 12px 16px; font-size: 14px; font-weight: 700; display: none; align-items: center; gap: 10px; margin-top: auto; }
@@ -145,12 +140,13 @@
   .show-answer-btn { background: var(--c-wrong); color: var(--c-bg); border: none; border-radius: 8px; padding: 6px 12px; font-weight: 700; cursor: pointer; margin-left: auto; }
 
   .keyboard-wrap { background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px; padding: 16px; }
-  .kb-section-label { font-size: 10px; color: var(--c-text-secondary); font-family: var(--font-mono); text-transform: uppercase; margin-bottom: 10px; }
-  .kb-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
-  .kb-key { background: var(--c-surface-2); border: 1px solid var(--c-border); border-radius: 10px; font-family: var(--font-mono); font-size: 16px; font-weight: 700; min-height: 48px; min-width: 44px; flex: 1 1 auto; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+  .kb-section-label { font-size: 10px; color: var(--c-text-secondary); font-family: var(--font-mono); text-transform: uppercase; margin-bottom: 8px; margin-top: 4px; }
+  .kb-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+  .kb-key { background: var(--c-surface-2); border: 1px solid var(--c-border); border-radius: 10px; font-family: var(--font-mono); font-size: 15px; font-weight: 700; min-height: 44px; min-width: 38px; flex: 1 1 auto; display: flex; align-items: center; justify-content: center; cursor: pointer; }
   .kb-key:active { transform: scale(0.95); }
   .kb-key.num { color: var(--c-accent-3); }
   .kb-key.elem { color: var(--c-accent-1); }
+  .kb-key.lower { color: var(--c-text-primary); font-weight: 500; }
   .kb-key.del { color: var(--c-wrong); flex-grow: 2; }
   .kb-key.confirm { background: var(--c-correct); color: #000; flex-grow: 3; }
   .kb-key.next-q { background: var(--c-accent-2); color: #fff; flex-grow: 3; }
@@ -214,9 +210,9 @@
 
   <div class="mode-tabs">
     <button class="mode-tab" data-mode="1"><span class="tab-icon">🔢</span>계수 맞추기</button>
-    <button class="mode-tab" data-mode="2"><span class="tab-icon">⚗️</span>전체 반응식</button>
-    <button class="mode-tab" data-mode="3"><span class="tab-icon">🧪</span>생성물 맞추기</button>
-    <button class="mode-tab" data-mode="4"><span class="tab-icon">✏️</span>빈칸 채우기</button>
+    <button class="mode-tab" data-mode="2"><span class="tab-icon">🧪</span>반응물 맞추기</button>
+    <button class="mode-tab" data-mode="3"><span class="tab-icon">⚗️</span>생성물 맞추기</button>
+    <button class="mode-tab" data-mode="4"><span class="tab-icon">📝</span>전체 반응식</button>
   </div>
 
   <div class="question-card" id="questionCard">
@@ -231,12 +227,14 @@
   <div class="keyboard-wrap">
     <div class="kb-section-label">Numbers</div>
     <div class="kb-row" id="numRow"></div>
-    <div class="kb-section-label">Elements</div>
-    <div class="kb-row" id="elemRow"></div>
-    <div class="kb-row">
-      <button class="kb-key del" data-key="DEL">⌫</button>
+    <div class="kb-section-label">Elements & Upper</div>
+    <div class="kb-row" id="elemUpperRow"></div>
+    <div class="kb-section-label">Lowercase</div>
+    <div class="kb-row" id="elemLowerRow"></div>
+    <div class="kb-row" style="margin-top: 12px;">
+      <button class="kb-key del" data-key="DEL">⌫ 지우기</button>
       <button class="kb-key confirm" data-key="CONFIRM">✓ 확인</button>
-      <button class="kb-key next-q" data-key="NEXT" style="display: none;">▶ 다음</button>
+      <button class="kb-key next-q" data-key="NEXT" style="display: none;">▶ 다음 문제</button>
     </div>
   </div>
 </div>
@@ -260,18 +258,14 @@
   const error = document.getElementById('authError');
   const CORRECT_PASSWORD = "yyyyynny"; 
 
-  // 로컬 스토리지 검사
   try {
     if(localStorage.getItem('chem_auth') === 'true') {
       overlay.style.display = 'none';
     }
-  } catch(e) {
-    console.warn('스토리지 접근 제한');
-  }
+  } catch(e) {}
 
   const checkAuth = () => {
     const typedPassword = input.value.trim().toLowerCase();
-
     if(typedPassword === CORRECT_PASSWORD.toLowerCase()) {
       try { localStorage.setItem('chem_auth', 'true'); } catch(e) {}
       overlay.style.opacity = '0';
@@ -285,14 +279,12 @@
   btn.addEventListener('click', checkAuth);
   input.addEventListener('keypress', (e) => { if(e.key === 'Enter') checkAuth(); });
 
-  // 귀염뽀짝 이스터에그 로직
   document.getElementById('easterEggBtn').addEventListener('click', (e) => {
     e.preventDefault();
     const x = e.clientX || (e.touches ? e.touches[0].clientX : window.innerWidth/2);
     const y = e.clientY || (e.touches ? e.touches[0].clientY : 50);
     const emojis = ['🎆', '🌟', '✨', '💖', '🎉', '🌸', '🐰'];
 
-    // 1. 버튼 주위 파티클
     for(let i=0; i<35; i++) {
       const p = document.createElement('div');
       p.className = 'egg-particle';
@@ -306,7 +298,6 @@
       setTimeout(() => p.remove(), 800);
     }
 
-    // 2. 전체 화면 플래시 효과
     const flash = document.createElement('div');
     Object.assign(flash.style, {
       position: 'fixed', inset: 0, zIndex: 9999998,
@@ -322,11 +313,8 @@
     setTimeout(() => {
       flash.style.opacity = 0;
       setTimeout(() => flash.remove(), 500);
-      
-      // 권한 몰수 및 비번창 팝업
       try { localStorage.removeItem('chem_auth'); } catch(e) {}
-      input.value = '';
-      error.style.display = 'none';
+      input.value = ''; error.style.display = 'none';
       overlay.style.display = 'flex';
       setTimeout(() => overlay.style.opacity = '1', 50);
     }, 1200);
@@ -364,7 +352,8 @@ const COEF_TEMPLATES = [
   { label: "A + B₂ → A₂B₃", gen: () => { const k=ri(1,2); const c=2*k,a=4*k,b=3*k; return {a,b,c, fmt:[ {coef:a,formula:[{sym:"A"}]}, {coef:b,formula:[{sym:"B",sub:2}]} ], fmtP:[ {coef:c,formula:[{sym:"A",sub:2},{sym:"B",sub:3}]} ]}; } },
 ];
 
-const ELEMENTS = ['H', 'C', 'O', 'N', 'Na', 'Mg', 'Cu', 'Cl', 'Ag', 'Ca', 'A', 'B'];
+const UPPER_ELEMENTS = ['H', 'C', 'O', 'N', 'S', 'P', 'Na', 'Mg', 'Ca', 'Cu', 'Ag', 'Cl', 'A', 'B'];
+const LOWER_LETTERS = ['a', 'b', 'c', 'l', 'g', 'u', 'e', 'r', 'x', 'y'];
 
 const App = {
   state: { currentMode: 1, score: { streak: 0, correct: 0, wrong: 0 }, currentQuestion: null, isAnswerChecked: false, isAnswerRevealed: false, isDarkMode: true },
@@ -372,7 +361,8 @@ const App = {
     app: document.getElementById('app'), streakCount: document.getElementById('streakCount'), streakFlames: document.getElementById('streakFlames'),
     totalCorrect: document.getElementById('totalCorrect'), totalWrong: document.getElementById('totalWrong'), modeTabs: document.querySelector('.mode-tabs'),
     qLabel: document.getElementById('qLabel'), qSubLabel: document.getElementById('qSubLabel'), equationDisplay: document.getElementById('equationDisplay'),
-    resultBanner: document.getElementById('resultBanner'), numRow: document.getElementById('numRow'), elemRow: document.getElementById('elemRow'),
+    resultBanner: document.getElementById('resultBanner'), numRow: document.getElementById('numRow'), 
+    elemUpperRow: document.getElementById('elemUpperRow'), elemLowerRow: document.getElementById('elemLowerRow'),
     confirmBtn: document.querySelector('.kb-key.confirm'), nextBtn: document.querySelector('.kb-key.next-q'), modalOverlay: document.getElementById('modalOverlay'),
     reactionList: document.getElementById('reactionList'),
   },
@@ -381,7 +371,8 @@ const App = {
 
   buildKeyboard() {
     this.$.numRow.innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(n => `<button class="kb-key num" data-key="NUM_${n}">${n}</button>`).join('');
-    this.$.elemRow.innerHTML = ELEMENTS.map(e => `<button class="kb-key elem" data-key="ELEM_${e}">${e}</button>`).join('');
+    this.$.elemUpperRow.innerHTML = UPPER_ELEMENTS.map(e => `<button class="kb-key elem" data-key="ELEM_${e}">${e}</button>`).join('');
+    this.$.elemLowerRow.innerHTML = LOWER_LETTERS.map(e => `<button class="kb-key lower" data-key="ELEM_${e}">${e}</button>`).join('');
   },
 
   buildModalList() {
@@ -410,7 +401,9 @@ const App = {
       if (e.key >= '0' && e.key <= '9') this.handleKeyPress(`NUM_${e.key}`);
       else if (e.key === 'Backspace') this.handleKeyPress('DEL');
       else if (e.key === 'Enter') this.handleKeyPress(this.state.isAnswerChecked ? 'NEXT' : 'CONFIRM');
-      else { const key = e.key.charAt(0).toUpperCase() + e.key.slice(1); if (ELEMENTS.includes(key)) this.handleKeyPress(`ELEM_${key}`); }
+      else if (e.key.length === 1 && /[a-zA-Z]/.test(e.key)) {
+         this.handleKeyPress(`ELEM_${e.key}`);
+      }
     });
   },
 
@@ -444,29 +437,36 @@ const App = {
 
     switch (this.state.currentMode) {
       case 1:
-        q.type = '계수 맞추기 (임의 문자)'; const tmpl = COEF_TEMPLATES[Math.floor(Math.random() * COEF_TEMPLATES.length)]; const data = tmpl.gen(); q.name = tmpl.label; q.isAbstract = true;
-        const all3 = [ {key:'R0', answer: data.a.toString()}, {key:'R1', answer: data.b.toString()}, {key:'P0', answer: data.c.toString()} ];
-        const blanksCount = ri(1, 3); const selectedBlanks = [...all3].sort(()=>Math.random()-0.5).slice(0, blanksCount); const blankSet = new Set(selectedBlanks.map(b => b.key));
-        q.displayReactants = data.fmt.map((f, i) => ({...f, isBlank: blankSet.has(`R${i}`)})); q.displayProducts = data.fmtP.map((f, i) => ({...f, isBlank: blankSet.has(`P${i}`)}));
-        q.blanks = selectedBlanks; q.answers = { R0: data.a.toString(), R1: data.b.toString(), P0: data.c.toString() }; 
+        if (Math.random() < 0.5) {
+          const tmpl = COEF_TEMPLATES[Math.floor(Math.random() * COEF_TEMPLATES.length)];
+          const data = tmpl.gen(); q.name = tmpl.label;
+          q.displayReactants = data.fmt.map(f => ({...f})); q.displayProducts = data.fmtP.map(f => ({...f}));
+          data.fmt.forEach((f, i) => q.blanks.push({key: `R${i}`, answer: f.coef.toString()}));
+          data.fmtP.forEach((f, i) => q.blanks.push({key: `P${i}`, answer: f.coef.toString()}));
+        } else {
+          const rx = REACTIONS[Math.floor(Math.random() * REACTIONS.length)];
+          q.name = rx.name;
+          q.displayReactants = rx.reactants.map(f => ({...f})); q.displayProducts = rx.products.map(f => ({...f}));
+          rx.reactants.forEach((r, i) => q.blanks.push({key: `R${i}`, answer: r.coef.toString()}));
+          rx.products.forEach((p, i) => q.blanks.push({key: `P${i}`, answer: p.coef.toString()}));
+        }
+        q.type = '계수 맞추기';
         break;
       case 2:
-        const rx2 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx2; q.name = rx2.name; q.type = '전체 반응식';
-        q.displayReactants = rx2.reactants.map(() => ({ isBlank: true })); q.displayProducts = rx2.products.map(() => ({ isBlank: true }));
-        rx2.reactants.forEach((r, i) => q.blanks.push({ key: `R${i}`, answer: formulaToString(r) })); rx2.products.forEach((p, i) => q.blanks.push({ key: `P${i}`, answer: formulaToString(p) }));
+        const rx2 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx2; q.name = rx2.name; q.type = '반응물 맞추기';
+        q.displayReactants = rx2.reactants.map(r => ({...r, isBlank: true})); q.displayProducts = rx2.products.map(p => ({...p, isBlank: false}));
+        rx2.reactants.forEach((r, i) => q.blanks.push({ key: `R${i}`, answer: formulaToString(r) }));
         break;
       case 3:
         const rx3 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx3; q.name = rx3.name; q.type = '생성물 맞추기';
-        q.displayReactants = rx3.reactants.map(r => ({...r, isBlank: false})); q.displayProducts = rx3.products.map(() => ({ isBlank: true }));
+        q.displayReactants = rx3.reactants.map(r => ({...r, isBlank: false})); q.displayProducts = rx3.products.map(p => ({...p, isBlank: true}));
         rx3.products.forEach((p, i) => q.blanks.push({ key: `P${i}`, answer: formulaToString(p) }));
         break;
       case 4:
-        const rx4 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx4; q.name = rx4.name; q.type = '빈칸 채우기';
-        const tokens = [];
-        const addTokens = (chems, side) => { chems.forEach((chem, cIdx) => { if(chem.coef > 1) tokens.push({ id: `${side}${cIdx}_coef`, value: chem.coef.toString() }); chem.formula.forEach((part, pIdx) => { tokens.push({ id: `${side}${cIdx}_sym${pIdx}`, value: part.sym }); if(part.sub) tokens.push({ id: `${side}${cIdx}_sub${pIdx}`, value: part.sub.toString() }); }); }); };
-        addTokens(rx4.reactants, 'R'); addTokens(rx4.products, 'P');
-        const shuffledTokens = tokens.sort(() => 0.5 - Math.random()); const blankCount4 = Math.min(tokens.length, Math.floor(Math.random() * 2) + 1); const blankTokens = shuffledTokens.slice(0, blankCount4);
-        q.blankTokenIds = new Set(blankTokens.map(t => t.id)); q.blanks = blankTokens.map(t => ({ key: t.id, answer: t.value }));
+        const rx4 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx4; q.name = rx4.name; q.type = '전체 반응식';
+        q.displayReactants = rx4.reactants.map(r => ({...r, isBlank: true})); q.displayProducts = rx4.products.map(p => ({...p, isBlank: true}));
+        rx4.reactants.forEach((r, i) => q.blanks.push({ key: `R${i}`, answer: formulaToString(r) }));
+        rx4.products.forEach((p, i) => q.blanks.push({ key: `P${i}`, answer: formulaToString(p) }));
         break;
     }
     if (q.blanks.length > 0) q.activeKey = q.blanks[0].key;
@@ -501,42 +501,27 @@ const App = {
 
   renderEquation() {
     const q = this.state.currentQuestion; if (!q) { this.$.equationDisplay.innerHTML = ''; return; }
-    if (this.state.currentMode === 4) this.$.equationDisplay.innerHTML = this.renderMode4Equation(); else this.$.equationDisplay.innerHTML = this.renderModes123Equation();
-  },
-
-  renderModes123Equation() {
-    const q = this.state.currentQuestion;
+    
     const formatChemical = (chemList, keyPrefix) => {
       return chemList.map((c, i) => {
-        const key = `${keyPrefix}${i}`; let content;
-        if (c.isBlank) {
-          const blankData = q.blanks.find(b => b.key === key); content = this.renderBlankBox(key, blankData.answer);
+        const key = `${keyPrefix}${i}`;
+        if (this.state.currentMode === 1) {
+          const blankData = q.blanks.find(b => b.key === key);
+          const box = this.renderBlankBox(key, blankData.answer);
+          return box + this.formatFormula(c.formula);
         } else {
-          let coefStr = '';
-          if (q.isAbstract) coefStr = q.answers[key] > 1 || q.answers[key] == 1 ? `<span class="eq-text">${q.answers[key]}</span>` : '';
-          else coefStr = c.coef > 1 ? `<span class="eq-text">${c.coef}</span>` : '';
-          content = coefStr + this.formatFormula(c.formula);
+          if (c.isBlank) {
+            const blankData = q.blanks.find(b => b.key === key);
+            return this.renderBlankBox(key, blankData.answer);
+          } else {
+            const coefStr = c.coef > 1 ? `<span class="eq-text">${c.coef}</span>` : '';
+            return coefStr + this.formatFormula(c.formula);
+          }
         }
-        return (i > 0 ? '<span class="eq-plus">+</span>' : '') + content;
-      }).join(' ');
-    };
-    return `${formatChemical(q.displayReactants, 'R')} <span class="eq-arrow">→</span> ${formatChemical(q.displayProducts, 'P')}`;
-  },
-
-  renderMode4Equation() {
-    const q = this.state.currentQuestion;
-    const renderSide = (chems, side) => {
-      return chems.map((chem, cIdx) => {
-        let html = ''; const coefId = `${side}${cIdx}_coef`;
-        if (q.blankTokenIds.has(coefId)) html += this.renderBlankBox(coefId, q.blanks.find(b => b.key === coefId).answer); else if (chem.coef > 1) html += `<span class="eq-text">${chem.coef}</span>`;
-        chem.formula.forEach((part, pIdx) => {
-          const symId = `${side}${cIdx}_sym${pIdx}`; const subId = `${side}${cIdx}_sub${pIdx}`;
-          if (q.blankTokenIds.has(symId)) html += this.renderBlankBox(symId, q.blanks.find(b => b.key === symId).answer); else html += `<span class="eq-text">${part.sym}</span>`;
-          if (q.blankTokenIds.has(subId)) html += this.renderBlankBox(subId, q.blanks.find(b => b.key === subId).answer); else if (part.sub) html += `<sub>${part.sub}</sub>`;
-        }); return html;
       }).join(' <span class="eq-plus">+</span> ');
     };
-    return `${renderSide(q.reaction.reactants, 'R')} <span class="eq-arrow">→</span> ${renderSide(q.reaction.products, 'P')}`;
+    
+    this.$.equationDisplay.innerHTML = `${formatChemical(q.displayReactants, 'R')} <span class="eq-arrow">→</span> ${formatChemical(q.displayProducts, 'P')}`;
   },
 
   renderBlankBox(key, answer) {
@@ -563,7 +548,7 @@ const App = {
   renderKeyboard() { const isChecked = this.state.isAnswerChecked; this.$.confirmBtn.style.display = isChecked ? 'none' : 'flex'; this.$.nextBtn.style.display = isChecked ? 'flex' : 'none'; },
 
   formatFormula(formula) { return formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join(''); },
-  formatInput(str) { if (!str) return ''; return str.replace(/([A-Z][a-z]?)(\d+)/g, '$1<sub>$2</sub>'); },
+  formatInput(str) { if (!str) return ''; return str.replace(/([a-zA-Z]+)(\d+)/g, '$1<sub>$2</sub>'); },
   toggleTheme() { this.state.isDarkMode = !this.state.isDarkMode; document.body.classList.toggle('light', !this.state.isDarkMode); document.getElementById('themeBtn').textContent = this.state.isDarkMode ? '🌙' : '☀️'; },
   showModal(show) { this.$.modalOverlay.classList.toggle('show', show); },
 };
