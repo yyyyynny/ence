@@ -55,6 +55,48 @@
   }
 
   body {
+<div id="authOverlay" style="position:fixed; inset:0; z-index:9999999; background:var(--c-bg, #10141E); display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-family:'JetBrains Mono', 'Noto Sans KR', sans-serif;">
+  <h2 style="color:var(--c-accent-1, #00E5FF); margin-bottom:20px;">🔒 동아리 전용 접속</h2>
+  <p style="color:var(--c-text-secondary, #8896B0); font-size:13px; margin-bottom:20px;">비밀번호를 입력해야 접근할 수 있습니다.</p>
+  <input type="password" id="authInput" placeholder="Password" style="padding:12px; border-radius:8px; border:1px solid rgba(136,150,191,0.2); background:rgba(0,0,0,0.3); color:#fff; font-size:16px; margin-bottom:16px; text-align:center; outline:none; font-family:inherit;">
+  <button id="authBtn" style="padding:12px 24px; border-radius:8px; background:var(--c-accent-2, #7C3AED); border:none; color:#fff; font-weight:bold; cursor:pointer; font-size:14px; transition:0.2s;">접속하기</button>
+  <p id="authError" style="color:#ef4444; font-size:12px; margin-top:12px; display:none;">❌ 비밀번호가 틀렸습니다.</p>
+</div>
+
+<script>
+  (function() {
+    const overlay = document.getElementById('authOverlay');
+    const input = document.getElementById('authInput');
+    const btn = document.getElementById('authBtn');
+    const error = document.getElementById('authError');
+
+    // 잠금 해제용 비밀번호 설정
+    const CORRECT_PASSWORD = "ence"; 
+
+    // 1. 브라우저 로컬 스토리지 확인 (한 번 인증한 사용자는 창을 숨기고 즉시 통과)
+    if(localStorage.getItem('chem_auth') === 'true') {
+      overlay.style.display = 'none';
+      return;
+    }
+
+    // 2. 인증 검사 로직
+    const checkAuth = () => {
+      if(input.value === CORRECT_PASSWORD) {
+        localStorage.setItem('chem_auth', 'true'); // 브라우저에 인증 기록 영구 저장
+        overlay.style.opacity = '0';
+        setTimeout(() => overlay.style.display = 'none', 300); // 부드러운 전환 효과
+      } else {
+        error.style.display = 'block';
+        input.value = '';
+        input.focus();
+      }
+    };
+
+    btn.addEventListener('click', checkAuth);
+    input.addEventListener('keypress', (e) => { if(e.key === 'Enter') checkAuth(); });
+  })();
+</script>
+
     font-family: var(--font-ui);
     background: var(--c-bg);
     color: var(--c-text-primary);
