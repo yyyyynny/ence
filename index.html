@@ -6,148 +6,138 @@
 <title>반응물이 반응하면 생성물</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
-
   :root {
-    --c-bg: #10141E;
-    --c-surface-1: rgba(30, 35, 50, 0.6);
-    --c-surface-2: rgba(30, 35, 50, 0.8);
-    --c-border: rgba(136, 150, 191, 0.2);
-    --c-border-active: rgba(0, 229, 255, 0.5);
-    --c-text-primary: #F0F4FF;
-    --c-text-secondary: #8896B0;
-    --c-accent-1: #00E5FF;
-    --c-accent-2: #7C3AED;
-    --c-accent-3: #F59E0B;
-    --c-correct: #10B981;
-    --c-wrong: #EF4444;
-    --font-ui: 'Noto Sans KR', sans-serif;
-    --font-mono: 'JetBrains Mono', monospace;
+    --c-bg:#10141E; --c-surface-1:rgba(30,35,50,0.6); --c-surface-2:rgba(30,35,50,0.8);
+    --c-border:rgba(136,150,191,0.2); --c-border-active:rgba(0,229,255,0.5);
+    --c-text-primary:#F0F4FF; --c-text-secondary:#8896B0;
+    --c-accent-1:#00E5FF; --c-accent-2:#7C3AED; --c-accent-3:#F59E0B;
+    --c-correct:#10B981; --c-wrong:#EF4444;
+    --font-ui:'Noto Sans KR',sans-serif; --font-mono:'JetBrains Mono',monospace;
   }
-
   .light {
-    --c-bg: #F0F4FF;
-    --c-surface-1: rgba(255, 255, 255, 0.6);
-    --c-surface-2: rgba(255, 255, 255, 0.8);
-    --c-border: rgba(45, 60, 100, 0.15);
-    --c-border-active: rgba(2, 132, 199, 0.5);
-    --c-text-primary: #0F172A;
-    --c-text-secondary: #4A5568;
-    --c-accent-1: #0284C7;
-    --c-accent-2: #7C3AED;
-    --c-accent-3: #D97706;
-    --c-correct: #059669;
-    --c-wrong: #DC2626;
+    --c-bg:#F0F4FF; --c-surface-1:rgba(255,255,255,0.6); --c-surface-2:rgba(255,255,255,0.8);
+    --c-border:rgba(45,60,100,0.15); --c-border-active:rgba(2,132,199,0.5);
+    --c-text-primary:#0F172A; --c-text-secondary:#4A5568;
+    --c-accent-1:#0284C7; --c-accent-2:#7C3AED; --c-accent-3:#D97706;
+    --c-correct:#059669; --c-wrong:#DC2626;
   }
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html{background:var(--c-bg);}
+  body{font-family:var(--font-ui);background:var(--c-bg);color:var(--c-text-primary);min-height:100vh;min-height:100dvh;transition:background .3s,color .3s;overflow-x:hidden;}
+  body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 25% 25%,var(--c-accent-1),transparent 30%),radial-gradient(circle at 75% 75%,var(--c-accent-2),transparent 30%);opacity:.35;filter:blur(100px);pointer-events:none;z-index:0;}
+  #app{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:16px;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;}
+  header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+  .logo-egg{font-size:16px;font-weight:900;color:var(--c-wrong);letter-spacing:1px;cursor:pointer;user-select:none;transition:transform .2s;}
+  .logo-egg:active{transform:scale(.9);}
+  .header-right{display:flex;gap:8px;align-items:center;}
+  .icon-btn{background:var(--c-surface-1);border:1px solid var(--c-border);color:var(--c-text-secondary);width:44px;height:44px;border-radius:12px;cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s;backdrop-filter:blur(10px);}
+  .icon-btn:hover{border-color:var(--c-border-active);color:var(--c-accent-1);}
+  .stat-bar{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:12px 20px;display:flex;align-items:center;gap:16px;margin-bottom:16px;backdrop-filter:blur(10px);}
+  .stat-item{display:flex;align-items:center;gap:8px;}
+  .stat-label{font-size:11px;color:var(--c-text-secondary);text-transform:uppercase;letter-spacing:1px;font-family:var(--font-mono);}
+  .stat-value{font-family:var(--font-mono);font-size:24px;font-weight:700;line-height:1;transition:transform .2s;}
+  .stat-value.bump{transform:scale(1.4);}
+  #streakCount{color:var(--c-accent-3);}#totalCorrect{color:var(--c-correct);}#totalWrong{color:var(--c-wrong);}
+  .streak-flames{font-size:20px;}
+  .timer-select-wrap{display:flex;align-items:center;gap:8px;margin-bottom:16px;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:10px 16px;backdrop-filter:blur(10px);}
+  .timer-select-label{font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
+  .timer-btns{display:flex;gap:6px;flex-wrap:wrap;}
+  .timer-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-mono);font-size:13px;font-weight:700;padding:6px 12px;cursor:pointer;transition:all .2s;}
+  .timer-btn.active{background:var(--c-accent-3);border-color:var(--c-accent-3);color:#000;}
+  .mode-tabs{display:flex;overflow-x:auto;gap:8px;margin-bottom:16px;padding-bottom:4px;scrollbar-width:none;}
+  .mode-tabs::-webkit-scrollbar{display:none;}
+  .mode-tab{flex:0 0 auto;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:12px;color:var(--c-text-secondary);padding:12px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;line-height:1.4;backdrop-filter:blur(10px);}
+  .mode-tab.active{background:var(--c-accent-1);border-color:var(--c-accent-1);color:var(--c-bg);}
+  .mode-tab .tab-icon{font-size:18px;display:block;margin-bottom:4px;}
+  .question-card{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;padding:24px;margin-bottom:16px;min-height:180px;display:flex;flex-direction:column;gap:16px;flex-grow:1;position:relative;overflow:hidden;}
+  .timer-container{position:absolute;top:0;left:0;right:0;height:5px;background:rgba(0,0,0,.2);}
+  .timer-bar{height:100%;background:var(--c-accent-1);width:100%;transition:background .3s;}
+  .timer-bar.danger{background:var(--c-wrong);}
+  .q-label{font-size:12px;color:var(--c-accent-1);font-family:var(--font-mono);letter-spacing:1px;font-weight:700;margin-top:4px;}
+  .q-sublabel{font-size:18px;color:var(--c-text-primary);font-weight:700;}
+  .equation-display{font-family:var(--font-mono);font-size:clamp(16px,4.5vw,24px);display:flex;flex-wrap:wrap;align-items:center;gap:8px;line-height:2;margin:auto 0;}
+  .blank-box{display:inline-block;min-width:44px;height:44px;border:2px solid var(--c-border);border-radius:10px;background:var(--c-surface-2);text-align:center;line-height:40px;cursor:pointer;transition:all .2s;font-size:1em;font-weight:700;color:var(--c-text-primary);padding:0 10px;font-family:var(--font-mono);}
+  .blank-box.active{border-color:var(--c-border-active);box-shadow:0 0 0 4px rgba(0,229,255,.2);}
+  .blank-box.correct{border-color:var(--c-correct);background:rgba(16,185,129,.15);color:var(--c-correct);}
+  .blank-box.wrong{border-color:var(--c-wrong);background:rgba(239,68,68,.15);color:var(--c-wrong);animation:shake .4s;}
+  .blank-box.placeholder::before{content:'?';color:var(--c-text-secondary);opacity:.5;}
+  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  .eq-text{color:var(--c-text-primary);}.eq-arrow{color:var(--c-accent-3);font-size:1.2em;margin:0 4px;}.eq-plus{color:var(--c-text-secondary);margin:0 4px;}
+  sub{font-size:.65em;line-height:0;vertical-align:sub;}
+  .result-banner{border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;display:none;align-items:center;gap:10px;margin-top:auto;}
+  .result-banner.show{display:flex;flex-direction:column;align-items:flex-start;}
+  .result-banner.correct-banner{background:rgba(16,185,129,.2);color:var(--c-correct);border:1px solid var(--c-correct);flex-direction:row;}
+  .result-banner.wrong-banner{background:rgba(239,68,68,.2);color:var(--c-wrong);border:1px solid var(--c-wrong);}
+  .show-answer-btn{background:var(--c-wrong);color:var(--c-bg);border:none;border-radius:8px;padding:6px 12px;font-weight:700;cursor:pointer;transition:opacity .2s;align-self:flex-end;margin-top:8px;}
+  .keyboard-wrap{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;padding:16px;}
+  .kb-section-label{font-size:10px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;margin-bottom:8px;margin-top:4px;}
+  .kb-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;}
+  .kb-key{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;font-family:var(--font-mono);font-size:15px;font-weight:700;min-height:44px;min-width:38px;flex:1 1 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .1s;}
+  .kb-key:active{transform:scale(.95);}
+  .kb-key.num{color:var(--c-accent-3);}.kb-key.elem{color:var(--c-text-primary);font-weight:500;}
+  .kb-key.del{color:var(--c-wrong);flex-grow:2;}.kb-key.confirm{background:var(--c-correct);color:#000;flex-grow:3;}.kb-key.next-q{background:var(--c-accent-2);color:#fff;flex-grow:3;}
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center;padding:16px;}
+  .modal-overlay.show{display:flex;}
+  .modal-box{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;width:100%;max-width:600px;max-height:85vh;display:flex;flex-direction:column;padding:24px;position:relative;}
+  .modal-header{display:flex;justify-content:space-between;margin-bottom:16px;align-items:center;}
+  .modal-title{font-size:18px;font-weight:900;color:var(--c-accent-1);}
+  .modal-close{background:none;border:none;color:var(--c-text-secondary);font-size:28px;cursor:pointer;}
+  .modal-content{overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;}
+  .filter-chips{display:flex;overflow-x:auto;gap:6px;margin-bottom:16px;padding-bottom:4px;scrollbar-width:none;}
+  .filter-chips::-webkit-scrollbar{display:none;}
+  .filter-chip{flex:0 0 auto;background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:20px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;}
+  .filter-chip.active{background:var(--c-accent-1);color:var(--c-bg);border-color:var(--c-accent-1);}
+  .reaction-item{background:var(--c-surface-2);border-radius:12px;padding:16px;font-family:var(--font-mono);font-size:14px;display:flex;flex-direction:column;gap:10px;}
+  .reaction-header{display:flex;justify-content:space-between;align-items:flex-start;}
+  .reaction-name{color:var(--c-accent-3);font-size:12px;font-family:var(--font-ui);font-weight:700;}
+  .reaction-eq{color:var(--c-text-primary);font-size:15px;line-height:1.6;background:rgba(0,0,0,.2);padding:12px;border-radius:8px;border:1px solid var(--c-border);text-align:center;}
+  .delete-note-btn{background:rgba(239,68,68,.1);border:1px solid var(--c-wrong);color:var(--c-wrong);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;font-weight:bold;}
+  .clear-all-btn{background:var(--c-wrong);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:bold;cursor:pointer;margin-bottom:16px;align-self:flex-end;}
+  .egg-particle{position:fixed;pointer-events:none;z-index:9999999;font-size:24px;animation:egg-pop .8s cubic-bezier(.25,1,.5,1) forwards;}
+  @keyframes egg-pop{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1.5);opacity:0}}
 
-  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html { background: var(--c-bg); }
-  body { font-family: var(--font-ui); background: var(--c-bg); color: var(--c-text-primary); min-height: 100vh; min-height: 100dvh; transition: background 0.3s, color 0.3s; overflow-x: hidden; }
-  body::before { content: ''; position: fixed; inset: 0; background-image: radial-gradient(circle at 25% 25%, var(--c-accent-1), transparent 30%), radial-gradient(circle at 75% 75%, var(--c-accent-2), transparent 30%); opacity: 0.35; filter: blur(100px); pointer-events: none; z-index: 0; }
-
-  #app { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
-  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
-
-  .logo-egg { font-family: var(--font-ui); font-size: 16px; font-weight: 900; color: var(--c-wrong); letter-spacing: 1px; cursor: pointer; user-select: none; transition: transform 0.2s; }
-  .logo-egg:active { transform: scale(0.9); }
-
-  .header-right { display: flex; gap: 8px; align-items: center; }
-  .icon-btn { background: var(--c-surface-1); border: 1px solid var(--c-border); color: var(--c-text-secondary); width: 44px; height: 44px; border-radius: 12px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; backdrop-filter: blur(10px); }
-  .icon-btn:hover { border-color: var(--c-border-active); color: var(--c-accent-1); }
-
-  .stat-bar { background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 16px; padding: 12px 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 16px; backdrop-filter: blur(10px); }
-  .stat-item { display: flex; align-items: center; gap: 8px; }
-  .stat-label { font-size: 11px; color: var(--c-text-secondary); text-transform: uppercase; letter-spacing: 1px; font-family: var(--font-mono); }
-  .stat-value { font-family: var(--font-mono); font-size: 24px; font-weight: 700; line-height: 1; transition: transform 0.2s; }
-  .stat-value.bump { transform: scale(1.4); }
-  #streakCount { color: var(--c-accent-3); }
-  #totalCorrect { color: var(--c-correct); }
-  #totalWrong { color: var(--c-wrong); }
-  .streak-flames { font-size: 20px; }
-
-  .timer-select-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 16px; padding: 10px 16px; backdrop-filter: blur(10px); }
-  .timer-select-label { font-size: 11px; color: var(--c-text-secondary); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
-  .timer-btns { display: flex; gap: 6px; flex-wrap: wrap; }
-  .timer-btn { background: var(--c-surface-2); border: 1px solid var(--c-border); border-radius: 10px; color: var(--c-text-secondary); font-family: var(--font-mono); font-size: 13px; font-weight: 700; padding: 6px 12px; cursor: pointer; transition: all 0.2s; }
-  .timer-btn.active { background: var(--c-accent-3); border-color: var(--c-accent-3); color: #000; }
-
-  .mode-tabs { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 16px; padding-bottom: 4px; scrollbar-width: none; }
-  .mode-tabs::-webkit-scrollbar { display: none; }
-  .mode-tab { flex: 0 0 auto; background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 12px; color: var(--c-text-secondary); padding: 12px 14px; font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s; text-align: center; line-height: 1.4; backdrop-filter: blur(10px); }
-  .mode-tab.active { background: var(--c-accent-1); border-color: var(--c-accent-1); color: var(--c-bg); }
-  .mode-tab .tab-icon { font-size: 18px; display: block; margin-bottom: 4px; }
-
-  .question-card { background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px; padding: 24px; margin-bottom: 16px; min-height: 180px; display: flex; flex-direction: column; gap: 16px; flex-grow: 1; position: relative; overflow: hidden; }
-
-  .timer-container { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: rgba(0,0,0,0.2); }
-  .timer-bar { height: 100%; background: var(--c-accent-1); width: 100%; transition: background 0.3s; }
-  .timer-bar.danger { background: var(--c-wrong); }
-
-  .q-label { font-size: 12px; color: var(--c-accent-1); font-family: var(--font-mono); letter-spacing: 1px; font-weight: 700; margin-top: 4px; }
-  .q-sublabel { font-size: 18px; color: var(--c-text-primary); font-weight: 700; }
-  .equation-display { font-family: var(--font-mono); font-size: clamp(16px, 4.5vw, 24px); display: flex; flex-wrap: wrap; align-items: center; gap: 8px; line-height: 2; margin: auto 0; }
-
-  .blank-box { display: inline-block; min-width: 44px; height: 44px; border: 2px solid var(--c-border); border-radius: 10px; background: var(--c-surface-2); text-align: center; line-height: 40px; cursor: pointer; transition: all 0.2s; font-size: 1em; font-weight: 700; color: var(--c-text-primary); padding: 0 10px; font-family: var(--font-mono); }
-  .blank-box.active { border-color: var(--c-border-active); box-shadow: 0 0 0 4px rgba(0, 229, 255, 0.2); }
-  .blank-box.correct { border-color: var(--c-correct); background: rgba(16, 185, 129, 0.15); color: var(--c-correct); }
-  .blank-box.wrong { border-color: var(--c-wrong); background: rgba(239, 68, 68, 0.15); color: var(--c-wrong); animation: shake 0.4s; }
-  .blank-box.placeholder::before { content: '?'; color: var(--c-text-secondary); opacity: 0.5; }
-
-  @keyframes shake { 0%, 100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
-
-  .eq-text { color: var(--c-text-primary); }
-  .eq-arrow { color: var(--c-accent-3); font-size: 1.2em; margin: 0 4px; }
-  .eq-plus { color: var(--c-text-secondary); margin: 0 4px; }
-  sub { font-size: 0.65em; line-height: 0; vertical-align: sub; }
-
-  .result-banner { border-radius: 12px; padding: 12px 16px; font-size: 14px; font-weight: 700; display: none; align-items: center; gap: 10px; margin-top: auto; }
-  .result-banner.show { display: flex; flex-direction: column; align-items: flex-start; }
-  .result-banner.correct-banner { background: rgba(16, 185, 129, 0.2); color: var(--c-correct); border: 1px solid var(--c-correct); flex-direction: row; }
-  .result-banner.wrong-banner { background: rgba(239, 68, 68, 0.2); color: var(--c-wrong); border: 1px solid var(--c-wrong); }
-  .show-answer-btn { background: var(--c-wrong); color: var(--c-bg); border: none; border-radius: 8px; padding: 6px 12px; font-weight: 700; cursor: pointer; transition: opacity 0.2s; align-self: flex-end; margin-top: 8px; }
-
-  .keyboard-wrap { background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px; padding: 16px; }
-  .kb-section-label { font-size: 10px; color: var(--c-text-secondary); font-family: var(--font-mono); text-transform: uppercase; margin-bottom: 8px; margin-top: 4px; }
-  .kb-row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
-  .kb-key { background: var(--c-surface-2); border: 1px solid var(--c-border); border-radius: 10px; font-family: var(--font-mono); font-size: 15px; font-weight: 700; min-height: 44px; min-width: 38px; flex: 1 1 auto; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.1s; }
-  .kb-key:active { transform: scale(0.95); }
-  .kb-key.num { color: var(--c-accent-3); }
-  .kb-key.elem { color: var(--c-text-primary); font-weight: 500; }
-  .kb-key.del { color: var(--c-wrong); flex-grow: 2; }
-  .kb-key.confirm { background: var(--c-correct); color: #000; flex-grow: 3; }
-  .kb-key.next-q { background: var(--c-accent-2); color: #fff; flex-grow: 3; }
-
-  .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 100; align-items: center; justify-content: center; padding: 16px; }
-  .modal-overlay.show { display: flex; }
-  .modal-box { background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px; width: 100%; max-width: 600px; max-height: 85vh; display: flex; flex-direction: column; padding: 24px; position: relative; }
-  .modal-header { display: flex; justify-content: space-between; margin-bottom: 16px; align-items: center; }
-  .modal-title { font-size: 18px; font-weight: 900; color: var(--c-accent-1); }
-  .modal-close { background: none; border: none; color: var(--c-text-secondary); font-size: 28px; cursor: pointer; }
-  .modal-content { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
-
-  .filter-chips { display: flex; overflow-x: auto; gap: 6px; margin-bottom: 16px; padding-bottom: 4px; scrollbar-width: none; }
-  .filter-chips::-webkit-scrollbar { display: none; }
-  .filter-chip { flex: 0 0 auto; background: var(--c-surface-2); border: 1px solid var(--c-border); color: var(--c-text-secondary); border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
-  .filter-chip.active { background: var(--c-accent-1); color: var(--c-bg); border-color: var(--c-accent-1); }
-
-  .reaction-item { background: var(--c-surface-2); border-radius: 12px; padding: 16px; font-family: var(--font-mono); font-size: 18px; display: flex; flex-direction: column; gap: 10px; }
-  .reaction-header { display: flex; justify-content: space-between; align-items: flex-start; }
-  .reaction-name { color: var(--c-accent-3); font-size: 12px; font-family: var(--font-ui); font-weight: 700; }
-  .reaction-eq { color: var(--c-text-primary); font-size: 15px; line-height: 1.6; background: rgba(0,0,0,0.2); padding: 12px; border-radius: 8px; border: 1px solid var(--c-border); text-align: center; }
-  .delete-note-btn { background: rgba(239,68,68,0.1); border: 1px solid var(--c-wrong); color: var(--c-wrong); border-radius: 6px; padding: 4px 8px; cursor: pointer; font-size: 11px; font-weight: bold; }
-  .clear-all-btn { background: var(--c-wrong); color: #fff; border: none; border-radius: 8px; padding: 8px 16px; font-weight: bold; cursor: pointer; margin-bottom: 16px; align-self: flex-end; }
-
-  .egg-particle { position: fixed; pointer-events: none; z-index: 9999999; font-size: 24px; animation: egg-pop 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
-  @keyframes egg-pop { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.5); opacity: 0; } }
+  /* ── MODE 6 플래시카드 ── */
+  #mode6Wrap{display:none;flex-direction:column;gap:12px;flex-grow:1;}
+  .m6-opt-row{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:12px 16px;backdrop-filter:blur(10px);}
+  .m6-opt-label{font-size:10px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
+  .m6-opt-btns{display:flex;gap:6px;flex-wrap:wrap;}
+  .m6-opt-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-size:12px;font-weight:700;padding:7px 13px;cursor:pointer;transition:all .2s;}
+  .m6-opt-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
+  .m6-card-area{flex-grow:1;display:flex;flex-direction:column;gap:8px;}
+  .m6-perspective{perspective:1200px;flex-grow:1;}
+  .m6-flashcard{position:relative;min-height:220px;height:100%;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,0,.2,1);cursor:pointer;user-select:none;}
+  .m6-flashcard.flipped{transform:rotateY(180deg);}
+  .m6-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 20px;gap:14px;text-align:center;overflow:hidden;}
+  .m6-front{background:var(--c-surface-1);border:2px solid var(--c-border);}
+  .m6-back{background:linear-gradient(135deg,rgba(124,58,237,.25),rgba(30,35,50,.85));border:2px solid var(--c-accent-2);transform:rotateY(180deg);}
+  .m6-tag{font-size:10px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1.5px;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:20px;padding:3px 12px;color:var(--c-text-secondary);}
+  .m6-back .m6-tag{color:var(--c-accent-2);border-color:var(--c-accent-2);}
+  .m6-korean{font-size:clamp(17px,4.5vw,24px);font-family:var(--font-ui);font-weight:700;color:var(--c-text-primary);line-height:1.5;}
+  .m6-formula{font-size:clamp(15px,4vw,22px);font-family:var(--font-mono);font-weight:700;color:var(--c-text-primary);line-height:1.8;}
+  .m6-hint{text-align:center;font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);}
+  .m6-nav{display:flex;align-items:center;gap:12px;}
+  .m6-nav-btn{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:14px;color:var(--c-text-primary);font-size:28px;font-weight:900;width:52px;height:52px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;line-height:1;}
+  .m6-nav-btn:hover{border-color:var(--c-accent-1);color:var(--c-accent-1);}
+  .m6-nav-center{display:flex;flex-direction:column;align-items:center;gap:6px;flex:1;}
+  .m6-counter{font-family:var(--font-mono);font-size:15px;font-weight:700;color:var(--c-text-primary);}
+  .m6-shuffle{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-size:12px;font-weight:700;padding:5px 13px;cursor:pointer;transition:all .2s;}
+  .m6-shuffle:hover{border-color:var(--c-accent-3);color:var(--c-accent-3);}
+  .m6-progress-bar{height:5px;background:var(--c-border);border-radius:3px;overflow:hidden;}
+  .m6-progress-fill{height:100%;background:linear-gradient(90deg,var(--c-accent-2),var(--c-accent-1));border-radius:3px;transition:width .35s ease;}
+  @keyframes m6Right{from{opacity:0;transform:translateX(50px)}to{opacity:1;transform:translateX(0)}}
+  @keyframes m6Left{from{opacity:0;transform:translateX(-50px)}to{opacity:1;transform:translateX(0)}}
+  .m6-slide-r .m6-flashcard{animation:m6Right .28s ease-out;}
+  .m6-slide-l .m6-flashcard{animation:m6Left .28s ease-out;}
 </style>
 </head>
 <body>
 
-<div id="authOverlay" style="position:fixed; inset:0; z-index:99999999; background:var(--c-bg); display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-family:var(--font-ui); transition: opacity 0.3s;">
-  <h2 style="color:var(--c-accent-1); margin-bottom:20px;">🔒 가격:800원</h2>
-  <p style="color:var(--c-text-secondary); font-size:13px; margin-bottom:20px;">인가된 인원만 접근 가능합니다.</p>
-  <input type="password" id="authInput" placeholder="Password" style="padding:12px; border-radius:8px; border:1px solid var(--c-border); background:rgba(0,0,0,0.3); color:#fff; font-size:16px; margin-bottom:16px; text-align:center; outline:none;">
-  <button id="authBtn" style="padding:12px 24px; border-radius:8px; background:var(--c-accent-2); border:none; color:#fff; font-weight:bold; cursor:pointer; font-size:14px;">접속하기</button>
-  <p id="authError" style="color:#ef4444; font-size:12px; margin-top:12px; display:none;">❌ 코드가 틀렸습니다 ㅋ.</p>
+<div id="authOverlay" style="position:fixed;inset:0;z-index:99999999;background:var(--c-bg);display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:var(--font-ui);transition:opacity .3s">
+  <h2 style="color:var(--c-accent-1);margin-bottom:20px">🔒 가격:800원</h2>
+  <p style="color:var(--c-text-secondary);font-size:13px;margin-bottom:20px">인가된 인원만 접근 가능합니다.</p>
+  <input type="password" id="authInput" placeholder="Password" style="padding:12px;border-radius:8px;border:1px solid var(--c-border);background:rgba(0,0,0,.3);color:#fff;font-size:16px;margin-bottom:16px;text-align:center;outline:none">
+  <button id="authBtn" style="padding:12px 24px;border-radius:8px;background:var(--c-accent-2);border:none;color:#fff;font-weight:bold;cursor:pointer;font-size:14px">접속하기</button>
+  <p id="authError" style="color:#ef4444;font-size:12px;margin-top:12px;display:none">❌ 코드가 틀렸습니다 ㅋ.</p>
 </div>
 
 <div id="app">
@@ -167,17 +157,11 @@
       <div class="streak-flames" id="streakFlames"></div>
     </div>
     <div style="flex:1"></div>
-    <div class="stat-item">
-      <div class="stat-label">Correct</div>
-      <div class="stat-value" id="totalCorrect">0</div>
-    </div>
-    <div class="stat-item">
-      <div class="stat-label">Wrong</div>
-      <div class="stat-value" id="totalWrong">0</div>
-    </div>
+    <div class="stat-item"><div class="stat-label">Correct</div><div class="stat-value" id="totalCorrect">0</div></div>
+    <div class="stat-item"><div class="stat-label">Wrong</div><div class="stat-value" id="totalWrong">0</div></div>
   </div>
 
-  <div class="timer-select-wrap">
+  <div class="timer-select-wrap" id="timerSelectWrap">
     <div class="timer-select-label">⏱ 제한시간</div>
     <div class="timer-btns" id="timerBtns">
       <button class="timer-btn" data-sec="15">15초</button>
@@ -194,8 +178,10 @@
     <button class="mode-tab" data-mode="3"><span class="tab-icon">⚗️</span>생성물 맞추기</button>
     <button class="mode-tab" data-mode="4"><span class="tab-icon">📝</span>전체 반응식</button>
     <button class="mode-tab" data-mode="5"><span class="tab-icon">🧠</span>화학식 암기</button>
+    <button class="mode-tab" data-mode="6"><span class="tab-icon">🃏</span>플래시카드</button>
   </div>
 
+  <!-- 퀴즈 카드 (모드 1~5) -->
   <div class="question-card" id="questionCard">
     <div class="timer-container"><div class="timer-bar" id="timerBar"></div></div>
     <div id="questionHeader">
@@ -206,35 +192,74 @@
     <div class="result-banner" id="resultBanner"></div>
   </div>
 
-  <div class="keyboard-wrap">
+  <!-- 모드 6 플래시카드 -->
+  <div id="mode6Wrap">
+    <div class="m6-opt-row">
+      <div class="m6-opt-label">📚 카드 유형</div>
+      <div class="m6-opt-btns" id="m6TypeBtns">
+        <button class="m6-opt-btn active" data-val="full">전체 반응식</button>
+        <button class="m6-opt-btn" data-val="reactant">반응물</button>
+        <button class="m6-opt-btn" data-val="product">생성물</button>
+        <button class="m6-opt-btn" data-val="formula">화학식</button>
+      </div>
+    </div>
+    <div class="m6-opt-row">
+      <div class="m6-opt-label">👁 먼저 보기</div>
+      <div class="m6-opt-btns" id="m6OrderBtns">
+        <button class="m6-opt-btn active" data-val="korean">한글 먼저</button>
+        <button class="m6-opt-btn" data-val="formula">화학식 먼저</button>
+      </div>
+    </div>
+    <div class="m6-card-area">
+      <div class="m6-perspective" id="m6Outer">
+        <div class="m6-flashcard" id="m6Card">
+          <div class="m6-face m6-front">
+            <div class="m6-tag" id="m6FTag"></div>
+            <div id="m6FContent"></div>
+          </div>
+          <div class="m6-face m6-back">
+            <div class="m6-tag" id="m6BTag"></div>
+            <div id="m6BContent"></div>
+          </div>
+        </div>
+      </div>
+      <div class="m6-hint">탭하여 뒤집기 🔄 &nbsp;|&nbsp; 스와이프로 이동 &nbsp;|&nbsp; ← → Space</div>
+    </div>
+    <div class="m6-nav">
+      <button class="m6-nav-btn" id="m6PrevBtn">‹</button>
+      <div class="m6-nav-center">
+        <span class="m6-counter" id="m6Counter">1 / 16</span>
+        <button class="m6-shuffle" id="m6ShuffleBtn">🔀 섞기</button>
+      </div>
+      <button class="m6-nav-btn" id="m6NextBtn">›</button>
+    </div>
+    <div class="m6-progress-bar"><div class="m6-progress-fill" id="m6PFill"></div></div>
+  </div>
+
+  <!-- 키보드 (모드 1~5) -->
+  <div class="keyboard-wrap" id="keyboardWrap">
     <div class="kb-section-label">Numbers</div>
     <div class="kb-row" id="numRow"></div>
     <div class="kb-section-label" id="elemRowLabel">Elements</div>
     <div class="kb-row" id="elemRow"></div>
-    <div class="kb-row" style="margin-top: 12px;">
+    <div class="kb-row" style="margin-top:12px">
       <button class="kb-key del" data-key="DEL">⌫ 지우기</button>
       <button class="kb-key confirm" data-key="CONFIRM">✓ 확인</button>
-      <button class="kb-key next-q" data-key="NEXT" style="display: none;">▶ 다음 문제</button>
+      <button class="kb-key next-q" data-key="NEXT" style="display:none">▶ 다음 문제</button>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="hintModalOverlay">
   <div class="modal-box">
-    <div class="modal-header">
-      <div class="modal-title">📋 전체 반응식 목록</div>
-      <button class="modal-close" id="hintModalClose">✕</button>
-    </div>
+    <div class="modal-header"><div class="modal-title">📋 전체 반응식 목록</div><button class="modal-close" id="hintModalClose">✕</button></div>
     <div class="modal-content" id="reactionList"></div>
   </div>
 </div>
 
 <div class="modal-overlay" id="wrongNoteModalOverlay">
-  <div class="modal-box" style="height: 90vh;">
-    <div class="modal-header">
-      <div class="modal-title">📓 오답 노트</div>
-      <button class="modal-close" id="wrongNoteModalClose">✕</button>
-    </div>
+  <div class="modal-box" style="height:90vh">
+    <div class="modal-header"><div class="modal-title">📓 오답 노트</div><button class="modal-close" id="wrongNoteModalClose">✕</button></div>
     <div class="filter-chips" id="wrongNoteFilters">
       <button class="filter-chip active" data-filter="all">전체</button>
       <button class="filter-chip" data-filter="1">모드 1</button>
@@ -249,600 +274,402 @@
 </div>
 
 <script>
-(function() {
-  const overlay = document.getElementById('authOverlay');
-  const input = document.getElementById('authInput');
-  const btn = document.getElementById('authBtn');
-  const error = document.getElementById('authError');
-  const CORRECT_PASSWORD = "yyyyynny";
-
-  try { if(localStorage.getItem('chem_auth') === 'true') overlay.style.display = 'none'; } catch(e) {}
-
-  const checkAuth = () => {
-    const typedPassword = input.value.trim().toLowerCase();
-    if(typedPassword === CORRECT_PASSWORD.toLowerCase()) {
-      try { localStorage.setItem('chem_auth', 'true'); } catch(e) {}
-      overlay.style.opacity = '0';
-      setTimeout(() => overlay.style.display = 'none', 300);
-    } else {
-      error.style.display = 'block';
-      input.value = ''; input.focus();
-    }
+/* ── 인증 ── */
+(function(){
+  const ov=document.getElementById('authOverlay'),inp=document.getElementById('authInput'),btn=document.getElementById('authBtn'),err=document.getElementById('authError');
+  const PW="yyyyynny";
+  try{if(localStorage.getItem('chem_auth')==='true')ov.style.display='none';}catch(e){}
+  const check=()=>{
+    if(inp.value.trim().toLowerCase()===PW){
+      try{localStorage.setItem('chem_auth','true');}catch(e){}
+      ov.style.opacity='0'; setTimeout(()=>ov.style.display='none',300);
+    }else{err.style.display='block';inp.value='';inp.focus();}
   };
-
-  btn.addEventListener('click', checkAuth);
-  input.addEventListener('keypress', (e) => { if(e.key === 'Enter') checkAuth(); });
-
-  document.getElementById('easterEggBtn').addEventListener('click', (e) => {
+  btn.addEventListener('click',check);
+  inp.addEventListener('keypress',e=>{if(e.key==='Enter')check();});
+  document.getElementById('easterEggBtn').addEventListener('click',e=>{
     e.preventDefault();
-    const x = e.clientX || (e.touches ? e.touches[0].clientX : window.innerWidth/2);
-    const y = e.clientY || (e.touches ? e.touches[0].clientY : 50);
-    const emojis = ['🎆', '🌟', '✨', '💖', '🎉', '🌸', '🐰'];
-
-    for(let i=0; i<35; i++) {
-      const p = document.createElement('div');
-      p.className = 'egg-particle';
-      p.textContent = emojis[Math.floor(Math.random() * emojis.length)];
-      p.style.left = x + 'px'; p.style.top = y + 'px';
-      const angle = Math.random() * Math.PI * 2;
-      const velocity = 60 + Math.random() * 120;
-      p.style.setProperty('--tx', Math.cos(angle) * velocity + 'px');
-      p.style.setProperty('--ty', Math.sin(angle) * velocity + 'px');
-      document.body.appendChild(p);
-      setTimeout(() => p.remove(), 800);
+    const x=e.clientX||window.innerWidth/2,y=e.clientY||50;
+    const emojis=['🎆','🌟','✨','💖','🎉','🌸','🐰'];
+    for(let i=0;i<35;i++){
+      const p=document.createElement('div');p.className='egg-particle';
+      p.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+      p.style.left=x+'px';p.style.top=y+'px';
+      const a=Math.random()*Math.PI*2,v=60+Math.random()*120;
+      p.style.setProperty('--tx',Math.cos(a)*v+'px');p.style.setProperty('--ty',Math.sin(a)*v+'px');
+      document.body.appendChild(p);setTimeout(()=>p.remove(),800);
     }
-
-    const flash = document.createElement('div');
-    Object.assign(flash.style, {
-      position: 'fixed', inset: 0, zIndex: 9999998,
-      background: 'linear-gradient(135deg, rgba(255,182,193,0.9), rgba(200,162,200,0.9))',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column',
-      opacity: 0, transition: 'opacity 0.5s ease-out', pointerEvents: 'none'
-    });
-    flash.innerHTML = '<div style="font-size:80px; animation:shake 0.5s infinite;">💖 깜짝이야! 💖</div>';
-    document.body.appendChild(flash);
-
-    setTimeout(() => { flash.style.opacity = 1; }, 50);
-    setTimeout(() => {
-      flash.style.opacity = 0;
-      setTimeout(() => flash.remove(), 500);
-      try { localStorage.removeItem('chem_auth'); } catch(e) {}
-      input.value = ''; error.style.display = 'none';
-      overlay.style.display = 'flex';
-      setTimeout(() => overlay.style.opacity = '1', 50);
-    }, 1200);
+    const fl=document.createElement('div');
+    Object.assign(fl.style,{position:'fixed',inset:0,zIndex:9999998,background:'linear-gradient(135deg,rgba(255,182,193,.9),rgba(200,162,200,.9))',display:'flex',alignItems:'center',justifyContent:'center',opacity:0,transition:'opacity .5s ease-out',pointerEvents:'none'});
+    fl.innerHTML='<div style="font-size:80px">💖 깜짝이야! 💖</div>';
+    document.body.appendChild(fl);
+    setTimeout(()=>fl.style.opacity=1,50);
+    setTimeout(()=>{fl.style.opacity=0;setTimeout(()=>fl.remove(),500);try{localStorage.removeItem('chem_auth');}catch(e){}inp.value='';err.style.display='none';ov.style.display='flex';setTimeout(()=>ov.style.opacity='1',50);},1200);
   });
 })();
 
-const TIMER_OPTIONS = [15000, 20000, 25000, 30000, 40000];
-const DEFAULT_TIMER = 20000;
-
-const REACTIONS = [
-  { name: "일산화탄소 + 산소 → 이산화탄소", reactants: [{coef:2,formula:[{sym:"CO"}]}, {coef:1,formula:[{sym:"O",sub:2}]}], products: [{coef:2,formula:[{sym:"CO",sub:2}]}] },
-  { name: "메테인 + 산소 → 이산화탄소 + 물", reactants: [{coef:1,formula:[{sym:"CH",sub:4}]}, {coef:2,formula:[{sym:"O",sub:2}]}], products: [{coef:1,formula:[{sym:"CO",sub:2}]}, {coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}] },
-  { name: "구리 + 산소 → 산화구리(Ⅱ)", reactants: [{coef:2,formula:[{sym:"Cu"}]}, {coef:1,formula:[{sym:"O",sub:2}]}], products: [{coef:2,formula:[{sym:"Cu"},{sym:"O"}]}] },
-  { name: "과산화수소 → 물 + 산소", reactants: [{coef:2,formula:[{sym:"H",sub:2},{sym:"O",sub:2}]}], products: [{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}, {coef:1,formula:[{sym:"O",sub:2}]}] },
-  { name: "수소 + 염소 → 염화수소", reactants: [{coef:1,formula:[{sym:"H",sub:2}]}, {coef:1,formula:[{sym:"Cl",sub:2}]}], products: [{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}] },
-  { name: "마그네슘 + 산소 → 산화마그네슘", reactants: [{coef:2,formula:[{sym:"Mg"}]}, {coef:1,formula:[{sym:"O",sub:2}]}], products: [{coef:2,formula:[{sym:"Mg"},{sym:"O"}]}] },
-  { name: "질소 + 산소 → 이산화질소", reactants: [{coef:1,formula:[{sym:"N",sub:2}]}, {coef:2,formula:[{sym:"O",sub:2}]}], products: [{coef:2,formula:[{sym:"N"},{sym:"O",sub:2}]}] },
-  { name: "질소 + 수소 → 암모니아", reactants: [{coef:1,formula:[{sym:"N",sub:2}]}, {coef:3,formula:[{sym:"H",sub:2}]}], products: [{coef:2,formula:[{sym:"N"},{sym:"H",sub:3}]}] },
-  { name: "에탄올 + 산소 → 이산화탄소 + 물", reactants: [{coef:1,formula:[{sym:"C",sub:2},{sym:"H",sub:5},{sym:"O"},{sym:"H"}]}, {coef:3,formula:[{sym:"O",sub:2}]}], products: [{coef:2,formula:[{sym:"CO",sub:2}]}, {coef:3,formula:[{sym:"H",sub:2},{sym:"O"}]}] },
-  { name: "탄산나트륨 + 염화칼슘 → 염화나트륨 + 탄산칼슘", reactants: [{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]}, {coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]}], products: [{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]}, {coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]}] },
-  { name: "탄산수소나트륨 → 탄산나트륨 + 이산화탄소 + 물", reactants: [{coef:2,formula:[{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}]}], products: [{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]}, {coef:1,formula:[{sym:"CO",sub:2}]}, {coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}] },
-  { name: "프로페인 + 산소 → 이산화탄소 + 물", reactants: [{coef:1,formula:[{sym:"C",sub:3},{sym:"H",sub:8}]}, {coef:5,formula:[{sym:"O",sub:2}]}], products: [{coef:3,formula:[{sym:"CO",sub:2}]}, {coef:4,formula:[{sym:"H",sub:2},{sym:"O"}]}] },
-  { name: "뷰테인 + 산소 → 이산화탄소 + 물", reactants: [{coef:2,formula:[{sym:"C",sub:4},{sym:"H",sub:10}]}, {coef:13,formula:[{sym:"O",sub:2}]}], products: [{coef:8,formula:[{sym:"CO",sub:2}]}, {coef:10,formula:[{sym:"H",sub:2},{sym:"O"}]}] },
-  { name: "마그네슘 + 염산 → 염화마그네슘 + 수소", reactants: [{coef:1,formula:[{sym:"Mg"}]}, {coef:2,formula:[{sym:"H"},{sym:"Cl"}]}], products: [{coef:1,formula:[{sym:"Mg"},{sym:"Cl",sub:2}]}, {coef:1,formula:[{sym:"H",sub:2}]}] },
-  { name: "탄산칼슘 + 염산 → 염화칼슘 + 물 + 이산화탄소", reactants: [{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]}, {coef:2,formula:[{sym:"H"},{sym:"Cl"}]}], products: [{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]}, {coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}, {coef:1,formula:[{sym:"CO",sub:2}]}] },
-  { name: "염화나트륨 + 질산은 → 질산나트륨 + 염화은", reactants: [{coef:1,formula:[{sym:"Na"},{sym:"Cl"}]}, {coef:1,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}], products: [{coef:1,formula:[{sym:"Na"},{sym:"NO",sub:3}]}, {coef:1,formula:[{sym:"Ag"},{sym:"Cl"}]}] }
+/* ── 데이터 ── */
+const DEFAULT_TIMER=20000;
+const REACTIONS=[
+  {name:"일산화탄소 + 산소 → 이산화탄소",reactants:[{coef:2,formula:[{sym:"CO"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]}]},
+  {name:"메테인 + 산소 → 이산화탄소 + 물",reactants:[{coef:1,formula:[{sym:"CH",sub:4}]},{coef:2,formula:[{sym:"O",sub:2}]}],products:[{coef:1,formula:[{sym:"CO",sub:2}]},{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"구리 + 산소 → 산화구리(Ⅱ)",reactants:[{coef:2,formula:[{sym:"Cu"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Cu"},{sym:"O"}]}]},
+  {name:"과산화수소 → 물 + 산소",reactants:[{coef:2,formula:[{sym:"H",sub:2},{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"O",sub:2}]}]},
+  {name:"수소 + 염소 → 염화수소",reactants:[{coef:1,formula:[{sym:"H",sub:2}]},{coef:1,formula:[{sym:"Cl",sub:2}]}],products:[{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}]},
+  {name:"마그네슘 + 산소 → 산화마그네슘",reactants:[{coef:2,formula:[{sym:"Mg"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Mg"},{sym:"O"}]}]},
+  {name:"질소 + 산소 → 이산화질소",reactants:[{coef:1,formula:[{sym:"N",sub:2}]},{coef:2,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"N"},{sym:"O",sub:2}]}]},
+  {name:"질소 + 수소 → 암모니아",reactants:[{coef:1,formula:[{sym:"N",sub:2}]},{coef:3,formula:[{sym:"H",sub:2}]}],products:[{coef:2,formula:[{sym:"N"},{sym:"H",sub:3}]}]},
+  {name:"에탄올 + 산소 → 이산화탄소 + 물",reactants:[{coef:1,formula:[{sym:"C",sub:2},{sym:"H",sub:5},{sym:"O"},{sym:"H"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]},{coef:3,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"탄산나트륨 + 염화칼슘 → 염화나트륨 + 탄산칼슘",reactants:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]}],products:[{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]}]},
+  {name:"탄산수소나트륨 → 탄산나트륨 + 이산화탄소 + 물",reactants:[{coef:2,formula:[{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}]}],products:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:1,formula:[{sym:"CO",sub:2}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"프로페인 + 산소 → 이산화탄소 + 물",reactants:[{coef:1,formula:[{sym:"C",sub:3},{sym:"H",sub:8}]},{coef:5,formula:[{sym:"O",sub:2}]}],products:[{coef:3,formula:[{sym:"CO",sub:2}]},{coef:4,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"뷰테인 + 산소 → 이산화탄소 + 물",reactants:[{coef:2,formula:[{sym:"C",sub:4},{sym:"H",sub:10}]},{coef:13,formula:[{sym:"O",sub:2}]}],products:[{coef:8,formula:[{sym:"CO",sub:2}]},{coef:10,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"마그네슘 + 염산 → 염화마그네슘 + 수소",reactants:[{coef:1,formula:[{sym:"Mg"}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2}]}]},
+  {name:"탄산칼슘 + 염산 → 염화칼슘 + 물 + 이산화탄소",reactants:[{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"CO",sub:2}]}]},
+  {name:"염화나트륨 + 질산은 → 질산나트륨 + 염화은",reactants:[{coef:1,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}],products:[{coef:1,formula:[{sym:"Na"},{sym:"NO",sub:3}]},{coef:1,formula:[{sym:"Ag"},{sym:"Cl"}]}]}
 ];
-
-const CHEMICALS = [
-  { name: "일산화탄소", formula: [{sym:"CO"}] }, { name: "이산화탄소", formula: [{sym:"CO",sub:2}] },
-  { name: "산소", formula: [{sym:"O",sub:2}] }, { name: "물", formula: [{sym:"H",sub:2},{sym:"O"}] },
-  { name: "메테인", formula: [{sym:"CH",sub:4}] }, { name: "구리", formula: [{sym:"Cu"}] },
-  { name: "산화구리(Ⅱ)", formula: [{sym:"Cu"},{sym:"O"}] }, { name: "과산화수소", formula: [{sym:"H",sub:2},{sym:"O",sub:2}] },
-  { name: "수소", formula: [{sym:"H",sub:2}] }, { name: "염소", formula: [{sym:"Cl",sub:2}] },
-  { name: "염화수소(염산)", formula: [{sym:"H"},{sym:"Cl"}] }, { name: "마그네슘", formula: [{sym:"Mg"}] },
-  { name: "산화마그네슘", formula: [{sym:"Mg"},{sym:"O"}] }, { name: "염화마그네슘", formula: [{sym:"Mg"},{sym:"Cl",sub:2}] },
-  { name: "질소", formula: [{sym:"N",sub:2}] }, { name: "이산화질소", formula: [{sym:"N"},{sym:"O",sub:2}] },
-  { name: "암모니아", formula: [{sym:"N"},{sym:"H",sub:3}] }, { name: "에탄올", formula: [{sym:"C",sub:2},{sym:"H",sub:5},{sym:"O"},{sym:"H"}] },
-  { name: "탄산나트륨", formula: [{sym:"Na",sub:2},{sym:"CO",sub:3}] }, { name: "염화칼슘", formula: [{sym:"Ca"},{sym:"Cl",sub:2}] },
-  { name: "염화나트륨", formula: [{sym:"Na"},{sym:"Cl"}] }, { name: "탄산칼슘", formula: [{sym:"Ca"},{sym:"CO",sub:3}] },
-  { name: "탄산수소나트륨", formula: [{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}] }, { name: "질산은", formula: [{sym:"Ag"},{sym:"NO",sub:3}] },
-  { name: "염화은", formula: [{sym:"Ag"},{sym:"Cl"}] }, { name: "질산나트륨", formula: [{sym:"Na"},{sym:"NO",sub:3}] },
-  { name: "프로페인", formula: [{sym:"C",sub:3},{sym:"H",sub:8}] }, { name: "뷰테인", formula: [{sym:"C",sub:4},{sym:"H",sub:10}] },
-  { name: "황", formula: [{sym:"S"}] }, { name: "인", formula: [{sym:"P"}] }
+const CHEMICALS=[
+  {name:"일산화탄소",formula:[{sym:"CO"}]},{name:"이산화탄소",formula:[{sym:"CO",sub:2}]},
+  {name:"산소",formula:[{sym:"O",sub:2}]},{name:"물",formula:[{sym:"H",sub:2},{sym:"O"}]},
+  {name:"메테인",formula:[{sym:"CH",sub:4}]},{name:"구리",formula:[{sym:"Cu"}]},
+  {name:"산화구리(Ⅱ)",formula:[{sym:"Cu"},{sym:"O"}]},{name:"과산화수소",formula:[{sym:"H",sub:2},{sym:"O",sub:2}]},
+  {name:"수소",formula:[{sym:"H",sub:2}]},{name:"염소",formula:[{sym:"Cl",sub:2}]},
+  {name:"염화수소(염산)",formula:[{sym:"H"},{sym:"Cl"}]},{name:"마그네슘",formula:[{sym:"Mg"}]},
+  {name:"산화마그네슘",formula:[{sym:"Mg"},{sym:"O"}]},{name:"염화마그네슘",formula:[{sym:"Mg"},{sym:"Cl",sub:2}]},
+  {name:"질소",formula:[{sym:"N",sub:2}]},{name:"이산화질소",formula:[{sym:"N"},{sym:"O",sub:2}]},
+  {name:"암모니아",formula:[{sym:"N"},{sym:"H",sub:3}]},{name:"에탄올",formula:[{sym:"C",sub:2},{sym:"H",sub:5},{sym:"O"},{sym:"H"}]},
+  {name:"탄산나트륨",formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{name:"염화칼슘",formula:[{sym:"Ca"},{sym:"Cl",sub:2}]},
+  {name:"염화나트륨",formula:[{sym:"Na"},{sym:"Cl"}]},{name:"탄산칼슘",formula:[{sym:"Ca"},{sym:"CO",sub:3}]},
+  {name:"탄산수소나트륨",formula:[{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}]},{name:"질산은",formula:[{sym:"Ag"},{sym:"NO",sub:3}]},
+  {name:"염화은",formula:[{sym:"Ag"},{sym:"Cl"}]},{name:"질산나트륨",formula:[{sym:"Na"},{sym:"NO",sub:3}]},
+  {name:"프로페인",formula:[{sym:"C",sub:3},{sym:"H",sub:8}]},{name:"뷰테인",formula:[{sym:"C",sub:4},{sym:"H",sub:10}]},
+  {name:"황",formula:[{sym:"S"}]},{name:"인",formula:[{sym:"P"}]}
 ];
-
-const COEF_TEMPLATES = [
-  { label: "A₂ + B₂ → AB₂", gen: () => { return { fmt:[ {coef:1,formula:[{sym:"A",sub:2}]}, {coef:2,formula:[{sym:"B",sub:2}]} ], fmtP:[ {coef:2,formula:[{sym:"A"},{sym:"B",sub:2}]} ]}; } },
-  { label: "A₃ + B₂ → A₆B", gen: () => { return { fmt:[ {coef:4,formula:[{sym:"A",sub:3}]}, {coef:1,formula:[{sym:"B",sub:2}]} ], fmtP:[ {coef:2,formula:[{sym:"A",sub:6},{sym:"B"}]} ]}; } },
-  { label: "A₂ + B₃ → A₂B", gen: () => { return { fmt:[ {coef:3,formula:[{sym:"A",sub:2}]}, {coef:1,formula:[{sym:"B",sub:3}]} ], fmtP:[ {coef:3,formula:[{sym:"A",sub:2},{sym:"B"}]} ]}; } },
-  { label: "A + B₃ → A₃B", gen: () => { return { fmt:[ {coef:9,formula:[{sym:"A"}]}, {coef:1,formula:[{sym:"B",sub:3}]} ], fmtP:[ {coef:3,formula:[{sym:"A",sub:3},{sym:"B"}]} ]}; } },
-  { label: "A₃ + B → AB₂", gen: () => { return { fmt:[ {coef:1,formula:[{sym:"A",sub:3}]}, {coef:6,formula:[{sym:"B"}]} ], fmtP:[ {coef:3,formula:[{sym:"A"},{sym:"B",sub:2}]} ]}; } },
-  { label: "A₂ + B → AB₃", gen: () => { return { fmt:[ {coef:1,formula:[{sym:"A",sub:2}]}, {coef:6,formula:[{sym:"B"}]} ], fmtP:[ {coef:2,formula:[{sym:"A"},{sym:"B",sub:3}]} ]}; } },
-  { label: "A + B₂ → A₂B₃", gen: () => { return { fmt:[ {coef:4,formula:[{sym:"A"}]}, {coef:3,formula:[{sym:"B",sub:2}]} ], fmtP:[ {coef:2,formula:[{sym:"A",sub:2},{sym:"B",sub:3}]} ]}; } }
+const COEF_TEMPLATES=[
+  {label:"A₂ + B₂ → AB₂",gen:()=>({fmt:[{coef:1,formula:[{sym:"A",sub:2}]},{coef:2,formula:[{sym:"B",sub:2}]}],fmtP:[{coef:2,formula:[{sym:"A"},{sym:"B",sub:2}]}]})},
+  {label:"A₃ + B₂ → A₆B",gen:()=>({fmt:[{coef:4,formula:[{sym:"A",sub:3}]},{coef:1,formula:[{sym:"B",sub:2}]}],fmtP:[{coef:2,formula:[{sym:"A",sub:6},{sym:"B"}]}]})},
+  {label:"A₂ + B₃ → A₂B",gen:()=>({fmt:[{coef:3,formula:[{sym:"A",sub:2}]},{coef:1,formula:[{sym:"B",sub:3}]}],fmtP:[{coef:3,formula:[{sym:"A",sub:2},{sym:"B"}]}]})},
+  {label:"A + B₃ → A₃B",gen:()=>({fmt:[{coef:9,formula:[{sym:"A"}]},{coef:1,formula:[{sym:"B",sub:3}]}],fmtP:[{coef:3,formula:[{sym:"A",sub:3},{sym:"B"}]}]})},
+  {label:"A₃ + B → AB₂",gen:()=>({fmt:[{coef:1,formula:[{sym:"A",sub:3}]},{coef:6,formula:[{sym:"B"}]}],fmtP:[{coef:3,formula:[{sym:"A"},{sym:"B",sub:2}]}]})},
+  {label:"A₂ + B → AB₃",gen:()=>({fmt:[{coef:1,formula:[{sym:"A",sub:2}]},{coef:6,formula:[{sym:"B"}]}],fmtP:[{coef:2,formula:[{sym:"A"},{sym:"B",sub:3}]}]})},
+  {label:"A + B₂ → A₂B₃",gen:()=>({fmt:[{coef:4,formula:[{sym:"A"}]},{coef:3,formula:[{sym:"B",sub:2}]}],fmtP:[{coef:2,formula:[{sym:"A",sub:2},{sym:"B",sub:3}]}]})}
 ];
+const CORE_ELEMENTS=['H','C','O','N','S','P','Na','Mg','Ca','Cu','Ag','Cl','A','B'];
 
-const CORE_ELEMENTS = ['H', 'C', 'O', 'N', 'S', 'P', 'Na', 'Mg', 'Ca', 'Cu', 'Ag', 'Cl', 'A', 'B'];
-
-const App = {
-  state: {
-    currentMode: null,
-    score: { streak: 0, correct: 0, wrong: 0 },
-    currentQuestion: null,
-    isAnswerChecked: false,
-    isAnswerRevealed: false,
-    isDarkMode: true,
-    timerDuration: DEFAULT_TIMER,
-    currentMaxTime: DEFAULT_TIMER,
-    timerLeft: DEFAULT_TIMER,
-    timerInterval: null,
-    wrongNotes: [],
-    noteFilter: 'all'
+/* ── 앱 ── */
+const App={
+  state:{
+    currentMode:null,score:{streak:0,correct:0,wrong:0},
+    currentQuestion:null,isAnswerChecked:false,isAnswerRevealed:false,isDarkMode:true,
+    timerDuration:DEFAULT_TIMER,currentMaxTime:DEFAULT_TIMER,timerLeft:DEFAULT_TIMER,timerInterval:null,
+    wrongNotes:[],noteFilter:'all',
+    m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false
   },
-  $: {
-    app: document.getElementById('app'), streakCount: document.getElementById('streakCount'), streakFlames: document.getElementById('streakFlames'),
-    totalCorrect: document.getElementById('totalCorrect'), totalWrong: document.getElementById('totalWrong'), modeTabs: document.querySelector('.mode-tabs'),
-    qLabel: document.getElementById('qLabel'), qSubLabel: document.getElementById('qSubLabel'), equationDisplay: document.getElementById('equationDisplay'),
-    resultBanner: document.getElementById('resultBanner'), numRow: document.getElementById('numRow'),
-    elemRowLabel: document.getElementById('elemRowLabel'), elemRow: document.getElementById('elemRow'),
-    confirmBtn: document.querySelector('.kb-key.confirm'), nextBtn: document.querySelector('.kb-key.next-q'),
-    hintModalOverlay: document.getElementById('hintModalOverlay'), wrongNoteModalOverlay: document.getElementById('wrongNoteModalOverlay'),
-    reactionList: document.getElementById('reactionList'), wrongNoteList: document.getElementById('wrongNoteList'),
-    timerBar: document.getElementById('timerBar'), wrongNoteFilters: document.getElementById('wrongNoteFilters')
+  $:{
+    app:document.getElementById('app'),streakCount:document.getElementById('streakCount'),streakFlames:document.getElementById('streakFlames'),
+    totalCorrect:document.getElementById('totalCorrect'),totalWrong:document.getElementById('totalWrong'),modeTabs:document.querySelector('.mode-tabs'),
+    qLabel:document.getElementById('qLabel'),qSubLabel:document.getElementById('qSubLabel'),equationDisplay:document.getElementById('equationDisplay'),
+    resultBanner:document.getElementById('resultBanner'),numRow:document.getElementById('numRow'),
+    elemRowLabel:document.getElementById('elemRowLabel'),elemRow:document.getElementById('elemRow'),
+    confirmBtn:document.querySelector('.kb-key.confirm'),nextBtn:document.querySelector('.kb-key.next-q'),
+    hintModalOverlay:document.getElementById('hintModalOverlay'),wrongNoteModalOverlay:document.getElementById('wrongNoteModalOverlay'),
+    reactionList:document.getElementById('reactionList'),wrongNoteList:document.getElementById('wrongNoteList'),
+    timerBar:document.getElementById('timerBar'),wrongNoteFilters:document.getElementById('wrongNoteFilters'),
+    questionCard:document.getElementById('questionCard'),keyboardWrap:document.getElementById('keyboardWrap'),
+    timerSelectWrap:document.getElementById('timerSelectWrap'),mode6Wrap:document.getElementById('mode6Wrap')
   },
 
-  init() {
-    this.loadWrongNotes();
-    this.buildKeyboard();
-    this.buildModalList();
-    this.attachEventListeners();
-    this.setMode(1);
-  },
+  init(){this.loadWrongNotes();this.buildKeyboard();this.buildModalList();this.attachEventListeners();this.setMode(1);},
 
-  loadWrongNotes() {
-    try {
-      const data = localStorage.getItem('chem_wrong_notes_v3');
-      this.state.wrongNotes = data ? JSON.parse(data) : [];
-    } catch(e) { this.state.wrongNotes = []; }
-  },
+  loadWrongNotes(){try{const d=localStorage.getItem('chem_wrong_notes_v3');this.state.wrongNotes=d?JSON.parse(d):[];}catch(e){this.state.wrongNotes=[];}},
+  saveWrongNote(m,t,h){const id=Date.now().toString();this.state.wrongNotes.unshift({id,mode:m,title:t,html:h});try{localStorage.setItem('chem_wrong_notes_v3',JSON.stringify(this.state.wrongNotes));}catch(e){}this.renderWrongNotes();},
+  deleteWrongNote(id){this.state.wrongNotes=this.state.wrongNotes.filter(n=>n.id!==id);try{localStorage.setItem('chem_wrong_notes_v3',JSON.stringify(this.state.wrongNotes));}catch(e){}this.renderWrongNotes();},
+  clearWrongNotes(){if(!confirm("오답 노트를 전부 삭제하시겠습니까?"))return;this.state.wrongNotes=[];try{localStorage.removeItem('chem_wrong_notes_v3');}catch(e){}this.renderWrongNotes();},
 
-  saveWrongNote(modeNum, title, equationHtml) {
-    const id = Date.now().toString();
-    this.state.wrongNotes.unshift({ id, mode: modeNum, title, html: equationHtml });
-    try { localStorage.setItem('chem_wrong_notes_v3', JSON.stringify(this.state.wrongNotes)); } catch(e) {}
+  buildKeyboard(){
+    this.$.numRow.innerHTML=[1,2,3,4,5,6,7,8,9,0].map(n=>`<button class="kb-key num" data-key="NUM_${n}">${n}</button>`).join('');
+    this.$.elemRow.innerHTML=CORE_ELEMENTS.map(e=>`<button class="kb-key elem" data-key="ELEM_${e}">${e}</button>`).join('');
+  },
+  buildModalList(){
+    const fmt=side=>side.map(r=>(r.coef>1?`<span class="eq-text">${r.coef}</span>`:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' <span class="eq-plus">+</span> ');
+    this.$.reactionList.innerHTML=REACTIONS.map((rx,i)=>`<div class="reaction-item"><div class="reaction-info" style="width:100%"><div class="reaction-header"><div class="reaction-name" style="margin-bottom:8px">#${i+1} ${rx.name}</div></div><div class="reaction-eq">${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}</div></div></div>`).join('');
     this.renderWrongNotes();
   },
-
-  deleteWrongNote(id) {
-    this.state.wrongNotes = this.state.wrongNotes.filter(n => n.id !== id);
-    try { localStorage.setItem('chem_wrong_notes_v3', JSON.stringify(this.state.wrongNotes)); } catch(e) {}
-    this.renderWrongNotes();
+  renderWrongNotes(){
+    let f=this.state.wrongNotes;
+    if(this.state.noteFilter!=='all')f=f.filter(n=>n.mode.toString()===this.state.noteFilter);
+    if(f.length===0){this.$.wrongNoteList.innerHTML=`<p style="color:var(--c-text-secondary);text-align:center;padding:40px 20px">이 모드의 오답 기록이 없습니다.</p>`;return;}
+    this.$.wrongNoteList.innerHTML=f.map(n=>`<div class="reaction-item"><div class="reaction-info" style="width:100%"><div class="reaction-header"><div class="reaction-name">[모드 ${n.mode}] ${n.title}</div><button class="delete-note-btn" data-id="${n.id}">삭제</button></div><div class="reaction-eq" style="border-color:var(--c-wrong)">${n.html}</div></div></div>`).join('');
   },
 
-  clearWrongNotes() {
-    if(!confirm("오답 노트를 전부 삭제하시겠습니까?")) return;
-    this.state.wrongNotes = [];
-    try { localStorage.removeItem('chem_wrong_notes_v3'); } catch(e) {}
-    this.renderWrongNotes();
-  },
-
-  buildKeyboard() {
-    this.$.numRow.innerHTML = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map(n => `<button class="kb-key num" data-key="NUM_${n}">${n}</button>`).join('');
-    this.$.elemRow.innerHTML = CORE_ELEMENTS.map(e => `<button class="kb-key elem" data-key="ELEM_${e}">${e}</button>`).join('');
-  },
-
-  buildModalList() {
-    this.$.reactionList.innerHTML = REACTIONS.map((rx, i) => {
-      const formatSide = (side) => side.map(r => (r.coef > 1 ? `<span class="eq-text">${r.coef}</span>` : '') + r.formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join('')).join(' <span class="eq-plus">+</span> ');
-      return `<div class="reaction-item"><div class="reaction-info" style="width:100%;"><div class="reaction-header"><div class="reaction-name" style="margin-bottom:8px;">#${i + 1} ${rx.name}</div></div><div class="reaction-eq">${formatSide(rx.reactants)} <span class="eq-arrow">→</span> ${formatSide(rx.products)}</div></div></div>`;
-    }).join('');
-    this.renderWrongNotes();
-  },
-
-  renderWrongNotes() {
-    let filtered = this.state.wrongNotes;
-    if (this.state.noteFilter !== 'all') {
-      filtered = filtered.filter(n => n.mode.toString() === this.state.noteFilter);
-    }
-
-    if (filtered.length === 0) {
-      this.$.wrongNoteList.innerHTML = `<p style="color:var(--c-text-secondary); text-align:center; padding: 40px 20px;">이 모드의 오답 기록이 없습니다.</p>`;
-      return;
-    }
-
-    this.$.wrongNoteList.innerHTML = filtered.map(n => `
-      <div class="reaction-item">
-        <div class="reaction-info" style="width:100%;">
-          <div class="reaction-header">
-            <div class="reaction-name">[모드 ${n.mode}] ${n.title}</div>
-            <button class="delete-note-btn" data-id="${n.id}">삭제</button>
-          </div>
-          <div class="reaction-eq" style="border-color:var(--c-wrong);">${n.html}</div>
-        </div>
-      </div>
-    `).join('');
-  },
-
-  attachEventListeners() {
-    this.$.app.addEventListener('click', e => {
-      const modeTab = e.target.closest('.mode-tab'); const blankBox = e.target.closest('.blank-box'); const keyBtn = e.target.closest('.kb-key');
-      const themeBtn = e.target.closest('#themeBtn'); const hintBtn = e.target.closest('#hintBtn'); const wrongNoteBtn = e.target.closest('#wrongNoteBtn');
-      const showAnswerBtn = e.target.closest('.show-answer-btn');
-
-      if (modeTab) this.setMode(parseInt(modeTab.dataset.mode));
-      if (blankBox) this.setActiveBlank(blankBox.dataset.key);
-      if (keyBtn) this.handleKeyPress(keyBtn.dataset.key);
-      if (themeBtn) this.toggleTheme();
-      if (hintBtn) this.$.hintModalOverlay.classList.add('show');
-      if (wrongNoteBtn) { this.renderWrongNotes(); this.$.wrongNoteModalOverlay.classList.add('show'); }
-      if (showAnswerBtn) this.revealAnswers();
+  attachEventListeners(){
+    this.$.app.addEventListener('click',e=>{
+      const mt=e.target.closest('.mode-tab'),bb=e.target.closest('.blank-box'),kb=e.target.closest('.kb-key');
+      const th=e.target.closest('#themeBtn'),hi=e.target.closest('#hintBtn'),wn=e.target.closest('#wrongNoteBtn'),sa=e.target.closest('.show-answer-btn');
+      if(mt)this.setMode(parseInt(mt.dataset.mode));
+      if(bb)this.setActiveBlank(bb.dataset.key);
+      if(kb)this.handleKeyPress(kb.dataset.key);
+      if(th)this.toggleTheme();
+      if(hi)this.$.hintModalOverlay.classList.add('show');
+      if(wn){this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');}
+      if(sa)this.revealAnswers();
     });
+    this.$.wrongNoteFilters.addEventListener('click',e=>{
+      const c=e.target.closest('.filter-chip');if(!c)return;
+      this.$.wrongNoteFilters.querySelectorAll('.filter-chip').forEach(x=>x.classList.remove('active'));
+      c.classList.add('active');this.state.noteFilter=c.dataset.filter;this.renderWrongNotes();
+    });
+    document.getElementById('hintModalClose').addEventListener('click',()=>this.$.hintModalOverlay.classList.remove('show'));
+    document.getElementById('wrongNoteModalClose').addEventListener('click',()=>this.$.wrongNoteModalOverlay.classList.remove('show'));
+    document.getElementById('clearAllNotesBtn').addEventListener('click',()=>this.clearWrongNotes());
+    document.getElementById('timerBtns').addEventListener('click',e=>{
+      const b=e.target.closest('.timer-btn');if(!b)return;
+      this.state.timerDuration=parseInt(b.dataset.sec)*1000;
+      document.querySelectorAll('.timer-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+    });
+    this.$.wrongNoteList.addEventListener('click',e=>{if(e.target.classList.contains('delete-note-btn'))this.deleteWrongNote(e.target.dataset.id);});
 
-    this.$.wrongNoteFilters.addEventListener('click', e => {
-      const chip = e.target.closest('.filter-chip');
-      if (chip) {
-        this.$.wrongNoteFilters.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
-        chip.classList.add('active');
-        this.state.noteFilter = chip.dataset.filter;
-        this.renderWrongNotes();
+    // 물리 키보드
+    document.addEventListener('keydown',e=>{
+      if(this.$.hintModalOverlay.classList.contains('show')||this.$.wrongNoteModalOverlay.classList.contains('show')||document.getElementById('authOverlay').style.display!=='none')return;
+      if(this.state.currentMode===6){
+        if(e.key==='ArrowRight')this.m6Next();
+        else if(e.key==='ArrowLeft')this.m6Prev();
+        else if(e.key===' '){e.preventDefault();this.m6Flip();}
+        return;
       }
+      if(e.key>='0'&&e.key<='9')this.handleKeyPress(`NUM_${e.key}`);
+      else if(e.key==='Backspace')this.handleKeyPress('DEL');
+      else if(e.key==='Enter')this.handleKeyPress(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut?'NEXT':'CONFIRM');
     });
 
-    document.getElementById('hintModalClose').addEventListener('click', () => this.$.hintModalOverlay.classList.remove('show'));
-    document.getElementById('wrongNoteModalClose').addEventListener('click', () => this.$.wrongNoteModalOverlay.classList.remove('show'));
-    document.getElementById('clearAllNotesBtn').addEventListener('click', () => this.clearWrongNotes());
-
-    document.getElementById('timerBtns').addEventListener('click', e => {
-      const btn = e.target.closest('.timer-btn');
-      if (!btn) return;
-      const sec = parseInt(btn.dataset.sec) * 1000;
-      this.state.timerDuration = sec;
-      document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+    // 모드 6 터치/클릭
+    const m6o=document.getElementById('m6Outer');
+    let tx=0,th2=false;
+    m6o.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;th2=false;},{passive:true});
+    m6o.addEventListener('touchend',e=>{
+      th2=true;const dx=e.changedTouches[0].clientX-tx;
+      if(Math.abs(dx)>50){if(dx<0)this.m6Next();else this.m6Prev();}else this.m6Flip();
     });
+    m6o.addEventListener('click',()=>{if(!th2)this.m6Flip();th2=false;});
 
-    this.$.wrongNoteList.addEventListener('click', e => {
-      if(e.target.classList.contains('delete-note-btn')) this.deleteWrongNote(e.target.dataset.id);
+    document.getElementById('m6NextBtn').addEventListener('click',()=>this.m6Next());
+    document.getElementById('m6PrevBtn').addEventListener('click',()=>this.m6Prev());
+    document.getElementById('m6ShuffleBtn').addEventListener('click',()=>this.m6Shuffle());
+    document.getElementById('m6TypeBtns').addEventListener('click',e=>{
+      const b=e.target.closest('.m6-opt-btn');if(!b)return;
+      document.querySelectorAll('#m6TypeBtns .m6-opt-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+      this.state.m6Type=b.dataset.val;this.m6GenCards();this.m6Render();
     });
-
-    document.addEventListener('keydown', e => {
-      if (this.$.hintModalOverlay.classList.contains('show') || this.$.wrongNoteModalOverlay.classList.contains('show') || document.getElementById('authOverlay').style.display !== 'none') return;
-      if (e.key >= '0' && e.key <= '9') this.handleKeyPress(`NUM_${e.key}`);
-      else if (e.key === 'Backspace') this.handleKeyPress('DEL');
-      else if (e.key === 'Enter') this.handleKeyPress(this.state.isAnswerChecked && !this.state.currentQuestion?.isTimedOut ? 'NEXT' : 'CONFIRM');
+    document.getElementById('m6OrderBtns').addEventListener('click',e=>{
+      const b=e.target.closest('.m6-opt-btn');if(!b)return;
+      document.querySelectorAll('#m6OrderBtns .m6-opt-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+      this.state.m6Order=b.dataset.val;this.m6Render();
     });
   },
 
-  startTimer() {
+  startTimer(){
     clearInterval(this.state.timerInterval);
-    
-    this.state.currentMaxTime = this.state.timerDuration;
-    this.state.timerLeft = this.state.currentMaxTime;
-    
-    this.$.timerBar.style.transition = 'none';
-    this.$.timerBar.style.width = '100%';
-    this.$.timerBar.classList.remove('danger');
-
-    void this.$.timerBar.offsetWidth;
-    this.$.timerBar.style.transition = 'width 0.1s linear, background 0.3s';
-
-    let lastTime = Date.now();
-    this.state.timerInterval = setInterval(() => {
-      if (this.state.isAnswerChecked) { clearInterval(this.state.timerInterval); return; }
-
-      const now = Date.now();
-      this.state.timerLeft -= (now - lastTime);
-      lastTime = now;
-
-      if (this.state.timerLeft <= 0) {
-        this.state.timerLeft = 0;
-        clearInterval(this.state.timerInterval);
-        this.$.timerBar.style.width = '0%';
-        this.timeOutForceWrong();
-      } else {
-        const pct = (this.state.timerLeft / this.state.currentMaxTime) * 100;
-        this.$.timerBar.style.width = `${pct}%`;
-        if (pct < 30) this.$.timerBar.classList.add('danger');
-      }
-    }, 50);
+    this.state.currentMaxTime=this.state.timerDuration;this.state.timerLeft=this.state.currentMaxTime;
+    this.$.timerBar.style.transition='none';this.$.timerBar.style.width='100%';this.$.timerBar.classList.remove('danger');
+    void this.$.timerBar.offsetWidth;this.$.timerBar.style.transition='width 0.1s linear, background 0.3s';
+    let lt=Date.now();
+    this.state.timerInterval=setInterval(()=>{
+      if(this.state.isAnswerChecked){clearInterval(this.state.timerInterval);return;}
+      const now=Date.now();this.state.timerLeft-=(now-lt);lt=now;
+      if(this.state.timerLeft<=0){this.state.timerLeft=0;clearInterval(this.state.timerInterval);this.$.timerBar.style.width='0%';this.timeOutForceWrong();}
+      else{const p=(this.state.timerLeft/this.state.currentMaxTime)*100;this.$.timerBar.style.width=`${p}%`;if(p<30)this.$.timerBar.classList.add('danger');}
+    },50);
   },
 
-  timeOutForceWrong() {
-    this.state.isAnswerRevealed = false; 
-    this.state.score.streak = 0;
-    this.state.score.wrong++;
-
-    const q = this.state.currentQuestion;
-    q.isTimedOut = true; 
-    this.generateBeautifulWrongNote(q);
-
-    this.renderAll(null);
-    this.$.resultBanner.className = 'result-banner wrong-banner show';
-    this.$.resultBanner.innerHTML = `<div style="display:flex; align-items:center; width:100%; justify-content:space-between;"><span><span style="color:var(--c-wrong)">⏰ 시간 초과!</span> <span style="font-weight:400; margin-left:10px;">마저 답을 입력해보세요.</span></span><button class="show-answer-btn">정답 확인</button></div>`;
+  timeOutForceWrong(){
+    this.state.isAnswerRevealed=false;this.state.score.streak=0;this.state.score.wrong++;
+    const q=this.state.currentQuestion;q.isTimedOut=true;
+    this.generateBeautifulWrongNote(q);this.renderAll(null);
+    this.$.resultBanner.className='result-banner wrong-banner show';
+    this.$.resultBanner.innerHTML=`<div style="display:flex;align-items:center;width:100%;justify-content:space-between"><span><span style="color:var(--c-wrong)">⏰ 시간 초과!</span> <span style="font-weight:400;margin-left:10px">마저 답을 입력해보세요.</span></span><button class="show-answer-btn">정답 확인</button></div>`;
   },
 
-  handleKeyPress(key) {
-    if (key.startsWith('NUM_') || key.startsWith('ELEM_') || key === 'DEL') {
-      if (this.state.isAnswerChecked && !this.state.currentQuestion?.isTimedOut) return; 
-      
-      const q = this.state.currentQuestion;
-      if (!q || !q.activeKey) return;
-      const input = q.inputs[q.activeKey] || '';
-
-      if (key.startsWith('NUM_')) q.inputs[q.activeKey] = input + key.replace('NUM_', '');
-      else if (key.startsWith('ELEM_')) {
-        q.inputs[q.activeKey] = input + key.replace('ELEM_', '');
+  handleKeyPress(key){
+    if(key.startsWith('NUM_')||key.startsWith('ELEM_')||key==='DEL'){
+      if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)return;
+      const q=this.state.currentQuestion;if(!q||!q.activeKey)return;
+      const inp=q.inputs[q.activeKey]||'';
+      if(key.startsWith('NUM_'))q.inputs[q.activeKey]=inp+key.replace('NUM_','');
+      else if(key.startsWith('ELEM_'))q.inputs[q.activeKey]=inp+key.replace('ELEM_','');
+      else if(key==='DEL'){
+        if(inp.length>0){let dl=1;if(/[a-z]$/.test(inp)&&inp.length>=2&&/[A-Z]/.test(inp.slice(-2,-1)))dl=2;q.inputs[q.activeKey]=inp.slice(0,-dl);}
       }
-      else if (key === 'DEL') {
-        if (input.length > 0) {
-          let deleteLen = 1;
-          if (/[a-z]$/.test(input) && input.length >= 2 && /[A-Z]/.test(input.slice(-2, -1))) {
-            deleteLen = 2;
-          }
-          q.inputs[q.activeKey] = input.slice(0, -deleteLen);
-        }
-      }
-
       this.renderEquation();
-    } else if (key === 'CONFIRM') { 
-        if (!this.state.isAnswerChecked || this.state.currentQuestion?.isTimedOut) this.checkAnswer();
-    } else if (key === 'NEXT') { 
-        if (this.state.isAnswerChecked && !this.state.currentQuestion?.isTimedOut) this.generateQuestion(); 
-    }
+    }else if(key==='CONFIRM'){if(!this.state.isAnswerChecked||this.state.currentQuestion?.isTimedOut)this.checkAnswer();}
+    else if(key==='NEXT'){if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)this.generateQuestion();}
   },
 
-  setMode(mode) {
-    if (this.state.currentMode === mode) return;
-    this.state.currentMode = mode;
-    this.$.modeTabs.querySelectorAll('.mode-tab').forEach(tab => { tab.classList.toggle('active', parseInt(tab.dataset.mode) === mode); });
-
-    if (mode === 1) {
-      this.$.elemRowLabel.style.display = 'none';
-      this.$.elemRow.style.display = 'none';
-    } else {
-      this.$.elemRowLabel.style.display = 'block';
-      this.$.elemRow.style.display = 'flex';
-    }
-
+  setMode(mode){
+    if(this.state.currentMode===mode)return;
+    this.state.currentMode=mode;
+    this.$.modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.mode)===mode));
+    const is6=mode===6;
+    this.$.questionCard.style.display=is6?'none':'';
+    this.$.keyboardWrap.style.display=is6?'none':'';
+    this.$.timerSelectWrap.style.display=is6?'none':'';
+    this.$.mode6Wrap.style.display=is6?'flex':'none';
+    if(is6){clearInterval(this.state.timerInterval);this.m6GenCards();this.m6Render();return;}
+    if(mode===1){this.$.elemRowLabel.style.display='none';this.$.elemRow.style.display='none';}
+    else{this.$.elemRowLabel.style.display='block';this.$.elemRow.style.display='flex';}
     this.generateQuestion();
   },
 
-  setActiveBlank(key) { 
-      if (this.state.isAnswerChecked && !this.state.currentQuestion?.isTimedOut) return; 
-      const q = this.state.currentQuestion; 
-      if (q) { q.activeKey = key; this.renderEquation(); } 
+  setActiveBlank(key){
+    if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)return;
+    const q=this.state.currentQuestion;if(q){q.activeKey=key;this.renderEquation();}
   },
 
-  generateQuestion() {
-    this.state.isAnswerChecked = false; this.state.isAnswerRevealed = false;
-    const q = { blanks: [], inputs: {}, isTimedOut: false };
-    const formulaToString = (chem) => { let str = chem.coef > 1 ? chem.coef.toString() : ''; str += chem.formula.map(p => p.sym + (p.sub ? p.sub.toString() : '')).join(''); return str; };
-
-    switch (this.state.currentMode) {
+  generateQuestion(){
+    this.state.isAnswerChecked=false;this.state.isAnswerRevealed=false;
+    const q={blanks:[],inputs:{},isTimedOut:false};
+    const f2s=c=>{let s=c.coef>1?c.coef.toString():'';s+=c.formula.map(p=>p.sym+(p.sub?p.sub.toString():'')).join('');return s;};
+    switch(this.state.currentMode){
       case 1:
-        if (Math.random() < 0.5) {
-            const tmpl = COEF_TEMPLATES[Math.floor(Math.random() * COEF_TEMPLATES.length)];
-            const data = tmpl.gen(); q.name = tmpl.label; q.isAbstract = true;
-            q.displayReactants = data.fmt.map(f => ({...f})); q.displayProducts = data.fmtP.map(f => ({...f}));
-            data.fmt.forEach((f, i) => { if(f.coef > 1) { q.blanks.push({key: `R${i}`, answer: f.coef.toString()}); } });
-            data.fmtP.forEach((f, i) => { if(f.coef > 1) { q.blanks.push({key: `P${i}`, answer: f.coef.toString()}); } });
-        } else {
-            const validRx = REACTIONS.filter(r => r.reactants.some(x => x.coef > 1) || r.products.some(x => x.coef > 1));
-            const rx = validRx[Math.floor(Math.random() * validRx.length)];
-            q.name = rx.name; q.isAbstract = false;
-            q.displayReactants = rx.reactants.map(f => ({...f})); q.displayProducts = rx.products.map(f => ({...f}));
-            rx.reactants.forEach((r, i) => { if(r.coef > 1) { q.blanks.push({key: `R${i}`, answer: r.coef.toString()}); } });
-            rx.products.forEach((p, i) => { if(p.coef > 1) { q.blanks.push({key: `P${i}`, answer: p.coef.toString()}); } });
+        if(Math.random()<.5){
+          const t=COEF_TEMPLATES[Math.floor(Math.random()*COEF_TEMPLATES.length)],d=t.gen();q.name=t.label;q.isAbstract=true;
+          q.displayReactants=d.fmt.map(f=>({...f}));q.displayProducts=d.fmtP.map(f=>({...f}));
+          d.fmt.forEach((f,i)=>{if(f.coef>1)q.blanks.push({key:`R${i}`,answer:f.coef.toString()});});
+          d.fmtP.forEach((f,i)=>{if(f.coef>1)q.blanks.push({key:`P${i}`,answer:f.coef.toString()});});
+        }else{
+          const vr=REACTIONS.filter(r=>r.reactants.some(x=>x.coef>1)||r.products.some(x=>x.coef>1));
+          const rx=vr[Math.floor(Math.random()*vr.length)];q.name=rx.name;q.isAbstract=false;
+          q.displayReactants=rx.reactants.map(f=>({...f}));q.displayProducts=rx.products.map(f=>({...f}));
+          rx.reactants.forEach((r,i)=>{if(r.coef>1)q.blanks.push({key:`R${i}`,answer:r.coef.toString()});});
+          rx.products.forEach((p,i)=>{if(p.coef>1)q.blanks.push({key:`P${i}`,answer:p.coef.toString()});});
         }
-        q.type = '계수 맞추기';
-        break;
-      case 2:
-        const rx2 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx2; q.name = rx2.name; q.type = '반응물 맞추기'; q.isAbstract = false;
-        q.displayReactants = rx2.reactants.map(r => ({...r, isBlank: true})); q.displayProducts = rx2.products.map(p => ({...p, isBlank: false}));
-        rx2.reactants.forEach((r, i) => q.blanks.push({ key: `R${i}`, answer: formulaToString(r) }));
-        break;
-      case 3:
-        const rx3 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx3; q.name = rx3.name; q.type = '생성물 맞추기'; q.isAbstract = false;
-        q.displayReactants = rx3.reactants.map(r => ({...r, isBlank: false})); q.displayProducts = rx3.products.map(p => ({...p, isBlank: true}));
-        rx3.products.forEach((p, i) => q.blanks.push({ key: `P${i}`, answer: formulaToString(p) }));
-        break;
-      case 4:
-        const rx4 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx4; q.name = rx4.name; q.type = '전체 반응식'; q.isAbstract = false;
-        q.displayReactants = rx4.reactants.map(r => ({...r, isBlank: true})); q.displayProducts = rx4.products.map(p => ({...p, isBlank: true}));
-        rx4.reactants.forEach((r, i) => q.blanks.push({ key: `R${i}`, answer: formulaToString(r) }));
-        rx4.products.forEach((p, i) => q.blanks.push({ key: `P${i}`, answer: formulaToString(p) }));
-        break;
-      case 5:
-        const chem = CHEMICALS[Math.floor(Math.random() * CHEMICALS.length)];
-        q.name = chem.name; q.type = '화학식 암기';
-        q.isMode5 = true; q.isAbstract = false;
-        const fStr = chem.formula.map(p => p.sym + (p.sub ? p.sub.toString() : '')).join('');
-        q.blanks.push({ key: 'M5', answer: fStr });
-        break;
+        q.type='계수 맞추기';break;
+      case 2:{const rx=REACTIONS[Math.floor(Math.random()*REACTIONS.length)];q.reaction=rx;q.name=rx.name;q.type='반응물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:false}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));break;}
+      case 3:{const rx=REACTIONS[Math.floor(Math.random()*REACTIONS.length)];q.reaction=rx;q.name=rx.name;q.type='생성물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:false}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
+      case 4:{const rx=REACTIONS[Math.floor(Math.random()*REACTIONS.length)];q.reaction=rx;q.name=rx.name;q.type='전체 반응식';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
+      case 5:{const c=CHEMICALS[Math.floor(Math.random()*CHEMICALS.length)];q.name=c.name;q.type='화학식 암기';q.isMode5=true;q.isAbstract=false;const fs=c.formula.map(p=>p.sym+(p.sub?p.sub.toString():'')).join('');q.blanks.push({key:'M5',answer:fs});break;}
     }
-    if (q.blanks.length > 0) q.activeKey = q.blanks[0].key;
-    this.state.currentQuestion = q;
-
-    this.renderAll();
-    this.startTimer();
+    if(q.blanks.length>0)q.activeKey=q.blanks[0].key;
+    this.state.currentQuestion=q;this.renderAll();this.startTimer();
   },
 
-  checkAnswer() {
-    const q = this.state.currentQuestion; if (!q) return;
-    
-    let allCorrect = true;
-    let hasCoefficientOneError = false;
-
-    q.blanks.forEach(b => {
-      const val = q.inputs[b.key] || '';
-      if (val !== b.answer) {
-        allCorrect = false;
-        if (this.state.currentMode !== 1 && val === '1' + b.answer) {
-          hasCoefficientOneError = true;
-        }
-      }
-    });
-
-    if (q.isTimedOut) {
-        if(!allCorrect) {
-            q.coefOneErrorFlag = hasCoefficientOneError;
-            this.state.isAnswerChecked = false; 
-            this.renderAll(false);
-        } else {
-             this.state.isAnswerChecked = true;
-             q.isTimedOut = false; 
-             clearInterval(this.state.timerInterval);
-             this.renderAll('timeout_correct');
-        }
-    } else {
-        this.state.isAnswerChecked = true;
-        if (allCorrect) {
-          this.state.score.streak++; this.state.score.correct++;
-        } else {
-          this.state.score.streak = 0; this.state.score.wrong++;
-          this.generateBeautifulWrongNote(q);
-          q.coefOneErrorFlag = hasCoefficientOneError;
-        }
-        clearInterval(this.state.timerInterval);
-        this.renderAll(allCorrect);
+  checkAnswer(){
+    const q=this.state.currentQuestion;if(!q)return;
+    let ok=true,ce=false;
+    q.blanks.forEach(b=>{const v=q.inputs[b.key]||'';if(v!==b.answer){ok=false;if(this.state.currentMode!==1&&v==='1'+b.answer)ce=true;}});
+    if(q.isTimedOut){
+      if(!ok){q.coefOneErrorFlag=ce;this.state.isAnswerChecked=false;this.renderAll(false);}
+      else{this.state.isAnswerChecked=true;q.isTimedOut=false;clearInterval(this.state.timerInterval);this.renderAll('timeout_correct');}
+    }else{
+      this.state.isAnswerChecked=true;
+      if(ok){this.state.score.streak++;this.state.score.correct++;}
+      else{this.state.score.streak=0;this.state.score.wrong++;this.generateBeautifulWrongNote(q);q.coefOneErrorFlag=ce;}
+      clearInterval(this.state.timerInterval);this.renderAll(ok);
     }
   },
 
-  generateBeautifulWrongNote(q) {
-    let fullEqHtml = '';
-    if (q.isMode5) {
-      fullEqHtml = `<span class="eq-text" style="font-size:20px; font-weight:bold; color:var(--c-correct);">${this.formatInput(q.blanks[0].answer)}</span>`;
-    } else {
-      const formatSide = (side) => side.map(c => (c.coef > 1 ? `<span class="eq-text">${c.coef}</span>` : '') + c.formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join('')).join(' <span class="eq-plus">+</span> ');
-      if(q.isAbstract === true) {
-        const rSide = q.displayReactants.map(c => (c.coef>1?`<span class="eq-text">${c.coef}</span>`:'') + this.formatFormula(c.formula)).join(' <span class="eq-plus">+</span> ');
-        const pSide = q.displayProducts.map(c => (c.coef>1?`<span class="eq-text">${c.coef}</span>`:'') + this.formatFormula(c.formula)).join(' <span class="eq-plus">+</span> ');
-        fullEqHtml = `${rSide} <span class="eq-arrow">→</span> ${pSide}`;
-      } else {
-        const rx = REACTIONS.find(r => r.name === q.name);
-        if (rx) {
-          fullEqHtml = `${formatSide(rx.reactants)} <span class="eq-arrow">→</span> ${formatSide(rx.products)}`;
-        }
-      }
-    }
-    this.saveWrongNote(this.state.currentMode, q.name, fullEqHtml);
+  generateBeautifulWrongNote(q){
+    const fmt=side=>side.map(c=>(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+c.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' <span class="eq-plus">+</span> ');
+    let h='';
+    if(q.isMode5){h=`<span class="eq-text" style="font-size:20px;font-weight:bold;color:var(--c-correct)">${this.formatInput(q.blanks[0].answer)}</span>`;}
+    else if(q.isAbstract===true){
+      const r=q.displayReactants.map(c=>(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+this.formatFormula(c.formula)).join(' <span class="eq-plus">+</span> ');
+      const p=q.displayProducts.map(c=>(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+this.formatFormula(c.formula)).join(' <span class="eq-plus">+</span> ');
+      h=`${r} <span class="eq-arrow">→</span> ${p}`;
+    }else{const rx=REACTIONS.find(r=>r.name===q.name);if(rx)h=`${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}`;}
+    this.saveWrongNote(this.state.currentMode,q.name,h);
   },
 
- revealAnswers() { 
-      this.state.isAnswerRevealed = true; 
-      this.state.isAnswerChecked = true; 
-      if (this.state.currentQuestion) this.state.currentQuestion.isTimedOut = false; 
-      clearInterval(this.state.timerInterval);
-      
-      // 기존에 수식과 배너만 렌더링하던 것을 전체 렌더링으로 변경하여 키보드(다음 버튼)까지 갱신
-      this.renderAll(false); 
+  revealAnswers(){this.state.isAnswerRevealed=true;this.state.isAnswerChecked=true;if(this.state.currentQuestion)this.state.currentQuestion.isTimedOut=false;clearInterval(this.state.timerInterval);this.renderAll(false);},
+
+  renderAll(isCorrect=null){
+    this.renderScore();this.renderQuestionHeader();this.renderEquation();this.renderKeyboard();
+    if(this.state.currentQuestion&&this.state.currentQuestion.isTimedOut&&!this.state.isAnswerChecked&&isCorrect===null){}
+    else if(isCorrect!==null)this.renderResultBanner(isCorrect);
+    else this.$.resultBanner.className='result-banner';
   },
 
-  renderAll(isCorrect = null) {
-    this.renderScore(); this.renderQuestionHeader(); this.renderEquation(); this.renderKeyboard();
-    
-    if (this.state.currentQuestion && this.state.currentQuestion.isTimedOut && !this.state.isAnswerChecked && isCorrect === null) {
-        // timeOutForceWrong 에서 배너를 그렸으므로 아무것도 하지 않음
-    } else if (isCorrect !== null) {
-        this.renderResultBanner(isCorrect); 
-    } else {
-        this.$.resultBanner.className = 'result-banner';
-    }
+  renderScore(){
+    const{streak,correct,wrong}=this.state.score;
+    const bump=el=>{el.classList.add('bump');setTimeout(()=>el.classList.remove('bump'),200);};
+    if(this.$.streakCount.textContent!==streak.toString()){this.$.streakCount.textContent=streak;bump(this.$.streakCount);}
+    if(this.$.totalCorrect.textContent!==correct.toString()){this.$.totalCorrect.textContent=correct;bump(this.$.totalCorrect);}
+    if(this.$.totalWrong.textContent!==wrong.toString()){this.$.totalWrong.textContent=wrong;bump(this.$.totalWrong);}
+    this.$.streakFlames.textContent=streak>=10?'🔥🔥🔥':streak>=5?'🔥🔥':streak>=3?'🔥':'';
   },
 
-  renderScore() {
-    const { streak, correct, wrong } = this.state.score;
-    const bump = (el) => { el.classList.add('bump'); setTimeout(() => el.classList.remove('bump'), 200); };
-    if (this.$.streakCount.textContent !== streak.toString()) { this.$.streakCount.textContent = streak; bump(this.$.streakCount); }
-    if (this.$.totalCorrect.textContent !== correct.toString()) { this.$.totalCorrect.textContent = correct; bump(this.$.totalCorrect); }
-    if (this.$.totalWrong.textContent !== wrong.toString()) { this.$.totalWrong.textContent = wrong; bump(this.$.totalWrong); }
-    if (streak >= 10) this.$.streakFlames.textContent = '🔥🔥🔥'; else if (streak >= 5) this.$.streakFlames.textContent = '🔥🔥'; else if (streak >= 3) this.$.streakFlames.textContent = '🔥'; else this.$.streakFlames.textContent = '';
+  renderQuestionHeader(){const q=this.state.currentQuestion;if(!q)return;this.$.qLabel.textContent=`MODE ${this.state.currentMode} · ${q.type}`;this.$.qSubLabel.textContent=q.name;},
+
+  renderEquation(){
+    const q=this.state.currentQuestion;if(!q){this.$.equationDisplay.innerHTML='';return;}
+    if(q.isMode5){this.$.equationDisplay.innerHTML=this.renderBlankBox('M5',q.blanks[0].answer);return;}
+    const fc=(list,pre)=>list.map((c,i)=>{
+      const key=`${pre}${i}`,bd=q.blanks.find(b=>b.key===key);
+      if(this.state.currentMode===1)return bd?this.renderBlankBox(key,bd.answer)+this.formatFormula(c.formula):this.formatFormula(c.formula);
+      if(c.isBlank||bd)return this.renderBlankBox(key,bd?bd.answer:'');
+      return(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+this.formatFormula(c.formula);
+    }).join(' <span class="eq-plus">+</span> ');
+    this.$.equationDisplay.innerHTML=`${fc(q.displayReactants,'R')} <span class="eq-arrow">→</span> ${fc(q.displayProducts,'P')}`;
   },
 
-  renderQuestionHeader() { const q = this.state.currentQuestion; if (!q) return; this.$.qLabel.textContent = `MODE ${this.state.currentMode} · ${q.type}`; this.$.qSubLabel.textContent = q.name; },
-
-  renderEquation() {
-    const q = this.state.currentQuestion; if (!q) { this.$.equationDisplay.innerHTML = ''; return; }
-
-    if (q.isMode5) {
-      this.$.equationDisplay.innerHTML = this.renderBlankBox('M5', q.blanks[0].answer);
-      return;
-    }
-
-    const formatChemical = (chemList, keyPrefix) => {
-      return chemList.map((c, i) => {
-        const key = `${keyPrefix}${i}`;
-        const blankData = q.blanks.find(b => b.key === key);
-
-        if (this.state.currentMode === 1) {
-          if (blankData) {
-            return this.renderBlankBox(key, blankData.answer) + this.formatFormula(c.formula);
-          } else {
-            return this.formatFormula(c.formula);
-          }
-        } else {
-          if (c.isBlank || blankData) {
-            return this.renderBlankBox(key, blankData ? blankData.answer : '');
-          } else {
-            const coefStr = c.coef > 1 ? `<span class="eq-text">${c.coef}</span>` : '';
-            return coefStr + this.formatFormula(c.formula);
-          }
-        }
-      }).join(' <span class="eq-plus">+</span> ');
-    };
-
-    this.$.equationDisplay.innerHTML = `${formatChemical(q.displayReactants, 'R')} <span class="eq-arrow">→</span> ${formatChemical(q.displayProducts, 'P')}`;
+  renderBlankBox(key,answer){
+    const q=this.state.currentQuestion,inp=q.inputs[key]||'';let cls='blank-box';
+    if(q.activeKey===key&&(!this.state.isAnswerChecked||q.isTimedOut))cls+=' active';
+    let disp=this.formatInput(inp);
+    if(this.state.isAnswerChecked&&!q.isTimedOut){const ok=inp===answer;cls+=ok?' correct':' wrong';if(this.state.isAnswerRevealed&&!ok)disp=this.formatInput(answer);}
+    if(inp===''&&(!this.state.isAnswerChecked||q.isTimedOut))cls+=' placeholder';
+    return`<span class="${cls}" data-key="${key}">${disp}</span>`;
   },
 
-  renderBlankBox(key, answer) {
-    const q = this.state.currentQuestion; const input = q.inputs[key] || ''; let classes = 'blank-box';
-    if (q.activeKey === key && (!this.state.isAnswerChecked || q.isTimedOut)) classes += ' active';
-    let displayContent = this.formatInput(input);
-    if (this.state.isAnswerChecked && !q.isTimedOut) {
-      const isCorrect = input === answer; classes += isCorrect ? ' correct' : ' wrong';
-      if (this.state.isAnswerRevealed && !isCorrect) displayContent = this.formatInput(answer);
-    }
-    if (input === '' && (!this.state.isAnswerChecked || q.isTimedOut)) classes += ' placeholder';
-    return `<span class="${classes}" data-key="${key}">${displayContent}</span>`;
-  },
-
-  renderResultBanner(isCorrect) {
-    if (isCorrect === 'timeout_correct') {
-      this.$.resultBanner.className = 'result-banner correct-banner show';
-      this.$.resultBanner.innerHTML = `✅ 늦었지만 정답입니다! (다음 문제로 넘어가세요)`;
-    } else if (isCorrect === true) {
-      this.$.resultBanner.className = 'result-banner correct-banner show';
-      this.$.resultBanner.innerHTML = `✅ 정답입니다! 연속 ${this.state.score.streak}회 성공!`;
-    } else {
-      this.$.resultBanner.className = 'result-banner wrong-banner show';
-
-      let errorWarningHtml = '';
-      if (this.state.currentQuestion.coefOneErrorFlag) {
-        errorWarningHtml = `<div style="color:var(--c-wrong); font-size:13px; margin-bottom:8px; width:100%;">⚠️ 주의: 화학에서 계수 '1'은 생략해야 합니다.</div>`;
-      }
-
-      if (this.state.isAnswerRevealed) {
-        this.$.resultBanner.innerHTML = `${errorWarningHtml}<div style="display:flex; align-items:center; width:100%;">❌ 오답입니다. 정답이 표시되었습니다.</div>`;
-      } else {
-        this.$.resultBanner.innerHTML = `${errorWarningHtml}<div style="display:flex; align-items:center; width:100%; justify-content:space-between;"><span>❌ 오답입니다.</span><button class="show-answer-btn">정답 확인</button></div>`;
-      }
+  renderResultBanner(isCorrect){
+    if(isCorrect==='timeout_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 늦었지만 정답입니다! (다음 문제로 넘어가세요)';}
+    else if(isCorrect===true){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=`✅ 정답입니다! 연속 ${this.state.score.streak}회 성공!`;}
+    else{
+      this.$.resultBanner.className='result-banner wrong-banner show';
+      let w='';if(this.state.currentQuestion.coefOneErrorFlag)w=`<div style="color:var(--c-wrong);font-size:13px;margin-bottom:8px;width:100%">⚠️ 주의: 화학에서 계수 '1'은 생략해야 합니다.</div>`;
+      if(this.state.isAnswerRevealed)this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%">❌ 오답입니다. 정답이 표시되었습니다.</div>`;
+      else this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between"><span>❌ 오답입니다.</span><button class="show-answer-btn">정답 확인</button></div>`;
     }
   },
 
-  renderKeyboard() { 
-      const isDone = this.state.isAnswerChecked && !this.state.currentQuestion?.isTimedOut;
-      this.$.confirmBtn.style.display = isDone ? 'none' : 'flex'; 
-      this.$.nextBtn.style.display = isDone ? 'flex' : 'none'; 
+  renderKeyboard(){const done=this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut;this.$.confirmBtn.style.display=done?'none':'flex';this.$.nextBtn.style.display=done?'flex':'none';},
+
+  /* ── MODE 6 ── */
+  m6Fmt(side){return side.map(r=>(r.coef>1?r.coef:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' + ');},
+
+  m6GenCards(){
+    const t=this.state.m6Type;let cards=[];
+    if(t==='full'){cards=REACTIONS.map(rx=>({ftag:'한글 반응식',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'화학 반응식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.reactants)} → ${this.m6Fmt(rx.products)}</span>`}));}
+    else if(t==='reactant'){cards=REACTIONS.map(rx=>({ftag:'반응물 이름',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'반응물 화학식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.reactants)}</span>`}));}
+    else if(t==='product'){cards=REACTIONS.map(rx=>({ftag:'생성물 이름',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'생성물 화학식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.products)}</span>`}));}
+    else{cards=CHEMICALS.map(c=>({ftag:'물질명',fhtml:`<span class="m6-korean">${c.name}</span>`,btag:'화학식',bhtml:`<span class="m6-formula">${c.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')}</span>`}));}
+    this.state.m6Cards=cards;this.state.m6Index=0;this.state.m6Flipped=false;
   },
 
-  formatFormula(formula) { return formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join(''); },
-  formatInput(str) { if (!str) return ''; return str.replace(/([a-zA-Z]+)(\d+)/g, '$1<sub>$2</sub>'); },
-  toggleTheme() { this.state.isDarkMode = !this.state.isDarkMode; document.body.classList.toggle('light', !this.state.isDarkMode); document.getElementById('themeBtn').textContent = this.state.isDarkMode ? '🌙' : '☀️'; }
+  m6Render(dir){
+    const{m6Cards,m6Index,m6Order}=this.state;const card=m6Cards[m6Index];if(!card)return;
+    const isKorFirst=m6Order==='korean';
+    document.getElementById('m6FTag').textContent=isKorFirst?card.ftag:card.btag;
+    document.getElementById('m6FContent').innerHTML=isKorFirst?card.fhtml:card.bhtml;
+    document.getElementById('m6BTag').textContent=isKorFirst?card.btag:card.ftag;
+    document.getElementById('m6BContent').innerHTML=isKorFirst?card.bhtml:card.fhtml;
+    this.state.m6Flipped=false;document.getElementById('m6Card').classList.remove('flipped');
+    document.getElementById('m6Counter').textContent=`${m6Index+1} / ${m6Cards.length}`;
+    document.getElementById('m6PFill').style.width=`${((m6Index+1)/m6Cards.length)*100}%`;
+    if(dir){const o=document.getElementById('m6Outer'),cls=dir==='next'?'m6-slide-r':'m6-slide-l';o.classList.remove('m6-slide-r','m6-slide-l');void o.offsetWidth;o.classList.add(cls);}
+  },
+
+  m6Flip(){this.state.m6Flipped=!this.state.m6Flipped;document.getElementById('m6Card').classList.toggle('flipped',this.state.m6Flipped);},
+  m6Next(){this.state.m6Index=(this.state.m6Index+1)%this.state.m6Cards.length;this.m6Render('next');},
+  m6Prev(){this.state.m6Index=(this.state.m6Index-1+this.state.m6Cards.length)%this.state.m6Cards.length;this.m6Render('prev');},
+  m6Shuffle(){const c=[...this.state.m6Cards];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}this.state.m6Cards=c;this.state.m6Index=0;this.m6Render();},
+
+  formatFormula(f){return f.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('');},
+  formatInput(s){if(!s)return'';return s.replace(/([a-zA-Z]+)(\d+)/g,'$1<sub>$2</sub>');},
+  toggleTheme(){this.state.isDarkMode=!this.state.isDarkMode;document.body.classList.toggle('light',!this.state.isDarkMode);document.getElementById('themeBtn').textContent=this.state.isDarkMode?'🌙':'☀️';}
 };
 
-document.addEventListener('DOMContentLoaded', () => App.init());
+document.addEventListener('DOMContentLoaded',()=>App.init());
 </script>
 </body>
 </html>
