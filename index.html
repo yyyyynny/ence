@@ -42,7 +42,7 @@
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html { background: var(--c-bg); }
   body { font-family: var(--font-ui); background: var(--c-bg); color: var(--c-text-primary); min-height: 100vh; min-height: 100dvh; transition: background 0.3s, color 0.3s; overflow-x: hidden; }
-  body::before { content: ''; position: fixed; inset: 0; background-image: radial-gradient(circle at 25% 25%, var(--c-accent-1), transparent 30%), radial-gradient(circle at 75% 75%, var(--c-accent-2), transparent 30%); opacity: 0.4; filter: blur(100px); pointer-events: none; z-index: 0; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: radial-gradient(circle at 25% 25%, var(--c-accent-1), transparent 30%), radial-gradient(circle at 75% 75%, var(--c-accent-2), transparent 30%); opacity: 0.35; filter: blur(100px); pointer-events: none; z-index: 0; }
 
   #app { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
   header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
@@ -560,7 +560,7 @@ const App = {
 
     this.renderAll(null);
     this.$.resultBanner.className = 'result-banner wrong-banner show';
-    this.$.resultBanner.innerHTML = `<div style="display:flex; align-items:center; width:100%; justify-content:space-between;"><span><span style="color:var(--c-wrong)">⏰ 시간 초과!</span> 마저 답을 입력해보세요. (점수 미반영)</span><button class="show-answer-btn">정답 확인</button></div>`;
+    this.$.resultBanner.innerHTML = `<div style="display:flex; align-items:center; width:100%; justify-content:space-between;"><span><span style="color:var(--c-wrong)">⏰ 시간 초과!</span> <span style="font-weight:400; margin-left:10px;">마저 답을 입력해보세요.</span></span><button class="show-answer-btn">정답 확인</button></div>`;
   },
 
   handleKeyPress(key) {
@@ -686,11 +686,15 @@ const App = {
     });
 
     if (q.isTimedOut) {
-        if(!allCorrect) q.coefOneErrorFlag = hasCoefficientOneError;
-        if(allCorrect) {
+        if(!allCorrect) {
+            q.coefOneErrorFlag = hasCoefficientOneError;
+            this.state.isAnswerChecked = false; 
+            this.renderAll(false);
+        } else {
              this.state.isAnswerChecked = true;
-             q.isTimedOut = false; // 정답을 맞추면 다음 문제로 넘어가기 위해 상태 변경
+             q.isTimedOut = false; 
              clearInterval(this.state.timerInterval);
+             this.renderAll('timeout_correct');
         }
     } else {
         this.state.isAnswerChecked = true;
@@ -702,9 +706,8 @@ const App = {
           q.coefOneErrorFlag = hasCoefficientOneError;
         }
         clearInterval(this.state.timerInterval);
+        this.renderAll(allCorrect);
     }
-
-    this.renderAll(allCorrect);
   },
 
   generateBeautifulWrongNote(q) {
@@ -729,7 +732,8 @@ const App = {
 
   revealAnswers() { 
       this.state.isAnswerRevealed = true; 
-      this.state.isAnswerChecked = true; // 답을 보면 강제 종료 처리
+      this.state.isAnswerChecked = true; 
+      if (this.state.currentQuestion) this.state.currentQuestion.isTimedOut = false; 
       clearInterval(this.state.timerInterval);
       this.renderEquation(); 
       this.renderResultBanner(false); 
@@ -738,9 +742,8 @@ const App = {
   renderAll(isCorrect = null) {
     this.renderScore(); this.renderQuestionHeader(); this.renderEquation(); this.renderKeyboard();
     
-    // 시간 초과 상태일 때 배너를 덮어쓰지 않도록 분기 처리
-    if (this.state.currentQuestion && this.state.currentQuestion.isTimedOut && !this.state.isAnswerChecked) {
-        // 이미 timeOutForceWrong 에서 배너를 그렸으므로 아무것도 하지 않음
+    if (this.state.currentQuestion && this.state.currentQuestion.isTimedOut && !this.state.isAnswerChecked && isCorrect === null) {
+        // timeOutForceWrong 에서 배너를 그렸으므로 아무것도 하지 않음
     } else if (isCorrect !== null) {
         this.renderResultBanner(isCorrect); 
     } else {
@@ -805,7 +808,10 @@ const App = {
   },
 
   renderResultBanner(isCorrect) {
-    if (isCorrect) {
+    if (isCorrect === 'timeout_correct') {
+      this.$.resultBanner.className = 'result-banner correct-banner show';
+      this.$.resultBanner.innerHTML = `✅ 늦었지만 정답입니다! (다음 문제로 넘어가세요)`;
+    } else if (isCorrect === true) {
       this.$.resultBanner.className = 'result-banner correct-banner show';
       this.$.resultBanner.innerHTML = `✅ 정답입니다! 연속 ${this.state.score.streak}회 성공!`;
     } else {
