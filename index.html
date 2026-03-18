@@ -71,7 +71,7 @@
   .mode-tab .tab-icon { font-size: 18px; display: block; margin-bottom: 4px; }
 
   .question-card { background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 20px; padding: 24px; margin-bottom: 16px; min-height: 180px; display: flex; flex-direction: column; gap: 16px; flex-grow: 1; position: relative; overflow: hidden; }
-  
+
   .timer-container { position: absolute; top: 0; left: 0; right: 0; height: 5px; background: rgba(0,0,0,0.2); }
   .timer-bar { height: 100%; background: var(--c-accent-1); width: 100%; transition: background 0.3s; }
   .timer-bar.danger { background: var(--c-wrong); }
@@ -117,12 +117,12 @@
   .modal-title { font-size: 18px; font-weight: 900; color: var(--c-accent-1); }
   .modal-close { background: none; border: none; color: var(--c-text-secondary); font-size: 28px; cursor: pointer; }
   .modal-content { overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 4px; }
-  
+
   .filter-chips { display: flex; overflow-x: auto; gap: 6px; margin-bottom: 16px; padding-bottom: 4px; scrollbar-width: none; }
   .filter-chips::-webkit-scrollbar { display: none; }
   .filter-chip { flex: 0 0 auto; background: var(--c-surface-2); border: 1px solid var(--c-border); color: var(--c-text-secondary); border-radius: 20px; padding: 6px 12px; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
   .filter-chip.active { background: var(--c-accent-1); color: var(--c-bg); border-color: var(--c-accent-1); }
-  
+
   .reaction-item { background: var(--c-surface-2); border-radius: 12px; padding: 16px; font-family: var(--font-mono); font-size: 18px; display: flex; flex-direction: column; gap: 10px; }
   .reaction-header { display: flex; justify-content: space-between; align-items: flex-start; }
   .reaction-name { color: var(--c-accent-3); font-size: 12px; font-family: var(--font-ui); font-weight: 700; }
@@ -132,12 +132,18 @@
 
   .egg-particle { position: fixed; pointer-events: none; z-index: 9999999; font-size: 24px; animation: egg-pop 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
   @keyframes egg-pop { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.5); opacity: 0; } }
+
+  .timer-select-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 16px; padding: 10px 16px; backdrop-filter: blur(10px); }
+  .timer-select-label { font-size: 11px; color: var(--c-text-secondary); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+  .timer-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .timer-btn { background: var(--c-surface-2); border: 1px solid var(--c-border); border-radius: 10px; color: var(--c-text-secondary); font-family: var(--font-mono); font-size: 13px; font-weight: 700; padding: 6px 12px; cursor: pointer; transition: all 0.2s; }
+  .timer-btn.active { background: var(--c-accent-3); border-color: var(--c-accent-3); color: #000; }
 </style>
 </head>
 <body>
 
 <div id="authOverlay" style="position:fixed; inset:0; z-index:99999999; background:var(--c-bg); display:flex; flex-direction:column; align-items:center; justify-content:center; color:#fff; font-family:var(--font-ui); transition: opacity 0.3s;">
-  <h2 style="color:var(--c-accent-1); margin-bottom:20px;">🔒 가격:1000원</h2>
+  <h2 style="color:var(--c-accent-1); margin-bottom:20px;">🔒 가격:800원</h2>
   <p style="color:var(--c-text-secondary); font-size:13px; margin-bottom:20px;">인가된 인원만 접근 가능합니다.</p>
   <input type="password" id="authInput" placeholder="Password" style="padding:12px; border-radius:8px; border:1px solid var(--c-border); background:rgba(0,0,0,0.3); color:#fff; font-size:16px; margin-bottom:16px; text-align:center; outline:none;">
   <button id="authBtn" style="padding:12px 24px; border-radius:8px; background:var(--c-accent-2); border:none; color:#fff; font-weight:bold; cursor:pointer; font-size:14px;">접속하기</button>
@@ -168,6 +174,17 @@
     <div class="stat-item">
       <div class="stat-label">Wrong</div>
       <div class="stat-value" id="totalWrong">0</div>
+    </div>
+  </div>
+
+  <div class="timer-select-wrap">
+    <div class="timer-select-label">⏱ 제한시간</div>
+    <div class="timer-btns" id="timerBtns">
+      <button class="timer-btn" data-sec="15">15초</button>
+      <button class="timer-btn active" data-sec="20">20초</button>
+      <button class="timer-btn" data-sec="25">25초</button>
+      <button class="timer-btn" data-sec="30">30초</button>
+      <button class="timer-btn" data-sec="40">40초</button>
     </div>
   </div>
 
@@ -237,7 +254,7 @@
   const input = document.getElementById('authInput');
   const btn = document.getElementById('authBtn');
   const error = document.getElementById('authError');
-  const CORRECT_PASSWORD = "yyyyynny"; 
+  const CORRECT_PASSWORD = "yyyyynny";
 
   try { if(localStorage.getItem('chem_auth') === 'true') overlay.style.display = 'none'; } catch(e) {}
 
@@ -284,7 +301,7 @@
     });
     flash.innerHTML = '<div style="font-size:80px; animation:shake 0.5s infinite;">💖 깜짝이야! 💖</div>';
     document.body.appendChild(flash);
-    
+
     setTimeout(() => { flash.style.opacity = 1; }, 50);
     setTimeout(() => {
       flash.style.opacity = 0;
@@ -296,6 +313,9 @@
     }, 1200);
   });
 })();
+
+const TIMER_OPTIONS = [15000, 20000, 25000, 30000, 40000];
+const DEFAULT_TIMER = 20000;
 
 const REACTIONS = [
   { name: "일산화탄소 + 산소 → 이산화탄소", reactants: [{coef:2,formula:[{sym:"CO"}]}, {coef:1,formula:[{sym:"O",sub:2}]}], products: [{coef:2,formula:[{sym:"CO",sub:2}]}] },
@@ -347,14 +367,15 @@ const COEF_TEMPLATES = [
 const CORE_ELEMENTS = ['H', 'C', 'O', 'N', 'S', 'P', 'Na', 'Mg', 'Ca', 'Cu', 'Ag', 'Cl', 'A', 'B'];
 
 const App = {
-  state: { 
-    currentMode: null, 
-    score: { streak: 0, correct: 0, wrong: 0 }, 
-    currentQuestion: null, 
-    isAnswerChecked: false, 
-    isAnswerRevealed: false, 
+  state: {
+    currentMode: null,
+    score: { streak: 0, correct: 0, wrong: 0 },
+    currentQuestion: null,
+    isAnswerChecked: false,
+    isAnswerRevealed: false,
     isDarkMode: true,
-    timerLeft: 15000,
+    timerDuration: DEFAULT_TIMER,
+    timerLeft: DEFAULT_TIMER,
     timerInterval: null,
     wrongNotes: [],
     noteFilter: 'all'
@@ -363,20 +384,20 @@ const App = {
     app: document.getElementById('app'), streakCount: document.getElementById('streakCount'), streakFlames: document.getElementById('streakFlames'),
     totalCorrect: document.getElementById('totalCorrect'), totalWrong: document.getElementById('totalWrong'), modeTabs: document.querySelector('.mode-tabs'),
     qLabel: document.getElementById('qLabel'), qSubLabel: document.getElementById('qSubLabel'), equationDisplay: document.getElementById('equationDisplay'),
-    resultBanner: document.getElementById('resultBanner'), numRow: document.getElementById('numRow'), 
+    resultBanner: document.getElementById('resultBanner'), numRow: document.getElementById('numRow'),
     elemRowLabel: document.getElementById('elemRowLabel'), elemRow: document.getElementById('elemRow'),
-    confirmBtn: document.querySelector('.kb-key.confirm'), nextBtn: document.querySelector('.kb-key.next-q'), 
+    confirmBtn: document.querySelector('.kb-key.confirm'), nextBtn: document.querySelector('.kb-key.next-q'),
     hintModalOverlay: document.getElementById('hintModalOverlay'), wrongNoteModalOverlay: document.getElementById('wrongNoteModalOverlay'),
     reactionList: document.getElementById('reactionList'), wrongNoteList: document.getElementById('wrongNoteList'),
     timerBar: document.getElementById('timerBar'), wrongNoteFilters: document.getElementById('wrongNoteFilters')
   },
 
-  init() { 
+  init() {
     this.loadWrongNotes();
-    this.buildKeyboard(); 
-    this.buildModalList(); 
-    this.attachEventListeners(); 
-    this.setMode(1); 
+    this.buildKeyboard();
+    this.buildModalList();
+    this.attachEventListeners();
+    this.setMode(1);
   },
 
   loadWrongNotes() {
@@ -424,12 +445,12 @@ const App = {
     if (this.state.noteFilter !== 'all') {
       filtered = filtered.filter(n => n.mode.toString() === this.state.noteFilter);
     }
-    
+
     if (filtered.length === 0) {
       this.$.wrongNoteList.innerHTML = `<p style="color:var(--c-text-secondary); text-align:center; padding: 40px 20px;">이 모드의 오답 기록이 없습니다.</p>`;
       return;
     }
-    
+
     this.$.wrongNoteList.innerHTML = filtered.map(n => `
       <div class="reaction-item">
         <div class="reaction-info" style="width:100%;">
@@ -448,7 +469,7 @@ const App = {
       const modeTab = e.target.closest('.mode-tab'); const blankBox = e.target.closest('.blank-box'); const keyBtn = e.target.closest('.kb-key');
       const themeBtn = e.target.closest('#themeBtn'); const hintBtn = e.target.closest('#hintBtn'); const wrongNoteBtn = e.target.closest('#wrongNoteBtn');
       const showAnswerBtn = e.target.closest('.show-answer-btn');
-      
+
       if (modeTab) this.setMode(parseInt(modeTab.dataset.mode));
       if (blankBox) this.setActiveBlank(blankBox.dataset.key);
       if (keyBtn) this.handleKeyPress(keyBtn.dataset.key);
@@ -471,7 +492,16 @@ const App = {
     document.getElementById('hintModalClose').addEventListener('click', () => this.$.hintModalOverlay.classList.remove('show'));
     document.getElementById('wrongNoteModalClose').addEventListener('click', () => this.$.wrongNoteModalOverlay.classList.remove('show'));
     document.getElementById('clearAllNotesBtn').addEventListener('click', () => this.clearWrongNotes());
-    
+
+    document.getElementById('timerBtns').addEventListener('click', e => {
+      const btn = e.target.closest('.timer-btn');
+      if (!btn) return;
+      const sec = parseInt(btn.dataset.sec) * 1000;
+      this.state.timerDuration = sec;
+      document.querySelectorAll('.timer-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+
     this.$.wrongNoteList.addEventListener('click', e => {
       if(e.target.classList.contains('delete-note-btn')) this.deleteWrongNote(e.target.dataset.id);
     });
@@ -486,18 +516,18 @@ const App = {
 
   startTimer() {
     clearInterval(this.state.timerInterval);
-    this.state.timerLeft = 15000;
+    this.state.timerLeft = this.state.timerDuration;
     this.$.timerBar.style.transition = 'none';
     this.$.timerBar.style.width = '100%';
     this.$.timerBar.classList.remove('danger');
-    
+
     void this.$.timerBar.offsetWidth;
     this.$.timerBar.style.transition = 'width 0.1s linear, background 0.3s';
 
     let lastTime = Date.now();
     this.state.timerInterval = setInterval(() => {
       if (this.state.isAnswerChecked) { clearInterval(this.state.timerInterval); return; }
-      
+
       const now = Date.now();
       this.state.timerLeft -= (now - lastTime);
       lastTime = now;
@@ -508,7 +538,7 @@ const App = {
         this.$.timerBar.style.width = '0%';
         this.timeOutForceWrong();
       } else {
-        const pct = (this.state.timerLeft / 15000) * 100;
+        const pct = (this.state.timerLeft / this.state.timerDuration) * 100;
         this.$.timerBar.style.width = `${pct}%`;
         if (pct < 30) this.$.timerBar.classList.add('danger');
       }
@@ -517,30 +547,31 @@ const App = {
 
   timeOutForceWrong() {
     this.state.isAnswerChecked = true;
+    this.state.isAnswerRevealed = true; // ← 타임아웃 시 정답 즉시 자동 표시
     this.state.score.streak = 0;
     this.state.score.wrong++;
-    
+
     const q = this.state.currentQuestion;
     this.generateBeautifulWrongNote(q);
-    
+
     this.renderAll(null);
     this.$.resultBanner.className = 'result-banner wrong-banner show';
-    this.$.resultBanner.innerHTML = `<span style="color:var(--c-wrong)">⏰ 시간 초과!</span> <span style="font-weight:400; margin-left:10px;">연속 정답이 초기화되었습니다.</span> <button class="show-answer-btn">정답 확인</button>`;
+    this.$.resultBanner.innerHTML = `<div style="width:100%;"><span style="color:var(--c-wrong)">⏰ 시간 초과!</span> <span style="font-weight:400; margin-left:10px;">연속 정답이 초기화되었습니다.</span></div>`;
   },
 
   handleKeyPress(key) {
     if (key.startsWith('NUM_') || key.startsWith('ELEM_') || key === 'DEL') {
-      if (this.state.isAnswerChecked) return;
+      if (this.state.isAnswerChecked) return; // ← 답 확인 후 입력 완전 차단
       const q = this.state.currentQuestion;
       if (!q || !q.activeKey) return;
       const input = q.inputs[q.activeKey] || '';
-      
+
       if (key.startsWith('NUM_')) q.inputs[q.activeKey] = input + key.replace('NUM_', '');
       else if (key.startsWith('ELEM_')) {
         q.inputs[q.activeKey] = input + key.replace('ELEM_', '');
       }
       else if (key === 'DEL') q.inputs[q.activeKey] = input.slice(0, -1);
-      
+
       this.renderEquation();
     } else if (key === 'CONFIRM') { if (!this.state.isAnswerChecked) this.checkAnswer();
     } else if (key === 'NEXT') { if (this.state.isAnswerChecked) this.generateQuestion(); }
@@ -550,7 +581,7 @@ const App = {
     if (this.state.currentMode === mode) return;
     this.state.currentMode = mode;
     this.$.modeTabs.querySelectorAll('.mode-tab').forEach(tab => { tab.classList.toggle('active', parseInt(tab.dataset.mode) === mode); });
-    
+
     if (mode === 1) {
       this.$.elemRowLabel.style.display = 'none';
       this.$.elemRow.style.display = 'none';
@@ -558,7 +589,7 @@ const App = {
       this.$.elemRowLabel.style.display = 'block';
       this.$.elemRow.style.display = 'flex';
     }
-    
+
     this.generateQuestion();
   },
 
@@ -588,17 +619,17 @@ const App = {
         q.type = '계수 맞추기';
         break;
       case 2:
-        const rx2 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx2; q.name = rx2.name; q.type = '반응물 맞추기';
+        const rx2 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx2; q.name = rx2.name; q.type = '반응물 맞추기'; q.isAbstract = false;
         q.displayReactants = rx2.reactants.map(r => ({...r, isBlank: true})); q.displayProducts = rx2.products.map(p => ({...p, isBlank: false}));
         rx2.reactants.forEach((r, i) => q.blanks.push({ key: `R${i}`, answer: formulaToString(r) }));
         break;
       case 3:
-        const rx3 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx3; q.name = rx3.name; q.type = '생성물 맞추기';
+        const rx3 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx3; q.name = rx3.name; q.type = '생성물 맞추기'; q.isAbstract = false;
         q.displayReactants = rx3.reactants.map(r => ({...r, isBlank: false})); q.displayProducts = rx3.products.map(p => ({...p, isBlank: true}));
         rx3.products.forEach((p, i) => q.blanks.push({ key: `P${i}`, answer: formulaToString(p) }));
         break;
       case 4:
-        const rx4 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx4; q.name = rx4.name; q.type = '전체 반응식';
+        const rx4 = REACTIONS[Math.floor(Math.random() * REACTIONS.length)]; q.reaction = rx4; q.name = rx4.name; q.type = '전체 반응식'; q.isAbstract = false;
         q.displayReactants = rx4.reactants.map(r => ({...r, isBlank: true})); q.displayProducts = rx4.products.map(p => ({...p, isBlank: true}));
         rx4.reactants.forEach((r, i) => q.blanks.push({ key: `R${i}`, answer: formulaToString(r) }));
         rx4.products.forEach((p, i) => q.blanks.push({ key: `P${i}`, answer: formulaToString(p) }));
@@ -606,42 +637,42 @@ const App = {
       case 5:
         const chem = CHEMICALS[Math.floor(Math.random() * CHEMICALS.length)];
         q.name = chem.name; q.type = '화학식 암기';
-        q.isMode5 = true;
+        q.isMode5 = true; q.isAbstract = false;
         const fStr = chem.formula.map(p => p.sym + (p.sub ? p.sub.toString() : '')).join('');
         q.blanks.push({ key: 'M5', answer: fStr });
         break;
     }
     if (q.blanks.length > 0) q.activeKey = q.blanks[0].key;
-    this.state.currentQuestion = q; 
-    
+    this.state.currentQuestion = q;
+
     this.renderAll();
     this.startTimer();
   },
 
   checkAnswer() {
     const q = this.state.currentQuestion; if (!q) return;
-    this.state.isAnswerChecked = true; 
+    this.state.isAnswerChecked = true;
     let allCorrect = true;
     let hasCoefficientOneError = false;
 
-    q.blanks.forEach(b => { 
+    q.blanks.forEach(b => {
       const val = q.inputs[b.key] || '';
       if (val !== b.answer) {
         allCorrect = false;
         if (this.state.currentMode !== 1 && val === '1' + b.answer) {
           hasCoefficientOneError = true;
         }
-      } 
+      }
     });
-    
-    if (allCorrect) { 
-      this.state.score.streak++; this.state.score.correct++; 
-    } else { 
-      this.state.score.streak = 0; this.state.score.wrong++; 
+
+    if (allCorrect) {
+      this.state.score.streak++; this.state.score.correct++;
+    } else {
+      this.state.score.streak = 0; this.state.score.wrong++;
       this.generateBeautifulWrongNote(q);
       q.coefOneErrorFlag = hasCoefficientOneError;
     }
-    
+
     clearInterval(this.state.timerInterval);
     this.renderAll(allCorrect);
   },
@@ -652,13 +683,16 @@ const App = {
       fullEqHtml = `<span class="eq-text" style="font-size:20px; font-weight:bold; color:var(--c-correct);">${this.formatInput(q.blanks[0].answer)}</span>`;
     } else {
       const formatSide = (side) => side.map(c => (c.coef > 1 ? `<span class="eq-text">${c.coef}</span>` : '') + c.formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join('')).join(' <span class="eq-plus">+</span> ');
-      if(!q.isAbstract) {
-        const rx = REACTIONS.find(r => r.name === q.name);
-        fullEqHtml = `${formatSide(rx.reactants)} <span class="eq-arrow">→</span> ${formatSide(rx.products)}`;
-      } else {
+      // isAbstract가 명시적으로 true인 경우만 추상식, 나머지는 모두 실제 반응식으로 처리
+      if(q.isAbstract === true) {
         const rSide = q.displayReactants.map(c => (c.coef>1?`<span class="eq-text">${c.coef}</span>`:'') + this.formatFormula(c.formula)).join(' <span class="eq-plus">+</span> ');
         const pSide = q.displayProducts.map(c => (c.coef>1?`<span class="eq-text">${c.coef}</span>`:'') + this.formatFormula(c.formula)).join(' <span class="eq-plus">+</span> ');
         fullEqHtml = `${rSide} <span class="eq-arrow">→</span> ${pSide}`;
+      } else {
+        const rx = REACTIONS.find(r => r.name === q.name);
+        if (rx) {
+          fullEqHtml = `${formatSide(rx.reactants)} <span class="eq-arrow">→</span> ${formatSide(rx.products)}`;
+        }
       }
     }
     this.saveWrongNote(this.state.currentMode, q.name, fullEqHtml);
@@ -684,7 +718,7 @@ const App = {
 
   renderEquation() {
     const q = this.state.currentQuestion; if (!q) { this.$.equationDisplay.innerHTML = ''; return; }
-    
+
     if (q.isMode5) {
       this.$.equationDisplay.innerHTML = this.renderBlankBox('M5', q.blanks[0].answer);
       return;
@@ -694,7 +728,7 @@ const App = {
       return chemList.map((c, i) => {
         const key = `${keyPrefix}${i}`;
         const blankData = q.blanks.find(b => b.key === key);
-        
+
         if (this.state.currentMode === 1) {
           if (blankData) {
             return this.renderBlankBox(key, blankData.answer) + this.formatFormula(c.formula);
@@ -711,7 +745,7 @@ const App = {
         }
       }).join(' <span class="eq-plus">+</span> ');
     };
-    
+
     this.$.equationDisplay.innerHTML = `${formatChemical(q.displayReactants, 'R')} <span class="eq-arrow">→</span> ${formatChemical(q.displayProducts, 'P')}`;
   },
 
@@ -728,21 +762,21 @@ const App = {
   },
 
   renderResultBanner(isCorrect) {
-    if (isCorrect) { 
-      this.$.resultBanner.className = 'result-banner correct-banner show'; 
+    if (isCorrect) {
+      this.$.resultBanner.className = 'result-banner correct-banner show';
       this.$.resultBanner.innerHTML = `✅ 정답입니다! 연속 ${this.state.score.streak}회 성공!`;
     } else {
       this.$.resultBanner.className = 'result-banner wrong-banner show';
-      
+
       let errorWarningHtml = '';
       if (this.state.currentQuestion.coefOneErrorFlag) {
         errorWarningHtml = `<div style="color:var(--c-wrong); font-size:13px; margin-bottom:8px; width:100%;">⚠️ 주의: 화학에서 계수 '1'은 생략해야 합니다.</div>`;
       }
 
-      if (this.state.isAnswerRevealed) { 
+      if (this.state.isAnswerRevealed) {
         this.$.resultBanner.innerHTML = `${errorWarningHtml}<div style="display:flex; align-items:center; width:100%;">❌ 오답입니다. 정답이 표시되었습니다.</div>`;
-      } else { 
-        this.$.resultBanner.innerHTML = `${errorWarningHtml}<div style="display:flex; align-items:center; width:100%; justify-content:space-between;"><span>❌ 오답입니다.</span><button class="show-answer-btn">정답 확인</button></div>`; 
+      } else {
+        this.$.resultBanner.innerHTML = `${errorWarningHtml}<div style="display:flex; align-items:center; width:100%; justify-content:space-between;"><span>❌ 오답입니다.</span><button class="show-answer-btn">정답 확인</button></div>`;
       }
     }
   },
