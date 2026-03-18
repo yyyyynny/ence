@@ -547,7 +547,6 @@ const App = {
 
   timeOutForceWrong() {
     this.state.isAnswerChecked = true;
-    this.state.isAnswerRevealed = true; // ← 타임아웃 시 정답 즉시 자동 표시
     this.state.score.streak = 0;
     this.state.score.wrong++;
 
