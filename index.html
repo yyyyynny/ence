@@ -730,13 +730,14 @@ const App = {
     this.saveWrongNote(this.state.currentMode, q.name, fullEqHtml);
   },
 
-  revealAnswers() { 
+ revealAnswers() { 
       this.state.isAnswerRevealed = true; 
       this.state.isAnswerChecked = true; 
       if (this.state.currentQuestion) this.state.currentQuestion.isTimedOut = false; 
       clearInterval(this.state.timerInterval);
-      this.renderEquation(); 
-      this.renderResultBanner(false); 
+      
+      // 기존에 수식과 배너만 렌더링하던 것을 전체 렌더링으로 변경하여 키보드(다음 버튼)까지 갱신
+      this.renderAll(false); 
   },
 
   renderAll(isCorrect = null) {
