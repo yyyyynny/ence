@@ -42,7 +42,7 @@
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html { background: var(--c-bg); }
   body { font-family: var(--font-ui); background: var(--c-bg); color: var(--c-text-primary); min-height: 100vh; min-height: 100dvh; transition: background 0.3s, color 0.3s; overflow-x: hidden; }
-  body::before { content: ''; position: fixed; inset: 0; background-image: radial-gradient(circle at 25% 25%, var(--c-accent-1), transparent 30%), radial-gradient(circle at 75% 75%, var(--c-accent-2), transparent 30%); opacity: 0.35; filter: blur(100px); pointer-events: none; z-index: 0; }
+  body::before { content: ''; position: fixed; inset: 0; background-image: radial-gradient(circle at 25% 25%, var(--c-accent-1), transparent 30%), radial-gradient(circle at 75% 75%, var(--c-accent-2), transparent 30%); opacity: 0.4; filter: blur(100px); pointer-events: none; z-index: 0; }
 
   #app { position: relative; z-index: 1; max-width: 720px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; min-height: 100vh; min-height: 100dvh; }
   header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
@@ -63,6 +63,12 @@
   #totalCorrect { color: var(--c-correct); }
   #totalWrong { color: var(--c-wrong); }
   .streak-flames { font-size: 20px; }
+
+  .timer-select-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 16px; padding: 10px 16px; backdrop-filter: blur(10px); }
+  .timer-select-label { font-size: 11px; color: var(--c-text-secondary); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+  .timer-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+  .timer-btn { background: var(--c-surface-2); border: 1px solid var(--c-border); border-radius: 10px; color: var(--c-text-secondary); font-family: var(--font-mono); font-size: 13px; font-weight: 700; padding: 6px 12px; cursor: pointer; transition: all 0.2s; }
+  .timer-btn.active { background: var(--c-accent-3); border-color: var(--c-accent-3); color: #000; }
 
   .mode-tabs { display: flex; overflow-x: auto; gap: 8px; margin-bottom: 16px; padding-bottom: 4px; scrollbar-width: none; }
   .mode-tabs::-webkit-scrollbar { display: none; }
@@ -132,12 +138,6 @@
 
   .egg-particle { position: fixed; pointer-events: none; z-index: 9999999; font-size: 24px; animation: egg-pop 0.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
   @keyframes egg-pop { 0% { transform: translate(-50%, -50%) scale(0.5); opacity: 1; } 100% { transform: translate(calc(-50% + var(--tx)), calc(-50% + var(--ty))) scale(1.5); opacity: 0; } }
-
-  .timer-select-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; background: var(--c-surface-1); border: 1px solid var(--c-border); border-radius: 16px; padding: 10px 16px; backdrop-filter: blur(10px); }
-  .timer-select-label { font-size: 11px; color: var(--c-text-secondary); font-family: var(--font-mono); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
-  .timer-btns { display: flex; gap: 6px; flex-wrap: wrap; }
-  .timer-btn { background: var(--c-surface-2); border: 1px solid var(--c-border); border-radius: 10px; color: var(--c-text-secondary); font-family: var(--font-mono); font-size: 13px; font-weight: 700; padding: 6px 12px; cursor: pointer; transition: all 0.2s; }
-  .timer-btn.active { background: var(--c-accent-3); border-color: var(--c-accent-3); color: #000; }
 </style>
 </head>
 <body>
@@ -375,6 +375,7 @@ const App = {
     isAnswerRevealed: false,
     isDarkMode: true,
     timerDuration: DEFAULT_TIMER,
+    currentMaxTime: DEFAULT_TIMER,
     timerLeft: DEFAULT_TIMER,
     timerInterval: null,
     wrongNotes: [],
@@ -510,13 +511,16 @@ const App = {
       if (this.$.hintModalOverlay.classList.contains('show') || this.$.wrongNoteModalOverlay.classList.contains('show') || document.getElementById('authOverlay').style.display !== 'none') return;
       if (e.key >= '0' && e.key <= '9') this.handleKeyPress(`NUM_${e.key}`);
       else if (e.key === 'Backspace') this.handleKeyPress('DEL');
-      else if (e.key === 'Enter') this.handleKeyPress(this.state.isAnswerChecked ? 'NEXT' : 'CONFIRM');
+      else if (e.key === 'Enter') this.handleKeyPress(this.state.isAnswerChecked && !this.state.currentQuestion?.isTimedOut ? 'NEXT' : 'CONFIRM');
     });
   },
 
   startTimer() {
     clearInterval(this.state.timerInterval);
-    this.state.timerLeft = this.state.timerDuration;
+    
+    this.state.currentMaxTime = this.state.timerDuration;
+    this.state.timerLeft = this.state.currentMaxTime;
+    
     this.$.timerBar.style.transition = 'none';
     this.$.timerBar.style.width = '100%';
     this.$.timerBar.classList.remove('danger');
@@ -538,7 +542,7 @@ const App = {
         this.$.timerBar.style.width = '0%';
         this.timeOutForceWrong();
       } else {
-        const pct = (this.state.timerLeft / this.state.timerDuration) * 100;
+        const pct = (this.state.timerLeft / this.state.currentMaxTime) * 100;
         this.$.timerBar.style.width = `${pct}%`;
         if (pct < 30) this.$.timerBar.classList.add('danger');
       }
@@ -546,21 +550,23 @@ const App = {
   },
 
   timeOutForceWrong() {
-    this.state.isAnswerChecked = true;
+    this.state.isAnswerRevealed = false; 
     this.state.score.streak = 0;
     this.state.score.wrong++;
 
     const q = this.state.currentQuestion;
+    q.isTimedOut = true; 
     this.generateBeautifulWrongNote(q);
 
     this.renderAll(null);
     this.$.resultBanner.className = 'result-banner wrong-banner show';
-    this.$.resultBanner.innerHTML = `<div style="width:100%;"><span style="color:var(--c-wrong)">⏰ 시간 초과!</span> <span style="font-weight:400; margin-left:10px;">연속 정답이 초기화되었습니다.</span></div>`;
+    this.$.resultBanner.innerHTML = `<div style="display:flex; align-items:center; width:100%; justify-content:space-between;"><span><span style="color:var(--c-wrong)">⏰ 시간 초과!</span> 마저 답을 입력해보세요. (점수 미반영)</span><button class="show-answer-btn">정답 확인</button></div>`;
   },
 
   handleKeyPress(key) {
     if (key.startsWith('NUM_') || key.startsWith('ELEM_') || key === 'DEL') {
-      if (this.state.isAnswerChecked) return; // ← 답 확인 후 입력 완전 차단
+      if (this.state.isAnswerChecked && !this.state.currentQuestion?.isTimedOut) return; 
+      
       const q = this.state.currentQuestion;
       if (!q || !q.activeKey) return;
       const input = q.inputs[q.activeKey] || '';
@@ -569,11 +575,22 @@ const App = {
       else if (key.startsWith('ELEM_')) {
         q.inputs[q.activeKey] = input + key.replace('ELEM_', '');
       }
-      else if (key === 'DEL') q.inputs[q.activeKey] = input.slice(0, -1);
+      else if (key === 'DEL') {
+        if (input.length > 0) {
+          let deleteLen = 1;
+          if (/[a-z]$/.test(input) && input.length >= 2 && /[A-Z]/.test(input.slice(-2, -1))) {
+            deleteLen = 2;
+          }
+          q.inputs[q.activeKey] = input.slice(0, -deleteLen);
+        }
+      }
 
       this.renderEquation();
-    } else if (key === 'CONFIRM') { if (!this.state.isAnswerChecked) this.checkAnswer();
-    } else if (key === 'NEXT') { if (this.state.isAnswerChecked) this.generateQuestion(); }
+    } else if (key === 'CONFIRM') { 
+        if (!this.state.isAnswerChecked || this.state.currentQuestion?.isTimedOut) this.checkAnswer();
+    } else if (key === 'NEXT') { 
+        if (this.state.isAnswerChecked && !this.state.currentQuestion?.isTimedOut) this.generateQuestion(); 
+    }
   },
 
   setMode(mode) {
@@ -592,11 +609,15 @@ const App = {
     this.generateQuestion();
   },
 
-  setActiveBlank(key) { if (this.state.isAnswerChecked) return; const q = this.state.currentQuestion; if (q) { q.activeKey = key; this.renderEquation(); } },
+  setActiveBlank(key) { 
+      if (this.state.isAnswerChecked && !this.state.currentQuestion?.isTimedOut) return; 
+      const q = this.state.currentQuestion; 
+      if (q) { q.activeKey = key; this.renderEquation(); } 
+  },
 
   generateQuestion() {
     this.state.isAnswerChecked = false; this.state.isAnswerRevealed = false;
-    const q = { blanks: [], inputs: {} };
+    const q = { blanks: [], inputs: {}, isTimedOut: false };
     const formulaToString = (chem) => { let str = chem.coef > 1 ? chem.coef.toString() : ''; str += chem.formula.map(p => p.sym + (p.sub ? p.sub.toString() : '')).join(''); return str; };
 
     switch (this.state.currentMode) {
@@ -650,7 +671,7 @@ const App = {
 
   checkAnswer() {
     const q = this.state.currentQuestion; if (!q) return;
-    this.state.isAnswerChecked = true;
+    
     let allCorrect = true;
     let hasCoefficientOneError = false;
 
@@ -664,15 +685,25 @@ const App = {
       }
     });
 
-    if (allCorrect) {
-      this.state.score.streak++; this.state.score.correct++;
+    if (q.isTimedOut) {
+        if(!allCorrect) q.coefOneErrorFlag = hasCoefficientOneError;
+        if(allCorrect) {
+             this.state.isAnswerChecked = true;
+             q.isTimedOut = false; // 정답을 맞추면 다음 문제로 넘어가기 위해 상태 변경
+             clearInterval(this.state.timerInterval);
+        }
     } else {
-      this.state.score.streak = 0; this.state.score.wrong++;
-      this.generateBeautifulWrongNote(q);
-      q.coefOneErrorFlag = hasCoefficientOneError;
+        this.state.isAnswerChecked = true;
+        if (allCorrect) {
+          this.state.score.streak++; this.state.score.correct++;
+        } else {
+          this.state.score.streak = 0; this.state.score.wrong++;
+          this.generateBeautifulWrongNote(q);
+          q.coefOneErrorFlag = hasCoefficientOneError;
+        }
+        clearInterval(this.state.timerInterval);
     }
 
-    clearInterval(this.state.timerInterval);
     this.renderAll(allCorrect);
   },
 
@@ -682,7 +713,6 @@ const App = {
       fullEqHtml = `<span class="eq-text" style="font-size:20px; font-weight:bold; color:var(--c-correct);">${this.formatInput(q.blanks[0].answer)}</span>`;
     } else {
       const formatSide = (side) => side.map(c => (c.coef > 1 ? `<span class="eq-text">${c.coef}</span>` : '') + c.formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join('')).join(' <span class="eq-plus">+</span> ');
-      // isAbstract가 명시적으로 true인 경우만 추상식, 나머지는 모두 실제 반응식으로 처리
       if(q.isAbstract === true) {
         const rSide = q.displayReactants.map(c => (c.coef>1?`<span class="eq-text">${c.coef}</span>`:'') + this.formatFormula(c.formula)).join(' <span class="eq-plus">+</span> ');
         const pSide = q.displayProducts.map(c => (c.coef>1?`<span class="eq-text">${c.coef}</span>`:'') + this.formatFormula(c.formula)).join(' <span class="eq-plus">+</span> ');
@@ -697,11 +727,25 @@ const App = {
     this.saveWrongNote(this.state.currentMode, q.name, fullEqHtml);
   },
 
-  revealAnswers() { this.state.isAnswerRevealed = true; this.renderEquation(); this.renderResultBanner(false); },
+  revealAnswers() { 
+      this.state.isAnswerRevealed = true; 
+      this.state.isAnswerChecked = true; // 답을 보면 강제 종료 처리
+      clearInterval(this.state.timerInterval);
+      this.renderEquation(); 
+      this.renderResultBanner(false); 
+  },
 
   renderAll(isCorrect = null) {
     this.renderScore(); this.renderQuestionHeader(); this.renderEquation(); this.renderKeyboard();
-    if (isCorrect !== null) this.renderResultBanner(isCorrect); else this.$.resultBanner.className = 'result-banner';
+    
+    // 시간 초과 상태일 때 배너를 덮어쓰지 않도록 분기 처리
+    if (this.state.currentQuestion && this.state.currentQuestion.isTimedOut && !this.state.isAnswerChecked) {
+        // 이미 timeOutForceWrong 에서 배너를 그렸으므로 아무것도 하지 않음
+    } else if (isCorrect !== null) {
+        this.renderResultBanner(isCorrect); 
+    } else {
+        this.$.resultBanner.className = 'result-banner';
+    }
   },
 
   renderScore() {
@@ -750,13 +794,13 @@ const App = {
 
   renderBlankBox(key, answer) {
     const q = this.state.currentQuestion; const input = q.inputs[key] || ''; let classes = 'blank-box';
-    if (q.activeKey === key && !this.state.isAnswerChecked) classes += ' active';
+    if (q.activeKey === key && (!this.state.isAnswerChecked || q.isTimedOut)) classes += ' active';
     let displayContent = this.formatInput(input);
-    if (this.state.isAnswerChecked) {
+    if (this.state.isAnswerChecked && !q.isTimedOut) {
       const isCorrect = input === answer; classes += isCorrect ? ' correct' : ' wrong';
       if (this.state.isAnswerRevealed && !isCorrect) displayContent = this.formatInput(answer);
     }
-    if (input === '' && !this.state.isAnswerChecked) classes += ' placeholder';
+    if (input === '' && (!this.state.isAnswerChecked || q.isTimedOut)) classes += ' placeholder';
     return `<span class="${classes}" data-key="${key}">${displayContent}</span>`;
   },
 
@@ -780,7 +824,11 @@ const App = {
     }
   },
 
-  renderKeyboard() { const isChecked = this.state.isAnswerChecked; this.$.confirmBtn.style.display = isChecked ? 'none' : 'flex'; this.$.nextBtn.style.display = isChecked ? 'flex' : 'none'; },
+  renderKeyboard() { 
+      const isDone = this.state.isAnswerChecked && !this.state.currentQuestion?.isTimedOut;
+      this.$.confirmBtn.style.display = isDone ? 'none' : 'flex'; 
+      this.$.nextBtn.style.display = isDone ? 'flex' : 'none'; 
+  },
 
   formatFormula(formula) { return formula.map(p => p.sym + (p.sub ? `<sub>${p.sub}</sub>` : '')).join(''); },
   formatInput(str) { if (!str) return ''; return str.replace(/([a-zA-Z]+)(\d+)/g, '$1<sub>$2</sub>'); },
