@@ -361,8 +361,10 @@ const App={
   state:{
     currentMode:null,score:{streak:0,correct:0,wrong:0},
     currentQuestion:null,isAnswerChecked:false,isAnswerRevealed:false,isDarkMode:true,
+    isLastWrongAttempt:false,wrongBlanks:{},wrongAlreadyPenalized:false,
     timerDuration:DEFAULT_TIMER,currentMaxTime:DEFAULT_TIMER,timerLeft:DEFAULT_TIMER,timerInterval:null,
     wrongNotes:[],noteFilter:'all',
+    isLastWrongAttempt:false,wrongBlanks:{},wrongAlreadyPenalized:false,
     m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false
   },
   $:{
@@ -384,7 +386,27 @@ const App={
   loadWrongNotes(){try{const d=localStorage.getItem('chem_wrong_notes_v3');this.state.wrongNotes=d?JSON.parse(d):[];}catch(e){this.state.wrongNotes=[];}},
   saveWrongNote(m,t,h){const id=Date.now().toString();this.state.wrongNotes.unshift({id,mode:m,title:t,html:h});try{localStorage.setItem('chem_wrong_notes_v3',JSON.stringify(this.state.wrongNotes));}catch(e){}this.renderWrongNotes();},
   deleteWrongNote(id){this.state.wrongNotes=this.state.wrongNotes.filter(n=>n.id!==id);try{localStorage.setItem('chem_wrong_notes_v3',JSON.stringify(this.state.wrongNotes));}catch(e){}this.renderWrongNotes();},
-  clearWrongNotes(){if(!confirm("오답 노트를 전부 삭제하시겠습니까?"))return;this.state.wrongNotes=[];try{localStorage.removeItem('chem_wrong_notes_v3');}catch(e){}this.renderWrongNotes();},
+  clearWrongNotes(){
+    const btn=document.getElementById('clearAllNotesBtn');
+    if(!btn.dataset.confirming){
+      // 1단계: 경고 상태로 전환
+      btn.dataset.confirming='1';
+      btn.textContent='⚠️ 정말 삭제? 한 번 더 클릭';
+      btn.style.background='var(--c-accent-3)';btn.style.color='#000';
+      btn._t=setTimeout(()=>{
+        delete btn.dataset.confirming;
+        btn.textContent='🗑 전체 삭제';
+        btn.style.background='';btn.style.color='';
+      },3000);
+      return;
+    }
+    // 2단계: 실제 삭제
+    clearTimeout(btn._t);delete btn.dataset.confirming;
+    btn.textContent='🗑 전체 삭제';btn.style.background='';btn.style.color='';
+    this.state.wrongNotes=[];
+    try{localStorage.removeItem('chem_wrong_notes_v3');}catch(e){}
+    this.renderWrongNotes();
+  },
 
   buildKeyboard(){
     this.$.numRow.innerHTML=[1,2,3,4,5,6,7,8,9,0].map(n=>`<button class="kb-key num" data-key="NUM_${n}">${n}</button>`).join('');
@@ -494,15 +516,26 @@ const App={
     if(key.startsWith('NUM_')||key.startsWith('ELEM_')||key==='DEL'){
       if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)return;
       const q=this.state.currentQuestion;if(!q||!q.activeKey)return;
+
+      // 오답 상태에서 입력 시작 → 오답 표시 초기화 + 전체 입력 클리어
+      const wasWrong=this.state.isLastWrongAttempt;
+      if(wasWrong){
+        this.state.isLastWrongAttempt=false;
+        this.state.wrongBlanks={};
+        q.inputs={};  // 오답 내용 전체 초기화 (기존 틀린 답에 덧붙여지는 버그 수정)
+        if(q.blanks.length>0)q.activeKey=q.blanks[0].key; // 첫 빈칸으로 리셋
+      }
+
       const inp=q.inputs[q.activeKey]||'';
       if(key.startsWith('NUM_'))q.inputs[q.activeKey]=inp+key.replace('NUM_','');
       else if(key.startsWith('ELEM_'))q.inputs[q.activeKey]=inp+key.replace('ELEM_','');
       else if(key==='DEL'){
         if(inp.length>0){let dl=1;if(/[a-z]$/.test(inp)&&inp.length>=2&&/[A-Z]/.test(inp.slice(-2,-1)))dl=2;q.inputs[q.activeKey]=inp.slice(0,-dl);}
       }
-      this.renderEquation();
+      // wasWrong이었으면 배너/키보드까지 전부 리렌더링, 아니면 수식만
+      if(wasWrong)this.renderAll();else this.renderEquation();
     }else if(key==='CONFIRM'){if(!this.state.isAnswerChecked||this.state.currentQuestion?.isTimedOut)this.checkAnswer();}
-    else if(key==='NEXT'){if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)this.generateQuestion();}
+    else if(key==='NEXT'){if((this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)||this.state.isLastWrongAttempt)this.generateQuestion();}
   },
 
   setMode(mode){
@@ -521,12 +554,13 @@ const App={
   },
 
   setActiveBlank(key){
-    if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)return;
+    if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut&&!this.state.isLastWrongAttempt)return;
     const q=this.state.currentQuestion;if(q){q.activeKey=key;this.renderEquation();}
   },
 
   generateQuestion(){
     this.state.isAnswerChecked=false;this.state.isAnswerRevealed=false;
+    this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};this.state.wrongAlreadyPenalized=false;
     const q={blanks:[],inputs:{},isTimedOut:false};
     const f2s=c=>{let s=c.coef>1?c.coef.toString():'';s+=c.formula.map(p=>p.sym+(p.sub?p.sub.toString():'')).join('');return s;};
     switch(this.state.currentMode){
@@ -558,13 +592,31 @@ const App={
     let ok=true,ce=false;
     q.blanks.forEach(b=>{const v=q.inputs[b.key]||'';if(v!==b.answer){ok=false;if(this.state.currentMode!==1&&v==='1'+b.answer)ce=true;}});
     if(q.isTimedOut){
+      // ── 타임아웃 재도전 경로 ──
       if(!ok){q.coefOneErrorFlag=ce;this.state.isAnswerChecked=false;this.renderAll(false);}
-      else{this.state.isAnswerChecked=true;q.isTimedOut=false;clearInterval(this.state.timerInterval);this.renderAll('timeout_correct');}
+      else{this.state.isAnswerChecked=true;q.isTimedOut=false;this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};clearInterval(this.state.timerInterval);this.renderAll('timeout_correct');}
     }else{
-      this.state.isAnswerChecked=true;
-      if(ok){this.state.score.streak++;this.state.score.correct++;}
-      else{this.state.score.streak=0;this.state.score.wrong++;this.generateBeautifulWrongNote(q);q.coefOneErrorFlag=ce;}
-      clearInterval(this.state.timerInterval);this.renderAll(ok);
+      clearInterval(this.state.timerInterval);
+      if(ok){
+        // ── 정답 ──
+        if(!this.state.isLastWrongAttempt){this.state.score.streak++;this.state.score.correct++;}
+        this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};
+        this.state.isAnswerChecked=true;
+        this.renderAll(true);
+      }else{
+        // ── 오답: isAnswerChecked를 false로 유지 → 재입력 허용 ──
+        if(!this.state.wrongAlreadyPenalized){
+          this.state.score.streak=0;this.state.score.wrong++;
+          this.generateBeautifulWrongNote(q);
+          this.state.wrongAlreadyPenalized=true;
+        }
+        this.state.wrongBlanks={};
+        q.blanks.forEach(b=>{if((q.inputs[b.key]||'')!==b.answer)this.state.wrongBlanks[b.key]=true;});
+        q.coefOneErrorFlag=ce;
+        this.state.isLastWrongAttempt=true;
+        this.state.isAnswerChecked=false;
+        this.renderAll(false);
+      }
     }
   },
 
@@ -580,7 +632,12 @@ const App={
     this.saveWrongNote(this.state.currentMode,q.name,h);
   },
 
-  revealAnswers(){this.state.isAnswerRevealed=true;this.state.isAnswerChecked=true;if(this.state.currentQuestion)this.state.currentQuestion.isTimedOut=false;clearInterval(this.state.timerInterval);this.renderAll(false);},
+  revealAnswers(){
+    this.state.isAnswerRevealed=true;this.state.isAnswerChecked=true;
+    this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};
+    if(this.state.currentQuestion)this.state.currentQuestion.isTimedOut=false;
+    clearInterval(this.state.timerInterval);this.renderAll(false);
+  },
 
   renderAll(isCorrect=null){
     this.renderScore();this.renderQuestionHeader();this.renderEquation();this.renderKeyboard();
@@ -616,8 +673,14 @@ const App={
     const q=this.state.currentQuestion,inp=q.inputs[key]||'';let cls='blank-box';
     if(q.activeKey===key&&(!this.state.isAnswerChecked||q.isTimedOut))cls+=' active';
     let disp=this.formatInput(inp);
-    if(this.state.isAnswerChecked&&!q.isTimedOut){const ok=inp===answer;cls+=ok?' correct':' wrong';if(this.state.isAnswerRevealed&&!ok)disp=this.formatInput(answer);}
-    if(inp===''&&(!this.state.isAnswerChecked||q.isTimedOut))cls+=' placeholder';
+    if(this.state.isAnswerChecked&&!q.isTimedOut){
+      const ok=inp===answer;cls+=ok?' correct':' wrong';
+      if(this.state.isAnswerRevealed&&!ok)disp=this.formatInput(answer);
+    }else if(this.state.isLastWrongAttempt&&(this.state.wrongBlanks||{})[key]){
+      cls+=' wrong';
+    }
+    // placeholder: 오답 상태의 틀린 칸에는 ? 미표시 (이미 내용이 있거나 wrong 클래스)
+    if(inp===''&&(!this.state.isAnswerChecked||q.isTimedOut)&&!(this.state.wrongBlanks||{})[key])cls+=' placeholder';
     return`<span class="${cls}" data-key="${key}">${disp}</span>`;
   },
 
@@ -632,7 +695,12 @@ const App={
     }
   },
 
-  renderKeyboard(){const done=this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut;this.$.confirmBtn.style.display=done?'none':'flex';this.$.nextBtn.style.display=done?'flex':'none';},
+  renderKeyboard(){
+    const done=this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut;
+    const wrongPending=this.state.isLastWrongAttempt;
+    this.$.confirmBtn.style.display=done?'none':'flex';
+    this.$.nextBtn.style.display=(done||wrongPending)?'flex':'none';
+  },
 
   /* ── MODE 6 ── */
   m6Fmt(side){return side.map(r=>(r.coef>1?r.coef:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' + ');},
