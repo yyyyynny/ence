@@ -109,6 +109,7 @@
 
   /* ── MODE 6 플래시카드 ── */
   #mode6Wrap{display:none;flex-direction:column;gap:12px;flex-grow:1;}
+  #mode6Wrap.m6-active{display:flex;}
   .m6-opt-row{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:12px 16px;backdrop-filter:blur(10px);}
   .m6-opt-label{font-size:10px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;}
   .m6-opt-btns{display:flex;gap:6px;flex-wrap:wrap;}
@@ -165,7 +166,24 @@
     body.wide-mode .cycle-wrap { grid-column: 2; grid-row: 4; }
     body.wide-mode .question-card { grid-column: 1; grid-row: 5; min-height: 250px; }
     body.wide-mode .keyboard-wrap { grid-column: 2; grid-row: 5; }
-    body.wide-mode #mode6Wrap { grid-column: 1 / -1; grid-row: 4; max-width: 720px; margin: 0 auto; width: 100%; }
+
+    /* 모드 6 와이드 2열 분할 최적화 */
+    body.wide-mode #mode6Wrap.m6-active {
+      display: grid !important; 
+      grid-column: 1 / -1;
+      grid-row: 4;
+      grid-template-columns: 1fr 1fr;
+      column-gap: 24px;
+      row-gap: 16px;
+      max-width: none;
+      margin: 0;
+      padding: 0;
+    }
+    body.wide-mode .m6-card-area { grid-column: 1; grid-row: 1 / 4; min-height: 350px; }
+    body.wide-mode .m6-opt-row:nth-of-type(1) { grid-column: 2; grid-row: 1; }
+    body.wide-mode .m6-opt-row:nth-of-type(2) { grid-column: 2; grid-row: 2; }
+    body.wide-mode .m6-nav { grid-column: 2; grid-row: 3; align-self: end; padding-bottom: 4px; }
+    body.wide-mode .m6-progress-bar { grid-column: 1 / -1; grid-row: 4; }
   }
 </style>
 </head>
@@ -381,7 +399,8 @@ const App={
     wrongNotes:[],noteFilter:'all',retryNoteId:null,
     isCycleMode:false,cycleQueue:[],cycleTotal:0,lastQuestionName:null,
     m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,
-    isSoundOn:true, isHapticOn:true, isWideMode:false
+    isSoundOn:true, isHapticOn:true, isWideMode:false,
+    savedCycleState:null // 재풀이 시 사이클 복원용 메모리
   },
   $:{
     app:document.getElementById('app'),streakCount:document.getElementById('streakCount'),streakFlames:document.getElementById('streakFlames'),
@@ -520,12 +539,15 @@ const App={
     this.$.wrongNoteModalOverlay.classList.remove('show');
     this.state.retryNoteId = id;
     
+    // 상태 복원 데이터 백업
+    this.state.savedCycleState = { queue: [...this.state.cycleQueue], total: this.state.cycleTotal, mode: this.state.currentMode };
     this.state.currentMode = note.mode;
+    
     this.$.modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.mode)===note.mode));
     this.$.questionCard.style.display = '';
     this.$.keyboardWrap.style.display = '';
     this.$.timerSelectWrap.style.display = 'none'; 
-    this.$.mode6Wrap.style.display = 'none';
+    this.$.mode6Wrap.classList.remove('m6-active');
     this.$.cycleWrap.style.display = 'none';
     this.$.elemRowLabel.style.display = note.mode===1 ? 'none' : 'block';
     this.$.elemRow.style.display = note.mode===1 ? 'none' : 'flex';
@@ -550,7 +572,21 @@ const App={
     this.state.retryNoteId = null;
     document.getElementById('retryBanner').style.display = 'none';
     this.$.timerSelectWrap.style.display = 'flex';
-    this.setMode(this.state.currentMode);
+    
+    // 상태 복원 및 사이클 붕괴 방어 로직 적용
+    const savedState = this.state.savedCycleState;
+    const targetMode = savedState ? savedState.mode : this.state.currentMode;
+    
+    this.state.currentMode = null; // 무한 대기 버그 조기 종료 우회
+
+    if(savedState){
+        this.state.cycleQueue = [...savedState.queue];
+        this.state.cycleTotal = savedState.total;
+        this.renderCycleProgress();
+    }
+
+    this.state.savedCycleState = null;
+    this.setMode(targetMode, true); // 복원된 큐를 보존(preserveCycle = true)하며 모드 진입
   },
 
   buildKeyboard(){
@@ -730,7 +766,18 @@ const App={
     this.playSound('error'); this.playHaptic('error');
     this.state.isAnswerRevealed=false;this.state.score.streak=0;this.state.score.wrong++;
     const q=this.state.currentQuestion;q.isTimedOut=true;
-    if(!this.state.retryNoteId) this.generateBeautifulWrongNote(q);
+    
+    if(!this.state.retryNoteId) {
+        this.generateBeautifulWrongNote(q);
+    } else {
+        const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
+        if(note) {
+            note.failCount = Math.min((note.failCount || 1) + 1, 3);
+            try{localStorage.setItem('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes));}catch(e){}
+            this.renderWrongNotes();
+        }
+    }
+    
     this.renderAll(null);
     this.$.resultBanner.className='result-banner wrong-banner show';
     this.$.resultBanner.innerHTML=`<div style="display:flex;align-items:center;width:100%;justify-content:space-between"><span><span style="color:var(--c-wrong)">⏰ 시간 초과!</span> <span style="font-weight:400;margin-left:10px">마저 답을 입력해보세요.</span></span><button class="show-answer-btn">정답 확인</button></div>`;
@@ -760,7 +807,7 @@ const App={
     }else if(key==='CONFIRM'){
         if(!this.state.isAnswerChecked||this.state.currentQuestion?.isTimedOut) {
             const q=this.state.currentQuestion;
-            if(q){
+            if(q && q.inputs[q.activeKey]){
                 const emptyB = q.blanks.find(b => !(q.inputs[b.key]));
                 if(emptyB) {
                     q.activeKey = emptyB.key;
@@ -780,18 +827,28 @@ const App={
     }
   },
 
-  setMode(mode){
+  // preserveCycle 파라미터를 추가하여 복원된 큐 유지
+  setMode(mode, preserveCycle = false){
+    if(this.state.retryNoteId) {
+        this.state.retryNoteId = null;
+        document.getElementById('retryBanner').style.display = 'none';
+        this.state.savedCycleState = null;
+    }
     if(this.state.currentMode===mode)return;
-    if(this.state.retryNoteId) this.exitRetry(); 
+    
     this.state.currentMode=mode;
     this.$.modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.mode)===mode));
     const is6=mode===6;
     this.$.questionCard.style.display=is6?'none':'';
     this.$.keyboardWrap.style.display=is6?'none':'';
     this.$.timerSelectWrap.style.display=is6?'none':'';
-    this.$.mode6Wrap.style.display=is6?'flex':'none';
+    
+    // CSS Cascade 충돌 해결: 인라인 style.display 제거, 클래스 토글 사용
+    this.$.mode6Wrap.classList.toggle('m6-active', is6);
     this.$.cycleWrap.style.display=(!is6)?'flex':'none'; 
-    this.initCycleQueue();
+    
+    if(!preserveCycle) this.initCycleQueue();
+
     if(is6){clearInterval(this.state.timerInterval);this.m6GenCards();this.m6Render();return;}
     if(mode===1){this.$.elemRowLabel.style.display='none';this.$.elemRow.style.display='none';}
     else{this.$.elemRowLabel.style.display='block';this.$.elemRow.style.display='flex';}
@@ -872,20 +929,30 @@ const App={
     
     if(this.state.retryNoteId) {
         if(ok) {
-            this.playSound('success'); this.playHaptic('success');
-            this.deleteWrongNote(this.state.retryNoteId);
-            this.state.retryNoteId = null;
-            document.getElementById('retryBanner').style.display='none';
-            this.$.timerSelectWrap.style.display='flex';
-            this.state.isAnswerChecked=true;
-            clearInterval(this.state.timerInterval);
-            this.renderAll('retry_correct');
+            if(q.isTimedOut) {
+                this.playSound('success'); this.playHaptic('success');
+                this.state.isAnswerChecked=true;
+                clearInterval(this.state.timerInterval);
+                this.renderAll('retry_timeout_correct');
+            } else {
+                this.playSound('success'); this.playHaptic('success');
+                this.deleteWrongNote(this.state.retryNoteId);
+                this.state.retryNoteId = null;
+                document.getElementById('retryBanner').style.display='none';
+                this.$.timerSelectWrap.style.display='flex';
+                this.state.isAnswerChecked=true;
+                clearInterval(this.state.timerInterval);
+                this.renderAll('retry_correct');
+            }
         } else {
             this.playSound('error'); this.playHaptic('error');
-            const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
-            if(note) {
-                note.failCount = Math.min((note.failCount || 1) + 1, 3);
-                try{localStorage.setItem('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes));}catch(e){}
+            if(!q.isTimedOut) { 
+                const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
+                if(note) {
+                    note.failCount = Math.min((note.failCount || 1) + 1, 3);
+                    try{localStorage.setItem('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes));}catch(e){}
+                    this.renderWrongNotes();
+                }
             }
             this.state.wrongBlanks={};
             q.blanks.forEach(b=>{if((q.inputs[b.key]||'')!==b.answer)this.state.wrongBlanks[b.key]=true;});
@@ -989,7 +1056,8 @@ const App={
   },
 
   renderResultBanner(isCorrect){
-    if(isCorrect==='retry_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 완벽합니다! 오답 노트에서 완전히 삭제되었습니다.';}
+    if(isCorrect==='retry_timeout_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 정답! (단, 시간 초과로 오답 노트에서 삭제되지 않음)';}
+    else if(isCorrect==='retry_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 완벽합니다! 오답 노트에서 완전히 삭제되었습니다.';}
     else if(isCorrect==='timeout_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 늦었지만 정답입니다! (다음 문제로 넘어가세요)';}
     else if(isCorrect===true){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=`✅ 정답입니다! 연속 ${this.state.score.streak}회 성공!`;}
     else{
