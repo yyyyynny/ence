@@ -174,6 +174,7 @@
   <div class="timer-select-wrap" id="timerSelectWrap">
     <div class="timer-select-label">⏱ 제한시간</div>
     <div class="timer-btns" id="timerBtns">
+      <button class="timer-btn" data-sec="0">무제한</button>
       <button class="timer-btn" data-sec="15">15초</button>
       <button class="timer-btn active" data-sec="20">20초</button>
       <button class="timer-btn" data-sec="25">25초</button>
@@ -183,7 +184,7 @@
   </div>
 
   <div class="mode-tabs">
-    <button class="mode-tab" data-mode="1"><span class="tab-icon">🔢</span>계수 맞추기<span class="tab-desc">계수≥2만 출제</span></button>
+    <button class="mode-tab" data-mode="1"><span class="tab-icon">🔢</span>계수 맞추기<span class="tab-desc">계수 1도 입력 필수</span></button>
     <button class="mode-tab" data-mode="2"><span class="tab-icon">🧪</span>반응물 맞추기<span class="tab-desc">16개 전체</span></button>
     <button class="mode-tab" data-mode="3"><span class="tab-icon">⚗️</span>생성물 맞추기<span class="tab-desc">16개 전체</span></button>
     <button class="mode-tab" data-mode="4"><span class="tab-icon">📝</span>전체 반응식<span class="tab-desc">16개 전체</span></button>
@@ -191,7 +192,6 @@
     <button class="mode-tab" data-mode="6"><span class="tab-icon">🃏</span>플래시카드</button>
   </div>
 
-  <!-- 순환 모드 토글 (모드 2~5에서만 표시) -->
   <div class="cycle-wrap" id="cycleWrap" style="display:none">
     <div class="cycle-label">🔄 출제 방식</div>
     <div class="cycle-btns">
@@ -204,7 +204,6 @@
     </div>
   </div>
 
-  <!-- 퀴즈 카드 (모드 1~5) -->
   <div class="question-card" id="questionCard">
     <div class="timer-container"><div class="timer-bar" id="timerBar"></div></div>
     <div id="questionHeader">
@@ -215,7 +214,6 @@
     <div class="result-banner" id="resultBanner"></div>
   </div>
 
-  <!-- 모드 6 플래시카드 -->
   <div id="mode6Wrap">
     <div class="m6-opt-row">
       <div class="m6-opt-label">📚 카드 유형</div>
@@ -259,7 +257,6 @@
     <div class="m6-progress-bar"><div class="m6-progress-fill" id="m6PFill"></div></div>
   </div>
 
-  <!-- 키보드 (모드 1~5) -->
   <div class="keyboard-wrap" id="keyboardWrap">
     <div class="kb-section-label">Numbers</div>
     <div class="kb-row" id="numRow"></div>
@@ -414,7 +411,6 @@ const App={
   clearWrongNotes(){
     const btn=document.getElementById('clearAllNotesBtn');
     if(!btn.dataset.confirming){
-      // 1단계: 경고 상태로 전환
       btn.dataset.confirming='1';
       btn.textContent='⚠️ 정말 삭제? 한 번 더 클릭';
       btn.style.background='var(--c-accent-3)';btn.style.color='#000';
@@ -425,7 +421,6 @@ const App={
       },3000);
       return;
     }
-    // 2단계: 실제 삭제
     clearTimeout(btn._t);delete btn.dataset.confirming;
     btn.textContent='🗑 전체 삭제';btn.style.background='';btn.style.color='';
     this.state.wrongNotes=[];
@@ -526,7 +521,6 @@ const App={
     });
   },
 
-  // 순환 큐 초기화 (Fisher-Yates 셔플)
   initCycleQueue(){
     const mode=this.state.currentMode;
     let pool=[];
@@ -550,6 +544,9 @@ const App={
     clearInterval(this.state.timerInterval);
     this.state.currentMaxTime=this.state.timerDuration;this.state.timerLeft=this.state.currentMaxTime;
     this.$.timerBar.style.transition='none';this.$.timerBar.style.width='100%';this.$.timerBar.classList.remove('danger');
+    
+    if(this.state.timerDuration === 0) return;
+
     void this.$.timerBar.offsetWidth;this.$.timerBar.style.transition='width 0.1s linear, background 0.3s';
     let lt=Date.now();
     this.state.timerInterval=setInterval(()=>{
@@ -573,13 +570,12 @@ const App={
       if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)return;
       const q=this.state.currentQuestion;if(!q||!q.activeKey)return;
 
-      // 오답 상태에서 입력 시작 → 오답 표시 초기화 + 전체 입력 클리어
       const wasWrong=this.state.isLastWrongAttempt;
       if(wasWrong){
         this.state.isLastWrongAttempt=false;
         this.state.wrongBlanks={};
-        q.inputs={};  // 오답 내용 전체 초기화 (기존 틀린 답에 덧붙여지는 버그 수정)
-        if(q.blanks.length>0)q.activeKey=q.blanks[0].key; // 첫 빈칸으로 리셋
+        q.inputs={}; 
+        if(q.blanks.length>0)q.activeKey=q.blanks[0].key;
       }
 
       const inp=q.inputs[q.activeKey]||'';
@@ -588,7 +584,6 @@ const App={
       else if(key==='DEL'){
         if(inp.length>0){let dl=1;if(/[a-z]$/.test(inp)&&inp.length>=2&&/[A-Z]/.test(inp.slice(-2,-1)))dl=2;q.inputs[q.activeKey]=inp.slice(0,-dl);}
       }
-      // wasWrong이었으면 배너/키보드까지 전부 리렌더링, 아니면 수식만
       if(wasWrong)this.renderAll();else this.renderEquation();
     }else if(key==='CONFIRM'){if(!this.state.isAnswerChecked||this.state.currentQuestion?.isTimedOut)this.checkAnswer();}
     else if(key==='NEXT'){if((this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)||this.state.isLastWrongAttempt)this.generateQuestion();}
@@ -603,9 +598,7 @@ const App={
     this.$.keyboardWrap.style.display=is6?'none':'';
     this.$.timerSelectWrap.style.display=is6?'none':'';
     this.$.mode6Wrap.style.display=is6?'flex':'none';
-    // 순환 모드 토글: 모드 2~5에서만 표시
     this.$.cycleWrap.style.display=(!is6&&mode!==1)?'flex':'none';
-    // 모드 바꾸면 순환 큐 리셋
     this.initCycleQueue();
     if(is6){clearInterval(this.state.timerInterval);this.m6GenCards();this.m6Render();return;}
     if(mode===1){this.$.elemRowLabel.style.display='none';this.$.elemRow.style.display='none';}
@@ -624,14 +617,12 @@ const App={
     const q={blanks:[],inputs:{},isTimedOut:false};
     const f2s=c=>{let s=c.coef>1?c.coef.toString():'';s+=c.formula.map(p=>p.sym+(p.sub?p.sub.toString():'')).join('');return s;};
 
-    // 순환 모드: 큐에서 인덱스 꺼내기
     const useCycle=this.state.isCycleMode&&this.state.currentMode!==1;
     const pickIndex=(pool)=>{
       if(useCycle){
-        if(this.state.cycleQueue.length===0) this.initCycleQueue(); // 다 돌면 재셔플
+        if(this.state.cycleQueue.length===0) this.initCycleQueue(); 
         return this.state.cycleQueue.shift();
       }
-      // 랜덤 모드: 연속 중복 방지
       let idx=Math.floor(Math.random()*pool.length);
       if(pool.length>1&&this.state.lastQuestionName){
         let tries=0;
@@ -645,16 +636,15 @@ const App={
         if(Math.random()<.5){
           const t=COEF_TEMPLATES[Math.floor(Math.random()*COEF_TEMPLATES.length)],d=t.gen();q.name=t.label;q.isAbstract=true;
           q.displayReactants=d.fmt.map(f=>({...f}));q.displayProducts=d.fmtP.map(f=>({...f}));
-          d.fmt.forEach((f,i)=>{if(f.coef>1)q.blanks.push({key:`R${i}`,answer:f.coef.toString()});});
-          d.fmtP.forEach((f,i)=>{if(f.coef>1)q.blanks.push({key:`P${i}`,answer:f.coef.toString()});});
+          d.fmt.forEach((f,i)=>{q.blanks.push({key:`R${i}`,answer:f.coef.toString()});});
+          d.fmtP.forEach((f,i)=>{q.blanks.push({key:`P${i}`,answer:f.coef.toString()});});
         }else{
-          const vr=REACTIONS.filter(r=>r.reactants.some(x=>x.coef>1)||r.products.some(x=>x.coef>1));
-          let vi=Math.floor(Math.random()*vr.length);
-          if(vr.length>1&&this.state.lastQuestionName){let t2=0;while(vr[vi].name===this.state.lastQuestionName&&t2<10){vi=Math.floor(Math.random()*vr.length);t2++;}}
-          const rx=vr[vi];q.name=rx.name;q.isAbstract=false;
+          let vi=Math.floor(Math.random()*REACTIONS.length);
+          if(REACTIONS.length>1&&this.state.lastQuestionName){let t2=0;while(REACTIONS[vi].name===this.state.lastQuestionName&&t2<10){vi=Math.floor(Math.random()*REACTIONS.length);t2++;}}
+          const rx=REACTIONS[vi];q.name=rx.name;q.isAbstract=false;
           q.displayReactants=rx.reactants.map(f=>({...f}));q.displayProducts=rx.products.map(f=>({...f}));
-          rx.reactants.forEach((r,i)=>{if(r.coef>1)q.blanks.push({key:`R${i}`,answer:r.coef.toString()});});
-          rx.products.forEach((p,i)=>{if(p.coef>1)q.blanks.push({key:`P${i}`,answer:p.coef.toString()});});
+          rx.reactants.forEach((r,i)=>{q.blanks.push({key:`R${i}`,answer:r.coef.toString()});});
+          rx.products.forEach((p,i)=>{q.blanks.push({key:`P${i}`,answer:p.coef.toString()});});
         }
         q.type='계수 맞추기';break;
       case 2:{const idx=pickIndex(REACTIONS);const rx=REACTIONS[idx];q.reaction=rx;q.name=rx.name;q.type='반응물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:false}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));break;}
@@ -674,19 +664,16 @@ const App={
     let ok=true,ce=false;
     q.blanks.forEach(b=>{const v=q.inputs[b.key]||'';if(v!==b.answer){ok=false;if(this.state.currentMode!==1&&v==='1'+b.answer)ce=true;}});
     if(q.isTimedOut){
-      // ── 타임아웃 재도전 경로 ──
       if(!ok){q.coefOneErrorFlag=ce;this.state.isAnswerChecked=false;this.renderAll(false);}
       else{this.state.isAnswerChecked=true;q.isTimedOut=false;this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};clearInterval(this.state.timerInterval);this.renderAll('timeout_correct');}
     }else{
       clearInterval(this.state.timerInterval);
       if(ok){
-        // ── 정답 ──
         if(!this.state.isLastWrongAttempt){this.state.score.streak++;this.state.score.correct++;}
         this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};
         this.state.isAnswerChecked=true;
         this.renderAll(true);
       }else{
-        // ── 오답: isAnswerChecked를 false로 유지 → 재입력 허용 ──
         if(!this.state.wrongAlreadyPenalized){
           this.state.score.streak=0;this.state.score.wrong++;
           this.generateBeautifulWrongNote(q);
@@ -761,7 +748,6 @@ const App={
     }else if(this.state.isLastWrongAttempt&&(this.state.wrongBlanks||{})[key]){
       cls+=' wrong';
     }
-    // placeholder: 오답 상태의 틀린 칸에는 ? 미표시 (이미 내용이 있거나 wrong 클래스)
     if(inp===''&&(!this.state.isAnswerChecked||q.isTimedOut)&&!(this.state.wrongBlanks||{})[key])cls+=' placeholder';
     return`<span class="${cls}" data-key="${key}">${disp}</span>`;
   },
