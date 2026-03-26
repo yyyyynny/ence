@@ -63,6 +63,7 @@
   .blank-box.wrong{border-color:var(--c-wrong);background:rgba(239,68,68,.15);color:var(--c-wrong);animation:shake .4s;}
   .blank-box.placeholder::before{content:'?';color:var(--c-text-secondary);opacity:.5;}
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
   .eq-text{color:var(--c-text-primary);}.eq-arrow{color:var(--c-accent-3);font-size:1.2em;margin:0 4px;}.eq-plus{color:var(--c-text-secondary);margin:0 4px;}
   sub{font-size:.65em;line-height:0;vertical-align:sub;}
   .result-banner{border-radius:12px;padding:12px 16px;font-size:14px;font-weight:700;display:none;align-items:center;gap:10px;margin-top:auto;}
@@ -94,7 +95,7 @@
   .reaction-eq{color:var(--c-text-primary);font-size:15px;line-height:1.6;background:rgba(0,0,0,.2);padding:12px;border-radius:8px;border:1px solid var(--c-border);text-align:center;}
   .delete-note-btn{background:rgba(239,68,68,.1);border:1px solid var(--c-wrong);color:var(--c-wrong);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;font-weight:bold;}
   .retry-note-btn{background:var(--c-accent-1);border:none;color:#000;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;font-weight:bold;}
-  .clear-all-btn{background:var(--c-wrong);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:bold;cursor:pointer;margin-bottom:16px;align-self:flex-end;}
+  .clear-all-btn{background:var(--c-wrong);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:bold;cursor:pointer;margin-bottom:0;align-self:flex-end;}
   .cycle-wrap{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:10px 16px;margin-bottom:16px;backdrop-filter:blur(10px);display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
   .cycle-label{font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
   .cycle-btns{display:flex;gap:6px;}
@@ -247,7 +248,7 @@
   </div>
 
   <div id="retryBanner">
-    <span>⚠️ 오답 노트 재풀이 모드</span>
+    <span id="retryBannerText">⚠️ 오답 노트 재풀이 모드</span>
     <button id="exitRetryBtn" style="background:#fff;color:var(--c-wrong);border:none;padding:6px 12px;border-radius:8px;font-weight:900;cursor:pointer;">그만두기 🚪</button>
   </div>
 
@@ -310,9 +311,11 @@
     <div class="kb-section-label" id="elemRowLabel">Elements</div>
     <div class="kb-row" id="elemRow"></div>
     <div class="kb-row" style="margin-top:12px">
-      <button class="kb-key del" data-key="DEL">⌫ 지우기</button>
-      <button class="kb-key confirm" data-key="CONFIRM">✓ 확인</button>
-      <button class="kb-key next-q" data-key="NEXT" style="display:none">▶ 다음 문제</button>
+      <button class="kb-key" data-key="LEFT" style="flex-grow:1; max-width: 50px;">◀</button>
+      <button class="kb-key" data-key="RIGHT" style="flex-grow:1; max-width: 50px;">▶</button>
+      <button class="kb-key del" data-key="DEL" style="flex-grow:2">⌫ 지우기</button>
+      <button class="kb-key confirm" data-key="CONFIRM" style="flex-grow:3">✓ 확인</button>
+      <button class="kb-key next-q" data-key="NEXT" style="display:none; flex-grow:3">▶ 다음 문제</button>
     </div>
   </div>
 </div>
@@ -327,6 +330,10 @@
 <div class="modal-overlay" id="wrongNoteModalOverlay">
   <div class="modal-box" style="height:90vh">
     <div class="modal-header"><div class="modal-title">📓 오답 노트</div><button class="modal-close" id="wrongNoteModalClose">✕</button></div>
+    <div style="display:flex; justify-content:space-between; margin-bottom:16px;">
+        <button id="retryPlaylistBtn" style="background:var(--c-accent-1);color:#000;border:none;border-radius:8px;padding:8px 16px;font-weight:bold;cursor:pointer;transition:transform 0.2s;">♾️ 랜덤 연속 풀기</button>
+        <button class="clear-all-btn" id="clearAllNotesBtn" style="margin-bottom:0">🗑 전체 삭제</button>
+    </div>
     <div class="filter-chips" id="wrongNoteFilters">
       <button class="filter-chip active" data-filter="all">전체</button>
       <button class="filter-chip" data-filter="1">모드 1</button>
@@ -335,7 +342,6 @@
       <button class="filter-chip" data-filter="4">모드 4</button>
       <button class="filter-chip" data-filter="5">모드 5</button>
     </div>
-    <button class="clear-all-btn" id="clearAllNotesBtn">🗑 전체 삭제</button>
     <div class="modal-content" id="wrongNoteList"></div>
   </div>
 </div>
@@ -400,7 +406,8 @@ const App={
     isCycleMode:false,cycleQueue:[],cycleTotal:0,lastQuestionName:null,
     m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,
     isSoundOn:true, isHapticOn:true, isWideMode:false,
-    savedCycleState:null // 재풀이 시 사이클 복원용 메모리
+    savedCycleState:null,
+    isRetryPlaylistMode:false, retryPlaylist:[]
   },
   $:{
     app:document.getElementById('app'),streakCount:document.getElementById('streakCount'),streakFlames:document.getElementById('streakFlames'),
@@ -533,13 +540,65 @@ const App={
     this.renderWrongNotes();
   },
 
+  startRetryPlaylist() {
+    if (this.state.wrongNotes.length === 0) return;
+    this.$.wrongNoteModalOverlay.classList.remove('show');
+    
+    this.state.savedCycleState = { queue: [...this.state.cycleQueue], total: this.state.cycleTotal, mode: this.state.currentMode };
+    
+    let playlist = [...this.state.wrongNotes];
+    for(let i = playlist.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
+    }
+    this.state.retryPlaylist = playlist;
+    this.state.isRetryPlaylistMode = true;
+    
+    this.loadNextRetryPlaylistItem();
+  },
+
+  loadNextRetryPlaylistItem() {
+    if(this.state.retryPlaylist.length === 0) {
+        this.exitRetry();
+        return;
+    }
+    const note = this.state.retryPlaylist[0];
+    this.state.retryNoteId = note.id;
+    
+    this.state.currentMode = note.mode;
+    this.$.modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.mode)===note.mode));
+    this.$.questionCard.style.display = '';
+    this.$.keyboardWrap.style.display = '';
+    this.$.timerSelectWrap.style.display = 'none'; 
+    this.$.mode6Wrap.classList.remove('m6-active');
+    this.$.cycleWrap.style.display = 'none';
+    this.$.elemRowLabel.style.display = note.mode===1 ? 'none' : 'block';
+    this.$.elemRow.style.display = note.mode===1 ? 'none' : 'flex';
+
+    const q = JSON.parse(JSON.stringify(note.qData));
+    q.inputs = {}; q.isTimedOut = false; q.cursor = {};
+    if(q.blanks.length > 0) q.activeKey = q.blanks[0].key;
+    this.state.currentQuestion = q;
+    
+    this.state.isAnswerChecked = false;
+    this.state.isAnswerRevealed = false;
+    this.state.isLastWrongAttempt = false;
+    this.state.wrongBlanks = {};
+    this.state.wrongAlreadyPenalized = false;
+
+    document.getElementById('retryBanner').style.display = 'flex';
+    document.getElementById('retryBannerText').innerHTML = `<span>⚠️ 연속 재풀이 모드 <span style="font-size:12px;opacity:0.8">(${this.state.retryPlaylist.length}문제 남음)</span></span>`;
+    this.renderAll();
+    this.startTimer();
+  },
+
   startRetry(id){
     const note = this.state.wrongNotes.find(n => n.id === id);
     if(!note) return;
     this.$.wrongNoteModalOverlay.classList.remove('show');
     this.state.retryNoteId = id;
+    this.state.isRetryPlaylistMode = false;
     
-    // 상태 복원 데이터 백업
     this.state.savedCycleState = { queue: [...this.state.cycleQueue], total: this.state.cycleTotal, mode: this.state.currentMode };
     this.state.currentMode = note.mode;
     
@@ -553,7 +612,7 @@ const App={
     this.$.elemRow.style.display = note.mode===1 ? 'none' : 'flex';
 
     const q = JSON.parse(JSON.stringify(note.qData));
-    q.inputs = {}; q.isTimedOut = false;
+    q.inputs = {}; q.isTimedOut = false; q.cursor = {};
     if(q.blanks.length > 0) q.activeKey = q.blanks[0].key;
     this.state.currentQuestion = q;
     
@@ -564,20 +623,22 @@ const App={
     this.state.wrongAlreadyPenalized = false;
 
     document.getElementById('retryBanner').style.display = 'flex';
+    document.getElementById('retryBannerText').textContent = '⚠️ 오답 노트 단일 재풀이 모드';
     this.renderAll();
     this.startTimer();
   },
 
   exitRetry(){
     this.state.retryNoteId = null;
+    this.state.isRetryPlaylistMode = false;
+    this.state.retryPlaylist = [];
     document.getElementById('retryBanner').style.display = 'none';
     this.$.timerSelectWrap.style.display = 'flex';
     
-    // 상태 복원 및 사이클 붕괴 방어 로직 적용
     const savedState = this.state.savedCycleState;
     const targetMode = savedState ? savedState.mode : this.state.currentMode;
     
-    this.state.currentMode = null; // 무한 대기 버그 조기 종료 우회
+    this.state.currentMode = null; 
 
     if(savedState){
         this.state.cycleQueue = [...savedState.queue];
@@ -586,7 +647,7 @@ const App={
     }
 
     this.state.savedCycleState = null;
-    this.setMode(targetMode, true); // 복원된 큐를 보존(preserveCycle = true)하며 모드 진입
+    this.setMode(targetMode, true); 
   },
 
   buildKeyboard(){
@@ -607,7 +668,7 @@ const App={
       let style = ''; let icon = '';
       if(fc === 2) { style = 'background:rgba(239,68,68,0.1); border:1px solid var(--c-wrong);'; }
       else if(fc >= 3) { style = 'background:rgba(239,68,68,0.2); border:2px solid var(--c-wrong);'; icon = '⚠️ '; }
-      return `<div class="reaction-item" style="${style}"><div class="reaction-info" style="width:100%"><div class="reaction-header"><div class="reaction-name" style="font-size:13px;">${icon}[모드 ${n.mode}] ${n.title} <span style="color:var(--c-wrong);font-size:11px;">(오답 ${fc}회)</span></div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${n.id}">다시 풀기</button><button class="delete-note-btn" data-id="${n.id}">삭제</button></div></div><div class="reaction-eq" style="border-color:var(--c-wrong)">${n.html}</div></div></div>`;
+      return `<div class="reaction-item" style="${style}"><div class="reaction-info" style="width:100%"><div class="reaction-header"><div class="reaction-name" style="font-size:13px;">${icon}[모드 ${n.mode}] ${n.title} <span style="color:var(--c-wrong);font-size:11px;">(오답 ${fc}회)</span></div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${n.id}">단일 풀기</button><button class="delete-note-btn" data-id="${n.id}">삭제</button></div></div><div class="reaction-eq" style="border-color:var(--c-wrong)">${n.html}</div></div></div>`;
     }).join('');
   },
 
@@ -616,7 +677,7 @@ const App={
       const mt=e.target.closest('.mode-tab'),bb=e.target.closest('.blank-box'),kb=e.target.closest('.kb-key');
       const th=e.target.closest('#themeBtn'),hi=e.target.closest('#hintBtn'),wn=e.target.closest('#wrongNoteBtn'),sa=e.target.closest('.show-answer-btn');
       const snd=e.target.closest('#soundBtn'),hpt=e.target.closest('#hapticBtn'),lyt=e.target.closest('#layoutBtn');
-      const extR=e.target.closest('#exitRetryBtn');
+      const extR=e.target.closest('#exitRetryBtn'), playR=e.target.closest('#retryPlaylistBtn');
       if(mt)this.setMode(parseInt(mt.dataset.mode));
       if(bb)this.setActiveBlank(bb.dataset.key);
       if(kb)this.handleKeyPress(kb.dataset.key);
@@ -636,6 +697,7 @@ const App={
         this.updateFeedbackBtns(); this.playHaptic('tap');
       }
       if(extR) this.exitRetry();
+      if(playR) this.startRetryPlaylist();
     });
 
     document.getElementById('easterEggBtn').addEventListener('click',e=>{
@@ -698,6 +760,8 @@ const App={
       }
       if(e.key>='0'&&e.key<='9')this.handleKeyPress(`NUM_${e.key}`);
       else if(e.key==='Backspace')this.handleKeyPress('DEL');
+      else if(e.key==='ArrowLeft')this.handleKeyPress('LEFT');
+      else if(e.key==='ArrowRight')this.handleKeyPress('RIGHT');
       else if(e.key==='Enter')this.handleKeyPress(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut?'NEXT':'CONFIRM');
     });
 
@@ -784,7 +848,7 @@ const App={
   },
 
   handleKeyPress(key){
-    if(key.startsWith('NUM_')||key.startsWith('ELEM_')||key==='DEL'){
+    if(key.startsWith('NUM_')||key.startsWith('ELEM_')||key==='DEL'||key==='LEFT'||key==='RIGHT'){
       if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)return;
       const q=this.state.currentQuestion;if(!q||!q.activeKey)return;
 
@@ -792,18 +856,38 @@ const App={
       if(wasWrong){
         this.state.isLastWrongAttempt=false;
         this.state.wrongBlanks={};
-        q.inputs={}; 
-        if(q.blanks.length>0)q.activeKey=q.blanks[0].key;
+        // [수정] 오답 후 재입력 시 전체 내용 유지 (q.inputs 초기화 파기)
       }
 
       this.playSound('tap'); this.playHaptic('tap');
-      const inp=q.inputs[q.activeKey]||'';
-      if(key.startsWith('NUM_'))q.inputs[q.activeKey]=inp+key.replace('NUM_','');
-      else if(key.startsWith('ELEM_'))q.inputs[q.activeKey]=inp+key.replace('ELEM_','');
-      else if(key==='DEL'){
-        if(inp.length>0){let dl=1;if(/[a-z]$/.test(inp)&&inp.length>=2&&/[A-Z]/.test(inp.slice(-2,-1)))dl=2;q.inputs[q.activeKey]=inp.slice(0,-dl);}
+      q.cursor = q.cursor || {};
+      let val = q.inputs[q.activeKey] || '';
+      let pos = q.cursor[q.activeKey] !== undefined ? q.cursor[q.activeKey] : val.length;
+
+      if(key === 'LEFT') {
+          if(pos > 0) q.cursor[q.activeKey] = pos - 1;
+      } else if(key === 'RIGHT') {
+          if(pos < val.length) q.cursor[q.activeKey] = pos + 1;
+      } else if(key.startsWith('NUM_')) {
+          let char = key.replace('NUM_','');
+          q.inputs[q.activeKey] = val.slice(0, pos) + char + val.slice(pos);
+          q.cursor[q.activeKey] = pos + char.length;
+      } else if(key.startsWith('ELEM_')) {
+          let char = key.replace('ELEM_','');
+          q.inputs[q.activeKey] = val.slice(0, pos) + char + val.slice(pos);
+          q.cursor[q.activeKey] = pos + char.length;
+      } else if(key === 'DEL') {
+          if(pos > 0) {
+              let dl = 1;
+              let beforeCursor = val.slice(0, pos);
+              if(/[a-z]$/.test(beforeCursor) && beforeCursor.length >= 2 && /[A-Z]/.test(beforeCursor.slice(-2,-1))) dl = 2;
+              q.inputs[q.activeKey] = val.slice(0, pos - dl) + val.slice(pos);
+              q.cursor[q.activeKey] = pos - dl;
+          }
       }
-      if(wasWrong)this.renderAll();else this.renderEquation();
+      
+      if(wasWrong) this.renderAll(); else this.renderEquation();
+      
     }else if(key==='CONFIRM'){
         if(!this.state.isAnswerChecked||this.state.currentQuestion?.isTimedOut) {
             const q=this.state.currentQuestion;
@@ -811,6 +895,8 @@ const App={
                 const emptyB = q.blanks.find(b => !(q.inputs[b.key]));
                 if(emptyB) {
                     q.activeKey = emptyB.key;
+                    q.cursor = q.cursor || {};
+                    if(q.cursor[emptyB.key] === undefined) q.cursor[emptyB.key] = (q.inputs[emptyB.key]||'').length;
                     this.playSound('tap'); this.playHaptic('tap');
                     this.renderEquation();
                     return; 
@@ -821,18 +907,29 @@ const App={
     } else if(key==='NEXT'){
         this.playSound('tap'); this.playHaptic('tap');
         if((this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)||this.state.isLastWrongAttempt) {
-            if(this.state.retryNoteId) this.exitRetry();
-            else this.generateQuestion(); 
+            if(this.state.isRetryPlaylistMode) {
+                if (this.state.isAnswerChecked) {
+                    this.loadNextRetryPlaylistItem();
+                } else if (this.state.isLastWrongAttempt) {
+                    let skipped = this.state.retryPlaylist.shift();
+                    this.state.retryPlaylist.push(skipped);
+                    this.loadNextRetryPlaylistItem();
+                }
+            } else if(this.state.retryNoteId) {
+                this.exitRetry();
+            } else {
+                this.generateQuestion(); 
+            }
         }
     }
   },
 
-  // preserveCycle 파라미터를 추가하여 복원된 큐 유지
   setMode(mode, preserveCycle = false){
     if(this.state.retryNoteId) {
         this.state.retryNoteId = null;
         document.getElementById('retryBanner').style.display = 'none';
         this.state.savedCycleState = null;
+        this.state.isRetryPlaylistMode = false;
     }
     if(this.state.currentMode===mode)return;
     
@@ -842,8 +939,6 @@ const App={
     this.$.questionCard.style.display=is6?'none':'';
     this.$.keyboardWrap.style.display=is6?'none':'';
     this.$.timerSelectWrap.style.display=is6?'none':'';
-    
-    // CSS Cascade 충돌 해결: 인라인 style.display 제거, 클래스 토글 사용
     this.$.mode6Wrap.classList.toggle('m6-active', is6);
     this.$.cycleWrap.style.display=(!is6)?'flex':'none'; 
     
@@ -857,7 +952,12 @@ const App={
 
   setActiveBlank(key){
     if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut&&!this.state.isLastWrongAttempt)return;
-    const q=this.state.currentQuestion;if(q){q.activeKey=key;this.playSound('tap'); this.playHaptic('tap'); this.renderEquation();}
+    const q=this.state.currentQuestion;if(q){
+        q.activeKey=key;
+        q.cursor = q.cursor || {};
+        if(q.cursor[key] === undefined) q.cursor[key] = (q.inputs[key]||'').length;
+        this.playSound('tap'); this.playHaptic('tap'); this.renderEquation();
+    }
   },
 
   generateQuestion(){
@@ -927,6 +1027,45 @@ const App={
     let ok=true,ce=false;
     q.blanks.forEach(b=>{const v=q.inputs[b.key]||'';if(v!==b.answer){ok=false;if(this.state.currentMode!==1&&v==='1'+b.answer)ce=true;}});
     
+    if(this.state.isRetryPlaylistMode) {
+        if(ok) {
+            if(q.isTimedOut) {
+                this.playSound('success'); this.playHaptic('success');
+                this.state.isAnswerChecked=true;
+                clearInterval(this.state.timerInterval);
+                this.renderAll('retry_timeout_correct');
+            } else {
+                this.playSound('success'); this.playHaptic('success');
+                this.deleteWrongNote(this.state.retryNoteId);
+                this.state.retryPlaylist.shift();
+                this.state.isAnswerChecked=true;
+                clearInterval(this.state.timerInterval);
+                if (this.state.retryPlaylist.length > 0) {
+                    this.renderAll('retry_playlist_correct_next');
+                } else {
+                    this.renderAll('retry_playlist_correct_done');
+                }
+            }
+        } else {
+            this.playSound('error'); this.playHaptic('error');
+            if(!q.isTimedOut) { 
+                const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
+                if(note) {
+                    note.failCount = Math.min((note.failCount || 1) + 1, 3);
+                    try{localStorage.setItem('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes));}catch(e){}
+                    this.renderWrongNotes();
+                }
+            }
+            this.state.wrongBlanks={};
+            q.blanks.forEach(b=>{if((q.inputs[b.key]||'')!==b.answer)this.state.wrongBlanks[b.key]=true;});
+            q.coefOneErrorFlag=ce;
+            this.state.isLastWrongAttempt=true;
+            this.state.isAnswerChecked=false;
+            this.renderAll(false);
+        }
+        return;
+    }
+
     if(this.state.retryNoteId) {
         if(ok) {
             if(q.isTimedOut) {
@@ -1041,29 +1180,58 @@ const App={
     this.$.equationDisplay.innerHTML=`${fc(q.displayReactants,'R')} <span class="eq-arrow">→</span> ${fc(q.displayProducts,'P')}`;
   },
 
+  formatInput(s, cursorPos = -1) {
+    if(!s) s = '';
+    let html = '';
+    for(let i=0; i<=s.length; i++){
+        if(cursorPos === i) html += '<b style="border-left:2px solid var(--c-accent-1); animation:blink 1s step-end infinite; margin-right:-2px; vertical-align:middle; display:inline-block; height:1em"></b>';
+        if(i<s.length){
+            let c = s[i];
+            let isCoef = true;
+            for(let j=0; j<=i; j++) if(/[a-zA-Z]/.test(s[j])) isCoef = false;
+            if(/\d/.test(c) && !isCoef) html += `<sub>${c}</sub>`;
+            else html += c;
+        }
+    }
+    return html;
+  },
+
   renderBlankBox(key,answer){
-    const q=this.state.currentQuestion,inp=q.inputs[key]||'';let cls='blank-box';
-    if(q.activeKey===key&&(!this.state.isAnswerChecked||q.isTimedOut))cls+=' active';
-    let disp=this.formatInput(inp);
+    const q=this.state.currentQuestion;
+    let inp=q.inputs[key]||'';
+    let cls='blank-box';
+    let isActive = q.activeKey===key && (!this.state.isAnswerChecked||q.isTimedOut);
+    
+    if(isActive) cls+=' active';
+    
+    let disp='';
     if(this.state.isAnswerChecked&&!q.isTimedOut){
       const ok=inp===answer;cls+=ok?' correct':' wrong';
       if(this.state.isAnswerRevealed&&!ok)disp=this.formatInput(answer);
+      else disp=this.formatInput(inp);
     }else if(this.state.isLastWrongAttempt&&(this.state.wrongBlanks||{})[key]){
       cls+=' wrong';
+      disp=this.formatInput(inp, isActive ? (q.cursor && q.cursor[key] !== undefined ? q.cursor[key] : inp.length) : -1);
+    }else{
+      if(inp===''&&(!this.state.isAnswerChecked||q.isTimedOut))cls+=' placeholder';
+      disp=this.formatInput(inp, isActive ? (q.cursor && q.cursor[key] !== undefined ? q.cursor[key] : inp.length) : -1);
     }
-    if(inp===''&&(!this.state.isAnswerChecked||q.isTimedOut)&&!(this.state.wrongBlanks||{})[key])cls+=' placeholder';
     return`<span class="${cls}" data-key="${key}">${disp}</span>`;
   },
 
   renderResultBanner(isCorrect){
-    if(isCorrect==='retry_timeout_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 정답! (단, 시간 초과로 오답 노트에서 삭제되지 않음)';}
+    if(isCorrect==='retry_playlist_correct_next'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 완벽합니다! 다음 오답 문제로 이동하세요.';}
+    else if(isCorrect==='retry_playlist_correct_done'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='🎉 축하합니다! 모든 오답을 정복했습니다.';}
+    else if(isCorrect==='retry_timeout_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 정답! (단, 시간 초과로 오답 노트에서 삭제되지 않음)';}
     else if(isCorrect==='retry_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 완벽합니다! 오답 노트에서 완전히 삭제되었습니다.';}
     else if(isCorrect==='timeout_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 늦었지만 정답입니다! (다음 문제로 넘어가세요)';}
     else if(isCorrect===true){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=`✅ 정답입니다! 연속 ${this.state.score.streak}회 성공!`;}
     else{
       this.$.resultBanner.className='result-banner wrong-banner show';
       let w='';if(this.state.currentQuestion.coefOneErrorFlag)w=`<div style="color:var(--c-wrong);font-size:13px;margin-bottom:8px;width:100%">⚠️ 주의: 화학에서 계수 '1'은 생략해야 합니다.</div>`;
+      
       if(this.state.isAnswerRevealed)this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%">❌ 오답입니다. 정답이 표시되었습니다.</div>`;
+      else if(this.state.isRetryPlaylistMode) this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between"><span>❌ 오답입니다. (계속 풀거나 건너뛰기 가능)</span><button class="show-answer-btn">정답 확인</button></div>`;
       else this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between"><span>❌ 오답입니다.</span><button class="show-answer-btn">정답 확인</button></div>`;
     }
   },
@@ -1101,9 +1269,6 @@ const App={
   m6Next(){this.playSound('tap'); this.state.m6Index=(this.state.m6Index+1)%this.state.m6Cards.length;this.m6Render('next');},
   m6Prev(){this.playSound('tap'); this.state.m6Index=(this.state.m6Index-1+this.state.m6Cards.length)%this.state.m6Cards.length;this.m6Render('prev');},
   m6Shuffle(){this.playSound('tap'); const c=[...this.state.m6Cards];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}this.state.m6Cards=c;this.state.m6Index=0;this.m6Render();},
-
-  formatFormula(f){return f.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('');},
-  formatInput(s){if(!s)return'';return s.replace(/([a-zA-Z]+)(\d+)/g,'$1<sub>$2</sub>');},
   toggleTheme(){this.playSound('tap'); this.state.isDarkMode=!this.state.isDarkMode;document.body.classList.toggle('light',!this.state.isDarkMode);document.getElementById('themeBtn').textContent=this.state.isDarkMode?'🌙':'☀️';}
 };
 
