@@ -320,7 +320,7 @@
   </div>
 </div>
 
-<div class="modal-overlay show" id="authOverlay" style="z-index:9999999;background:var(--c-bg)">
+<div class="modal-overlay" id="authOverlay" style="display:flex; z-index:9999999; background:var(--c-bg)">
   <div class="modal-box" style="text-align:center;gap:16px">
     <div style="font-size:48px;margin-bottom:8px">🔒</div>
     <div class="modal-title">화학 반응식 훈련소</div>
@@ -457,6 +457,11 @@ const App={
     this.updateFeedbackBtns();
     if(this.state.isWideMode) document.body.classList.add('wide-mode');
     this.$.layoutBtn.textContent = this.state.isWideMode ? '📱' : '↔️';
+    
+    // 로컬 스토리지 인증 상태 확인
+    if(localStorage.getItem('chem_auth_v4') === 'pass') {
+      document.getElementById('authOverlay').style.display = 'none';
+    }
   },
   updateFeedbackBtns(){
     this.$.soundBtn.textContent = this.state.isSoundOn ? '🔊' : '🔇';
@@ -727,7 +732,18 @@ const App={
       fl.innerHTML='<div style="font-size:80px">💖 깜짝이야! 💖</div>';
       document.body.appendChild(fl);
       setTimeout(()=>fl.style.opacity=1,50);
-      setTimeout(()=>{fl.style.opacity=0;setTimeout(()=>fl.remove(),500);},1200);
+      
+      // 전환 로직 추가
+      setTimeout(()=>{
+        fl.style.opacity=0;
+        setTimeout(()=>{
+            fl.remove();
+            // 인증 무효화 및 오버레이 재호출
+            try { localStorage.removeItem('chem_auth_v4'); } catch(e) {}
+            document.getElementById('authInput').value = '';
+            document.getElementById('authOverlay').style.display = 'flex';
+        },500);
+      },1200);
     });
 
     this.$.wrongNoteFilters.addEventListener('click',e=>{
@@ -738,13 +754,13 @@ const App={
     document.getElementById('hintModalClose').addEventListener('click',()=>this.$.hintModalOverlay.classList.remove('show'));
     document.getElementById('wrongNoteModalClose').addEventListener('click',()=>this.$.wrongNoteModalOverlay.classList.remove('show'));
     document.getElementById('clearAllNotesBtn').addEventListener('click',()=>this.clearWrongNotes());
-    
-    // [픽스] 모달 내부 버튼 전용 리스너 바인딩
     document.getElementById('retryPlaylistBtn').addEventListener('click',()=>this.startRetryPlaylist());
 
+    // 비밀번호 제출 버튼 이벤트
     document.getElementById('authBtn').addEventListener('click',()=>{
       if(document.getElementById('authInput').value==='yyyyynny'){
         this.playSound('success');
+        try { localStorage.setItem('chem_auth_v4', 'pass'); } catch(e) {}
         document.getElementById('authOverlay').style.display='none';
       }else{
         this.playSound('error'); this.playHaptic('error');
@@ -777,8 +793,9 @@ const App={
     });
 
     document.addEventListener('keydown',e=>{
-      if(this.$.hintModalOverlay.classList.contains('show')||this.$.wrongNoteModalOverlay.classList.contains('show'))return;
+      // 오버레이가 활성화되어 있으면 단축키 차단
       if(document.getElementById('authOverlay').style.display !== 'none') return;
+      if(this.$.hintModalOverlay.classList.contains('show')||this.$.wrongNoteModalOverlay.classList.contains('show'))return;
       if(this.state.currentMode===6){
         if(e.key==='ArrowRight')this.m6Next();
         else if(e.key==='ArrowLeft')this.m6Prev();
@@ -846,6 +863,12 @@ const App={
     void this.$.timerBar.offsetWidth;this.$.timerBar.style.transition='width 0.1s linear, background 0.3s';
     let lt=Date.now();
     this.state.timerInterval=setInterval(()=>{
+      // 오버레이 활성화 시 타이머 카운트다운 동결
+      if(document.getElementById('authOverlay').style.display !== 'none') {
+        lt = Date.now();
+        return;
+      }
+      
       if(this.state.isAnswerChecked){clearInterval(this.state.timerInterval);return;}
       const now=Date.now();this.state.timerLeft-=(now-lt);lt=now;
       if(this.state.timerLeft<=0){this.state.timerLeft=0;clearInterval(this.state.timerInterval);this.$.timerBar.style.width='0%';this.timeOutForceWrong();}
