@@ -93,6 +93,7 @@
   .reaction-name{color:var(--c-accent-3);font-size:12px;font-family:var(--font-ui);font-weight:700;}
   .reaction-eq{color:var(--c-text-primary);font-size:15px;line-height:1.6;background:rgba(0,0,0,.2);padding:12px;border-radius:8px;border:1px solid var(--c-border);text-align:center;}
   .delete-note-btn{background:rgba(239,68,68,.1);border:1px solid var(--c-wrong);color:var(--c-wrong);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;font-weight:bold;}
+  .retry-note-btn{background:var(--c-accent-1);border:none;color:#000;border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;font-weight:bold;}
   .clear-all-btn{background:var(--c-wrong);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:bold;cursor:pointer;margin-bottom:16px;align-self:flex-end;}
   .cycle-wrap{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:10px 16px;margin-bottom:16px;backdrop-filter:blur(10px);display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
   .cycle-label{font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
@@ -138,6 +139,11 @@
   @keyframes m6Left{from{opacity:0;transform:translateX(-50px)}to{opacity:1;transform:translateX(0)}}
   .m6-slide-r .m6-flashcard{animation:m6Right .28s ease-out;}
   .m6-slide-l .m6-flashcard{animation:m6Left .28s ease-out;}
+
+  /* 재풀이 배너 */
+  #retryBanner {
+    display:none; background:var(--c-wrong); color:#fff; padding:12px 16px; border-radius:16px; margin-bottom:16px; font-weight:bold; align-items:center; justify-content:space-between; box-shadow:0 4px 12px rgba(239,68,68,0.2);
+  }
 </style>
 </head>
 <body>
@@ -154,6 +160,8 @@
   <header>
     <div class="logo-egg" id="easterEggBtn">누루ズl ㅁトパㅔ요</div>
     <div class="header-right">
+      <button class="icon-btn" id="soundBtn" title="소리 토글">🔊</button>
+      <button class="icon-btn" id="hapticBtn" title="진동 토글">📳</button>
       <button class="icon-btn" id="wrongNoteBtn" title="오답 노트">📓</button>
       <button class="icon-btn" id="hintBtn" title="전체 반응식 보기">📋</button>
       <button class="icon-btn" id="themeBtn" title="다크/라이트 모드">🌙</button>
@@ -202,6 +210,11 @@
       <div class="cycle-progress-text" id="cycleProgressText">0 / 16</div>
       <div class="cycle-progress-bar"><div class="cycle-progress-fill" id="cycleProgressFill" style="width:0%"></div></div>
     </div>
+  </div>
+
+  <div id="retryBanner">
+    <span>⚠️ 오답 노트 재풀이 모드</span>
+    <button id="exitRetryBtn" style="background:#fff;color:var(--c-wrong);border:none;padding:6px 12px;border-radius:8px;font-weight:900;cursor:pointer;">그만두기 🚪</button>
   </div>
 
   <div class="question-card" id="questionCard">
@@ -303,6 +316,7 @@
     if(inp.value.trim().toLowerCase()===PW){
       try{localStorage.setItem('chem_auth','true');}catch(e){}
       ov.style.opacity='0'; setTimeout(()=>ov.style.display='none',300);
+      App.initAudioContext(); // 첫 상호작용 시 Audio 활성화
     }else{err.style.display='block';inp.value='';inp.focus();}
   };
   btn.addEventListener('click',check);
@@ -383,9 +397,10 @@ const App={
     currentQuestion:null,isAnswerChecked:false,isAnswerRevealed:false,isDarkMode:true,
     isLastWrongAttempt:false,wrongBlanks:{},wrongAlreadyPenalized:false,
     timerDuration:DEFAULT_TIMER,currentMaxTime:DEFAULT_TIMER,timerLeft:DEFAULT_TIMER,timerInterval:null,
-    wrongNotes:[],noteFilter:'all',
+    wrongNotes:[],noteFilter:'all',retryNoteId:null,
     isCycleMode:false,cycleQueue:[],cycleTotal:0,lastQuestionName:null,
-    m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false
+    m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,
+    isSoundOn:true, isHapticOn:true
   },
   $:{
     app:document.getElementById('app'),streakCount:document.getElementById('streakCount'),streakFlames:document.getElementById('streakFlames'),
@@ -400,14 +415,92 @@ const App={
     questionCard:document.getElementById('questionCard'),keyboardWrap:document.getElementById('keyboardWrap'),
     timerSelectWrap:document.getElementById('timerSelectWrap'),mode6Wrap:document.getElementById('mode6Wrap'),
     cycleWrap:document.getElementById('cycleWrap'),cycleProgressWrap:document.getElementById('cycleProgressWrap'),
-    cycleProgressText:document.getElementById('cycleProgressText'),cycleProgressFill:document.getElementById('cycleProgressFill')
+    cycleProgressText:document.getElementById('cycleProgressText'),cycleProgressFill:document.getElementById('cycleProgressFill'),
+    soundBtn:document.getElementById('soundBtn'),hapticBtn:document.getElementById('hapticBtn')
   },
 
-  init(){this.loadWrongNotes();this.buildKeyboard();this.buildModalList();this.attachEventListeners();this.setMode(1);},
+  init(){
+    this.loadSettings();
+    this.loadWrongNotes();
+    this.buildKeyboard();
+    this.buildModalList();
+    this.attachEventListeners();
+    this.setMode(1);
+  },
 
-  loadWrongNotes(){try{const d=localStorage.getItem('chem_wrong_notes_v3');this.state.wrongNotes=d?JSON.parse(d):[];}catch(e){this.state.wrongNotes=[];}},
-  saveWrongNote(m,t,h){const id=Date.now().toString();this.state.wrongNotes.unshift({id,mode:m,title:t,html:h});try{localStorage.setItem('chem_wrong_notes_v3',JSON.stringify(this.state.wrongNotes));}catch(e){}this.renderWrongNotes();},
-  deleteWrongNote(id){this.state.wrongNotes=this.state.wrongNotes.filter(n=>n.id!==id);try{localStorage.setItem('chem_wrong_notes_v3',JSON.stringify(this.state.wrongNotes));}catch(e){}this.renderWrongNotes();},
+  loadSettings(){
+    try{
+      this.state.isSoundOn = localStorage.getItem('chem_sound') !== 'false';
+      this.state.isHapticOn = localStorage.getItem('chem_haptic') !== 'false';
+    }catch(e){}
+    this.updateFeedbackBtns();
+  },
+  updateFeedbackBtns(){
+    this.$.soundBtn.textContent = this.state.isSoundOn ? '🔊' : '🔇';
+    this.$.soundBtn.style.opacity = this.state.isSoundOn ? '1' : '0.5';
+    this.$.hapticBtn.textContent = this.state.isHapticOn ? '📳' : '📴';
+    this.$.hapticBtn.style.opacity = this.state.isHapticOn ? '1' : '0.5';
+  },
+
+  initAudioContext() {
+    try {
+      if(!window.audioCtx) window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if(window.audioCtx.state === 'suspended') window.audioCtx.resume();
+    } catch(e){}
+  },
+
+  playSound(type){
+    if(!this.state.isSoundOn) return;
+    try {
+      this.initAudioContext();
+      const osc = window.audioCtx.createOscillator();
+      const gain = window.audioCtx.createGain();
+      osc.connect(gain); gain.connect(window.audioCtx.destination);
+      const now = window.audioCtx.currentTime;
+      if(type === 'tap') {
+        osc.type = 'sine'; osc.frequency.setValueAtTime(600, now);
+        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.start(now); osc.stop(now + 0.05);
+      } else if(type === 'success') {
+        osc.type = 'sine'; osc.frequency.setValueAtTime(800, now);
+        osc.frequency.setValueAtTime(1200, now + 0.1);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
+      } else if(type === 'error') {
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
+        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
+      }
+    } catch(e) {}
+  },
+  playHaptic(type){
+    if(!this.state.isHapticOn || !navigator.vibrate) return;
+    try {
+      if(type === 'tap') navigator.vibrate(5);
+      else if(type === 'success') navigator.vibrate([10, 30, 10]);
+      else if(type === 'error') navigator.vibrate([30]);
+    } catch(e) {}
+  },
+
+  loadWrongNotes(){try{const d=localStorage.getItem('chem_wrong_notes_v4');this.state.wrongNotes=d?JSON.parse(d):[];}catch(e){this.state.wrongNotes=[];}},
+  saveWrongNote(m,t,h,qData){
+    let existing = this.state.wrongNotes.find(n => n.mode === m && n.html === h);
+    if(existing){
+      existing.failCount = Math.min((existing.failCount || 1) + 1, 3);
+      existing.qData = qData;
+      this.state.wrongNotes = this.state.wrongNotes.filter(n => n.id !== existing.id);
+      this.state.wrongNotes.unshift(existing);
+    }else{
+      const id=Date.now().toString();
+      this.state.wrongNotes.unshift({id,mode:m,title:t,html:h,qData,failCount:1});
+    }
+    try{localStorage.setItem('chem_wrong_notes_v4',JSON.stringify(this.state.wrongNotes));}catch(e){}
+    this.renderWrongNotes();
+  },
+  deleteWrongNote(id){this.state.wrongNotes=this.state.wrongNotes.filter(n=>n.id!==id);try{localStorage.setItem('chem_wrong_notes_v4',JSON.stringify(this.state.wrongNotes));}catch(e){}this.renderWrongNotes();},
   clearWrongNotes(){
     const btn=document.getElementById('clearAllNotesBtn');
     if(!btn.dataset.confirming){
@@ -424,8 +517,49 @@ const App={
     clearTimeout(btn._t);delete btn.dataset.confirming;
     btn.textContent='🗑 전체 삭제';btn.style.background='';btn.style.color='';
     this.state.wrongNotes=[];
-    try{localStorage.removeItem('chem_wrong_notes_v3');}catch(e){}
+    try{localStorage.removeItem('chem_wrong_notes_v4');}catch(e){}
     this.renderWrongNotes();
+  },
+
+  startRetry(id){
+    const note = this.state.wrongNotes.find(n => n.id === id);
+    if(!note) return;
+    this.$.wrongNoteModalOverlay.classList.remove('show');
+    this.state.retryNoteId = id;
+    
+    // 수동으로 모드 강제 세팅 (순환/랜덤 우회)
+    this.state.currentMode = note.mode;
+    this.$.modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.mode)===note.mode));
+    this.$.questionCard.style.display = '';
+    this.$.keyboardWrap.style.display = '';
+    this.$.timerSelectWrap.style.display = 'none'; 
+    this.$.mode6Wrap.style.display = 'none';
+    this.$.cycleWrap.style.display = 'none';
+    this.$.elemRowLabel.style.display = note.mode===1 ? 'none' : 'block';
+    this.$.elemRow.style.display = note.mode===1 ? 'none' : 'flex';
+
+    // 퀘스트 데이터 로드
+    const q = JSON.parse(JSON.stringify(note.qData));
+    q.inputs = {}; q.isTimedOut = false;
+    if(q.blanks.length > 0) q.activeKey = q.blanks[0].key;
+    this.state.currentQuestion = q;
+    
+    this.state.isAnswerChecked = false;
+    this.state.isAnswerRevealed = false;
+    this.state.isLastWrongAttempt = false;
+    this.state.wrongBlanks = {};
+    this.state.wrongAlreadyPenalized = false;
+
+    document.getElementById('retryBanner').style.display = 'flex';
+    this.renderAll();
+    this.startTimer();
+  },
+
+  exitRetry(){
+    this.state.retryNoteId = null;
+    document.getElementById('retryBanner').style.display = 'none';
+    this.$.timerSelectWrap.style.display = 'flex';
+    this.setMode(this.state.currentMode); // 일반 모드로 복귀 및 문제 출제
   },
 
   buildKeyboard(){
@@ -441,13 +575,21 @@ const App={
     let f=this.state.wrongNotes;
     if(this.state.noteFilter!=='all')f=f.filter(n=>n.mode.toString()===this.state.noteFilter);
     if(f.length===0){this.$.wrongNoteList.innerHTML=`<p style="color:var(--c-text-secondary);text-align:center;padding:40px 20px">이 모드의 오답 기록이 없습니다.</p>`;return;}
-    this.$.wrongNoteList.innerHTML=f.map(n=>`<div class="reaction-item"><div class="reaction-info" style="width:100%"><div class="reaction-header"><div class="reaction-name">[모드 ${n.mode}] ${n.title}</div><button class="delete-note-btn" data-id="${n.id}">삭제</button></div><div class="reaction-eq" style="border-color:var(--c-wrong)">${n.html}</div></div></div>`).join('');
+    this.$.wrongNoteList.innerHTML=f.map(n=>{
+      const fc = n.failCount || 1;
+      let style = ''; let icon = '';
+      if(fc === 2) { style = 'background:rgba(239,68,68,0.1); border:1px solid var(--c-wrong);'; }
+      else if(fc >= 3) { style = 'background:rgba(239,68,68,0.2); border:2px solid var(--c-wrong);'; icon = '⚠️ '; }
+      return `<div class="reaction-item" style="${style}"><div class="reaction-info" style="width:100%"><div class="reaction-header"><div class="reaction-name" style="font-size:13px;">${icon}[모드 ${n.mode}] ${n.title} <span style="color:var(--c-wrong);font-size:11px;">(오답 ${fc}회)</span></div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${n.id}">다시 풀기</button><button class="delete-note-btn" data-id="${n.id}">삭제</button></div></div><div class="reaction-eq" style="border-color:var(--c-wrong)">${n.html}</div></div></div>`;
+    }).join('');
   },
 
   attachEventListeners(){
     this.$.app.addEventListener('click',e=>{
       const mt=e.target.closest('.mode-tab'),bb=e.target.closest('.blank-box'),kb=e.target.closest('.kb-key');
       const th=e.target.closest('#themeBtn'),hi=e.target.closest('#hintBtn'),wn=e.target.closest('#wrongNoteBtn'),sa=e.target.closest('.show-answer-btn');
+      const snd=e.target.closest('#soundBtn'),hpt=e.target.closest('#hapticBtn');
+      const extR=e.target.closest('#exitRetryBtn');
       if(mt)this.setMode(parseInt(mt.dataset.mode));
       if(bb)this.setActiveBlank(bb.dataset.key);
       if(kb)this.handleKeyPress(kb.dataset.key);
@@ -455,6 +597,17 @@ const App={
       if(hi)this.$.hintModalOverlay.classList.add('show');
       if(wn){this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');}
       if(sa)this.revealAnswers();
+      if(snd){
+        this.state.isSoundOn = !this.state.isSoundOn;
+        try{localStorage.setItem('chem_sound', this.state.isSoundOn);}catch(e){}
+        this.updateFeedbackBtns(); this.playSound('tap');
+      }
+      if(hpt){
+        this.state.isHapticOn = !this.state.isHapticOn;
+        try{localStorage.setItem('chem_haptic', this.state.isHapticOn);}catch(e){}
+        this.updateFeedbackBtns(); this.playHaptic('tap');
+      }
+      if(extR) this.exitRetry();
     });
     this.$.wrongNoteFilters.addEventListener('click',e=>{
       const c=e.target.closest('.filter-chip');if(!c)return;
@@ -468,10 +621,13 @@ const App={
       const b=e.target.closest('.timer-btn');if(!b)return;
       this.state.timerDuration=parseInt(b.dataset.sec)*1000;
       document.querySelectorAll('.timer-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+      this.playSound('tap'); this.playHaptic('tap');
     });
-    this.$.wrongNoteList.addEventListener('click',e=>{if(e.target.classList.contains('delete-note-btn'))this.deleteWrongNote(e.target.dataset.id);});
+    this.$.wrongNoteList.addEventListener('click',e=>{
+      if(e.target.classList.contains('delete-note-btn'))this.deleteWrongNote(e.target.dataset.id);
+      if(e.target.classList.contains('retry-note-btn'))this.startRetry(e.target.dataset.id);
+    });
 
-    // 순환 모드 토글
     document.getElementById('cycleWrap').addEventListener('click',e=>{
       const btn=e.target.closest('.cycle-btn');if(!btn)return;
       document.querySelectorAll('.cycle-btn').forEach(b=>b.classList.remove('active'));
@@ -480,9 +636,9 @@ const App={
       this.$.cycleProgressWrap.style.display=this.state.isCycleMode?'flex':'none';
       this.initCycleQueue();
       this.generateQuestion();
+      this.playSound('tap'); this.playHaptic('tap');
     });
 
-    // 물리 키보드
     document.addEventListener('keydown',e=>{
       if(this.$.hintModalOverlay.classList.contains('show')||this.$.wrongNoteModalOverlay.classList.contains('show')||document.getElementById('authOverlay').style.display!=='none')return;
       if(this.state.currentMode===6){
@@ -496,7 +652,6 @@ const App={
       else if(e.key==='Enter')this.handleKeyPress(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut?'NEXT':'CONFIRM');
     });
 
-    // 모드 6 터치/클릭
     const m6o=document.getElementById('m6Outer');
     let tx=0,th2=false;
     m6o.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;th2=false;},{passive:true});
@@ -525,6 +680,7 @@ const App={
     const mode=this.state.currentMode;
     let pool=[];
     if(mode===5) pool=CHEMICALS.map((_,i)=>i);
+    else if(mode===1) pool=Array.from({length: 23}, (_,i)=>i); // 템플릿 7 + 반응식 16
     else pool=REACTIONS.map((_,i)=>i);
     for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
     this.state.cycleQueue=[...pool];
@@ -558,9 +714,11 @@ const App={
   },
 
   timeOutForceWrong(){
+    this.playSound('error'); this.playHaptic('error');
     this.state.isAnswerRevealed=false;this.state.score.streak=0;this.state.score.wrong++;
     const q=this.state.currentQuestion;q.isTimedOut=true;
-    this.generateBeautifulWrongNote(q);this.renderAll(null);
+    if(!this.state.retryNoteId) this.generateBeautifulWrongNote(q);
+    this.renderAll(null);
     this.$.resultBanner.className='result-banner wrong-banner show';
     this.$.resultBanner.innerHTML=`<div style="display:flex;align-items:center;width:100%;justify-content:space-between"><span><span style="color:var(--c-wrong)">⏰ 시간 초과!</span> <span style="font-weight:400;margin-left:10px">마저 답을 입력해보세요.</span></span><button class="show-answer-btn">정답 확인</button></div>`;
   },
@@ -578,6 +736,7 @@ const App={
         if(q.blanks.length>0)q.activeKey=q.blanks[0].key;
       }
 
+      this.playSound('tap'); this.playHaptic('tap');
       const inp=q.inputs[q.activeKey]||'';
       if(key.startsWith('NUM_'))q.inputs[q.activeKey]=inp+key.replace('NUM_','');
       else if(key.startsWith('ELEM_'))q.inputs[q.activeKey]=inp+key.replace('ELEM_','');
@@ -585,12 +744,33 @@ const App={
         if(inp.length>0){let dl=1;if(/[a-z]$/.test(inp)&&inp.length>=2&&/[A-Z]/.test(inp.slice(-2,-1)))dl=2;q.inputs[q.activeKey]=inp.slice(0,-dl);}
       }
       if(wasWrong)this.renderAll();else this.renderEquation();
-    }else if(key==='CONFIRM'){if(!this.state.isAnswerChecked||this.state.currentQuestion?.isTimedOut)this.checkAnswer();}
-    else if(key==='NEXT'){if((this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)||this.state.isLastWrongAttempt)this.generateQuestion();}
+    }else if(key==='CONFIRM'){
+        if(!this.state.isAnswerChecked||this.state.currentQuestion?.isTimedOut) {
+            // Auto Focus 점프 로직
+            const q=this.state.currentQuestion;
+            if(q){
+                const emptyB = q.blanks.find(b => !(q.inputs[b.key]));
+                if(emptyB) {
+                    q.activeKey = emptyB.key;
+                    this.playSound('tap'); this.playHaptic('tap');
+                    this.renderEquation();
+                    return; 
+                }
+            }
+            this.checkAnswer();
+        }
+    } else if(key==='NEXT'){
+        this.playSound('tap'); this.playHaptic('tap');
+        if((this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)||this.state.isLastWrongAttempt) {
+            if(this.state.retryNoteId) this.exitRetry();
+            else this.generateQuestion(); 
+        }
+    }
   },
 
   setMode(mode){
     if(this.state.currentMode===mode)return;
+    if(this.state.retryNoteId) this.exitRetry(); // 일반 모드 전환 시 재풀이 캔슬
     this.state.currentMode=mode;
     this.$.modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.mode)===mode));
     const is6=mode===6;
@@ -598,7 +778,7 @@ const App={
     this.$.keyboardWrap.style.display=is6?'none':'';
     this.$.timerSelectWrap.style.display=is6?'none':'';
     this.$.mode6Wrap.style.display=is6?'flex':'none';
-    this.$.cycleWrap.style.display=(!is6&&mode!==1)?'flex':'none';
+    this.$.cycleWrap.style.display=(!is6)?'flex':'none'; // 모드 1도 순환 해제됨
     this.initCycleQueue();
     if(is6){clearInterval(this.state.timerInterval);this.m6GenCards();this.m6Render();return;}
     if(mode===1){this.$.elemRowLabel.style.display='none';this.$.elemRow.style.display='none';}
@@ -608,7 +788,7 @@ const App={
 
   setActiveBlank(key){
     if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut&&!this.state.isLastWrongAttempt)return;
-    const q=this.state.currentQuestion;if(q){q.activeKey=key;this.renderEquation();}
+    const q=this.state.currentQuestion;if(q){q.activeKey=key;this.playSound('tap'); this.playHaptic('tap'); this.renderEquation();}
   },
 
   generateQuestion(){
@@ -617,7 +797,7 @@ const App={
     const q={blanks:[],inputs:{},isTimedOut:false};
     const f2s=c=>{let s=c.coef>1?c.coef.toString():'';s+=c.formula.map(p=>p.sym+(p.sub?p.sub.toString():'')).join('');return s;};
 
-    const useCycle=this.state.isCycleMode&&this.state.currentMode!==1;
+    const useCycle=this.state.isCycleMode&&this.state.currentMode!==6;
     const pickIndex=(pool)=>{
       if(useCycle){
         if(this.state.cycleQueue.length===0) this.initCycleQueue(); 
@@ -633,20 +813,35 @@ const App={
 
     switch(this.state.currentMode){
       case 1:
-        if(Math.random()<.5){
-          const t=COEF_TEMPLATES[Math.floor(Math.random()*COEF_TEMPLATES.length)],d=t.gen();q.name=t.label;q.isAbstract=true;
-          q.displayReactants=d.fmt.map(f=>({...f}));q.displayProducts=d.fmtP.map(f=>({...f}));
-          d.fmt.forEach((f,i)=>{q.blanks.push({key:`R${i}`,answer:f.coef.toString()});});
-          d.fmtP.forEach((f,i)=>{q.blanks.push({key:`P${i}`,answer:f.coef.toString()});});
-        }else{
-          let vi=Math.floor(Math.random()*REACTIONS.length);
-          if(REACTIONS.length>1&&this.state.lastQuestionName){let t2=0;while(REACTIONS[vi].name===this.state.lastQuestionName&&t2<10){vi=Math.floor(Math.random()*REACTIONS.length);t2++;}}
-          const rx=REACTIONS[vi];q.name=rx.name;q.isAbstract=false;
-          q.displayReactants=rx.reactants.map(f=>({...f}));q.displayProducts=rx.products.map(f=>({...f}));
-          rx.reactants.forEach((r,i)=>{q.blanks.push({key:`R${i}`,answer:r.coef.toString()});});
-          rx.products.forEach((p,i)=>{q.blanks.push({key:`P${i}`,answer:p.coef.toString()});});
+        let isTemplate = false; let rxIdx = 0;
+        if(useCycle) {
+            const idx = pickIndex(Array.from({length: 23}, (_,i)=>i));
+            if(idx < COEF_TEMPLATES.length) { isTemplate = true; rxIdx = idx; }
+            else { isTemplate = false; rxIdx = idx - COEF_TEMPLATES.length; }
+        } else {
+            isTemplate = Math.random() < 0.5;
+            if(isTemplate) rxIdx = Math.floor(Math.random() * COEF_TEMPLATES.length);
+            else {
+                rxIdx = Math.floor(Math.random() * REACTIONS.length);
+                if(REACTIONS.length > 1 && this.state.lastQuestionName) {
+                    let t2=0; while(REACTIONS[rxIdx].name === this.state.lastQuestionName && t2<10) { rxIdx=Math.floor(Math.random()*REACTIONS.length); t2++; }
+                }
+            }
         }
-        q.type='계수 맞추기';break;
+
+        if(isTemplate){
+            const tmpl = COEF_TEMPLATES[rxIdx];
+            const data = tmpl.gen(); q.name = tmpl.label; q.isAbstract = true;
+            q.displayReactants = data.fmt.map(f=>({...f})); q.displayProducts = data.fmtP.map(f=>({...f}));
+        } else {
+            const rx = REACTIONS[rxIdx]; q.name = rx.name; q.isAbstract = false;
+            q.displayReactants = rx.reactants.map(f=>({...f})); q.displayProducts = rx.products.map(f=>({...f}));
+        }
+        // 필터 해제: 모든 계수 자리 빈칸 생성 (1인 경우에도 빈칸 뚫림)
+        q.displayReactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:r.coef.toString()}));
+        q.displayProducts.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:p.coef.toString()}));
+        q.type='계수 맞추기';
+        break;
       case 2:{const idx=pickIndex(REACTIONS);const rx=REACTIONS[idx];q.reaction=rx;q.name=rx.name;q.type='반응물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:false}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));break;}
       case 3:{const idx=pickIndex(REACTIONS);const rx=REACTIONS[idx];q.reaction=rx;q.name=rx.name;q.type='생성물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:false}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
       case 4:{const idx=pickIndex(REACTIONS);const rx=REACTIONS[idx];q.reaction=rx;q.name=rx.name;q.type='전체 반응식';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
@@ -663,17 +858,49 @@ const App={
     const q=this.state.currentQuestion;if(!q)return;
     let ok=true,ce=false;
     q.blanks.forEach(b=>{const v=q.inputs[b.key]||'';if(v!==b.answer){ok=false;if(this.state.currentMode!==1&&v==='1'+b.answer)ce=true;}});
+    
+    if(this.state.retryNoteId) {
+        // 재풀이 모드 시 채점 로직
+        if(ok) {
+            this.playSound('success'); this.playHaptic('success');
+            this.deleteWrongNote(this.state.retryNoteId);
+            this.state.retryNoteId = null;
+            document.getElementById('retryBanner').style.display='none';
+            this.$.timerSelectWrap.style.display='flex';
+            this.state.isAnswerChecked=true;
+            clearInterval(this.state.timerInterval);
+            this.renderAll('retry_correct');
+        } else {
+            this.playSound('error'); this.playHaptic('error');
+            const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
+            if(note) {
+                note.failCount = Math.min((note.failCount || 1) + 1, 3);
+                try{localStorage.setItem('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes));}catch(e){}
+            }
+            this.state.wrongBlanks={};
+            q.blanks.forEach(b=>{if((q.inputs[b.key]||'')!==b.answer)this.state.wrongBlanks[b.key]=true;});
+            q.coefOneErrorFlag=ce;
+            this.state.isLastWrongAttempt=true;
+            this.state.isAnswerChecked=false;
+            this.renderAll(false);
+        }
+        return;
+    }
+
+    // 일반 채점 로직
     if(q.isTimedOut){
-      if(!ok){q.coefOneErrorFlag=ce;this.state.isAnswerChecked=false;this.renderAll(false);}
-      else{this.state.isAnswerChecked=true;q.isTimedOut=false;this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};clearInterval(this.state.timerInterval);this.renderAll('timeout_correct');}
+      if(!ok){this.playSound('error'); this.playHaptic('error'); q.coefOneErrorFlag=ce;this.state.isAnswerChecked=false;this.renderAll(false);}
+      else{this.playSound('success'); this.playHaptic('success'); this.state.isAnswerChecked=true;q.isTimedOut=false;this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};clearInterval(this.state.timerInterval);this.renderAll('timeout_correct');}
     }else{
       clearInterval(this.state.timerInterval);
       if(ok){
+        this.playSound('success'); this.playHaptic('success');
         if(!this.state.isLastWrongAttempt){this.state.score.streak++;this.state.score.correct++;}
         this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};
         this.state.isAnswerChecked=true;
         this.renderAll(true);
       }else{
+        this.playSound('error'); this.playHaptic('error');
         if(!this.state.wrongAlreadyPenalized){
           this.state.score.streak=0;this.state.score.wrong++;
           this.generateBeautifulWrongNote(q);
@@ -694,11 +921,11 @@ const App={
     let h='';
     if(q.isMode5){h=`<span class="eq-text" style="font-size:20px;font-weight:bold;color:var(--c-correct)">${this.formatInput(q.blanks[0].answer)}</span>`;}
     else if(q.isAbstract===true){
-      const r=q.displayReactants.map(c=>(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+this.formatFormula(c.formula)).join(' <span class="eq-plus">+</span> ');
-      const p=q.displayProducts.map(c=>(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+this.formatFormula(c.formula)).join(' <span class="eq-plus">+</span> ');
+      const r=q.displayReactants.map((c,i)=>{const bd=q.blanks.find(b=>b.key===`R${i}`); return(bd?`<span class="eq-text">${bd.answer}</span>`:'')+this.formatFormula(c.formula);}).join(' <span class="eq-plus">+</span> ');
+      const p=q.displayProducts.map((c,i)=>{const bd=q.blanks.find(b=>b.key===`P${i}`); return(bd?`<span class="eq-text">${bd.answer}</span>`:'')+this.formatFormula(c.formula);}).join(' <span class="eq-plus">+</span> ');
       h=`${r} <span class="eq-arrow">→</span> ${p}`;
     }else{const rx=REACTIONS.find(r=>r.name===q.name);if(rx)h=`${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}`;}
-    this.saveWrongNote(this.state.currentMode,q.name,h);
+    this.saveWrongNote(this.state.currentMode,q.name,h,q);
   },
 
   revealAnswers(){
@@ -753,7 +980,8 @@ const App={
   },
 
   renderResultBanner(isCorrect){
-    if(isCorrect==='timeout_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 늦었지만 정답입니다! (다음 문제로 넘어가세요)';}
+    if(isCorrect==='retry_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 완벽합니다! 오답 노트에서 완전히 삭제되었습니다.';}
+    else if(isCorrect==='timeout_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 늦었지만 정답입니다! (다음 문제로 넘어가세요)';}
     else if(isCorrect===true){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=`✅ 정답입니다! 연속 ${this.state.score.streak}회 성공!`;}
     else{
       this.$.resultBanner.className='result-banner wrong-banner show';
@@ -772,7 +1000,6 @@ const App={
 
   /* ── MODE 6 ── */
   m6Fmt(side){return side.map(r=>(r.coef>1?r.coef:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' + ');},
-
   m6GenCards(){
     const t=this.state.m6Type;let cards=[];
     if(t==='full'){cards=REACTIONS.map(rx=>({ftag:'한글 반응식',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'화학 반응식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.reactants)} → ${this.m6Fmt(rx.products)}</span>`}));}
@@ -781,7 +1008,6 @@ const App={
     else{cards=CHEMICALS.map(c=>({ftag:'물질명',fhtml:`<span class="m6-korean">${c.name}</span>`,btag:'화학식',bhtml:`<span class="m6-formula">${c.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')}</span>`}));}
     this.state.m6Cards=cards;this.state.m6Index=0;this.state.m6Flipped=false;
   },
-
   m6Render(dir){
     const{m6Cards,m6Index,m6Order}=this.state;const card=m6Cards[m6Index];if(!card)return;
     const isKorFirst=m6Order==='korean';
@@ -794,15 +1020,14 @@ const App={
     document.getElementById('m6PFill').style.width=`${((m6Index+1)/m6Cards.length)*100}%`;
     if(dir){const o=document.getElementById('m6Outer'),cls=dir==='next'?'m6-slide-r':'m6-slide-l';o.classList.remove('m6-slide-r','m6-slide-l');void o.offsetWidth;o.classList.add(cls);}
   },
-
-  m6Flip(){this.state.m6Flipped=!this.state.m6Flipped;document.getElementById('m6Card').classList.toggle('flipped',this.state.m6Flipped);},
-  m6Next(){this.state.m6Index=(this.state.m6Index+1)%this.state.m6Cards.length;this.m6Render('next');},
-  m6Prev(){this.state.m6Index=(this.state.m6Index-1+this.state.m6Cards.length)%this.state.m6Cards.length;this.m6Render('prev');},
-  m6Shuffle(){const c=[...this.state.m6Cards];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}this.state.m6Cards=c;this.state.m6Index=0;this.m6Render();},
+  m6Flip(){this.playSound('tap'); this.playHaptic('tap'); this.state.m6Flipped=!this.state.m6Flipped;document.getElementById('m6Card').classList.toggle('flipped',this.state.m6Flipped);},
+  m6Next(){this.playSound('tap'); this.state.m6Index=(this.state.m6Index+1)%this.state.m6Cards.length;this.m6Render('next');},
+  m6Prev(){this.playSound('tap'); this.state.m6Index=(this.state.m6Index-1+this.state.m6Cards.length)%this.state.m6Cards.length;this.m6Render('prev');},
+  m6Shuffle(){this.playSound('tap'); const c=[...this.state.m6Cards];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}this.state.m6Cards=c;this.state.m6Index=0;this.m6Render();},
 
   formatFormula(f){return f.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('');},
   formatInput(s){if(!s)return'';return s.replace(/([a-zA-Z]+)(\d+)/g,'$1<sub>$2</sub>');},
-  toggleTheme(){this.state.isDarkMode=!this.state.isDarkMode;document.body.classList.toggle('light',!this.state.isDarkMode);document.getElementById('themeBtn').textContent=this.state.isDarkMode?'🌙':'☀️';}
+  toggleTheme(){this.playSound('tap'); this.state.isDarkMode=!this.state.isDarkMode;document.body.classList.toggle('light',!this.state.isDarkMode);document.getElementById('themeBtn').textContent=this.state.isDarkMode?'🌙':'☀️';}
 };
 
 document.addEventListener('DOMContentLoaded',()=>App.init());
