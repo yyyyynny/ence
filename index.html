@@ -677,7 +677,7 @@ const App={
       const mt=e.target.closest('.mode-tab'),bb=e.target.closest('.blank-box'),kb=e.target.closest('.kb-key');
       const th=e.target.closest('#themeBtn'),hi=e.target.closest('#hintBtn'),wn=e.target.closest('#wrongNoteBtn'),sa=e.target.closest('.show-answer-btn');
       const snd=e.target.closest('#soundBtn'),hpt=e.target.closest('#hapticBtn'),lyt=e.target.closest('#layoutBtn');
-      const extR=e.target.closest('#exitRetryBtn'), playR=e.target.closest('#retryPlaylistBtn');
+      const extR=e.target.closest('#exitRetryBtn');
       if(mt)this.setMode(parseInt(mt.dataset.mode));
       if(bb)this.setActiveBlank(bb.dataset.key);
       if(kb)this.handleKeyPress(kb.dataset.key);
@@ -697,7 +697,6 @@ const App={
         this.updateFeedbackBtns(); this.playHaptic('tap');
       }
       if(extR) this.exitRetry();
-      if(playR) this.startRetryPlaylist();
     });
 
     document.getElementById('easterEggBtn').addEventListener('click',e=>{
@@ -728,6 +727,10 @@ const App={
     document.getElementById('hintModalClose').addEventListener('click',()=>this.$.hintModalOverlay.classList.remove('show'));
     document.getElementById('wrongNoteModalClose').addEventListener('click',()=>this.$.wrongNoteModalOverlay.classList.remove('show'));
     document.getElementById('clearAllNotesBtn').addEventListener('click',()=>this.clearWrongNotes());
+    
+    // [픽스 적용] 연속 풀기 버튼 모달 독립 이벤트 리스너 할당
+    document.getElementById('retryPlaylistBtn').addEventListener('click',()=>this.startRetryPlaylist());
+
     document.getElementById('timerBtns').addEventListener('click',e=>{
       const b=e.target.closest('.timer-btn');if(!b)return;
       this.state.timerDuration=parseInt(b.dataset.sec)*1000;
@@ -1031,7 +1034,7 @@ const App={
             if(q.isTimedOut) {
                 this.playSound('success'); this.playHaptic('success');
                 this.state.isAnswerChecked=true;
-                q.isTimedOut=false; // [조치] 무한 대기 버그 수정
+                q.isTimedOut=false; 
                 clearInterval(this.state.timerInterval);
                 this.renderAll('retry_timeout_correct');
             } else {
@@ -1071,7 +1074,7 @@ const App={
             if(q.isTimedOut) {
                 this.playSound('success'); this.playHaptic('success');
                 this.state.isAnswerChecked=true;
-                q.isTimedOut=false; // [조치] 무한 대기 버그 수정
+                q.isTimedOut=false; 
                 clearInterval(this.state.timerInterval);
                 this.renderAll('retry_timeout_correct');
             } else {
