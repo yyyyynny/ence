@@ -320,6 +320,17 @@
   </div>
 </div>
 
+<div class="modal-overlay show" id="authOverlay" style="z-index:9999999;background:var(--c-bg)">
+  <div class="modal-box" style="text-align:center;gap:16px">
+    <div style="font-size:48px;margin-bottom:8px">🔒</div>
+    <div class="modal-title">화학 반응식 훈련소</div>
+    <div style="color:var(--c-text-secondary);font-size:14px;margin-bottom:16px">접근 권한이 필요합니다. (이용료: <span style="color:var(--c-wrong);font-weight:900">800원</span>)</div>
+    <input type="password" id="authInput" placeholder="비밀번호 입력" style="background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);padding:14px;border-radius:12px;font-family:var(--font-mono);font-size:16px;text-align:center;outline:none;width:100%">
+    <button id="authBtn" style="background:var(--c-accent-1);color:#000;border:none;border-radius:12px;padding:14px;font-weight:900;font-size:16px;cursor:pointer;margin-top:8px;width:100%">결제 및 해제</button>
+    <div id="authError" style="color:var(--c-wrong);font-size:13px;display:none;margin-top:8px;font-weight:bold">❌ 잔액이 부족하거나 비밀번호가 틀렸습니다.</div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="hintModalOverlay">
   <div class="modal-box">
     <div class="modal-header"><div class="modal-title">📋 전체 반응식 목록</div><button class="modal-close" id="hintModalClose">✕</button></div>
@@ -728,8 +739,20 @@ const App={
     document.getElementById('wrongNoteModalClose').addEventListener('click',()=>this.$.wrongNoteModalOverlay.classList.remove('show'));
     document.getElementById('clearAllNotesBtn').addEventListener('click',()=>this.clearWrongNotes());
     
-    // [픽스 적용] 연속 풀기 버튼 모달 독립 이벤트 리스너 할당
+    // [픽스] 모달 내부 버튼 전용 리스너 바인딩
     document.getElementById('retryPlaylistBtn').addEventListener('click',()=>this.startRetryPlaylist());
+
+    document.getElementById('authBtn').addEventListener('click',()=>{
+      if(document.getElementById('authInput').value==='yyyyynny'){
+        this.playSound('success');
+        document.getElementById('authOverlay').style.display='none';
+      }else{
+        this.playSound('error'); this.playHaptic('error');
+        const err = document.getElementById('authError');
+        err.style.display='block';
+        setTimeout(()=>err.style.display='none',2000);
+      }
+    });
 
     document.getElementById('timerBtns').addEventListener('click',e=>{
       const b=e.target.closest('.timer-btn');if(!b)return;
@@ -755,6 +778,7 @@ const App={
 
     document.addEventListener('keydown',e=>{
       if(this.$.hintModalOverlay.classList.contains('show')||this.$.wrongNoteModalOverlay.classList.contains('show'))return;
+      if(document.getElementById('authOverlay').style.display !== 'none') return;
       if(this.state.currentMode===6){
         if(e.key==='ArrowRight')this.m6Next();
         else if(e.key==='ArrowLeft')this.m6Prev();
