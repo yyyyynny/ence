@@ -48,7 +48,8 @@
   .mode-tabs::-webkit-scrollbar{display:none;}
   .mode-tab{flex:0 0 auto;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:12px;color:var(--c-text-secondary);padding:12px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;line-height:1.4;backdrop-filter:blur(10px);}
   .mode-tab.active{background:var(--c-accent-1);border-color:var(--c-accent-1);color:var(--c-bg);}
-  .mode-tab .tab-icon{font-size:18px;display:block;margin-bottom:4px;}
+  .mode-tab .tab-icon{font-size:18px;display:block;margin-bottom:2px;}
+  .mode-tab .tab-desc{font-size:10px;display:block;font-weight:400;opacity:0.75;margin-top:2px;}
   .question-card{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;padding:24px;margin-bottom:16px;min-height:180px;display:flex;flex-direction:column;gap:16px;flex-grow:1;position:relative;overflow:hidden;}
   .timer-container{position:absolute;top:0;left:0;right:0;height:5px;background:rgba(0,0,0,.2);}
   .timer-bar{height:100%;background:var(--c-accent-1);width:100%;transition:background .3s;}
@@ -93,6 +94,15 @@
   .reaction-eq{color:var(--c-text-primary);font-size:15px;line-height:1.6;background:rgba(0,0,0,.2);padding:12px;border-radius:8px;border:1px solid var(--c-border);text-align:center;}
   .delete-note-btn{background:rgba(239,68,68,.1);border:1px solid var(--c-wrong);color:var(--c-wrong);border-radius:6px;padding:4px 8px;cursor:pointer;font-size:11px;font-weight:bold;}
   .clear-all-btn{background:var(--c-wrong);color:#fff;border:none;border-radius:8px;padding:8px 16px;font-weight:bold;cursor:pointer;margin-bottom:16px;align-self:flex-end;}
+  .cycle-wrap{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:10px 16px;margin-bottom:16px;backdrop-filter:blur(10px);display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
+  .cycle-label{font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
+  .cycle-btns{display:flex;gap:6px;}
+  .cycle-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-ui);font-size:12px;font-weight:700;padding:6px 12px;cursor:pointer;transition:all .2s;}
+  .cycle-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
+  .cycle-progress-wrap{display:flex;align-items:center;gap:8px;flex:1;min-width:140px;}
+  .cycle-progress-text{font-family:var(--font-mono);font-size:12px;font-weight:700;color:var(--c-text-primary);white-space:nowrap;}
+  .cycle-progress-bar{flex:1;height:6px;background:var(--c-border);border-radius:3px;overflow:hidden;}
+  .cycle-progress-fill{height:100%;background:linear-gradient(90deg,var(--c-accent-2),var(--c-accent-1));border-radius:3px;transition:width .3s ease;}
   .egg-particle{position:fixed;pointer-events:none;z-index:9999999;font-size:24px;animation:egg-pop .8s cubic-bezier(.25,1,.5,1) forwards;}
   @keyframes egg-pop{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1.5);opacity:0}}
 
@@ -173,12 +183,25 @@
   </div>
 
   <div class="mode-tabs">
-    <button class="mode-tab" data-mode="1"><span class="tab-icon">🔢</span>계수 맞추기</button>
-    <button class="mode-tab" data-mode="2"><span class="tab-icon">🧪</span>반응물 맞추기</button>
-    <button class="mode-tab" data-mode="3"><span class="tab-icon">⚗️</span>생성물 맞추기</button>
-    <button class="mode-tab" data-mode="4"><span class="tab-icon">📝</span>전체 반응식</button>
-    <button class="mode-tab" data-mode="5"><span class="tab-icon">🧠</span>화학식 암기</button>
+    <button class="mode-tab" data-mode="1"><span class="tab-icon">🔢</span>계수 맞추기<span class="tab-desc">계수≥2만 출제</span></button>
+    <button class="mode-tab" data-mode="2"><span class="tab-icon">🧪</span>반응물 맞추기<span class="tab-desc">16개 전체</span></button>
+    <button class="mode-tab" data-mode="3"><span class="tab-icon">⚗️</span>생성물 맞추기<span class="tab-desc">16개 전체</span></button>
+    <button class="mode-tab" data-mode="4"><span class="tab-icon">📝</span>전체 반응식<span class="tab-desc">16개 전체</span></button>
+    <button class="mode-tab" data-mode="5"><span class="tab-icon">🧠</span>화학식 암기<span class="tab-desc">30종 전체</span></button>
     <button class="mode-tab" data-mode="6"><span class="tab-icon">🃏</span>플래시카드</button>
+  </div>
+
+  <!-- 순환 모드 토글 (모드 2~5에서만 표시) -->
+  <div class="cycle-wrap" id="cycleWrap" style="display:none">
+    <div class="cycle-label">🔄 출제 방식</div>
+    <div class="cycle-btns">
+      <button class="cycle-btn active" data-cycle="random">랜덤</button>
+      <button class="cycle-btn" data-cycle="cycle">순환 (전체 1회씩)</button>
+    </div>
+    <div class="cycle-progress-wrap" id="cycleProgressWrap" style="display:none">
+      <div class="cycle-progress-text" id="cycleProgressText">0 / 16</div>
+      <div class="cycle-progress-bar"><div class="cycle-progress-fill" id="cycleProgressFill" style="width:0%"></div></div>
+    </div>
   </div>
 
   <!-- 퀴즈 카드 (모드 1~5) -->
@@ -364,7 +387,7 @@ const App={
     isLastWrongAttempt:false,wrongBlanks:{},wrongAlreadyPenalized:false,
     timerDuration:DEFAULT_TIMER,currentMaxTime:DEFAULT_TIMER,timerLeft:DEFAULT_TIMER,timerInterval:null,
     wrongNotes:[],noteFilter:'all',
-    isLastWrongAttempt:false,wrongBlanks:{},wrongAlreadyPenalized:false,
+    isCycleMode:false,cycleQueue:[],cycleTotal:0,lastQuestionName:null,
     m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false
   },
   $:{
@@ -378,7 +401,9 @@ const App={
     reactionList:document.getElementById('reactionList'),wrongNoteList:document.getElementById('wrongNoteList'),
     timerBar:document.getElementById('timerBar'),wrongNoteFilters:document.getElementById('wrongNoteFilters'),
     questionCard:document.getElementById('questionCard'),keyboardWrap:document.getElementById('keyboardWrap'),
-    timerSelectWrap:document.getElementById('timerSelectWrap'),mode6Wrap:document.getElementById('mode6Wrap')
+    timerSelectWrap:document.getElementById('timerSelectWrap'),mode6Wrap:document.getElementById('mode6Wrap'),
+    cycleWrap:document.getElementById('cycleWrap'),cycleProgressWrap:document.getElementById('cycleProgressWrap'),
+    cycleProgressText:document.getElementById('cycleProgressText'),cycleProgressFill:document.getElementById('cycleProgressFill')
   },
 
   init(){this.loadWrongNotes();this.buildKeyboard();this.buildModalList();this.attachEventListeners();this.setMode(1);},
@@ -451,6 +476,17 @@ const App={
     });
     this.$.wrongNoteList.addEventListener('click',e=>{if(e.target.classList.contains('delete-note-btn'))this.deleteWrongNote(e.target.dataset.id);});
 
+    // 순환 모드 토글
+    document.getElementById('cycleWrap').addEventListener('click',e=>{
+      const btn=e.target.closest('.cycle-btn');if(!btn)return;
+      document.querySelectorAll('.cycle-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      this.state.isCycleMode=btn.dataset.cycle==='cycle';
+      this.$.cycleProgressWrap.style.display=this.state.isCycleMode?'flex':'none';
+      this.initCycleQueue();
+      this.generateQuestion();
+    });
+
     // 물리 키보드
     document.addEventListener('keydown',e=>{
       if(this.$.hintModalOverlay.classList.contains('show')||this.$.wrongNoteModalOverlay.classList.contains('show')||document.getElementById('authOverlay').style.display!=='none')return;
@@ -488,6 +524,26 @@ const App={
       document.querySelectorAll('#m6OrderBtns .m6-opt-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
       this.state.m6Order=b.dataset.val;this.m6Render();
     });
+  },
+
+  // 순환 큐 초기화 (Fisher-Yates 셔플)
+  initCycleQueue(){
+    const mode=this.state.currentMode;
+    let pool=[];
+    if(mode===5) pool=CHEMICALS.map((_,i)=>i);
+    else pool=REACTIONS.map((_,i)=>i);
+    for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+    this.state.cycleQueue=[...pool];
+    this.state.cycleTotal=pool.length;
+    this.renderCycleProgress();
+  },
+
+  renderCycleProgress(){
+    if(!this.state.isCycleMode)return;
+    const done=this.state.cycleTotal-this.state.cycleQueue.length;
+    const total=this.state.cycleTotal;
+    if(this.$.cycleProgressText) this.$.cycleProgressText.textContent=`${done} / ${total}`;
+    if(this.$.cycleProgressFill) this.$.cycleProgressFill.style.width=`${total>0?(done/total)*100:0}%`;
   },
 
   startTimer(){
@@ -547,6 +603,10 @@ const App={
     this.$.keyboardWrap.style.display=is6?'none':'';
     this.$.timerSelectWrap.style.display=is6?'none':'';
     this.$.mode6Wrap.style.display=is6?'flex':'none';
+    // 순환 모드 토글: 모드 2~5에서만 표시
+    this.$.cycleWrap.style.display=(!is6&&mode!==1)?'flex':'none';
+    // 모드 바꾸면 순환 큐 리셋
+    this.initCycleQueue();
     if(is6){clearInterval(this.state.timerInterval);this.m6GenCards();this.m6Render();return;}
     if(mode===1){this.$.elemRowLabel.style.display='none';this.$.elemRow.style.display='none';}
     else{this.$.elemRowLabel.style.display='block';this.$.elemRow.style.display='flex';}
@@ -563,6 +623,23 @@ const App={
     this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};this.state.wrongAlreadyPenalized=false;
     const q={blanks:[],inputs:{},isTimedOut:false};
     const f2s=c=>{let s=c.coef>1?c.coef.toString():'';s+=c.formula.map(p=>p.sym+(p.sub?p.sub.toString():'')).join('');return s;};
+
+    // 순환 모드: 큐에서 인덱스 꺼내기
+    const useCycle=this.state.isCycleMode&&this.state.currentMode!==1;
+    const pickIndex=(pool)=>{
+      if(useCycle){
+        if(this.state.cycleQueue.length===0) this.initCycleQueue(); // 다 돌면 재셔플
+        return this.state.cycleQueue.shift();
+      }
+      // 랜덤 모드: 연속 중복 방지
+      let idx=Math.floor(Math.random()*pool.length);
+      if(pool.length>1&&this.state.lastQuestionName){
+        let tries=0;
+        while(pool[idx].name===this.state.lastQuestionName&&tries<10){idx=Math.floor(Math.random()*pool.length);tries++;}
+      }
+      return idx;
+    };
+
     switch(this.state.currentMode){
       case 1:
         if(Math.random()<.5){
@@ -572,19 +649,24 @@ const App={
           d.fmtP.forEach((f,i)=>{if(f.coef>1)q.blanks.push({key:`P${i}`,answer:f.coef.toString()});});
         }else{
           const vr=REACTIONS.filter(r=>r.reactants.some(x=>x.coef>1)||r.products.some(x=>x.coef>1));
-          const rx=vr[Math.floor(Math.random()*vr.length)];q.name=rx.name;q.isAbstract=false;
+          let vi=Math.floor(Math.random()*vr.length);
+          if(vr.length>1&&this.state.lastQuestionName){let t2=0;while(vr[vi].name===this.state.lastQuestionName&&t2<10){vi=Math.floor(Math.random()*vr.length);t2++;}}
+          const rx=vr[vi];q.name=rx.name;q.isAbstract=false;
           q.displayReactants=rx.reactants.map(f=>({...f}));q.displayProducts=rx.products.map(f=>({...f}));
           rx.reactants.forEach((r,i)=>{if(r.coef>1)q.blanks.push({key:`R${i}`,answer:r.coef.toString()});});
           rx.products.forEach((p,i)=>{if(p.coef>1)q.blanks.push({key:`P${i}`,answer:p.coef.toString()});});
         }
         q.type='계수 맞추기';break;
-      case 2:{const rx=REACTIONS[Math.floor(Math.random()*REACTIONS.length)];q.reaction=rx;q.name=rx.name;q.type='반응물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:false}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));break;}
-      case 3:{const rx=REACTIONS[Math.floor(Math.random()*REACTIONS.length)];q.reaction=rx;q.name=rx.name;q.type='생성물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:false}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
-      case 4:{const rx=REACTIONS[Math.floor(Math.random()*REACTIONS.length)];q.reaction=rx;q.name=rx.name;q.type='전체 반응식';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
-      case 5:{const c=CHEMICALS[Math.floor(Math.random()*CHEMICALS.length)];q.name=c.name;q.type='화학식 암기';q.isMode5=true;q.isAbstract=false;const fs=c.formula.map(p=>p.sym+(p.sub?p.sub.toString():'')).join('');q.blanks.push({key:'M5',answer:fs});break;}
+      case 2:{const idx=pickIndex(REACTIONS);const rx=REACTIONS[idx];q.reaction=rx;q.name=rx.name;q.type='반응물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:false}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));break;}
+      case 3:{const idx=pickIndex(REACTIONS);const rx=REACTIONS[idx];q.reaction=rx;q.name=rx.name;q.type='생성물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:false}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
+      case 4:{const idx=pickIndex(REACTIONS);const rx=REACTIONS[idx];q.reaction=rx;q.name=rx.name;q.type='전체 반응식';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
+      case 5:{const idx=pickIndex(CHEMICALS);const c=CHEMICALS[idx];q.name=c.name;q.type='화학식 암기';q.isMode5=true;q.isAbstract=false;const fs=c.formula.map(p=>p.sym+(p.sub?p.sub.toString():'')).join('');q.blanks.push({key:'M5',answer:fs});break;}
     }
+    this.state.lastQuestionName=q.name;
     if(q.blanks.length>0)q.activeKey=q.blanks[0].key;
-    this.state.currentQuestion=q;this.renderAll();this.startTimer();
+    this.state.currentQuestion=q;
+    this.renderCycleProgress();
+    this.renderAll();this.startTimer();
   },
 
   checkAnswer(){
