@@ -170,7 +170,7 @@
 
     /* 모드 6 와이드 2열 분할 최적화 */
     body.wide-mode #mode6Wrap.m6-active {
-      display: grid !important; 
+      display: grid !important;
       grid-column: 1 / -1;
       grid-row: 4;
       grid-template-columns: 1fr 1fr;
@@ -323,11 +323,11 @@
 <div class="modal-overlay" id="authOverlay" style="display:flex; z-index:9999999; background:var(--c-bg)">
   <div class="modal-box" style="text-align:center;gap:16px">
     <div style="font-size:48px;margin-bottom:8px">🔒</div>
-    <div class="modal-title">반응물이 반응하면 생성물</div>
+    <div class="modal-title">화학 반응식 훈련소</div>
     <div style="color:var(--c-text-secondary);font-size:15px;margin-bottom:16px">접근 권한이 필요합니다. (이용료: <span style="color:var(--c-wrong);font-weight:900">800원</span>)</div>
     <input type="password" id="authInput" placeholder="비밀번호 입력" style="background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);padding:16px;border-radius:12px;font-family:var(--font-mono);font-size:18px;text-align:center;outline:none;width:100%">
     <button id="authBtn" style="background:var(--c-accent-1);color:#000;border:none;border-radius:12px;padding:16px;font-weight:900;font-size:18px;cursor:pointer;margin-top:8px;width:100%">결제 및 해제</button>
-    <div id="authError" style="color:var(--c-wrong);font-size:14px;display:none;margin-top:8px;font-weight:bold">❌ 비번 틀림 다시 </div>
+    <div id="authError" style="color:var(--c-wrong);font-size:14px;display:none;margin-top:8px;font-weight:bold">❌ 잔액이 부족하거나 비밀번호가 틀렸습니다.</div>
   </div>
 </div>
 
@@ -457,7 +457,7 @@ const App={
     this.updateFeedbackBtns();
     if(this.state.isWideMode) document.body.classList.add('wide-mode');
     this.$.layoutBtn.textContent = this.state.isWideMode ? '📱' : '↔️';
-    
+
     if(localStorage.getItem('chem_auth_v4') === 'pass') {
       document.getElementById('authOverlay').style.display = 'none';
     }
@@ -534,15 +534,13 @@ const App={
     try{localStorage.setItem('chem_wrong_notes_v4',JSON.stringify(this.state.wrongNotes));}catch(e){}
     this.renderWrongNotes();
   },
-  
-  // 픽스: 삭제 시 강제 종료 로직 완전히 제거
+
   deleteWrongNote(id){
     this.state.wrongNotes=this.state.wrongNotes.filter(n=>n.id!==id);
     try{localStorage.setItem('chem_wrong_notes_v4',JSON.stringify(this.state.wrongNotes));}catch(e){}
     this.renderWrongNotes();
   },
-  
-  // 픽스: 전체 삭제 시 강제 종료 로직 완전히 제거
+
   clearWrongNotes(){
     const btn=document.getElementById('clearAllNotesBtn');
     if(!btn.dataset.confirming){
@@ -566,35 +564,35 @@ const App={
   startRetryPlaylist() {
     if (this.state.wrongNotes.length === 0) return;
     this.$.wrongNoteModalOverlay.classList.remove('show');
-    
+
     if (!this.state.retryNoteId && !this.state.isRetryPlaylistMode) {
-        this.state.savedCycleState = { queue: [...this.state.cycleQueue], total: this.state.cycleTotal, mode: this.state.currentMode };
+      this.state.savedCycleState = { queue: [...this.state.cycleQueue], total: this.state.cycleTotal, mode: this.state.currentMode };
     }
-    
+
     let playlist = [...this.state.wrongNotes];
     for(let i = playlist.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
+      const j = Math.floor(Math.random() * (i + 1));
+      [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
     }
     this.state.retryPlaylist = playlist;
     this.state.isRetryPlaylistMode = true;
-    
+
     this.loadNextRetryPlaylistItem();
   },
 
   loadNextRetryPlaylistItem() {
     if(this.state.retryPlaylist.length === 0) {
-        this.exitRetry();
-        return;
+      this.exitRetry();
+      return;
     }
     const note = this.state.retryPlaylist[0];
     this.state.retryNoteId = note.id;
-    
+
     this.state.currentMode = note.mode;
     this.$.modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.mode)===note.mode));
     this.$.questionCard.style.display = '';
     this.$.keyboardWrap.style.display = '';
-    this.$.timerSelectWrap.style.display = 'none'; 
+    this.$.timerSelectWrap.style.display = 'none';
     this.$.mode6Wrap.classList.remove('m6-active');
     this.$.cycleWrap.style.display = 'none';
     this.$.elemRowLabel.style.display = note.mode===1 ? 'none' : 'block';
@@ -604,7 +602,7 @@ const App={
     q.inputs = {}; q.isTimedOut = false; q.cursor = {};
     if(q.blanks.length > 0) q.activeKey = q.blanks[0].key;
     this.state.currentQuestion = q;
-    
+
     this.state.isAnswerChecked = false;
     this.state.isAnswerRevealed = false;
     this.state.isLastWrongAttempt = false;
@@ -621,19 +619,19 @@ const App={
     const note = this.state.wrongNotes.find(n => n.id === id);
     if(!note) return;
     this.$.wrongNoteModalOverlay.classList.remove('show');
-    
+
     if (!this.state.retryNoteId && !this.state.isRetryPlaylistMode) {
-        this.state.savedCycleState = { queue: [...this.state.cycleQueue], total: this.state.cycleTotal, mode: this.state.currentMode };
+      this.state.savedCycleState = { queue: [...this.state.cycleQueue], total: this.state.cycleTotal, mode: this.state.currentMode };
     }
-    
+
     this.state.retryNoteId = id;
     this.state.isRetryPlaylistMode = false;
     this.state.currentMode = note.mode;
-    
+
     this.$.modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.mode)===note.mode));
     this.$.questionCard.style.display = '';
     this.$.keyboardWrap.style.display = '';
-    this.$.timerSelectWrap.style.display = 'none'; 
+    this.$.timerSelectWrap.style.display = 'none';
     this.$.mode6Wrap.classList.remove('m6-active');
     this.$.cycleWrap.style.display = 'none';
     this.$.elemRowLabel.style.display = note.mode===1 ? 'none' : 'block';
@@ -643,7 +641,7 @@ const App={
     q.inputs = {}; q.isTimedOut = false; q.cursor = {};
     if(q.blanks.length > 0) q.activeKey = q.blanks[0].key;
     this.state.currentQuestion = q;
-    
+
     this.state.isAnswerChecked = false;
     this.state.isAnswerRevealed = false;
     this.state.isLastWrongAttempt = false;
@@ -662,20 +660,20 @@ const App={
     this.state.retryPlaylist = [];
     document.getElementById('retryBanner').style.display = 'none';
     this.$.timerSelectWrap.style.display = 'flex';
-    
+
     const savedState = this.state.savedCycleState;
     const targetMode = savedState ? savedState.mode : this.state.currentMode;
-    
-    this.state.currentMode = null; 
+
+    this.state.currentMode = null;
 
     if(savedState){
-        this.state.cycleQueue = [...savedState.queue];
-        this.state.cycleTotal = savedState.total;
-        this.renderCycleProgress();
+      this.state.cycleQueue = [...savedState.queue];
+      this.state.cycleTotal = savedState.total;
+      this.renderCycleProgress();
     }
 
     this.state.savedCycleState = null;
-    this.setMode(targetMode, true); 
+    this.setMode(targetMode, true);
   },
 
   buildKeyboard(){
@@ -744,14 +742,14 @@ const App={
       fl.innerHTML='<div style="font-size:80px">💖 깜짝이야! 💖</div>';
       document.body.appendChild(fl);
       setTimeout(()=>fl.style.opacity=1,50);
-      
+
       setTimeout(()=>{
         fl.style.opacity=0;
         setTimeout(()=>{
-            fl.remove();
-            try { localStorage.removeItem('chem_auth_v4'); } catch(e) {}
-            document.getElementById('authInput').value = '';
-            document.getElementById('authOverlay').style.display = 'flex';
+          fl.remove();
+          try { localStorage.removeItem('chem_auth_v4'); } catch(e) {}
+          document.getElementById('authInput').value = '';
+          document.getElementById('authOverlay').style.display = 'flex';
         },500);
       },1200);
     });
@@ -803,8 +801,8 @@ const App={
 
     document.addEventListener('keydown',e=>{
       if(document.getElementById('authOverlay').style.display !== 'none') {
-          if(e.key === 'Enter') document.getElementById('authBtn').click();
-          return;
+        if(e.key === 'Enter') document.getElementById('authBtn').click();
+        return;
       }
       if(this.$.hintModalOverlay.classList.contains('show')||this.$.wrongNoteModalOverlay.classList.contains('show'))return;
       if(this.state.currentMode===6){
@@ -848,7 +846,7 @@ const App={
     const mode=this.state.currentMode;
     let pool=[];
     if(mode===5) pool=CHEMICALS.map((_,i)=>i);
-    else if(mode===1) pool=Array.from({length: 23}, (_,i)=>i); 
+    else if(mode===1) pool=Array.from({length: 23}, (_,i)=>i);
     else pool=REACTIONS.map((_,i)=>i);
     for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
     this.state.cycleQueue=[...pool];
@@ -868,7 +866,7 @@ const App={
     clearInterval(this.state.timerInterval);
     this.state.currentMaxTime=this.state.timerDuration;this.state.timerLeft=this.state.currentMaxTime;
     this.$.timerBar.style.transition='none';this.$.timerBar.style.width='100%';this.$.timerBar.classList.remove('danger');
-    
+
     if(this.state.timerDuration === 0) return;
 
     void this.$.timerBar.offsetWidth;this.$.timerBar.style.transition='width 0.1s linear, background 0.3s';
@@ -878,7 +876,6 @@ const App={
         lt = Date.now();
         return;
       }
-      
       if(this.state.isAnswerChecked){clearInterval(this.state.timerInterval);return;}
       const now=Date.now();this.state.timerLeft-=(now-lt);lt=now;
       if(this.state.timerLeft<=0){this.state.timerLeft=0;clearInterval(this.state.timerInterval);this.$.timerBar.style.width='0%';this.timeOutForceWrong();}
@@ -890,18 +887,18 @@ const App={
     this.playSound('error'); this.playHaptic('error');
     this.state.isAnswerRevealed=false;this.state.score.streak=0;this.state.score.wrong++;
     const q=this.state.currentQuestion;q.isTimedOut=true;
-    
+
     if(!this.state.retryNoteId) {
-        this.generateBeautifulWrongNote(q);
+      this.generateBeautifulWrongNote(q);
     } else {
-        const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
-        if(note) {
-            note.failCount = Math.min((note.failCount || 1) + 1, 3);
-            try{localStorage.setItem('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes));}catch(e){}
-            this.renderWrongNotes();
-        }
+      const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
+      if(note) {
+        note.failCount = Math.min((note.failCount || 1) + 1, 3);
+        try{localStorage.setItem('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes));}catch(e){}
+        this.renderWrongNotes();
+      }
     }
-    
+
     this.renderAll(null);
     this.$.resultBanner.className='result-banner wrong-banner show';
     this.$.resultBanner.innerHTML=`<div style="display:flex;align-items:center;width:100%;justify-content:space-between"><span><span style="color:var(--c-wrong)">⏰ 시간 초과!</span> <span style="font-weight:400;margin-left:10px">마저 답을 입력해보세요.</span></span><button class="show-answer-btn">정답 확인</button></div>`;
@@ -924,74 +921,75 @@ const App={
       let pos = q.cursor[q.activeKey] !== undefined ? q.cursor[q.activeKey] : val.length;
 
       if(key === 'LEFT') {
-          if(pos > 0) q.cursor[q.activeKey] = pos - 1;
+        if(pos > 0) q.cursor[q.activeKey] = pos - 1;
       } else if(key === 'RIGHT') {
-          if(pos < val.length) q.cursor[q.activeKey] = pos + 1;
+        if(pos < val.length) q.cursor[q.activeKey] = pos + 1;
       } else if(key.startsWith('NUM_')) {
-          let char = key.replace('NUM_','');
-          q.inputs[q.activeKey] = val.slice(0, pos) + char + val.slice(pos);
-          q.cursor[q.activeKey] = pos + char.length;
+        let char = key.replace('NUM_','');
+        q.inputs[q.activeKey] = val.slice(0, pos) + char + val.slice(pos);
+        q.cursor[q.activeKey] = pos + char.length;
       } else if(key.startsWith('ELEM_')) {
-          let char = key.replace('ELEM_','');
-          q.inputs[q.activeKey] = val.slice(0, pos) + char + val.slice(pos);
-          q.cursor[q.activeKey] = pos + char.length;
+        let char = key.replace('ELEM_','');
+        q.inputs[q.activeKey] = val.slice(0, pos) + char + val.slice(pos);
+        q.cursor[q.activeKey] = pos + char.length;
       } else if(key === 'DEL') {
-          if(pos > 0) {
-              let dl = 1;
-              let beforeCursor = val.slice(0, pos);
-              if(/[a-z]$/.test(beforeCursor) && beforeCursor.length >= 2 && /[A-Z]/.test(beforeCursor.slice(-2,-1))) dl = 2;
-              q.inputs[q.activeKey] = val.slice(0, pos - dl) + val.slice(pos);
-              q.cursor[q.activeKey] = pos - dl;
-          }
+        if(pos > 0) {
+          let dl = 1;
+          let beforeCursor = val.slice(0, pos);
+          if(/[a-z]$/.test(beforeCursor) && beforeCursor.length >= 2 && /[A-Z]/.test(beforeCursor.slice(-2,-1))) dl = 2;
+          q.inputs[q.activeKey] = val.slice(0, pos - dl) + val.slice(pos);
+          q.cursor[q.activeKey] = pos - dl;
+        }
       }
-      
+
       if(wasWrong) this.renderAll(); else this.renderEquation();
-      
-    }else if(key==='CONFIRM'){
-        if(!this.state.isAnswerChecked||this.state.currentQuestion?.isTimedOut) {
-            const q=this.state.currentQuestion;
-            if(q && q.inputs[q.activeKey]){
-                const emptyB = q.blanks.find(b => !(q.inputs[b.key]));
-                if(emptyB) {
-                    q.activeKey = emptyB.key;
-                    q.cursor = q.cursor || {};
-                    if(q.cursor[emptyB.key] === undefined) q.cursor[emptyB.key] = (q.inputs[emptyB.key]||'').length;
-                    this.playSound('tap'); this.playHaptic('tap');
-                    this.renderEquation();
-                    return; 
-                }
-            }
-            this.checkAnswer();
+
+    } else if(key==='CONFIRM'){
+      if(!this.state.isAnswerChecked||this.state.currentQuestion?.isTimedOut) {
+        const q=this.state.currentQuestion;
+        /* ── [BUG FIX LOW] 현재 칸 공백 여부와 무관하게 빈 칸 전체 탐색 ── */
+        if(q) {
+          const emptyB = q.blanks.find(b => !(q.inputs[b.key]));
+          if(emptyB) {
+            q.activeKey = emptyB.key;
+            q.cursor = q.cursor || {};
+            if(q.cursor[emptyB.key] === undefined) q.cursor[emptyB.key] = (q.inputs[emptyB.key]||'').length;
+            this.playSound('tap'); this.playHaptic('tap');
+            this.renderEquation();
+            return;
+          }
         }
+        this.checkAnswer();
+      }
     } else if(key==='NEXT'){
-        this.playSound('tap'); this.playHaptic('tap');
-        if((this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)||this.state.isLastWrongAttempt) {
-            if(this.state.isRetryPlaylistMode) {
-                if (this.state.isAnswerRevealed || this.state.isLastWrongAttempt) {
-                    let skipped = this.state.retryPlaylist.shift();
-                    this.state.retryPlaylist.push(skipped);
-                    this.loadNextRetryPlaylistItem();
-                } else if (this.state.isAnswerChecked) {
-                    this.loadNextRetryPlaylistItem();
-                }
-            } else if(this.state.retryNoteId) {
-                this.exitRetry();
-            } else {
-                this.generateQuestion(); 
-            }
+      this.playSound('tap'); this.playHaptic('tap');
+      if((this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)||this.state.isLastWrongAttempt) {
+        if(this.state.isRetryPlaylistMode) {
+          if (this.state.isAnswerRevealed || this.state.isLastWrongAttempt) {
+            let skipped = this.state.retryPlaylist.shift();
+            this.state.retryPlaylist.push(skipped);
+            this.loadNextRetryPlaylistItem();
+          } else if (this.state.isAnswerChecked) {
+            this.loadNextRetryPlaylistItem();
+          }
+        } else if(this.state.retryNoteId) {
+          this.exitRetry();
+        } else {
+          this.generateQuestion();
         }
+      }
     }
   },
 
   setMode(mode, preserveCycle = false){
     if(this.state.retryNoteId) {
-        this.state.retryNoteId = null;
-        document.getElementById('retryBanner').style.display = 'none';
-        this.state.savedCycleState = null;
-        this.state.isRetryPlaylistMode = false;
+      this.state.retryNoteId = null;
+      document.getElementById('retryBanner').style.display = 'none';
+      this.state.savedCycleState = null;
+      this.state.isRetryPlaylistMode = false;
     }
     if(this.state.currentMode===mode)return;
-    
+
     this.state.currentMode=mode;
     this.$.modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.mode)===mode));
     const is6=mode===6;
@@ -999,8 +997,8 @@ const App={
     this.$.keyboardWrap.style.display=is6?'none':'';
     this.$.timerSelectWrap.style.display=is6?'none':'';
     this.$.mode6Wrap.classList.toggle('m6-active', is6);
-    this.$.cycleWrap.style.display=(!is6)?'flex':'none'; 
-    
+    this.$.cycleWrap.style.display=(!is6)?'flex':'none';
+
     if(!preserveCycle) this.initCycleQueue();
 
     if(is6){clearInterval(this.state.timerInterval);this.m6GenCards();this.m6Render();return;}
@@ -1012,10 +1010,10 @@ const App={
   setActiveBlank(key){
     if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut&&!this.state.isLastWrongAttempt)return;
     const q=this.state.currentQuestion;if(q){
-        q.activeKey=key;
-        q.cursor = q.cursor || {};
-        if(q.cursor[key] === undefined) q.cursor[key] = (q.inputs[key]||'').length;
-        this.playSound('tap'); this.playHaptic('tap'); this.renderEquation();
+      q.activeKey=key;
+      q.cursor = q.cursor || {};
+      if(q.cursor[key] === undefined) q.cursor[key] = (q.inputs[key]||'').length;
+      this.playSound('tap'); this.playHaptic('tap'); this.renderEquation();
     }
   },
 
@@ -1028,7 +1026,7 @@ const App={
     const useCycle=this.state.isCycleMode&&this.state.currentMode!==6;
     const pickIndex=(pool)=>{
       if(useCycle){
-        if(this.state.cycleQueue.length===0) this.initCycleQueue(); 
+        if(this.state.cycleQueue.length===0) this.initCycleQueue();
         return this.state.cycleQueue.shift();
       }
       let idx=Math.floor(Math.random()*pool.length);
@@ -1043,27 +1041,26 @@ const App={
       case 1:
         let isTemplate = false; let rxIdx = 0;
         if(useCycle) {
-            const idx = pickIndex(Array.from({length: 23}, (_,i)=>i));
-            if(idx < COEF_TEMPLATES.length) { isTemplate = true; rxIdx = idx; }
-            else { isTemplate = false; rxIdx = idx - COEF_TEMPLATES.length; }
+          const idx = pickIndex(Array.from({length: 23}, (_,i)=>i));
+          if(idx < COEF_TEMPLATES.length) { isTemplate = true; rxIdx = idx; }
+          else { isTemplate = false; rxIdx = idx - COEF_TEMPLATES.length; }
         } else {
-            isTemplate = Math.random() < 0.5;
-            if(isTemplate) rxIdx = Math.floor(Math.random() * COEF_TEMPLATES.length);
-            else {
-                rxIdx = Math.floor(Math.random() * REACTIONS.length);
-                if(REACTIONS.length > 1 && this.state.lastQuestionName) {
-                    let t2=0; while(REACTIONS[rxIdx].name === this.state.lastQuestionName && t2<10) { rxIdx=Math.floor(Math.random()*REACTIONS.length); t2++; }
-                }
+          isTemplate = Math.random() < 0.5;
+          if(isTemplate) rxIdx = Math.floor(Math.random() * COEF_TEMPLATES.length);
+          else {
+            rxIdx = Math.floor(Math.random() * REACTIONS.length);
+            if(REACTIONS.length > 1 && this.state.lastQuestionName) {
+              let t2=0; while(REACTIONS[rxIdx].name === this.state.lastQuestionName && t2<10) { rxIdx=Math.floor(Math.random()*REACTIONS.length); t2++; }
             }
+          }
         }
-
         if(isTemplate){
-            const tmpl = COEF_TEMPLATES[rxIdx];
-            const data = tmpl.gen(); q.name = tmpl.label; q.isAbstract = true;
-            q.displayReactants = data.fmt.map(f=>({...f})); q.displayProducts = data.fmtP.map(f=>({...f}));
+          const tmpl = COEF_TEMPLATES[rxIdx];
+          const data = tmpl.gen(); q.name = tmpl.label; q.isAbstract = true;
+          q.displayReactants = data.fmt.map(f=>({...f})); q.displayProducts = data.fmtP.map(f=>({...f}));
         } else {
-            const rx = REACTIONS[rxIdx]; q.name = rx.name; q.isAbstract = false;
-            q.displayReactants = rx.reactants.map(f=>({...f})); q.displayProducts = rx.products.map(f=>({...f}));
+          const rx = REACTIONS[rxIdx]; q.name = rx.name; q.isAbstract = false;
+          q.displayReactants = rx.reactants.map(f=>({...f})); q.displayProducts = rx.products.map(f=>({...f}));
         }
         q.displayReactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:r.coef.toString()}));
         q.displayProducts.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:p.coef.toString()}));
@@ -1085,83 +1082,85 @@ const App={
     const q=this.state.currentQuestion;if(!q)return;
     let ok=true,ce=false;
     q.blanks.forEach(b=>{const v=q.inputs[b.key]||'';if(v!==b.answer){ok=false;if(this.state.currentMode!==1&&v==='1'+b.answer)ce=true;}});
-    
+
     if(this.state.isRetryPlaylistMode) {
-        if(ok) {
-            if(q.isTimedOut) {
-                this.playSound('success'); this.playHaptic('success');
-                this.state.isAnswerChecked=true;
-                q.isTimedOut=false; 
-                clearInterval(this.state.timerInterval);
-                this.renderAll('retry_timeout_correct');
-            } else {
-                this.playSound('success'); this.playHaptic('success');
-                this.deleteWrongNote(this.state.retryNoteId);
-                this.state.retryPlaylist.shift();
-                this.state.isAnswerChecked=true;
-                clearInterval(this.state.timerInterval);
-                if (this.state.retryPlaylist.length > 0) {
-                    this.renderAll('retry_playlist_correct_next');
-                } else {
-                    this.renderAll('retry_playlist_correct_done');
-                }
-            }
+      if(ok) {
+        if(q.isTimedOut) {
+          this.playSound('success'); this.playHaptic('success');
+          /* ── [BUG FIX HIGH] 타임아웃 후 정답 시 플레이리스트에서 제거 ── */
+          this.state.retryPlaylist.shift();
+          this.state.isAnswerChecked=true;
+          q.isTimedOut=false;
+          clearInterval(this.state.timerInterval);
+          this.renderAll('retry_timeout_correct');
         } else {
-            this.playSound('error'); this.playHaptic('error');
-            if(!q.isTimedOut) { 
-                const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
-                if(note) {
-                    note.failCount = Math.min((note.failCount || 1) + 1, 3);
-                    try{localStorage.setItem('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes));}catch(e){}
-                    this.renderWrongNotes();
-                }
-            }
-            this.state.wrongBlanks={};
-            q.blanks.forEach(b=>{if((q.inputs[b.key]||'')!==b.answer)this.state.wrongBlanks[b.key]=true;});
-            q.coefOneErrorFlag=ce;
-            this.state.isLastWrongAttempt=true;
-            this.state.isAnswerChecked=false;
-            this.renderAll(false);
+          this.playSound('success'); this.playHaptic('success');
+          this.deleteWrongNote(this.state.retryNoteId);
+          this.state.retryPlaylist.shift();
+          this.state.isAnswerChecked=true;
+          clearInterval(this.state.timerInterval);
+          if (this.state.retryPlaylist.length > 0) {
+            this.renderAll('retry_playlist_correct_next');
+          } else {
+            this.renderAll('retry_playlist_correct_done');
+          }
         }
-        return;
+      } else {
+        this.playSound('error'); this.playHaptic('error');
+        if(!q.isTimedOut) {
+          const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
+          if(note) {
+            note.failCount = Math.min((note.failCount || 1) + 1, 3);
+            try{localStorage.setItem('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes));}catch(e){}
+            this.renderWrongNotes();
+          }
+        }
+        this.state.wrongBlanks={};
+        q.blanks.forEach(b=>{if((q.inputs[b.key]||'')!==b.answer)this.state.wrongBlanks[b.key]=true;});
+        q.coefOneErrorFlag=ce;
+        this.state.isLastWrongAttempt=true;
+        this.state.isAnswerChecked=false;
+        this.renderAll(false);
+      }
+      return;
     }
 
     if(this.state.retryNoteId) {
-        if(ok) {
-            if(q.isTimedOut) {
-                this.playSound('success'); this.playHaptic('success');
-                this.state.isAnswerChecked=true;
-                q.isTimedOut=false; 
-                clearInterval(this.state.timerInterval);
-                this.renderAll('retry_timeout_correct');
-            } else {
-                this.playSound('success'); this.playHaptic('success');
-                this.deleteWrongNote(this.state.retryNoteId);
-                this.state.retryNoteId = null;
-                document.getElementById('retryBanner').style.display='none';
-                this.$.timerSelectWrap.style.display='flex';
-                this.state.isAnswerChecked=true;
-                clearInterval(this.state.timerInterval);
-                this.renderAll('retry_correct');
-            }
+      if(ok) {
+        if(q.isTimedOut) {
+          this.playSound('success'); this.playHaptic('success');
+          this.state.isAnswerChecked=true;
+          q.isTimedOut=false;
+          clearInterval(this.state.timerInterval);
+          this.renderAll('retry_timeout_correct');
         } else {
-            this.playSound('error'); this.playHaptic('error');
-            if(!q.isTimedOut) { 
-                const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
-                if(note) {
-                    note.failCount = Math.min((note.failCount || 1) + 1, 3);
-                    try{localStorage.setItem('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes));}catch(e){}
-                    this.renderWrongNotes();
-                }
-            }
-            this.state.wrongBlanks={};
-            q.blanks.forEach(b=>{if((q.inputs[b.key]||'')!==b.answer)this.state.wrongBlanks[b.key]=true;});
-            q.coefOneErrorFlag=ce;
-            this.state.isLastWrongAttempt=true;
-            this.state.isAnswerChecked=false;
-            this.renderAll(false);
+          this.playSound('success'); this.playHaptic('success');
+          this.deleteWrongNote(this.state.retryNoteId);
+          this.state.retryNoteId = null;
+          document.getElementById('retryBanner').style.display='none';
+          this.$.timerSelectWrap.style.display='flex';
+          this.state.isAnswerChecked=true;
+          clearInterval(this.state.timerInterval);
+          this.renderAll('retry_correct');
         }
-        return;
+      } else {
+        this.playSound('error'); this.playHaptic('error');
+        if(!q.isTimedOut) {
+          const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
+          if(note) {
+            note.failCount = Math.min((note.failCount || 1) + 1, 3);
+            try{localStorage.setItem('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes));}catch(e){}
+            this.renderWrongNotes();
+          }
+        }
+        this.state.wrongBlanks={};
+        q.blanks.forEach(b=>{if((q.inputs[b.key]||'')!==b.answer)this.state.wrongBlanks[b.key]=true;});
+        q.coefOneErrorFlag=ce;
+        this.state.isLastWrongAttempt=true;
+        this.state.isAnswerChecked=false;
+        this.renderAll(false);
+      }
+      return;
     }
 
     if(q.isTimedOut){
@@ -1245,14 +1244,14 @@ const App={
     if(!s) s = '';
     let html = '';
     for(let i=0; i<=s.length; i++){
-        if(cursorPos === i) html += '<b style="border-left:2px solid var(--c-accent-1); animation:blink 1s step-end infinite; margin-right:-2px; vertical-align:middle; display:inline-block; height:1em"></b>';
-        if(i<s.length){
-            let c = s[i];
-            let isCoef = true;
-            for(let j=0; j<=i; j++) if(/[a-zA-Z]/.test(s[j])) isCoef = false;
-            if(/\d/.test(c) && !isCoef) html += `<sub>${c}</sub>`;
-            else html += c;
-        }
+      if(cursorPos === i) html += '<b style="border-left:2px solid var(--c-accent-1); animation:blink 1s step-end infinite; margin-right:-2px; vertical-align:middle; display:inline-block; height:1em"></b>';
+      if(i<s.length){
+        let c = s[i];
+        let isCoef = true;
+        for(let j=0; j<=i; j++) if(/[a-zA-Z]/.test(s[j])) isCoef = false;
+        if(/\d/.test(c) && !isCoef) html += `<sub>${c}</sub>`;
+        else html += c;
+      }
     }
     return html;
   },
@@ -1262,9 +1261,9 @@ const App={
     let inp=q.inputs[key]||'';
     let cls='blank-box';
     let isActive = q.activeKey===key && (!this.state.isAnswerChecked||q.isTimedOut);
-    
+
     if(isActive) cls+=' active';
-    
+
     let disp='';
     if(this.state.isAnswerChecked&&!q.isTimedOut){
       const ok=inp===answer;cls+=ok?' correct':' wrong';
@@ -1290,7 +1289,6 @@ const App={
     else{
       this.$.resultBanner.className='result-banner wrong-banner show';
       let w='';if(this.state.currentQuestion.coefOneErrorFlag)w=`<div style="color:var(--c-wrong);font-size:13px;margin-bottom:8px;width:100%">⚠️ 주의: 화학에서 계수 '1'은 생략해야 합니다.</div>`;
-      
       if(this.state.isAnswerRevealed)this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%">❌ 오답입니다. 정답이 표시되었습니다.</div>`;
       else if(this.state.isRetryPlaylistMode) this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between"><span>❌ 오답입니다. (계속 풀거나 건너뛰기 가능)</span><button class="show-answer-btn">정답 확인</button></div>`;
       else this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between"><span>❌ 오답입니다.</span><button class="show-answer-btn">정답 확인</button></div>`;
@@ -1330,6 +1328,8 @@ const App={
   m6Next(){this.playSound('tap'); this.state.m6Index=(this.state.m6Index+1)%this.state.m6Cards.length;this.m6Render('next');},
   m6Prev(){this.playSound('tap'); this.state.m6Index=(this.state.m6Index-1+this.state.m6Cards.length)%this.state.m6Cards.length;this.m6Render('prev');},
   m6Shuffle(){this.playSound('tap'); const c=[...this.state.m6Cards];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}this.state.m6Cards=c;this.state.m6Index=0;this.m6Render();},
+
+  formatFormula(f){return f.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('');},
   toggleTheme(){this.playSound('tap'); this.state.isDarkMode=!this.state.isDarkMode;document.body.classList.toggle('light',!this.state.isDarkMode);document.getElementById('themeBtn').textContent=this.state.isDarkMode?'🌙':'☀️';}
 };
 
