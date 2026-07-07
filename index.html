@@ -108,6 +108,39 @@
   .egg-particle{position:fixed;pointer-events:none;z-index:9999999;font-size:28px;animation:egg-pop .8s cubic-bezier(.25,1,.5,1) forwards;}
   @keyframes egg-pop{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1.5);opacity:0}}
 
+  /* ── 주기율표 ── */
+  .pt-modal-box{max-width:960px;}
+  .pt-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;padding:12px 16px;margin-bottom:14px;}
+  .pt-toggle-label{font-size:13px;font-weight:700;color:var(--c-text-primary);}
+  .pt-toggle-label small{display:block;font-size:11px;font-weight:400;color:var(--c-text-secondary);margin-top:2px;}
+  .pt-toggle-switch{position:relative;width:52px;height:30px;border-radius:15px;background:var(--c-border);border:none;cursor:pointer;flex-shrink:0;transition:background .25s;padding:0;}
+  .pt-toggle-switch.on{background:var(--c-accent-1);}
+  .pt-toggle-knob{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .25s;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .pt-toggle-switch.on .pt-toggle-knob{transform:translateX(22px);}
+  .pt-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:14px;font-size:11px;color:var(--c-text-secondary);}
+  .pt-legend-item{display:flex;align-items:center;gap:5px;}
+  .pt-legend-swatch{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
+  .pt-scroll{overflow-x:auto;padding-bottom:8px;}
+  .pt-grid{display:grid;gap:3px;min-width:660px;}
+  .pt-grid.pt-simple{min-width:0;max-width:520px;margin:0 auto;}
+  .pt-cell{position:relative;aspect-ratio:1/1;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#0B0F19;padding:2px;cursor:default;transition:transform .15s;overflow:hidden;}
+  .pt-cell:active{transform:scale(.9);}
+  .pt-z{font-size:clamp(6px,1.1vw,9px);font-family:var(--font-mono);font-weight:700;position:absolute;top:2px;left:4px;opacity:.75;}
+  .pt-sym{font-size:clamp(11px,2.4vw,17px);font-family:var(--font-mono);font-weight:900;line-height:1;}
+  .pt-name{font-size:clamp(6px,1vw,8.5px);font-weight:700;line-height:1;margin-top:2px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .pt-cell.pt-placeholder{background:var(--c-surface-2)!important;color:var(--c-text-secondary);border:1px dashed var(--c-border);font-family:var(--font-mono);font-size:clamp(9px,1.6vw,12px);font-weight:700;}
+  .pt-cat-alkali{background:#F87171;}
+  .pt-cat-alkaline{background:#FB923C;}
+  .pt-cat-transition{background:#60A5FA;}
+  .pt-cat-lanth{background:#C084FC;}
+  .pt-cat-actin{background:#F472B6;}
+  .pt-cat-post{background:#4ADE80;}
+  .pt-cat-metalloid{background:#A3E635;}
+  .pt-cat-nonmetal{background:#22D3EE;}
+  .pt-cat-halogen{background:#FDE047;}
+  .pt-cat-noble{background:#818CF8;color:#fff;}
+  .pt-cat-unknown{background:#94A3B8;}
+
   /* ── MODE 6 플래시카드 ── */
   #mode6Wrap{display:none;flex-direction:column;gap:14px;flex-grow:1;}
   #mode6Wrap.m6-active{display:flex;}
@@ -199,6 +232,7 @@
       <button class="icon-btn" id="hapticBtn" title="진동 토글">📳</button>
       <button class="icon-btn" id="wrongNoteBtn" title="오답 노트">📓</button>
       <button class="icon-btn" id="hintBtn" title="전체 반응식 보기">📋</button>
+      <button class="icon-btn" id="periodicBtn" title="주기율표 보기">⚛️</button>
       <button class="icon-btn" id="themeBtn" title="다크/라이트 모드">🌙</button>
     </div>
   </header>
@@ -338,6 +372,17 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="periodicModalOverlay">
+  <div class="modal-box pt-modal-box">
+    <div class="modal-header"><div class="modal-title">⚛️ 주기율표</div><button class="modal-close" id="periodicModalClose">✕</button></div>
+    <div class="pt-toggle-row">
+      <div class="pt-toggle-label">👁 간략히 보기<small>중학교 필수 원소 (1번 수소 ~ 20번 칼슘)만 표시</small></div>
+      <button class="pt-toggle-switch" id="simplePeriodicToggle" role="switch" aria-checked="false"><span class="pt-toggle-knob"></span></button>
+    </div>
+    <div class="modal-content" id="periodicContent"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="wrongNoteModalOverlay">
   <div class="modal-box" style="height:90vh">
     <div class="modal-header"><div class="modal-title">📓 오답 노트</div><button class="modal-close" id="wrongNoteModalClose">✕</button></div>
@@ -406,6 +451,133 @@ const COEF_TEMPLATES=[
 ];
 const CORE_ELEMENTS=['H','C','O','N','S','P','Na','Mg','Ca','Cu','Ag','Cl','A','B'];
 
+/* z=원자번호, sym=원소기호, name=한글이름, cat=분류(색상), group=족(1~18), period=주기(1~7), f=란타넘족/악티늄족일 때의 순번(1~15) */
+const ELEMENTS=[
+  {z:1,sym:'H',name:'수소',cat:'nonmetal',group:1,period:1},
+  {z:2,sym:'He',name:'헬륨',cat:'noble',group:18,period:1},
+  {z:3,sym:'Li',name:'리튬',cat:'alkali',group:1,period:2},
+  {z:4,sym:'Be',name:'베릴륨',cat:'alkaline',group:2,period:2},
+  {z:5,sym:'B',name:'붕소',cat:'metalloid',group:13,period:2},
+  {z:6,sym:'C',name:'탄소',cat:'nonmetal',group:14,period:2},
+  {z:7,sym:'N',name:'질소',cat:'nonmetal',group:15,period:2},
+  {z:8,sym:'O',name:'산소',cat:'nonmetal',group:16,period:2},
+  {z:9,sym:'F',name:'플루오린',cat:'halogen',group:17,period:2},
+  {z:10,sym:'Ne',name:'네온',cat:'noble',group:18,period:2},
+  {z:11,sym:'Na',name:'나트륨',cat:'alkali',group:1,period:3},
+  {z:12,sym:'Mg',name:'마그네슘',cat:'alkaline',group:2,period:3},
+  {z:13,sym:'Al',name:'알루미늄',cat:'post',group:13,period:3},
+  {z:14,sym:'Si',name:'규소',cat:'metalloid',group:14,period:3},
+  {z:15,sym:'P',name:'인',cat:'nonmetal',group:15,period:3},
+  {z:16,sym:'S',name:'황',cat:'nonmetal',group:16,period:3},
+  {z:17,sym:'Cl',name:'염소',cat:'halogen',group:17,period:3},
+  {z:18,sym:'Ar',name:'아르곤',cat:'noble',group:18,period:3},
+  {z:19,sym:'K',name:'칼륨',cat:'alkali',group:1,period:4},
+  {z:20,sym:'Ca',name:'칼슘',cat:'alkaline',group:2,period:4},
+  {z:21,sym:'Sc',name:'스칸듐',cat:'transition',group:3,period:4},
+  {z:22,sym:'Ti',name:'타이타늄',cat:'transition',group:4,period:4},
+  {z:23,sym:'V',name:'바나듐',cat:'transition',group:5,period:4},
+  {z:24,sym:'Cr',name:'크로뮴',cat:'transition',group:6,period:4},
+  {z:25,sym:'Mn',name:'망가니즈',cat:'transition',group:7,period:4},
+  {z:26,sym:'Fe',name:'철',cat:'transition',group:8,period:4},
+  {z:27,sym:'Co',name:'코발트',cat:'transition',group:9,period:4},
+  {z:28,sym:'Ni',name:'니켈',cat:'transition',group:10,period:4},
+  {z:29,sym:'Cu',name:'구리',cat:'transition',group:11,period:4},
+  {z:30,sym:'Zn',name:'아연',cat:'transition',group:12,period:4},
+  {z:31,sym:'Ga',name:'갈륨',cat:'post',group:13,period:4},
+  {z:32,sym:'Ge',name:'저마늄',cat:'metalloid',group:14,period:4},
+  {z:33,sym:'As',name:'비소',cat:'metalloid',group:15,period:4},
+  {z:34,sym:'Se',name:'셀레늄',cat:'nonmetal',group:16,period:4},
+  {z:35,sym:'Br',name:'브로민',cat:'halogen',group:17,period:4},
+  {z:36,sym:'Kr',name:'크립톤',cat:'noble',group:18,period:4},
+  {z:37,sym:'Rb',name:'루비듐',cat:'alkali',group:1,period:5},
+  {z:38,sym:'Sr',name:'스트론튬',cat:'alkaline',group:2,period:5},
+  {z:39,sym:'Y',name:'이트륨',cat:'transition',group:3,period:5},
+  {z:40,sym:'Zr',name:'지르코늄',cat:'transition',group:4,period:5},
+  {z:41,sym:'Nb',name:'나이오븀',cat:'transition',group:5,period:5},
+  {z:42,sym:'Mo',name:'몰리브데넘',cat:'transition',group:6,period:5},
+  {z:43,sym:'Tc',name:'테크네튬',cat:'transition',group:7,period:5},
+  {z:44,sym:'Ru',name:'루테늄',cat:'transition',group:8,period:5},
+  {z:45,sym:'Rh',name:'로듐',cat:'transition',group:9,period:5},
+  {z:46,sym:'Pd',name:'팔라듐',cat:'transition',group:10,period:5},
+  {z:47,sym:'Ag',name:'은',cat:'transition',group:11,period:5},
+  {z:48,sym:'Cd',name:'카드뮴',cat:'transition',group:12,period:5},
+  {z:49,sym:'In',name:'인듐',cat:'post',group:13,period:5},
+  {z:50,sym:'Sn',name:'주석',cat:'post',group:14,period:5},
+  {z:51,sym:'Sb',name:'안티모니',cat:'metalloid',group:15,period:5},
+  {z:52,sym:'Te',name:'텔루륨',cat:'metalloid',group:16,period:5},
+  {z:53,sym:'I',name:'아이오딘',cat:'halogen',group:17,period:5},
+  {z:54,sym:'Xe',name:'제논',cat:'noble',group:18,period:5},
+  {z:55,sym:'Cs',name:'세슘',cat:'alkali',group:1,period:6},
+  {z:56,sym:'Ba',name:'바륨',cat:'alkaline',group:2,period:6},
+  {z:57,sym:'La',name:'란타넘',cat:'lanth',period:6,f:1},
+  {z:58,sym:'Ce',name:'세륨',cat:'lanth',period:6,f:2},
+  {z:59,sym:'Pr',name:'프라세오디뮴',cat:'lanth',period:6,f:3},
+  {z:60,sym:'Nd',name:'네오디뮴',cat:'lanth',period:6,f:4},
+  {z:61,sym:'Pm',name:'프로메튬',cat:'lanth',period:6,f:5},
+  {z:62,sym:'Sm',name:'사마륨',cat:'lanth',period:6,f:6},
+  {z:63,sym:'Eu',name:'유로퓸',cat:'lanth',period:6,f:7},
+  {z:64,sym:'Gd',name:'가돌리늄',cat:'lanth',period:6,f:8},
+  {z:65,sym:'Tb',name:'터븀',cat:'lanth',period:6,f:9},
+  {z:66,sym:'Dy',name:'디스프로슘',cat:'lanth',period:6,f:10},
+  {z:67,sym:'Ho',name:'홀뮴',cat:'lanth',period:6,f:11},
+  {z:68,sym:'Er',name:'어븀',cat:'lanth',period:6,f:12},
+  {z:69,sym:'Tm',name:'툴륨',cat:'lanth',period:6,f:13},
+  {z:70,sym:'Yb',name:'이터븀',cat:'lanth',period:6,f:14},
+  {z:71,sym:'Lu',name:'루테튬',cat:'lanth',period:6,f:15},
+  {z:72,sym:'Hf',name:'하프늄',cat:'transition',group:4,period:6},
+  {z:73,sym:'Ta',name:'탄탈럼',cat:'transition',group:5,period:6},
+  {z:74,sym:'W',name:'텅스텐',cat:'transition',group:6,period:6},
+  {z:75,sym:'Re',name:'레늄',cat:'transition',group:7,period:6},
+  {z:76,sym:'Os',name:'오스뮴',cat:'transition',group:8,period:6},
+  {z:77,sym:'Ir',name:'이리듐',cat:'transition',group:9,period:6},
+  {z:78,sym:'Pt',name:'백금',cat:'transition',group:10,period:6},
+  {z:79,sym:'Au',name:'금',cat:'transition',group:11,period:6},
+  {z:80,sym:'Hg',name:'수은',cat:'transition',group:12,period:6},
+  {z:81,sym:'Tl',name:'탈륨',cat:'post',group:13,period:6},
+  {z:82,sym:'Pb',name:'납',cat:'post',group:14,period:6},
+  {z:83,sym:'Bi',name:'비스무트',cat:'post',group:15,period:6},
+  {z:84,sym:'Po',name:'폴로늄',cat:'metalloid',group:16,period:6},
+  {z:85,sym:'At',name:'아스타틴',cat:'halogen',group:17,period:6},
+  {z:86,sym:'Rn',name:'라돈',cat:'noble',group:18,period:6},
+  {z:87,sym:'Fr',name:'프랑슘',cat:'alkali',group:1,period:7},
+  {z:88,sym:'Ra',name:'라듐',cat:'alkaline',group:2,period:7},
+  {z:89,sym:'Ac',name:'악티늄',cat:'actin',period:7,f:1},
+  {z:90,sym:'Th',name:'토륨',cat:'actin',period:7,f:2},
+  {z:91,sym:'Pa',name:'프로트악티늄',cat:'actin',period:7,f:3},
+  {z:92,sym:'U',name:'우라늄',cat:'actin',period:7,f:4},
+  {z:93,sym:'Np',name:'넵투늄',cat:'actin',period:7,f:5},
+  {z:94,sym:'Pu',name:'플루토늄',cat:'actin',period:7,f:6},
+  {z:95,sym:'Am',name:'아메리슘',cat:'actin',period:7,f:7},
+  {z:96,sym:'Cm',name:'퀴륨',cat:'actin',period:7,f:8},
+  {z:97,sym:'Bk',name:'버클륨',cat:'actin',period:7,f:9},
+  {z:98,sym:'Cf',name:'캘리포늄',cat:'actin',period:7,f:10},
+  {z:99,sym:'Es',name:'아인슈타이늄',cat:'actin',period:7,f:11},
+  {z:100,sym:'Fm',name:'페르뮴',cat:'actin',period:7,f:12},
+  {z:101,sym:'Md',name:'멘델레븀',cat:'actin',period:7,f:13},
+  {z:102,sym:'No',name:'노벨륨',cat:'actin',period:7,f:14},
+  {z:103,sym:'Lr',name:'로렌슘',cat:'actin',period:7,f:15},
+  {z:104,sym:'Rf',name:'러더포듐',cat:'transition',group:4,period:7},
+  {z:105,sym:'Db',name:'더브늄',cat:'transition',group:5,period:7},
+  {z:106,sym:'Sg',name:'시보귬',cat:'transition',group:6,period:7},
+  {z:107,sym:'Bh',name:'보륨',cat:'transition',group:7,period:7},
+  {z:108,sym:'Hs',name:'하슘',cat:'transition',group:8,period:7},
+  {z:109,sym:'Mt',name:'마이트너륨',cat:'unknown',group:9,period:7},
+  {z:110,sym:'Ds',name:'다름슈타튬',cat:'unknown',group:10,period:7},
+  {z:111,sym:'Rg',name:'뢴트게늄',cat:'unknown',group:11,period:7},
+  {z:112,sym:'Cn',name:'코페르니슘',cat:'transition',group:12,period:7},
+  {z:113,sym:'Nh',name:'니호늄',cat:'unknown',group:13,period:7},
+  {z:114,sym:'Fl',name:'플레로븀',cat:'post',group:14,period:7},
+  {z:115,sym:'Mc',name:'모스코븀',cat:'unknown',group:15,period:7},
+  {z:116,sym:'Lv',name:'리버모륨',cat:'unknown',group:16,period:7},
+  {z:117,sym:'Ts',name:'테네신',cat:'unknown',group:17,period:7},
+  {z:118,sym:'Og',name:'오가네손',cat:'unknown',group:18,period:7}
+];
+const PT_CATEGORIES=[
+  ['alkali','알칼리 금속'],['alkaline','알칼리 토금속'],['transition','전이 금속'],
+  ['lanth','란타넘족'],['actin','악티늄족'],['post','전이 후 금속'],
+  ['metalloid','준금속'],['nonmetal','비금속'],['halogen','할로젠'],['noble','비활성 기체']
+];
+
 /* ── 앱 ── */
 const App={
   state:{
@@ -416,7 +588,7 @@ const App={
     wrongNotes:[],noteFilter:'all',retryNoteId:null,
     isCycleMode:false,cycleQueue:[],cycleTotal:0,lastQuestionName:null,
     m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,
-    isSoundOn:true, isHapticOn:true, isWideMode:false,
+    isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:false,
     savedCycleState:null,
     isRetryPlaylistMode:false, retryPlaylist:[]
   },
@@ -435,7 +607,9 @@ const App={
     cycleWrap:document.getElementById('cycleWrap'),cycleProgressWrap:document.getElementById('cycleProgressWrap'),
     cycleProgressText:document.getElementById('cycleProgressText'),cycleProgressFill:document.getElementById('cycleProgressFill'),
     soundBtn:document.getElementById('soundBtn'),hapticBtn:document.getElementById('hapticBtn'),
-    layoutBtn:document.getElementById('layoutBtn')
+    layoutBtn:document.getElementById('layoutBtn'),
+    periodicModalOverlay:document.getElementById('periodicModalOverlay'),periodicContent:document.getElementById('periodicContent'),
+    simplePeriodicToggle:document.getElementById('simplePeriodicToggle')
   },
 
   init(){
@@ -453,10 +627,13 @@ const App={
       this.state.isSoundOn = localStorage.getItem('chem_sound') !== 'false';
       this.state.isHapticOn = localStorage.getItem('chem_haptic') !== 'false';
       this.state.isWideMode = localStorage.getItem('chem_wide') === 'true';
+      this.state.isSimplePeriodic = localStorage.getItem('chem_pt_simple') === 'true';
     }catch(e){}
     this.updateFeedbackBtns();
     if(this.state.isWideMode) document.body.classList.add('wide-mode');
     this.$.layoutBtn.textContent = this.state.isWideMode ? '📱' : '↔️';
+    this.$.simplePeriodicToggle.classList.toggle('on', this.state.isSimplePeriodic);
+    this.$.simplePeriodicToggle.setAttribute('aria-checked', this.state.isSimplePeriodic);
 
     if(localStorage.getItem('chem_auth_v4') === 'pass') {
       document.getElementById('authOverlay').style.display = 'none';
@@ -703,7 +880,7 @@ const App={
       const mt=e.target.closest('.mode-tab'),bb=e.target.closest('.blank-box'),kb=e.target.closest('.kb-key');
       const th=e.target.closest('#themeBtn'),hi=e.target.closest('#hintBtn'),wn=e.target.closest('#wrongNoteBtn'),sa=e.target.closest('.show-answer-btn');
       const snd=e.target.closest('#soundBtn'),hpt=e.target.closest('#hapticBtn'),lyt=e.target.closest('#layoutBtn');
-      const extR=e.target.closest('#exitRetryBtn');
+      const extR=e.target.closest('#exitRetryBtn'),pt=e.target.closest('#periodicBtn');
       if(mt)this.setMode(parseInt(mt.dataset.mode));
       if(bb)this.setActiveBlank(bb.dataset.key);
       if(kb)this.handleKeyPress(kb.dataset.key);
@@ -712,6 +889,7 @@ const App={
       if(wn){this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');}
       if(sa)this.revealAnswers();
       if(lyt) this.toggleWideMode();
+      if(pt){this.renderPeriodicTable();this.$.periodicModalOverlay.classList.add('show');this.playSound('tap');this.playHaptic('tap');}
       if(snd){
         this.state.isSoundOn = !this.state.isSoundOn;
         try{localStorage.setItem('chem_sound', this.state.isSoundOn);}catch(e){}
@@ -761,6 +939,15 @@ const App={
     });
     document.getElementById('hintModalClose').addEventListener('click',()=>this.$.hintModalOverlay.classList.remove('show'));
     document.getElementById('wrongNoteModalClose').addEventListener('click',()=>this.$.wrongNoteModalOverlay.classList.remove('show'));
+    document.getElementById('periodicModalClose').addEventListener('click',()=>this.$.periodicModalOverlay.classList.remove('show'));
+    this.$.simplePeriodicToggle.addEventListener('click',()=>{
+      this.state.isSimplePeriodic=!this.state.isSimplePeriodic;
+      try{localStorage.setItem('chem_pt_simple', this.state.isSimplePeriodic);}catch(e){}
+      this.$.simplePeriodicToggle.classList.toggle('on', this.state.isSimplePeriodic);
+      this.$.simplePeriodicToggle.setAttribute('aria-checked', this.state.isSimplePeriodic);
+      this.playSound('tap'); this.playHaptic('tap');
+      this.renderPeriodicTable();
+    });
     document.getElementById('clearAllNotesBtn').addEventListener('click',()=>this.clearWrongNotes());
     document.getElementById('retryPlaylistBtn').addEventListener('click',()=>this.startRetryPlaylist());
 
@@ -1330,7 +1517,35 @@ const App={
   m6Shuffle(){this.playSound('tap'); const c=[...this.state.m6Cards];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}this.state.m6Cards=c;this.state.m6Index=0;this.m6Render();},
 
   formatFormula(f){return f.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('');},
-  toggleTheme(){this.playSound('tap'); this.state.isDarkMode=!this.state.isDarkMode;document.body.classList.toggle('light',!this.state.isDarkMode);document.getElementById('themeBtn').textContent=this.state.isDarkMode?'🌙':'☀️';}
+  toggleTheme(){this.playSound('tap'); this.state.isDarkMode=!this.state.isDarkMode;document.body.classList.toggle('light',!this.state.isDarkMode);document.getElementById('themeBtn').textContent=this.state.isDarkMode?'🌙':'☀️';},
+
+  /* ── 주기율표 ── */
+  ptLegendHTML(){
+    return `<div class="pt-legend">${PT_CATEGORIES.map(([cls,label])=>`<span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-${cls}"></span>${label}</span>`).join('')}</div>`;
+  },
+  ptCellHTML(e,col,row){
+    return `<div class="pt-cell pt-cat-${e.cat}" style="grid-column:${col};grid-row:${row}" title="${e.z}. ${e.name} (${e.sym})"><span class="pt-z">${e.z}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
+  },
+  renderPeriodicTable(){
+    const simple=this.state.isSimplePeriodic;
+    let cells='';
+    if(simple){
+      ELEMENTS.filter(e=>e.z<=20&&!e.f).forEach(e=>{
+        const col=e.group<=2?e.group:e.group-10;
+        cells+=this.ptCellHTML(e,col,e.period);
+      });
+    }else{
+      ELEMENTS.filter(e=>!e.f).forEach(e=>{cells+=this.ptCellHTML(e,e.group,e.period);});
+      cells+=`<div class="pt-cell pt-placeholder" style="grid-column:3;grid-row:6">57~71</div>`;
+      cells+=`<div class="pt-cell pt-placeholder" style="grid-column:3;grid-row:7">89~103</div>`;
+      ELEMENTS.filter(e=>e.f).forEach(e=>{
+        const row=e.period===6?8:9,col=2+e.f;
+        cells+=this.ptCellHTML(e,col,row);
+      });
+    }
+    const cols=simple?8:18;
+    this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-scroll"><div class="pt-grid ${simple?'pt-simple':''}" style="grid-template-columns:repeat(${cols},1fr)">${cells}</div></div>`;
+  }
 };
 
 document.addEventListener('DOMContentLoaded',()=>App.init());
