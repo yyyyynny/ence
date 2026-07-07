@@ -53,8 +53,7 @@
   .timer-btns{display:flex;gap:6px;flex-wrap:wrap;}
   .timer-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-mono);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
   .timer-btn.active{background:var(--c-accent-3);border-color:var(--c-accent-3);color:#000;}
-  .mode-tabs{display:flex;overflow-x:auto;gap:8px;margin-bottom:16px;padding-bottom:4px;scrollbar-width:none;}
-  .mode-tabs::-webkit-scrollbar{display:none;}
+  .mode-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
   .scroll-fade-x{-webkit-mask-image:linear-gradient(to right,black calc(100% - 28px),transparent 100%);mask-image:linear-gradient(to right,black calc(100% - 28px),transparent 100%);}
   .scroll-fade-x.fade-end{-webkit-mask-image:none;mask-image:none;}
   .mode-tab{flex:0 0 auto;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:12px;color:var(--c-text-secondary);padding:14px 16px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;line-height:1.4;backdrop-filter:blur(10px);}
@@ -122,6 +121,11 @@
 
   /* ── 주기율표 ── */
   .pt-modal-box{max-width:1300px;width:96vw;background:var(--c-surface-solid);}
+  .pt-rotate-btn{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
+  .pt-rotate-btn.on{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
+  .pt-rotate-wrap{transition:transform .3s ease;}
+  .pt-rotate-wrap.pt-rotated{transform:rotate(90deg);transform-origin:center center;width:66vh;height:82vw;max-width:66vh;max-height:82vw;margin:16px auto;}
+  .pt-rotate-wrap.pt-rotated .pt-scroll{width:100%;height:100%;overflow:auto;}
   .pt-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;padding:12px 16px;margin-bottom:14px;}
   .pt-toggle-label{font-size:13px;font-weight:700;color:var(--c-text-primary);}
   .pt-toggle-label small{display:block;font-size:11px;font-weight:400;color:var(--c-text-secondary);margin-top:2px;}
@@ -142,7 +146,7 @@
   .pt-sym{font-size:clamp(14px,3vw,22px);font-family:var(--font-mono);font-weight:900;line-height:1;}
   .pt-name{font-size:clamp(8px,1.4vw,11px);font-weight:700;line-height:1;margin-top:2px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
   .pt-cell.pt-placeholder{background:var(--c-surface-2)!important;color:var(--c-text-secondary);border:1px dashed var(--c-border);font-family:var(--font-mono);font-size:clamp(9px,1.6vw,13px);font-weight:700;}
-  .pt-axis{display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;color:var(--c-text-secondary);font-size:clamp(9px,1.5vw,12px);}
+  .pt-axis{display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:900;color:var(--c-text-primary);background:var(--c-surface-2);border-radius:4px;font-size:clamp(11px,1.8vw,15px);}
   .pt-axis-group{align-self:end;padding-bottom:2px;}
   .pt-axis-period{justify-self:end;padding-right:4px;}
   .pt-cat-alkali{background:#F87171;}
@@ -280,7 +284,7 @@
     </div>
   </div>
 
-  <div class="mode-tabs scroll-fade-x">
+  <div class="mode-tabs">
     <button class="mode-tab" data-mode="1"><span class="tab-icon">🔢</span>계수 맞추기<span class="tab-desc">계수 1도 입력 필수</span></button>
     <button class="mode-tab" data-mode="2"><span class="tab-icon">🧪</span>반응물 맞추기<span class="tab-desc">16개 전체</span></button>
     <button class="mode-tab" data-mode="3"><span class="tab-icon">⚗️</span>생성물 맞추기<span class="tab-desc">16개 전체</span></button>
@@ -395,7 +399,7 @@
 
 <div class="modal-overlay" id="periodicModalOverlay">
   <div class="modal-box pt-modal-box">
-    <div class="modal-header"><div class="modal-title">⚛️ 주기율표</div><button class="modal-close" id="periodicModalClose">✕</button></div>
+    <div class="modal-header"><div class="modal-title">⚛️ 주기율표</div><div style="display:flex;gap:10px;align-items:center"><button class="pt-rotate-btn" id="ptRotateBtn" title="회전해서 보기">🔄 회전</button><button class="modal-close" id="periodicModalClose">✕</button></div></div>
     <div class="pt-toggle-row">
       <div class="pt-toggle-label">👁 간략히 보기<small>중학교 필수 원소 (1번 수소 ~ 20번 칼슘)만 표시</small></div>
       <button class="pt-toggle-switch" id="simplePeriodicToggle" role="switch" aria-checked="false"><span class="pt-toggle-knob"></span></button>
@@ -610,7 +614,7 @@ const App={
     wrongNotes:[],noteFilter:'all',retryNoteId:null,
     isCycleMode:false,cycleQueue:[],cycleTotal:0,lastQuestionName:null,
     m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,
-    isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:false,
+    isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:false, isPtRotated:false,
     savedCycleState:null,
     isRetryPlaylistMode:false, retryPlaylist:[]
   },
@@ -641,7 +645,6 @@ const App={
     this.buildModalList();
     this.attachEventListeners();
     document.body.addEventListener('click', () => this.initAudioContext(), {once:true});
-    this.setupScrollFade(this.$.modeTabs);
     this.setupScrollFade(this.$.wrongNoteFilters);
     this.setupScrollFade(document.querySelector('.header-right'));
     this.setMode(1);
@@ -976,6 +979,13 @@ const App={
     document.getElementById('hintModalClose').addEventListener('click',()=>this.$.hintModalOverlay.classList.remove('show'));
     document.getElementById('wrongNoteModalClose').addEventListener('click',()=>this.$.wrongNoteModalOverlay.classList.remove('show'));
     document.getElementById('periodicModalClose').addEventListener('click',()=>this.$.periodicModalOverlay.classList.remove('show'));
+    document.getElementById('ptRotateBtn').addEventListener('click',(e)=>{
+      this.state.isPtRotated=!this.state.isPtRotated;
+      const wrap=document.getElementById('ptRotateWrap');
+      if(wrap) wrap.classList.toggle('pt-rotated', this.state.isPtRotated);
+      e.currentTarget.classList.toggle('on', this.state.isPtRotated);
+      this.playSound('tap'); this.playHaptic('tap');
+    });
     this.$.simplePeriodicToggle.addEventListener('click',()=>{
       this.state.isSimplePeriodic=!this.state.isSimplePeriodic;
       try{localStorage.setItem('chem_pt_simple', this.state.isSimplePeriodic);}catch(e){}
@@ -1571,7 +1581,7 @@ const App={
     /* 1열/1행은 주기(period)·족(group) 번호 라벨용이라 원소는 항상 +1 오프셋된 칸에 배치 */
     let cells='';
     if(simple){
-      cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:7px;opacity:.6;line-height:1.1;text-align:center">족<br>주기</div>`;
+      cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:9px;line-height:1.1;text-align:center">족<br>주기</div>`;
       const groupLabels=[1,2,13,14,15,16,17,18];
       groupLabels.forEach((g,i)=>{cells+=`<div class="pt-axis pt-axis-group" style="grid-column:${i+2};grid-row:1">${g}족</div>`;});
       [1,2,3,4].forEach(p=>{cells+=`<div class="pt-axis pt-axis-period" style="grid-column:1;grid-row:${p+1}">${p}주기</div>`;});
@@ -1579,9 +1589,9 @@ const App={
         const col=(e.group<=2?e.group:e.group-10)+1;
         cells+=this.ptCellHTML(e,col,e.period+1);
       });
-      this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-scroll"><div class="pt-grid pt-simple" style="grid-template-columns:40px repeat(8,1fr);grid-template-rows:repeat(5,1fr)">${cells}</div></div>`;
+      this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-rotate-wrap" id="ptRotateWrap"><div class="pt-scroll"><div class="pt-grid pt-simple" style="grid-template-columns:40px repeat(8,1fr);grid-template-rows:repeat(5,1fr)">${cells}</div></div></div>`;
     }else{
-      cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:7px;opacity:.6;line-height:1.1;text-align:center">족<br>주기</div>`;
+      cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:9px;line-height:1.1;text-align:center">족<br>주기</div>`;
       for(let g=1;g<=18;g++){cells+=`<div class="pt-axis pt-axis-group" style="grid-column:${g+1};grid-row:1">${g}</div>`;}
       for(let p=1;p<=7;p++){cells+=`<div class="pt-axis pt-axis-period" style="grid-column:1;grid-row:${p+1}">${p}</div>`;}
       ELEMENTS.filter(e=>!e.f).forEach(e=>{cells+=this.ptCellHTML(e,e.group+1,e.period+1);});
@@ -1591,8 +1601,9 @@ const App={
         const row=e.period===6?9:10,col=3+e.f;
         cells+=this.ptCellHTML(e,col,row);
       });
-      this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-scroll"><div class="pt-grid" style="grid-template-columns:56px repeat(18,1fr);grid-template-rows:repeat(10,1fr)">${cells}</div></div>`;
+      this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-rotate-wrap" id="ptRotateWrap"><div class="pt-scroll"><div class="pt-grid" style="grid-template-columns:56px repeat(18,1fr);grid-template-rows:repeat(10,1fr)">${cells}</div></div></div>`;
     }
+    document.getElementById('ptRotateWrap').classList.toggle('pt-rotated', this.state.isPtRotated);
   }
 };
 
