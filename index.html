@@ -8,6 +8,7 @@
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
   :root {
     --c-bg:#10141E; --c-surface-1:rgba(30,35,50,0.6); --c-surface-2:rgba(30,35,50,0.8);
+    --c-surface-solid:#1A2030;
     --c-border:rgba(136,150,191,0.2); --c-border-active:rgba(0,229,255,0.5);
     --c-text-primary:#F0F4FF; --c-text-secondary:#8896B0;
     --c-accent-1:#00E5FF; --c-accent-2:#7C3AED; --c-accent-3:#F59E0B;
@@ -16,6 +17,7 @@
   }
   .light {
     --c-bg:#F0F4FF; --c-surface-1:rgba(255,255,255,0.6); --c-surface-2:rgba(255,255,255,0.8);
+    --c-surface-solid:#FFFFFF;
     --c-border:rgba(45,60,100,0.15); --c-border-active:rgba(2,132,199,0.5);
     --c-text-primary:#0F172A; --c-text-secondary:#4A5568;
     --c-accent-1:#0284C7; --c-accent-2:#7C3AED; --c-accent-3:#D97706;
@@ -27,10 +29,17 @@
   body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 25% 25%,var(--c-accent-1),transparent 30%),radial-gradient(circle at 75% 75%,var(--c-accent-2),transparent 30%);opacity:.35;filter:blur(100px);pointer-events:none;z-index:0;}
   #app{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:16px;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;transition:max-width 0.3s;}
   header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-  .logo-egg{font-size:16px;font-weight:900;color:var(--c-wrong);letter-spacing:1px;cursor:pointer;user-select:none;transition:transform .2s;}
+  .logo-egg{font-size:16px;font-weight:900;color:var(--c-wrong);letter-spacing:1px;cursor:pointer;user-select:none;transition:transform .2s;white-space:nowrap;flex-shrink:0;}
   .logo-egg:active{transform:scale(.9);}
-  .header-right{display:flex;gap:8px;align-items:center;}
-  .icon-btn{background:var(--c-surface-1);border:1px solid var(--c-border);color:var(--c-text-secondary);width:52px;height:52px;border-radius:12px;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;transition:all .2s;backdrop-filter:blur(10px);}
+  header{flex-wrap:nowrap;min-width:0;}
+  .header-right{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none;min-width:0;}
+  .header-right::-webkit-scrollbar{display:none;}
+  .icon-btn{background:var(--c-surface-1);border:1px solid var(--c-border);color:var(--c-text-secondary);width:52px;height:52px;border-radius:12px;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;transition:all .2s;backdrop-filter:blur(10px);flex-shrink:0;}
+  @media (max-width:460px){
+    .logo-egg{font-size:13px;}
+    .icon-btn{width:42px;height:42px;font-size:18px;border-radius:10px;}
+    .header-right{gap:6px;}
+  }
   .icon-btn:hover{border-color:var(--c-border-active);color:var(--c-accent-1);}
   .stat-bar{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:16px;margin-bottom:16px;backdrop-filter:blur(10px);}
   .stat-item{display:flex;align-items:center;gap:8px;}
@@ -46,6 +55,8 @@
   .timer-btn.active{background:var(--c-accent-3);border-color:var(--c-accent-3);color:#000;}
   .mode-tabs{display:flex;overflow-x:auto;gap:8px;margin-bottom:16px;padding-bottom:4px;scrollbar-width:none;}
   .mode-tabs::-webkit-scrollbar{display:none;}
+  .scroll-fade-x{-webkit-mask-image:linear-gradient(to right,black calc(100% - 28px),transparent 100%);mask-image:linear-gradient(to right,black calc(100% - 28px),transparent 100%);}
+  .scroll-fade-x.fade-end{-webkit-mask-image:none;mask-image:none;}
   .mode-tab{flex:0 0 auto;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:12px;color:var(--c-text-secondary);padding:14px 16px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;line-height:1.4;backdrop-filter:blur(10px);}
   .mode-tab.active{background:var(--c-accent-1);border-color:var(--c-accent-1);color:var(--c-bg);}
   .mode-tab .tab-icon{font-size:20px;display:block;margin-bottom:2px;}
@@ -110,7 +121,7 @@
   @keyframes egg-pop{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1.5);opacity:0}}
 
   /* ── 주기율표 ── */
-  .pt-modal-box{max-width:1100px;}
+  .pt-modal-box{max-width:1300px;width:96vw;background:var(--c-surface-solid);}
   .pt-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;padding:12px 16px;margin-bottom:14px;}
   .pt-toggle-label{font-size:13px;font-weight:700;color:var(--c-text-primary);}
   .pt-toggle-label small{display:block;font-size:11px;font-weight:400;color:var(--c-text-secondary);margin-top:2px;}
@@ -123,15 +134,15 @@
   .pt-legend-swatch{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
   .pt-scroll{overflow-x:auto;padding-bottom:8px;scrollbar-width:none;}
   .pt-scroll::-webkit-scrollbar{display:none;}
-  .pt-grid{display:grid;gap:3px;min-width:760px;}
-  .pt-grid.pt-simple{min-width:0;max-width:600px;margin:0 auto;}
+  .pt-grid{display:grid;gap:4px;min-width:960px;}
+  .pt-grid.pt-simple{min-width:0;max-width:680px;margin:0 auto;}
   .pt-cell{position:relative;aspect-ratio:1/1;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#0B0F19;padding:2px;cursor:default;transition:transform .15s;overflow:hidden;}
   .pt-cell:active{transform:scale(.9);}
-  .pt-z{font-size:clamp(6px,1.1vw,9px);font-family:var(--font-mono);font-weight:700;position:absolute;top:2px;left:4px;opacity:.75;}
-  .pt-sym{font-size:clamp(11px,2.4vw,17px);font-family:var(--font-mono);font-weight:900;line-height:1;}
-  .pt-name{font-size:clamp(6px,1vw,8.5px);font-weight:700;line-height:1;margin-top:2px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
-  .pt-cell.pt-placeholder{background:var(--c-surface-2)!important;color:var(--c-text-secondary);border:1px dashed var(--c-border);font-family:var(--font-mono);font-size:clamp(9px,1.6vw,12px);font-weight:700;}
-  .pt-axis{display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;color:var(--c-text-secondary);font-size:clamp(8px,1.4vw,11px);}
+  .pt-z{font-size:clamp(8px,1.3vw,10px);font-family:var(--font-mono);font-weight:700;position:absolute;top:2px;left:4px;opacity:.75;}
+  .pt-sym{font-size:clamp(14px,3vw,22px);font-family:var(--font-mono);font-weight:900;line-height:1;}
+  .pt-name{font-size:clamp(8px,1.4vw,11px);font-weight:700;line-height:1;margin-top:2px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .pt-cell.pt-placeholder{background:var(--c-surface-2)!important;color:var(--c-text-secondary);border:1px dashed var(--c-border);font-family:var(--font-mono);font-size:clamp(9px,1.6vw,13px);font-weight:700;}
+  .pt-axis{display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;color:var(--c-text-secondary);font-size:clamp(9px,1.5vw,12px);}
   .pt-axis-group{align-self:end;padding-bottom:2px;}
   .pt-axis-period{justify-self:end;padding-right:4px;}
   .pt-cat-alkali{background:#F87171;}
@@ -149,6 +160,9 @@
   /* ── MODE 6 플래시카드 ── */
   #mode6Wrap{display:none;flex-direction:column;gap:14px;flex-grow:1;}
   #mode6Wrap.m6-active{display:flex;}
+  .m6-wrongnote-link{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:14px;padding:12px 16px;color:var(--c-text-primary);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;backdrop-filter:blur(10px);}
+  .m6-wrongnote-link:hover{border-color:var(--c-border-active);color:var(--c-accent-1);}
+  .m6-wrongnote-icon{font-size:15px;color:var(--c-accent-1);}
   .m6-opt-row{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:14px 18px;backdrop-filter:blur(10px);}
   .m6-opt-label{font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
   .m6-opt-btns{display:flex;gap:6px;flex-wrap:wrap;}
@@ -218,11 +232,12 @@
       margin: 0;
       padding: 0;
     }
-    body.wide-mode .m6-card-area { grid-column: 1; grid-row: 1 / 4; min-height: 350px; }
-    body.wide-mode .m6-opt-row:nth-of-type(1) { grid-column: 2; grid-row: 1; }
-    body.wide-mode .m6-opt-row:nth-of-type(2) { grid-column: 2; grid-row: 2; }
-    body.wide-mode .m6-nav { grid-column: 2; grid-row: 3; align-self: end; padding-bottom: 4px; }
-    body.wide-mode .m6-progress-bar { grid-column: 1 / -1; grid-row: 4; }
+    body.wide-mode .m6-wrongnote-link { grid-column: 1 / -1; grid-row: 1; }
+    body.wide-mode .m6-card-area { grid-column: 1; grid-row: 2 / 5; min-height: 350px; }
+    body.wide-mode .m6-opt-row:nth-of-type(1) { grid-column: 2; grid-row: 2; }
+    body.wide-mode .m6-opt-row:nth-of-type(2) { grid-column: 2; grid-row: 3; }
+    body.wide-mode .m6-nav { grid-column: 2; grid-row: 4; align-self: end; padding-bottom: 4px; }
+    body.wide-mode .m6-progress-bar { grid-column: 1 / -1; grid-row: 5; }
   }
 </style>
 </head>
@@ -231,7 +246,7 @@
 <div id="app">
   <header>
     <div class="logo-egg" id="easterEggBtn">누루ズl ㅁトパㅔ요</div>
-    <div class="header-right">
+    <div class="header-right scroll-fade-x">
       <button class="icon-btn" id="layoutBtn" title="화면 분할 토글">↔️</button>
       <button class="icon-btn" id="soundBtn" title="소리 토글">🔊</button>
       <button class="icon-btn" id="hapticBtn" title="진동 토글">📳</button>
@@ -265,7 +280,7 @@
     </div>
   </div>
 
-  <div class="mode-tabs">
+  <div class="mode-tabs scroll-fade-x">
     <button class="mode-tab" data-mode="1"><span class="tab-icon">🔢</span>계수 맞추기<span class="tab-desc">계수 1도 입력 필수</span></button>
     <button class="mode-tab" data-mode="2"><span class="tab-icon">🧪</span>반응물 맞추기<span class="tab-desc">16개 전체</span></button>
     <button class="mode-tab" data-mode="3"><span class="tab-icon">⚗️</span>생성물 맞추기<span class="tab-desc">16개 전체</span></button>
@@ -302,6 +317,7 @@
   </div>
 
   <div id="mode6Wrap">
+    <button class="m6-wrongnote-link" id="m6WrongNoteBtn"><span class="m6-wrongnote-icon">ⓘ</span> 오답노트 확인하기</button>
     <div class="m6-opt-row">
       <div class="m6-opt-label">📚 카드 유형</div>
       <div class="m6-opt-btns" id="m6TypeBtns">
@@ -395,7 +411,7 @@
         <button id="retryPlaylistBtn" style="background:var(--c-accent-1);color:#000;border:none;border-radius:8px;padding:10px 18px;font-size:15px;font-weight:bold;cursor:pointer;transition:transform 0.2s;">♾️ 랜덤 연속 풀기</button>
         <button class="clear-all-btn" id="clearAllNotesBtn" style="margin-bottom:0">🗑 전체 삭제</button>
     </div>
-    <div class="filter-chips" id="wrongNoteFilters">
+    <div class="filter-chips scroll-fade-x" id="wrongNoteFilters">
       <button class="filter-chip active" data-filter="all">전체</button>
       <button class="filter-chip" data-filter="1">계수 맞추기</button>
       <button class="filter-chip" data-filter="2">반응물 맞추기</button>
@@ -625,7 +641,21 @@ const App={
     this.buildModalList();
     this.attachEventListeners();
     document.body.addEventListener('click', () => this.initAudioContext(), {once:true});
+    this.setupScrollFade(this.$.modeTabs);
+    this.setupScrollFade(this.$.wrongNoteFilters);
+    this.setupScrollFade(document.querySelector('.header-right'));
     this.setMode(1);
+  },
+
+  setupScrollFade(el){
+    if(!el) return;
+    const update=()=>{
+      const atEnd = el.scrollWidth - el.scrollLeft - el.clientWidth < 4;
+      el.classList.toggle('fade-end', atEnd);
+    };
+    el.addEventListener('scroll', update, {passive:true});
+    window.addEventListener('resize', update);
+    update();
   },
 
   loadSettings(){
@@ -676,18 +706,18 @@ const App={
       const now = window.audioCtx.currentTime;
       if(type === 'tap') {
         osc.type = 'sine'; osc.frequency.setValueAtTime(600, now);
-        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.setValueAtTime(0.16, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
         osc.start(now); osc.stop(now + 0.05);
       } else if(type === 'success') {
         osc.type = 'sine'; osc.frequency.setValueAtTime(800, now);
         osc.frequency.setValueAtTime(1200, now + 0.1);
-        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.setValueAtTime(0.28, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
         osc.start(now); osc.stop(now + 0.2);
       } else if(type === 'error') {
         osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
-        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.setValueAtTime(0.28, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
         osc.start(now); osc.stop(now + 0.2);
       }
@@ -696,9 +726,9 @@ const App={
   playHaptic(type){
     if(!this.state.isHapticOn || !navigator.vibrate) return;
     try {
-      if(type === 'tap') navigator.vibrate(5);
-      else if(type === 'success') navigator.vibrate([10, 30, 10]);
-      else if(type === 'error') navigator.vibrate([30]);
+      if(type === 'tap') navigator.vibrate(18);
+      else if(type === 'success') navigator.vibrate([25, 40, 25, 40, 25]);
+      else if(type === 'error') navigator.vibrate([70]);
     } catch(e) {}
   },
 
@@ -923,7 +953,7 @@ const App={
       }
       const fl=document.createElement('div');
       Object.assign(fl.style,{position:'fixed',inset:0,zIndex:9999998,background:'linear-gradient(135deg,rgba(255,182,193,.9),rgba(200,162,200,.9))',display:'flex',alignItems:'center',justifyContent:'center',opacity:0,transition:'opacity .5s ease-out',pointerEvents:'none'});
-      fl.innerHTML='<div style="font-size:80px">💖 깜짝이야! 💖</div>';
+      fl.innerHTML='<div style="font-size:clamp(28px,9vw,80px);text-align:center;padding:0 24px;word-break:keep-all;white-space:normal">💖 깜짝이야! 💖</div>';
       document.body.appendChild(fl);
       setTimeout(()=>fl.style.opacity=1,50);
 
@@ -1020,6 +1050,10 @@ const App={
     });
     m6o.addEventListener('click',()=>{if(!th2)this.m6Flip();th2=false;});
 
+    document.getElementById('m6WrongNoteBtn').addEventListener('click',()=>{
+      this.playSound('tap'); this.playHaptic('tap');
+      this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');
+    });
     document.getElementById('m6NextBtn').addEventListener('click',()=>this.m6Next());
     document.getElementById('m6PrevBtn').addEventListener('click',()=>this.m6Prev());
     document.getElementById('m6ShuffleBtn').addEventListener('click',()=>this.m6Shuffle());
