@@ -147,6 +147,9 @@
   .pt-name{font-size:clamp(8px,1.4vw,11px);font-weight:700;line-height:1;margin-top:2px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
   .pt-cell.pt-placeholder{background:var(--c-surface-2)!important;color:var(--c-text-secondary);border:1px dashed var(--c-border);font-family:var(--font-mono);font-size:clamp(9px,1.6vw,13px);font-weight:700;}
   .pt-axis{display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:900;color:var(--c-text-primary);background:var(--c-surface-2);border-radius:4px;font-size:clamp(11px,1.8vw,15px);}
+  .pt-extra-label{font-size:12px;font-weight:700;color:var(--c-text-secondary);margin:16px 0 8px;text-align:center;}
+  .pt-extra-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+  .pt-extra-row .pt-cell{width:64px;flex:0 0 auto;border-radius:8px;}
   .pt-axis-group{align-self:end;padding-bottom:2px;}
   .pt-axis-period{justify-self:end;padding-right:4px;}
   .pt-cat-alkali{background:#F87171;}
@@ -184,6 +187,9 @@
   .m6-korean{font-size:clamp(18px,5vw,26px);font-family:var(--font-ui);font-weight:700;color:var(--c-text-primary);line-height:1.5;}
   .m6-formula{font-size:clamp(16px,4.5vw,24px);font-family:var(--font-mono);font-weight:700;color:var(--c-text-primary);line-height:1.8;}
   .m6-hint{text-align:center;font-size:12px;color:var(--c-text-secondary);font-family:var(--font-mono);}
+  .m6-save-wrong-btn{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+  .m6-save-wrong-btn:hover{border-color:var(--c-wrong);color:var(--c-wrong);}
+  .m6-save-wrong-btn.saved{background:var(--c-wrong);border-color:var(--c-wrong);color:#fff;}
   .m6-nav{display:flex;align-items:center;gap:14px;}
   .m6-nav-btn{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:14px;color:var(--c-text-primary);font-size:32px;font-weight:900;width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;line-height:1;}
   .m6-nav-btn:hover{border-color:var(--c-accent-1);color:var(--c-accent-1);}
@@ -352,6 +358,7 @@
         </div>
       </div>
       <div class="m6-hint">탭하여 뒤집기 🔄 &nbsp;|&nbsp; 스와이프로 이동 &nbsp;|&nbsp; ← → Space</div>
+      <button class="m6-save-wrong-btn" id="m6SaveWrongBtn">🔖 이 카드 오답노트에 저장</button>
     </div>
     <div class="m6-nav">
       <button class="m6-nav-btn" id="m6PrevBtn">‹</button>
@@ -401,7 +408,7 @@
   <div class="modal-box pt-modal-box">
     <div class="modal-header"><div class="modal-title">⚛️ 주기율표</div><div style="display:flex;gap:10px;align-items:center"><button class="pt-rotate-btn" id="ptRotateBtn" title="회전해서 보기">🔄 회전</button><button class="modal-close" id="periodicModalClose">✕</button></div></div>
     <div class="pt-toggle-row">
-      <div class="pt-toggle-label">👁 간략히 보기<small>중학교 필수 원소 (1번 수소 ~ 20번 칼슘)만 표시</small></div>
+      <div class="pt-toggle-label">👁 간략히 보기<small>중학교 필수 원소 (1~20번) + 불꽃반응·자주 나오는 원소만 표시</small></div>
       <button class="pt-toggle-switch" id="simplePeriodicToggle" role="switch" aria-checked="false"><span class="pt-toggle-knob"></span></button>
     </div>
     <div class="modal-content" id="periodicContent"></div>
@@ -422,6 +429,7 @@
       <button class="filter-chip" data-filter="3">생성물 맞추기</button>
       <button class="filter-chip" data-filter="4">전체 반응식</button>
       <button class="filter-chip" data-filter="5">화학식 암기</button>
+      <button class="filter-chip" data-filter="6">플래시카드</button>
     </div>
     <div class="modal-content" id="wrongNoteList"></div>
   </div>
@@ -475,7 +483,7 @@ const COEF_TEMPLATES=[
   {label:"A + B₂ → A₂B₃",gen:()=>({fmt:[{coef:4,formula:[{sym:"A"}]},{coef:3,formula:[{sym:"B",sub:2}]}],fmtP:[{coef:2,formula:[{sym:"A",sub:2},{sym:"B",sub:3}]}]})}
 ];
 const CORE_ELEMENTS=['H','C','O','N','S','P','Na','Mg','Ca','Cu','Ag','Cl','A','B'];
-const MODE_NAMES={1:'계수 맞추기',2:'반응물 맞추기',3:'생성물 맞추기',4:'전체 반응식',5:'화학식 암기'};
+const MODE_NAMES={1:'계수 맞추기',2:'반응물 맞추기',3:'생성물 맞추기',4:'전체 반응식',5:'화학식 암기',6:'플래시카드'};
 
 /* z=원자번호, sym=원소기호, name=한글이름, cat=분류(색상), group=족(1~18), period=주기(1~7), f=란타넘족/악티늄족일 때의 순번(1~15) */
 const ELEMENTS=[
@@ -603,6 +611,10 @@ const PT_CATEGORIES=[
   ['lanth','란타넘족'],['actin','악티늄족'],['post','전이 후 금속'],
   ['metalloid','준금속'],['nonmetal','비금속'],['halogen','할로젠'],['noble','비활성 기체']
 ];
+/* 간략히 보기: 일부 중학교에서 1~20번 외에 불꽃반응·할로젠 예시로 함께 다루는 원소 */
+const PT_SIMPLE_EXTRA_Z=[35,38,53,56]; // Br, Sr, I, Ba
+/* 간략히 보기: 족과 무관하게 실생활에서 자주 접하는 금속 */
+const PT_SIMPLE_EXTRA_METALS_Z=[30,29,26,82,25,48,79,78]; // Zn, Cu, Fe, Pb, Mn, Cd, Au, Pt
 
 /* ── 앱 ── */
 const App={
@@ -778,14 +790,15 @@ const App={
   },
 
   startRetryPlaylist() {
-    if (this.state.wrongNotes.length === 0) return;
+    const retryable = this.state.wrongNotes.filter(n => n.mode !== 6);
+    if (retryable.length === 0) return;
     this.$.wrongNoteModalOverlay.classList.remove('show');
 
     if (!this.state.retryNoteId && !this.state.isRetryPlaylistMode) {
       this.state.savedCycleState = { queue: [...this.state.cycleQueue], total: this.state.cycleTotal, mode: this.state.currentMode };
     }
 
-    let playlist = [...this.state.wrongNotes];
+    let playlist = [...retryable];
     for(let i = playlist.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
@@ -910,7 +923,8 @@ const App={
       let style = ''; let icon = '';
       if(fc === 2) { style = 'background:rgba(239,68,68,0.1); border:1px solid var(--c-wrong);'; }
       else if(fc >= 3) { style = 'background:rgba(239,68,68,0.2); border:2px solid var(--c-wrong);'; icon = '⚠️ '; }
-      return `<div class="reaction-item" style="${style}"><div class="reaction-info" style="width:100%"><div class="reaction-header"><div class="reaction-name" style="font-size:13px;">${icon}[${MODE_NAMES[n.mode]||('모드 '+n.mode)}] ${n.title} <span style="color:var(--c-wrong);font-size:11px;">(오답 ${fc}회)</span></div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${n.id}">단일 풀기</button><button class="delete-note-btn" data-id="${n.id}">삭제</button></div></div><div class="reaction-eq" style="border-color:var(--c-wrong)">${n.html}</div></div></div>`;
+      const retryLabel = n.mode===6 ? '카드 다시보기' : '단일 풀기';
+      return `<div class="reaction-item" style="${style}"><div class="reaction-info" style="width:100%"><div class="reaction-header"><div class="reaction-name" style="font-size:13px;">${icon}[${MODE_NAMES[n.mode]||('모드 '+n.mode)}] ${n.title} <span style="color:var(--c-wrong);font-size:11px;">(오답 ${fc}회)</span></div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${n.id}">${retryLabel}</button><button class="delete-note-btn" data-id="${n.id}">삭제</button></div></div><div class="reaction-eq" style="border-color:var(--c-wrong)">${n.html}</div></div></div>`;
     }).join('');
   },
 
@@ -1018,8 +1032,14 @@ const App={
     });
     this.$.wrongNoteList.addEventListener('click',e=>{
       if(e.target.classList.contains('delete-note-btn'))this.deleteWrongNote(e.target.dataset.id);
-      if(e.target.classList.contains('retry-note-btn'))this.startRetry(e.target.dataset.id);
+      if(e.target.classList.contains('retry-note-btn')){
+        const id=e.target.dataset.id;
+        const note=this.state.wrongNotes.find(n=>n.id===id);
+        if(note && note.mode===6) this.viewFlashcardNote(note);
+        else this.startRetry(id);
+      }
     });
+    document.getElementById('m6SaveWrongBtn').addEventListener('click',()=>this.m6SaveCurrentAsWrong());
 
     document.getElementById('cycleWrap').addEventListener('click',e=>{
       const btn=e.target.closest('.cycle-btn');if(!btn)return;
@@ -1566,6 +1586,32 @@ const App={
   m6Prev(){this.playSound('tap'); this.state.m6Index=(this.state.m6Index-1+this.state.m6Cards.length)%this.state.m6Cards.length;this.m6Render('prev');},
   m6Shuffle(){this.playSound('tap'); const c=[...this.state.m6Cards];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}this.state.m6Cards=c;this.state.m6Index=0;this.m6Render();},
 
+  m6SaveCurrentAsWrong(){
+    const card=this.state.m6Cards[this.state.m6Index];if(!card)return;
+    const title=card.fhtml.replace(/<[^>]+>/g,'').trim()||card.ftag;
+    const html=`<div style="font-size:12px;color:var(--c-text-secondary);margin-bottom:4px">${card.ftag}</div><div>${card.fhtml}</div><div style="font-size:12px;color:var(--c-text-secondary);margin:10px 0 4px">${card.btag}</div><div>${card.bhtml}</div>`;
+    const qData={m6Type:this.state.m6Type,m6Order:this.state.m6Order,cardIndex:this.state.m6Index,title};
+    this.saveWrongNote(6,title,html,qData);
+    this.playSound('success'); this.playHaptic('success');
+    const btn=document.getElementById('m6SaveWrongBtn');
+    const original=btn.textContent;
+    btn.textContent='✅ 오답노트에 저장됨!'; btn.classList.add('saved');
+    clearTimeout(btn._t);
+    btn._t=setTimeout(()=>{btn.textContent=original;btn.classList.remove('saved');},1500);
+  },
+  viewFlashcardNote(note){
+    this.$.wrongNoteModalOverlay.classList.remove('show');
+    this.setMode(6);
+    const q=note.qData||{};
+    this.state.m6Type=q.m6Type||'full';
+    document.querySelectorAll('#m6TypeBtns .m6-opt-btn').forEach(b=>b.classList.toggle('active',b.dataset.val===this.state.m6Type));
+    this.state.m6Order=q.m6Order||'korean';
+    document.querySelectorAll('#m6OrderBtns .m6-opt-btn').forEach(b=>b.classList.toggle('active',b.dataset.val===this.state.m6Order));
+    this.m6GenCards();
+    this.state.m6Index=Math.min(q.cardIndex||0,this.state.m6Cards.length-1);
+    this.m6Render();
+  },
+
   formatFormula(f){return f.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('');},
   toggleTheme(){this.playSound('tap'); this.state.isDarkMode=!this.state.isDarkMode;document.body.classList.toggle('light',!this.state.isDarkMode);document.getElementById('themeBtn').textContent=this.state.isDarkMode?'🌙':'☀️';},
 
@@ -1574,7 +1620,8 @@ const App={
     return `<div class="pt-legend">${PT_CATEGORIES.map(([cls,label])=>`<span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-${cls}"></span>${label}</span>`).join('')}</div>`;
   },
   ptCellHTML(e,col,row){
-    return `<div class="pt-cell pt-cat-${e.cat}" style="grid-column:${col};grid-row:${row}" title="${e.z}. ${e.name} (${e.sym})"><span class="pt-z">${e.z}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
+    const pos = (col!=null && row!=null) ? `grid-column:${col};grid-row:${row}` : '';
+    return `<div class="pt-cell pt-cat-${e.cat}" style="${pos}" title="${e.z}. ${e.name} (${e.sym})"><span class="pt-z">${e.z}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
   },
   renderPeriodicTable(){
     const simple=this.state.isSimplePeriodic;
@@ -1584,12 +1631,16 @@ const App={
       cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:9px;line-height:1.1;text-align:center">족<br>주기</div>`;
       const groupLabels=[1,2,13,14,15,16,17,18];
       groupLabels.forEach((g,i)=>{cells+=`<div class="pt-axis pt-axis-group" style="grid-column:${i+2};grid-row:1">${g}족</div>`;});
-      [1,2,3,4].forEach(p=>{cells+=`<div class="pt-axis pt-axis-period" style="grid-column:1;grid-row:${p+1}">${p}주기</div>`;});
-      ELEMENTS.filter(e=>e.z<=20&&!e.f).forEach(e=>{
+      [1,2,3,4,5,6].forEach(p=>{cells+=`<div class="pt-axis pt-axis-period" style="grid-column:1;grid-row:${p+1}">${p}주기</div>`;});
+      ELEMENTS.filter(e=>(e.z<=20||PT_SIMPLE_EXTRA_Z.includes(e.z))&&!e.f).forEach(e=>{
         const col=(e.group<=2?e.group:e.group-10)+1;
         cells+=this.ptCellHTML(e,col,e.period+1);
       });
-      this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-rotate-wrap" id="ptRotateWrap"><div class="pt-scroll"><div class="pt-grid pt-simple" style="grid-template-columns:40px repeat(8,1fr);grid-template-rows:repeat(5,1fr)">${cells}</div></div></div>`;
+      let extraHTML='';
+      PT_SIMPLE_EXTRA_METALS_Z.forEach(z=>{
+        const e=ELEMENTS.find(el=>el.z===z);if(e)extraHTML+=this.ptCellHTML(e);
+      });
+      this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-rotate-wrap" id="ptRotateWrap"><div class="pt-scroll"><div class="pt-grid pt-simple" style="grid-template-columns:40px repeat(8,1fr);grid-template-rows:repeat(7,1fr)">${cells}</div></div></div><div class="pt-extra-label">🧪 족과 상관없이 자주 나오는 금속</div><div class="pt-extra-row">${extraHTML}</div>`;
     }else{
       cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:9px;line-height:1.1;text-align:center">족<br>주기</div>`;
       for(let g=1;g<=18;g++){cells+=`<div class="pt-axis pt-axis-group" style="grid-column:${g+1};grid-row:1">${g}</div>`;}
