@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>반응물이 반응하면 생성물</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
@@ -122,10 +122,20 @@
   /* ── 주기율표 ── */
   .pt-modal-box{max-width:1300px;width:96vw;background:var(--c-surface-solid);}
   .pt-rotate-btn{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
-  .pt-rotate-btn.on{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
-  .pt-rotate-wrap{transition:transform .3s ease;}
-  .pt-rotate-wrap.pt-rotated{transform:rotate(90deg);transform-origin:center center;width:66vh;height:82vw;max-width:66vh;max-height:82vw;margin:16px auto;}
-  .pt-rotate-wrap.pt-rotated .pt-scroll{width:100%;height:100%;overflow:auto;}
+  /* 회전 = 전체화면 가로보기 오버레이: 화면 자체를 90도 돌려 쓰는 전용 뷰 */
+  .pt-fullscreen{display:none;position:fixed;inset:0;z-index:9999990;background:var(--c-bg);}
+  .pt-fullscreen.show{display:block;}
+  .pt-fs-rotor{position:absolute;top:50%;left:50%;width:100vh;height:100vw;transform:translate(-50%,-50%) rotate(90deg);display:flex;flex-direction:column;padding:16px;}
+  .pt-fs-title{font-size:15px;font-weight:900;color:var(--c-accent-1);margin-bottom:10px;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;}
+  .pt-fs-close{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:10px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer;}
+  .pt-fs-scroll{flex:1;overflow:auto;scrollbar-width:none;min-height:0;}
+  .pt-fs-scroll::-webkit-scrollbar{display:none;}
+  .pt-fs-scroll .pt-grid{min-width:calc(100vh - 64px);}
+  .pt-fs-scroll .pt-grid.pt-simple{margin:0 auto;min-width:0;width:min(420px,calc(100vh - 64px));}
+  .pt-fs-scroll .pt-extra-row{max-width:min(420px,calc(100vh - 64px));margin:0 auto;}
+  .pt-fs-scroll .pt-sym{font-size:clamp(11px,2.2vh,20px);}
+  .pt-fs-scroll .pt-name{font-size:clamp(6px,1.1vh,10px);}
+  .pt-fs-scroll .pt-z{font-size:clamp(6px,1vh,9px);}
   .pt-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;padding:12px 16px;margin-bottom:14px;}
   .pt-toggle-label{font-size:13px;font-weight:700;color:var(--c-text-primary);}
   .pt-toggle-label small{display:block;font-size:11px;font-weight:400;color:var(--c-text-secondary);margin-top:2px;}
@@ -150,6 +160,23 @@
   .pt-extra-label{font-size:12px;font-weight:700;color:var(--c-text-secondary);margin:16px 0 8px;text-align:center;}
   .pt-extra-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
   .pt-extra-row .pt-cell{width:64px;flex:0 0 auto;border-radius:8px;}
+
+  /* ── 모바일 공통 폴리시 ── */
+  @media (max-width:640px){
+    .modal-overlay{padding:6px;}
+    .modal-box{padding:14px;max-height:96dvh;border-radius:16px;}
+    .modal-title{font-size:17px;}
+    .modal-close{font-size:26px;}
+    .pt-modal-box{width:100%;}
+    .pt-toggle-row{padding:10px 12px;margin-bottom:10px;}
+    .pt-toggle-label{font-size:12px;}
+    .pt-toggle-label small{font-size:10px;}
+    .pt-legend{gap:4px 10px;font-size:10px;margin-bottom:10px;}
+    .pt-legend-swatch{width:9px;height:9px;}
+    .pt-extra-row .pt-cell{width:56px;}
+    .reaction-eq{font-size:14px;padding:10px;}
+    .reaction-item{padding:12px;}
+  }
   .pt-axis-group{align-self:end;padding-bottom:2px;}
   .pt-axis-period{justify-self:end;padding-right:4px;}
   .pt-cat-alkali{background:#F87171;}
@@ -415,6 +442,13 @@
   </div>
 </div>
 
+<div class="pt-fullscreen" id="ptFullscreen">
+  <div class="pt-fs-rotor">
+    <div class="pt-fs-title"><span>⚛️ 주기율표 — 가로 보기</span><button class="pt-fs-close" id="ptFsClose">✕ 닫기</button></div>
+    <div class="pt-fs-scroll" id="ptFsContent"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="wrongNoteModalOverlay">
   <div class="modal-box" style="height:90vh">
     <div class="modal-header"><div class="modal-title">📓 오답 노트</div><button class="modal-close" id="wrongNoteModalClose">✕</button></div>
@@ -626,7 +660,7 @@ const App={
     wrongNotes:[],noteFilter:'all',retryNoteId:null,
     isCycleMode:false,cycleQueue:[],cycleTotal:0,lastQuestionName:null,
     m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,
-    isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:false, isPtRotated:false,
+    isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:false,
     savedCycleState:null,
     isRetryPlaylistMode:false, retryPlaylist:[]
   },
@@ -993,11 +1027,16 @@ const App={
     document.getElementById('hintModalClose').addEventListener('click',()=>this.$.hintModalOverlay.classList.remove('show'));
     document.getElementById('wrongNoteModalClose').addEventListener('click',()=>this.$.wrongNoteModalOverlay.classList.remove('show'));
     document.getElementById('periodicModalClose').addEventListener('click',()=>this.$.periodicModalOverlay.classList.remove('show'));
-    document.getElementById('ptRotateBtn').addEventListener('click',(e)=>{
-      this.state.isPtRotated=!this.state.isPtRotated;
-      const wrap=document.getElementById('ptRotateWrap');
-      if(wrap) wrap.classList.toggle('pt-rotated', this.state.isPtRotated);
-      e.currentTarget.classList.toggle('on', this.state.isPtRotated);
+    /* 어두운 배경 탭 시 모달 닫기 (인증 모달 제외) */
+    [this.$.hintModalOverlay,this.$.wrongNoteModalOverlay,this.$.periodicModalOverlay].forEach(ov=>{
+      ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('show');});
+    });
+    document.getElementById('ptRotateBtn').addEventListener('click',()=>{
+      this.openPtFullscreen();
+      this.playSound('tap'); this.playHaptic('tap');
+    });
+    document.getElementById('ptFsClose').addEventListener('click',()=>{
+      this.closePtFullscreen();
       this.playSound('tap'); this.playHaptic('tap');
     });
     this.$.simplePeriodicToggle.addEventListener('click',()=>{
@@ -1056,6 +1095,15 @@ const App={
       if(document.getElementById('authOverlay').style.display !== 'none') {
         if(e.key === 'Enter') document.getElementById('authBtn').click();
         return;
+      }
+      if(document.getElementById('ptFullscreen').classList.contains('show')){
+        if(e.key==='Escape')this.closePtFullscreen();
+        return;
+      }
+      if(e.key==='Escape'){
+        if(this.$.periodicModalOverlay.classList.contains('show')){this.$.periodicModalOverlay.classList.remove('show');return;}
+        if(this.$.hintModalOverlay.classList.contains('show')){this.$.hintModalOverlay.classList.remove('show');return;}
+        if(this.$.wrongNoteModalOverlay.classList.contains('show')){this.$.wrongNoteModalOverlay.classList.remove('show');return;}
       }
       if(this.$.hintModalOverlay.classList.contains('show')||this.$.wrongNoteModalOverlay.classList.contains('show'))return;
       if(this.state.currentMode===6){
@@ -1623,9 +1671,9 @@ const App={
     const pos = (col!=null && row!=null) ? `grid-column:${col};grid-row:${row}` : '';
     return `<div class="pt-cell pt-cat-${e.cat}" style="${pos}" title="${e.z}. ${e.name} (${e.sym})"><span class="pt-z">${e.z}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
   },
-  renderPeriodicTable(){
+  /* 표 본체 HTML 생성 (모달·전체화면 공용). 1열/1행은 주기·족 번호 라벨용이라 원소는 +1 오프셋 배치 */
+  ptTableHTML(){
     const simple=this.state.isSimplePeriodic;
-    /* 1열/1행은 주기(period)·족(group) 번호 라벨용이라 원소는 항상 +1 오프셋된 칸에 배치 */
     let cells='';
     if(simple){
       cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:9px;line-height:1.1;text-align:center">족<br>주기</div>`;
@@ -1640,21 +1688,37 @@ const App={
       PT_SIMPLE_EXTRA_METALS_Z.forEach(z=>{
         const e=ELEMENTS.find(el=>el.z===z);if(e)extraHTML+=this.ptCellHTML(e);
       });
-      this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-rotate-wrap" id="ptRotateWrap"><div class="pt-scroll"><div class="pt-grid pt-simple" style="grid-template-columns:40px repeat(8,1fr);grid-template-rows:repeat(7,1fr)">${cells}</div></div></div><div class="pt-extra-label">🧪 족과 상관없이 자주 나오는 금속</div><div class="pt-extra-row">${extraHTML}</div>`;
-    }else{
-      cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:9px;line-height:1.1;text-align:center">족<br>주기</div>`;
-      for(let g=1;g<=18;g++){cells+=`<div class="pt-axis pt-axis-group" style="grid-column:${g+1};grid-row:1">${g}</div>`;}
-      for(let p=1;p<=7;p++){cells+=`<div class="pt-axis pt-axis-period" style="grid-column:1;grid-row:${p+1}">${p}</div>`;}
-      ELEMENTS.filter(e=>!e.f).forEach(e=>{cells+=this.ptCellHTML(e,e.group+1,e.period+1);});
-      cells+=`<div class="pt-cell pt-placeholder" style="grid-column:4;grid-row:7">57~71</div>`;
-      cells+=`<div class="pt-cell pt-placeholder" style="grid-column:4;grid-row:8">89~103</div>`;
-      ELEMENTS.filter(e=>e.f).forEach(e=>{
-        const row=e.period===6?9:10,col=3+e.f;
-        cells+=this.ptCellHTML(e,col,row);
-      });
-      this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-rotate-wrap" id="ptRotateWrap"><div class="pt-scroll"><div class="pt-grid" style="grid-template-columns:56px repeat(18,1fr);grid-template-rows:repeat(10,1fr)">${cells}</div></div></div>`;
+      return {
+        grid:`<div class="pt-grid pt-simple" style="grid-template-columns:40px repeat(8,1fr);grid-template-rows:repeat(7,1fr)">${cells}</div>`,
+        extra:`<div class="pt-extra-label">🧪 족과 상관없이 자주 나오는 금속</div><div class="pt-extra-row">${extraHTML}</div>`
+      };
     }
-    document.getElementById('ptRotateWrap').classList.toggle('pt-rotated', this.state.isPtRotated);
+    cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:9px;line-height:1.1;text-align:center">족<br>주기</div>`;
+    for(let g=1;g<=18;g++){cells+=`<div class="pt-axis pt-axis-group" style="grid-column:${g+1};grid-row:1">${g}</div>`;}
+    for(let p=1;p<=7;p++){cells+=`<div class="pt-axis pt-axis-period" style="grid-column:1;grid-row:${p+1}">${p}</div>`;}
+    ELEMENTS.filter(e=>!e.f).forEach(e=>{cells+=this.ptCellHTML(e,e.group+1,e.period+1);});
+    cells+=`<div class="pt-cell pt-placeholder" style="grid-column:4;grid-row:7">57~71</div>`;
+    cells+=`<div class="pt-cell pt-placeholder" style="grid-column:4;grid-row:8">89~103</div>`;
+    ELEMENTS.filter(e=>e.f).forEach(e=>{
+      const row=e.period===6?9:10,col=3+e.f;
+      cells+=this.ptCellHTML(e,col,row);
+    });
+    return {
+      grid:`<div class="pt-grid" style="grid-template-columns:56px repeat(18,1fr);grid-template-rows:repeat(10,1fr)">${cells}</div>`,
+      extra:''
+    };
+  },
+  renderPeriodicTable(){
+    const t=this.ptTableHTML();
+    this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-scroll">${t.grid}</div>${t.extra}`;
+  },
+  openPtFullscreen(){
+    const t=this.ptTableHTML();
+    document.getElementById('ptFsContent').innerHTML=`${t.grid}${t.extra}`;
+    document.getElementById('ptFullscreen').classList.add('show');
+  },
+  closePtFullscreen(){
+    document.getElementById('ptFullscreen').classList.remove('show');
   }
 };
 
