@@ -80,11 +80,12 @@
   .kb-key.del{color:var(--c-wrong);flex-grow:2;}.kb-key.confirm{background:var(--c-correct);color:#000;flex-grow:3;}.kb-key.next-q{background:var(--c-accent-2);color:#fff;flex-grow:3;}
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center;padding:16px;}
   .modal-overlay.show{display:flex;}
-  .modal-box{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;width:100%;max-width:600px;max-height:85vh;display:flex;flex-direction:column;padding:24px;position:relative;}
+  .modal-box{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;width:100%;max-width:700px;max-height:92vh;display:flex;flex-direction:column;padding:24px;position:relative;}
   .modal-header{display:flex;justify-content:space-between;margin-bottom:16px;align-items:center;}
   .modal-title{font-size:20px;font-weight:900;color:var(--c-accent-1);}
   .modal-close{background:none;border:none;color:var(--c-text-secondary);font-size:32px;cursor:pointer;}
-  .modal-content{overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;}
+  .modal-content{overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;scrollbar-width:none;}
+  .modal-content::-webkit-scrollbar{display:none;}
   .filter-chips{display:flex;overflow-x:auto;gap:6px;margin-bottom:16px;padding-bottom:4px;scrollbar-width:none;}
   .filter-chips::-webkit-scrollbar{display:none;}
   .filter-chip{flex:0 0 auto;background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:20px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
@@ -109,7 +110,7 @@
   @keyframes egg-pop{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1.5);opacity:0}}
 
   /* ── 주기율표 ── */
-  .pt-modal-box{max-width:960px;}
+  .pt-modal-box{max-width:1100px;}
   .pt-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;padding:12px 16px;margin-bottom:14px;}
   .pt-toggle-label{font-size:13px;font-weight:700;color:var(--c-text-primary);}
   .pt-toggle-label small{display:block;font-size:11px;font-weight:400;color:var(--c-text-secondary);margin-top:2px;}
@@ -120,15 +121,19 @@
   .pt-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:14px;font-size:11px;color:var(--c-text-secondary);}
   .pt-legend-item{display:flex;align-items:center;gap:5px;}
   .pt-legend-swatch{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
-  .pt-scroll{overflow-x:auto;padding-bottom:8px;}
-  .pt-grid{display:grid;gap:3px;min-width:660px;}
-  .pt-grid.pt-simple{min-width:0;max-width:520px;margin:0 auto;}
+  .pt-scroll{overflow-x:auto;padding-bottom:8px;scrollbar-width:none;}
+  .pt-scroll::-webkit-scrollbar{display:none;}
+  .pt-grid{display:grid;gap:3px;min-width:760px;}
+  .pt-grid.pt-simple{min-width:0;max-width:600px;margin:0 auto;}
   .pt-cell{position:relative;aspect-ratio:1/1;border-radius:6px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#0B0F19;padding:2px;cursor:default;transition:transform .15s;overflow:hidden;}
   .pt-cell:active{transform:scale(.9);}
   .pt-z{font-size:clamp(6px,1.1vw,9px);font-family:var(--font-mono);font-weight:700;position:absolute;top:2px;left:4px;opacity:.75;}
   .pt-sym{font-size:clamp(11px,2.4vw,17px);font-family:var(--font-mono);font-weight:900;line-height:1;}
   .pt-name{font-size:clamp(6px,1vw,8.5px);font-weight:700;line-height:1;margin-top:2px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
   .pt-cell.pt-placeholder{background:var(--c-surface-2)!important;color:var(--c-text-secondary);border:1px dashed var(--c-border);font-family:var(--font-mono);font-size:clamp(9px,1.6vw,12px);font-weight:700;}
+  .pt-axis{display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:700;color:var(--c-text-secondary);font-size:clamp(8px,1.4vw,11px);}
+  .pt-axis-group{align-self:end;padding-bottom:2px;}
+  .pt-axis-period{justify-self:end;padding-right:4px;}
   .pt-cat-alkali{background:#F87171;}
   .pt-cat-alkaline{background:#FB923C;}
   .pt-cat-transition{background:#60A5FA;}
@@ -392,11 +397,11 @@
     </div>
     <div class="filter-chips" id="wrongNoteFilters">
       <button class="filter-chip active" data-filter="all">전체</button>
-      <button class="filter-chip" data-filter="1">모드 1</button>
-      <button class="filter-chip" data-filter="2">모드 2</button>
-      <button class="filter-chip" data-filter="3">모드 3</button>
-      <button class="filter-chip" data-filter="4">모드 4</button>
-      <button class="filter-chip" data-filter="5">모드 5</button>
+      <button class="filter-chip" data-filter="1">계수 맞추기</button>
+      <button class="filter-chip" data-filter="2">반응물 맞추기</button>
+      <button class="filter-chip" data-filter="3">생성물 맞추기</button>
+      <button class="filter-chip" data-filter="4">전체 반응식</button>
+      <button class="filter-chip" data-filter="5">화학식 암기</button>
     </div>
     <div class="modal-content" id="wrongNoteList"></div>
   </div>
@@ -450,6 +455,7 @@ const COEF_TEMPLATES=[
   {label:"A + B₂ → A₂B₃",gen:()=>({fmt:[{coef:4,formula:[{sym:"A"}]},{coef:3,formula:[{sym:"B",sub:2}]}],fmtP:[{coef:2,formula:[{sym:"A",sub:2},{sym:"B",sub:3}]}]})}
 ];
 const CORE_ELEMENTS=['H','C','O','N','S','P','Na','Mg','Ca','Cu','Ag','Cl','A','B'];
+const MODE_NAMES={1:'계수 맞추기',2:'반응물 맞추기',3:'생성물 맞추기',4:'전체 반응식',5:'화학식 암기'};
 
 /* z=원자번호, sym=원소기호, name=한글이름, cat=분류(색상), group=족(1~18), period=주기(1~7), f=란타넘족/악티늄족일 때의 순번(1~15) */
 const ELEMENTS=[
@@ -871,7 +877,7 @@ const App={
       let style = ''; let icon = '';
       if(fc === 2) { style = 'background:rgba(239,68,68,0.1); border:1px solid var(--c-wrong);'; }
       else if(fc >= 3) { style = 'background:rgba(239,68,68,0.2); border:2px solid var(--c-wrong);'; icon = '⚠️ '; }
-      return `<div class="reaction-item" style="${style}"><div class="reaction-info" style="width:100%"><div class="reaction-header"><div class="reaction-name" style="font-size:13px;">${icon}[모드 ${n.mode}] ${n.title} <span style="color:var(--c-wrong);font-size:11px;">(오답 ${fc}회)</span></div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${n.id}">단일 풀기</button><button class="delete-note-btn" data-id="${n.id}">삭제</button></div></div><div class="reaction-eq" style="border-color:var(--c-wrong)">${n.html}</div></div></div>`;
+      return `<div class="reaction-item" style="${style}"><div class="reaction-info" style="width:100%"><div class="reaction-header"><div class="reaction-name" style="font-size:13px;">${icon}[${MODE_NAMES[n.mode]||('모드 '+n.mode)}] ${n.title} <span style="color:var(--c-wrong);font-size:11px;">(오답 ${fc}회)</span></div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${n.id}">단일 풀기</button><button class="delete-note-btn" data-id="${n.id}">삭제</button></div></div><div class="reaction-eq" style="border-color:var(--c-wrong)">${n.html}</div></div></div>`;
     }).join('');
   },
 
@@ -1528,23 +1534,31 @@ const App={
   },
   renderPeriodicTable(){
     const simple=this.state.isSimplePeriodic;
+    /* 1열/1행은 주기(period)·족(group) 번호 라벨용이라 원소는 항상 +1 오프셋된 칸에 배치 */
     let cells='';
     if(simple){
+      cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:7px;opacity:.6;line-height:1.1;text-align:center">족<br>주기</div>`;
+      const groupLabels=[1,2,13,14,15,16,17,18];
+      groupLabels.forEach((g,i)=>{cells+=`<div class="pt-axis pt-axis-group" style="grid-column:${i+2};grid-row:1">${g}족</div>`;});
+      [1,2,3,4].forEach(p=>{cells+=`<div class="pt-axis pt-axis-period" style="grid-column:1;grid-row:${p+1}">${p}주기</div>`;});
       ELEMENTS.filter(e=>e.z<=20&&!e.f).forEach(e=>{
-        const col=e.group<=2?e.group:e.group-10;
-        cells+=this.ptCellHTML(e,col,e.period);
+        const col=(e.group<=2?e.group:e.group-10)+1;
+        cells+=this.ptCellHTML(e,col,e.period+1);
       });
+      this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-scroll"><div class="pt-grid pt-simple" style="grid-template-columns:40px repeat(8,1fr);grid-template-rows:repeat(5,1fr)">${cells}</div></div>`;
     }else{
-      ELEMENTS.filter(e=>!e.f).forEach(e=>{cells+=this.ptCellHTML(e,e.group,e.period);});
-      cells+=`<div class="pt-cell pt-placeholder" style="grid-column:3;grid-row:6">57~71</div>`;
-      cells+=`<div class="pt-cell pt-placeholder" style="grid-column:3;grid-row:7">89~103</div>`;
+      cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:7px;opacity:.6;line-height:1.1;text-align:center">족<br>주기</div>`;
+      for(let g=1;g<=18;g++){cells+=`<div class="pt-axis pt-axis-group" style="grid-column:${g+1};grid-row:1">${g}</div>`;}
+      for(let p=1;p<=7;p++){cells+=`<div class="pt-axis pt-axis-period" style="grid-column:1;grid-row:${p+1}">${p}</div>`;}
+      ELEMENTS.filter(e=>!e.f).forEach(e=>{cells+=this.ptCellHTML(e,e.group+1,e.period+1);});
+      cells+=`<div class="pt-cell pt-placeholder" style="grid-column:4;grid-row:7">57~71</div>`;
+      cells+=`<div class="pt-cell pt-placeholder" style="grid-column:4;grid-row:8">89~103</div>`;
       ELEMENTS.filter(e=>e.f).forEach(e=>{
-        const row=e.period===6?8:9,col=2+e.f;
+        const row=e.period===6?9:10,col=3+e.f;
         cells+=this.ptCellHTML(e,col,row);
       });
+      this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-scroll"><div class="pt-grid" style="grid-template-columns:56px repeat(18,1fr);grid-template-rows:repeat(10,1fr)">${cells}</div></div>`;
     }
-    const cols=simple?8:18;
-    this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-scroll"><div class="pt-grid ${simple?'pt-simple':''}" style="grid-template-columns:repeat(${cols},1fr)">${cells}</div></div>`;
   }
 };
 
