@@ -76,6 +76,8 @@
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
   @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
   .eq-text{color:var(--c-text-primary);}.eq-arrow{color:var(--c-accent-3);font-size:1.2em;margin:0 4px;}.eq-plus{color:var(--c-text-secondary);margin:0 4px;}
+  /* 항(계수·블랭크·화학식) 전체를 하나의 flex 아이템으로 묶어 내부 <sub> 첨자의 정상 인라인 배치를 보존 */
+  .eq-term{display:inline-block;vertical-align:middle;white-space:nowrap;}
   sub{font-size:.65em;line-height:0;vertical-align:sub;}
   .result-banner{border-radius:12px;padding:14px 18px;font-size:15px;font-weight:700;display:none;align-items:center;gap:10px;margin-top:auto;}
   .result-banner.show{display:flex;flex-direction:column;align-items:flex-start;}
@@ -85,6 +87,8 @@
   .keyboard-wrap{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;padding:16px;}
   .kb-section-label{font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;margin-bottom:10px;margin-top:6px;}
   .kb-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+  /* 숫자패드는 줄바꿈되는 flex 대신 5열 그리드로 고정 → 마지막 줄(8·9·0)만 늘어나던 문제 방지, 항상 균일 */
+  #numRow{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
   .kb-key{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;font-family:var(--font-mono);font-size:18px;font-weight:700;min-height:54px;min-width:44px;flex:1 1 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .1s;}
   .kb-key:active{transform:scale(.95);}
   .kb-key.num{color:var(--c-accent-3);}.kb-key.elem{color:var(--c-text-primary);font-weight:500;}
@@ -105,8 +109,9 @@
   .reaction-header{display:flex;justify-content:space-between;align-items:flex-start;}
   .reaction-name{color:var(--c-accent-3);font-size:13px;font-family:var(--font-ui);font-weight:700;}
   .reaction-eq{color:var(--c-text-primary);font-size:16px;line-height:1.6;background:rgba(0,0,0,.2);padding:14px;border-radius:8px;border:1px solid var(--c-border);text-align:center;}
-  /* 오답노트 리스트 안에서는 플래시카드 앞/뒷면 폰트를 축소(카드 원본은 그대로) */
-  .reaction-eq .m6-korean,.reaction-eq .m6-formula{font-size:15px;line-height:1.5;}
+  /* 오답노트 리스트 안에서는 플래시카드 앞/뒷면을 한 줄로, 폰트도 축소(카드 원본은 그대로) */
+  .m6-note-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
+  .reaction-eq .m6-korean,.reaction-eq .m6-formula{font-size:13px;line-height:1.35;}
   .delete-note-btn{background:rgba(239,68,68,.1);border:1px solid var(--c-wrong);color:var(--c-wrong);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:bold;}
   .retry-note-btn{background:var(--c-accent-1);border:none;color:#000;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:bold;}
   .clear-all-btn{background:var(--c-wrong);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-weight:bold;cursor:pointer;margin-bottom:0;align-self:flex-end;}
@@ -128,17 +133,19 @@
   /* 회전 = 전체화면 가로보기 오버레이: 화면 자체를 90도 돌려 쓰는 전용 뷰 */
   .pt-fullscreen{display:none;position:fixed;inset:0;z-index:9999990;background:var(--c-bg);}
   .pt-fullscreen.show{display:block;}
-  .pt-fs-rotor{position:absolute;top:50%;left:50%;width:100vh;height:100vw;transform:translate(-50%,-50%) rotate(90deg);display:flex;flex-direction:column;padding:16px;overflow:hidden;}
+  /* --app-w/--app-h: JS가 visualViewport로 실측한 실제 가시 영역(px). 동적 주소창이 있는
+     iOS Safari·삼성 인터넷에서도 vh/vw처럼 어긋나지 않는다. vh/vw는 로드 직후 값이 없을 때의 폴백. */
+  .pt-fs-rotor{position:absolute;top:50%;left:50%;width:var(--app-h,100vh);height:var(--app-w,100vw);transform:translate(-50%,-50%) rotate(90deg);display:flex;flex-direction:column;padding:16px;overflow:hidden;}
   .pt-fs-title{font-size:15px;font-weight:900;color:var(--c-accent-1);margin-bottom:10px;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;}
   .pt-fs-close{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:10px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer;}
   .pt-fs-scroll{flex:1;overflow:auto;scrollbar-width:none;min-height:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
   .pt-fs-scroll::-webkit-scrollbar{display:none;}
-  .pt-fs-scroll .pt-grid{min-width:calc(100vh - 64px);}
-  .pt-fs-scroll .pt-grid.pt-simple{margin:0 auto;min-width:0;width:min(420px,calc(100vh - 64px));}
-  .pt-fs-scroll .pt-extra-row{max-width:min(420px,calc(100vh - 64px));margin:0 auto;}
-  .pt-fs-scroll .pt-sym{font-size:clamp(11px,2.2vh,20px);}
-  .pt-fs-scroll .pt-name{font-size:clamp(6px,1.1vh,10px);}
-  .pt-fs-scroll .pt-z{font-size:clamp(6px,1vh,9px);}
+  /* 그리드 열 폭·행 높이·폰트는 JS(layoutPtFullscreen)가 실측 픽셀로 인라인 계산해 적용한다 */
+  .pt-fs-scroll .pt-grid.pt-simple{margin:0 auto;}
+  .pt-fs-scroll .pt-extra-row{margin:12px auto 0;}
+  .pt-fs-scroll .pt-sym{font-size:var(--pt-fs-sym,18px);}
+  .pt-fs-scroll .pt-name{font-size:var(--pt-fs-name,9px);}
+  .pt-fs-scroll .pt-z{font-size:var(--pt-fs-z,8px);}
   .pt-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;padding:12px 16px;margin-bottom:14px;}
   .pt-toggle-label{font-size:13px;font-weight:700;color:var(--c-text-primary);}
   .pt-toggle-label small{display:block;font-size:11px;font-weight:400;color:var(--c-text-secondary);margin-top:2px;}
@@ -361,6 +368,24 @@
     </div>
     <div class="equation-display" id="equationDisplay"></div>
     <div class="result-banner" id="resultBanner"></div>
+  </div>
+
+  <div class="question-card" id="retryM6Card" style="display:none">
+    <div id="retryM6Header">
+      <div class="q-label">MODE 6 · 플래시카드 복습</div>
+      <div class="q-sublabel" id="retryM6Title"></div>
+    </div>
+    <div class="m6-perspective" style="flex-grow:1">
+      <div class="m6-flashcard" id="retryM6Flashcard">
+        <div class="m6-face m6-front"><div class="m6-tag" id="retryM6FTag"></div><div id="retryM6FContent"></div></div>
+        <div class="m6-face m6-back"><div class="m6-tag" id="retryM6BTag"></div><div id="retryM6BContent"></div></div>
+      </div>
+    </div>
+    <div class="m6-hint">탭하여 뒤집기 🔄</div>
+    <div style="display:flex;gap:10px">
+      <button class="m6-nav-btn" id="retryM6ForgotBtn" style="flex:1;width:auto;font-size:14px;font-weight:700;">➡️ 다음에 다시</button>
+      <button class="m6-nav-btn" id="retryM6KnowBtn" style="flex:1;width:auto;font-size:14px;font-weight:700;background:var(--c-correct);color:#000;border-color:var(--c-correct);">✅ 기억했어요</button>
+    </div>
   </div>
 
   <div id="mode6Wrap">
@@ -704,7 +729,28 @@ const App={
     this.setupScrollFade(this.$.wrongNoteFilters);
     this.setupScrollFade(document.querySelector('.header-right'));
     this.setupModalScrollLock();
+    this.setupViewportVars();
     this.setMode(1);
+  },
+
+  /* 실제 가시 영역(px)을 CSS 변수로 유지 — iOS Safari/삼성 인터넷의 동적 주소창 때문에
+     vh/vw가 실제 화면과 어긋나는 문제를 우회한다. 회전 전체화면이 열려 있으면 즉시 재계산. */
+  setupViewportVars(){
+    const update=()=>{
+      const vv=window.visualViewport;
+      const w=vv?vv.width:window.innerWidth;
+      const h=vv?vv.height:window.innerHeight;
+      document.documentElement.style.setProperty('--app-w', w+'px');
+      document.documentElement.style.setProperty('--app-h', h+'px');
+      if(document.getElementById('ptFullscreen').classList.contains('show')) this.layoutPtFullscreen();
+    };
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize', update);
+      window.visualViewport.addEventListener('scroll', update);
+    }
   },
 
   /* 어떤 팝업이든 .show면 body 스크롤 잠금 → 뒤 페이지로 스크롤 전파(바깥 노출) 차단 */
@@ -849,15 +895,14 @@ const App={
   },
 
   startRetryPlaylist() {
-    const retryable = this.state.wrongNotes.filter(n => n.mode !== 6);
-    if (retryable.length === 0) return;
+    if (this.state.wrongNotes.length === 0) return;
     this.$.wrongNoteModalOverlay.classList.remove('show');
 
     if (!this.state.retryNoteId && !this.state.isRetryPlaylistMode) {
       this.state.savedCycleState = { queue: [...this.state.cycleQueue], total: this.state.cycleTotal, mode: this.state.currentMode };
     }
 
-    let playlist = [...retryable];
+    let playlist = [...this.state.wrongNotes];
     for(let i = playlist.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
@@ -878,29 +923,67 @@ const App={
 
     this.state.currentMode = note.mode;
     this.$.modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.mode)===note.mode));
-    this.$.questionCard.style.display = '';
-    this.$.keyboardWrap.style.display = '';
     this.$.timerSelectWrap.style.display = 'none';
-    this.$.mode6Wrap.classList.remove('m6-active');
     this.$.cycleWrap.style.display = 'none';
-    this.$.elemRowLabel.style.display = note.mode===1 ? 'none' : 'block';
-    this.$.elemRow.style.display = note.mode===1 ? 'none' : 'flex';
 
-    const q = JSON.parse(JSON.stringify(note.qData));
-    q.inputs = {}; q.isTimedOut = false; q.cursor = {};
-    if(q.blanks.length > 0) q.activeKey = q.blanks[0].key;
-    this.state.currentQuestion = q;
+    if(note.mode===6){
+      this.$.questionCard.style.display = 'none';
+      this.$.keyboardWrap.style.display = 'none';
+      this.$.mode6Wrap.classList.remove('m6-active');
+      this.renderRetryFlashcard(note);
+    }else{
+      document.getElementById('retryM6Card').style.display = 'none';
+      this.$.questionCard.style.display = '';
+      this.$.keyboardWrap.style.display = '';
+      this.$.mode6Wrap.classList.remove('m6-active');
+      this.$.elemRowLabel.style.display = note.mode===1 ? 'none' : 'block';
+      this.$.elemRow.style.display = note.mode===1 ? 'none' : 'flex';
 
-    this.state.isAnswerChecked = false;
-    this.state.isAnswerRevealed = false;
-    this.state.isLastWrongAttempt = false;
-    this.state.wrongBlanks = {};
-    this.state.wrongAlreadyPenalized = false;
+      const q = JSON.parse(JSON.stringify(note.qData));
+      q.inputs = {}; q.isTimedOut = false; q.cursor = {};
+      if(q.blanks.length > 0) q.activeKey = q.blanks[0].key;
+      this.state.currentQuestion = q;
+
+      this.state.isAnswerChecked = false;
+      this.state.isAnswerRevealed = false;
+      this.state.isLastWrongAttempt = false;
+      this.state.wrongBlanks = {};
+      this.state.wrongAlreadyPenalized = false;
+      this.renderAll();
+      this.startTimer();
+    }
 
     document.getElementById('retryBanner').style.display = 'flex';
     document.getElementById('retryBannerText').innerHTML = `<span>⚠️ 연속 재풀이 모드 <span style="font-size:12px;opacity:0.8">(${this.state.retryPlaylist.length}문제 남음)</span></span>`;
-    this.renderAll();
-    this.startTimer();
+  },
+
+  /* 오답노트 재풀이 중 플래시카드(모드6) 노트 — 채점 없이 뒤집어 확인 후 기억/다시 로 진행 */
+  renderRetryFlashcard(note){
+    clearInterval(this.state.timerInterval);
+    document.getElementById('retryM6Card').style.display = '';
+    const q = note.qData||{};
+    const cards = this.m6BuildCards(q.m6Type||'full');
+    const idx = Math.min(q.cardIndex||0, cards.length-1);
+    const card = cards[idx];
+    const isKorFirst = (q.m6Order||'korean')==='korean';
+    document.getElementById('retryM6Title').textContent = note.title;
+    document.getElementById('retryM6FTag').textContent = isKorFirst?card.ftag:card.btag;
+    document.getElementById('retryM6FContent').innerHTML = isKorFirst?card.fhtml:card.bhtml;
+    document.getElementById('retryM6BTag').textContent = isKorFirst?card.btag:card.ftag;
+    document.getElementById('retryM6BContent').innerHTML = isKorFirst?card.bhtml:card.fhtml;
+    document.getElementById('retryM6Flashcard').classList.remove('flipped');
+  },
+  retryFlashcardKnow(){
+    this.playSound('success'); this.playHaptic('success');
+    this.deleteWrongNote(this.state.retryNoteId);
+    this.state.retryPlaylist.shift();
+    this.loadNextRetryPlaylistItem();
+  },
+  retryFlashcardNext(){
+    this.playSound('tap'); this.playHaptic('tap');
+    const skipped=this.state.retryPlaylist.shift();
+    this.state.retryPlaylist.push(skipped);
+    this.loadNextRetryPlaylistItem();
   },
 
   startRetry(id){
@@ -947,6 +1030,7 @@ const App={
     this.state.isRetryPlaylistMode = false;
     this.state.retryPlaylist = [];
     document.getElementById('retryBanner').style.display = 'none';
+    document.getElementById('retryM6Card').style.display = 'none';
     this.$.timerSelectWrap.style.display = 'flex';
 
     const savedState = this.state.savedCycleState;
@@ -1131,7 +1215,12 @@ const App={
         if(this.$.wrongNoteModalOverlay.classList.contains('show')){this.$.wrongNoteModalOverlay.classList.remove('show');return;}
       }
       if(this.$.hintModalOverlay.classList.contains('show')||this.$.wrongNoteModalOverlay.classList.contains('show'))return;
-      if(this.state.currentMode===6){
+      if(document.getElementById('retryM6Card').style.display!=='none'){
+        /* 오답노트 재풀이 중 플래시카드 복습 카드 — 숨겨진 실제 mode6 세션이 아니라 이 카드를 조작 */
+        if(e.key===' '){e.preventDefault();document.getElementById('retryM6Flashcard').classList.toggle('flipped');}
+        return;
+      }
+      if(this.state.currentMode===6&&this.$.mode6Wrap.classList.contains('m6-active')){
         if(e.key==='ArrowRight')this.m6Next();
         else if(e.key==='ArrowLeft')this.m6Prev();
         else if(e.key===' '){e.preventDefault();this.m6Flip();}
@@ -1157,6 +1246,12 @@ const App={
       this.playSound('tap'); this.playHaptic('tap');
       this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');
     });
+    document.getElementById('retryM6Flashcard').addEventListener('click',()=>{
+      this.playSound('tap'); this.playHaptic('tap');
+      document.getElementById('retryM6Flashcard').classList.toggle('flipped');
+    });
+    document.getElementById('retryM6KnowBtn').addEventListener('click',()=>this.retryFlashcardKnow());
+    document.getElementById('retryM6ForgotBtn').addEventListener('click',()=>this.retryFlashcardNext());
     document.getElementById('m6NextBtn').addEventListener('click',()=>this.m6Next());
     document.getElementById('m6PrevBtn').addEventListener('click',()=>this.m6Prev());
     document.getElementById('m6ShuffleBtn').addEventListener('click',()=>this.m6Shuffle());
@@ -1314,7 +1409,9 @@ const App={
   setMode(mode, preserveCycle = false){
     if(this.state.retryNoteId) {
       this.state.retryNoteId = null;
+      this.state.retryPlaylist = [];
       document.getElementById('retryBanner').style.display = 'none';
+      document.getElementById('retryM6Card').style.display = 'none';
       this.state.savedCycleState = null;
       this.state.isRetryPlaylistMode = false;
     }
@@ -1563,9 +1660,13 @@ const App={
     if(q.isMode5){this.$.equationDisplay.innerHTML=this.renderBlankBox('M5',q.blanks[0].answer);return;}
     const fc=(list,pre)=>list.map((c,i)=>{
       const key=`${pre}${i}`,bd=q.blanks.find(b=>b.key===key);
-      if(this.state.currentMode===1)return bd?this.renderBlankBox(key,bd.answer)+this.formatFormula(c.formula):this.formatFormula(c.formula);
-      if(c.isBlank||bd)return this.renderBlankBox(key,bd?bd.answer:'');
-      return(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+this.formatFormula(c.formula);
+      let term;
+      if(this.state.currentMode===1)term=bd?this.renderBlankBox(key,bd.answer)+this.formatFormula(c.formula):this.formatFormula(c.formula);
+      else if(c.isBlank||bd)term=this.renderBlankBox(key,bd?bd.answer:'');
+      else term=(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+this.formatFormula(c.formula);
+      /* equation-display가 flex라 첨자(<sub>)까지 개별 flex 아이템이 되어 가운데 정렬+간격이 생기는 걸 방지:
+         한 항 전체를 inline-block으로 감싸 flex 아이템 단위를 "항"으로 고정 */
+      return `<span class="eq-term">${term}</span>`;
     }).join(' <span class="eq-plus">+</span> ');
     this.$.equationDisplay.innerHTML=`${fc(q.displayReactants,'R')} <span class="eq-arrow">→</span> ${fc(q.displayProducts,'P')}`;
   },
@@ -1634,13 +1735,18 @@ const App={
 
   /* ── MODE 6 ── */
   m6Fmt(side){return side.map(r=>(r.coef>1?r.coef:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' + ');},
-  m6GenCards(){
-    const t=this.state.m6Type;let cards=[];
+  /* 카드 유형(t)에서 카드 배열만 순수하게 만들어낸다 — 오답노트 재풀이(renderRetryFlashcard)에서도
+     실제 mode6 세션 상태(state.m6Cards/m6Index)를 건드리지 않고 재사용하기 위해 분리 */
+  m6BuildCards(t){
+    let cards=[];
     if(t==='full'){cards=REACTIONS.map(rx=>({ftag:'한글 반응식',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'화학 반응식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.reactants)} → ${this.m6Fmt(rx.products)}</span>`}));}
     else if(t==='reactant'){cards=REACTIONS.map(rx=>({ftag:'반응물 이름',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'반응물 화학식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.reactants)}</span>`}));}
     else if(t==='product'){cards=REACTIONS.map(rx=>({ftag:'생성물 이름',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'생성물 화학식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.products)}</span>`}));}
     else{cards=CHEMICALS.map(c=>({ftag:'물질명',fhtml:`<span class="m6-korean">${c.name}</span>`,btag:'화학식',bhtml:`<span class="m6-formula">${c.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')}</span>`}));}
-    this.state.m6Cards=cards;this.state.m6Index=0;this.state.m6Flipped=false;
+    return cards;
+  },
+  m6GenCards(){
+    this.state.m6Cards=this.m6BuildCards(this.state.m6Type);this.state.m6Index=0;this.state.m6Flipped=false;
   },
   m6Render(dir){
     const{m6Cards,m6Index,m6Order}=this.state;const card=m6Cards[m6Index];if(!card)return;
@@ -1664,7 +1770,8 @@ const App={
   /* 카드 → 오답노트 저장용 {title, html} (저장·저장여부 판정 공용) */
   m6CardNoteData(card){
     const title=card.fhtml.replace(/<[^>]+>/g,'').trim()||card.ftag;
-    const html=`<div style="font-size:12px;color:var(--c-text-secondary);margin-bottom:4px">${card.ftag}</div><div>${card.fhtml}</div><div style="font-size:12px;color:var(--c-text-secondary);margin:10px 0 4px">${card.btag}</div><div>${card.bhtml}</div>`;
+    /* 앞/뒤를 2단으로 쌓지 않고 "앞 → 뒤" 한 줄로 압축 (반응식 노트와 높이가 비슷해지도록) */
+    const html=`<div class="m6-note-row">${card.fhtml}<span class="eq-arrow">→</span>${card.bhtml}</div>`;
     return {title,html};
   },
   m6CurrentSaved(){
@@ -1762,9 +1869,37 @@ const App={
     const t=this.ptTableHTML();
     document.getElementById('ptFsContent').innerHTML=`${t.grid}${t.extra}`;
     document.getElementById('ptFullscreen').classList.add('show');
+    this.layoutPtFullscreen();
   },
   closePtFullscreen(){
     document.getElementById('ptFullscreen').classList.remove('show');
+  },
+  /* 회전 뷰의 열 폭·행 높이·폰트를 실측 픽셀 하나(cell)로 통일 계산해 인라인 적용.
+     예전엔 칸 너비(1fr+aspect-ratio)와 폰트(vh clamp)가 서로 다른 기준으로 따로 계산돼
+     화면·브라우저에 따라 어긋나며 겹쳤음 — 이제 같은 cell 값에서 전부 파생시켜 항상 맞물림. */
+  layoutPtFullscreen(){
+    const scrollEl=document.getElementById('ptFsContent');
+    const grid=scrollEl.querySelector('.pt-grid');
+    if(!grid) return;
+    const title=document.querySelector('.pt-fs-title');
+    const root=document.documentElement;
+    const appW=parseFloat(getComputedStyle(root).getPropertyValue('--app-w'))||window.innerWidth;
+    const appH=parseFloat(getComputedStyle(root).getPropertyValue('--app-h'))||window.innerHeight;
+    const pad=32; /* .pt-fs-rotor padding:16px 상하좌우 */
+    const titleH=(title?title.offsetHeight:32)+10; /* 10 = title margin-bottom */
+    const availW=Math.max(200, appH-pad);        /* 회전 전 가로(=appH) → 열이 늘어서는 축 */
+    const availH=Math.max(160, appW-pad-titleH); /* 회전 전 세로(=appW) → 행 높이를 제한하는 축 */
+    const simple=this.state.isSimplePeriodic;
+    const cols=simple?9:19, rows=simple?7:10;
+    const labelPx=simple?36:48;
+    const cellByW=(availW-labelPx)/(cols-1);
+    const cellByH=availH/rows;
+    const cell=Math.max(28, Math.min(cellByW, cellByH, 64));
+    grid.style.gridTemplateColumns=`${labelPx}px repeat(${cols-1},${cell}px)`;
+    grid.style.gridTemplateRows=`repeat(${rows},${cell}px)`;
+    scrollEl.style.setProperty('--pt-fs-sym', Math.max(10,Math.round(cell*.34))+'px');
+    scrollEl.style.setProperty('--pt-fs-name', Math.max(6,Math.round(cell*.16))+'px');
+    scrollEl.style.setProperty('--pt-fs-z', Math.max(6,Math.round(cell*.15))+'px');
   }
 };
 
