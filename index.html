@@ -87,7 +87,7 @@
   .result-banner.show{display:flex;flex-direction:column;align-items:flex-start;}
   .result-banner.correct-banner{background:rgba(16,185,129,.2);color:var(--c-correct);border:1px solid var(--c-correct);flex-direction:row;}
   .result-banner.wrong-banner{background:rgba(239,68,68,.2);color:var(--c-wrong);border:1px solid var(--c-wrong);}
-  .show-answer-btn{background:var(--c-wrong);color:var(--c-bg);border:none;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer;transition:opacity .2s;align-self:flex-end;margin-top:8px;}
+  .show-answer-btn{background:var(--c-wrong);color:var(--c-bg);border:none;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer;transition:opacity .2s;align-self:flex-end;margin-top:8px;white-space:nowrap;flex-shrink:0;}
   .keyboard-wrap{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;padding:16px;}
   .kb-section-label{font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;margin-bottom:10px;margin-top:6px;}
   .kb-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
@@ -100,7 +100,10 @@
   .kb-key:active{transform:scale(.95);}
   .kb-key.num{color:var(--c-accent-3);}.kb-key.elem{color:var(--c-text-primary);font-weight:500;}
   .kb-key.del{color:var(--c-wrong);flex-grow:2;}.kb-key.confirm{background:var(--c-correct);color:#000;flex-grow:3;}.kb-key.next-q{background:var(--c-accent-2);color:#fff;flex-grow:3;}
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center;padding:16px;}
+  /* position:fixed 요소는 핀치 확대 시(모바일 사파리 등) 실제 화면과 어긋나며 흔들리는 고질적 문제가
+     있다 — 모달이 열린 동안은 확대 제스처 자체를 막고 스크롤(팬)만 허용해 그 원인을 없앤다.
+     페이지 본문의 확대는 그대로 유지된다(모달이 닫혀 있을 때는 영향 없음). */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center;padding:16px;touch-action:pan-x pan-y;}
   .modal-overlay.show{display:flex;}
   .modal-box{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;width:100%;max-width:700px;max-height:92vh;display:flex;flex-direction:column;padding:24px;position:relative;}
   .modal-header{display:flex;justify-content:space-between;margin-bottom:16px;align-items:center;}
@@ -108,9 +111,9 @@
   .modal-close{background:none;border:none;color:var(--c-text-secondary);font-size:32px;cursor:pointer;}
   .modal-content{overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;scrollbar-width:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
   .modal-content::-webkit-scrollbar{display:none;}
-  .filter-chips{display:flex;overflow-x:auto;gap:6px;margin-bottom:16px;padding-bottom:4px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
-  .filter-chips::-webkit-scrollbar{display:none;}
-  .filter-chip{flex:0 0 auto;background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:20px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
+  /* 가로 스크롤(+ 숨김 스크롤바) 대신 줄바꿈 — 스크롤바 잔상/끝 잘림 문제를 애초에 없앤다 */
+  .filter-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+  .filter-chip{flex:0 0 auto;background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:20px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
   .filter-chip.active{background:var(--c-accent-1);color:var(--c-bg);border-color:var(--c-accent-1);}
   .reaction-item{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:15px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,background .15s;}
   .reaction-header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
@@ -180,7 +183,8 @@
   .pt-name{font-size:clamp(7px,1.3vw,10px);font-weight:700;line-height:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;align-self:end;}
   .pt-cell.pt-placeholder{background:var(--c-surface-2)!important;color:var(--c-text-secondary);border:1px dashed var(--c-border);font-family:var(--font-mono);font-size:clamp(9px,1.6vw,13px);font-weight:700;display:flex;align-items:center;justify-content:center;}
   .pt-axis{display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:900;color:var(--c-text-primary);background:var(--c-surface-2);border-radius:4px;font-size:clamp(11px,1.8vw,15px);}
-  .pt-extra-label{font-size:12px;font-weight:700;color:var(--c-text-secondary);margin:16px 0 8px;text-align:center;}
+  .pt-extra-divider{border:none;border-top:1px dashed var(--c-border);margin:18px 0 0;}
+  .pt-extra-label{font-size:12px;font-weight:700;color:var(--c-text-secondary);margin:14px 0 8px;text-align:center;}
   .pt-extra-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
   .pt-extra-row .pt-cell{width:64px;flex:0 0 auto;border-radius:8px;}
 
@@ -503,14 +507,14 @@
         <button id="retryPlaylistBtn" style="background:var(--c-accent-1);color:#000;border:none;border-radius:8px;padding:10px 18px;font-size:15px;font-weight:bold;cursor:pointer;transition:transform 0.2s;">♾️ 랜덤 연속 풀기</button>
         <button class="clear-all-btn" id="clearAllNotesBtn" style="margin-bottom:0">🗑 전체 삭제</button>
     </div>
-    <div class="filter-chips scroll-fade-x" id="wrongNoteFilters">
+    <div class="filter-chips" id="wrongNoteFilters">
       <button class="filter-chip active" data-filter="all">전체</button>
-      <button class="filter-chip" data-filter="1">계수 맞추기</button>
-      <button class="filter-chip" data-filter="2">반응물 맞추기</button>
-      <button class="filter-chip" data-filter="3">생성물 맞추기</button>
-      <button class="filter-chip" data-filter="4">전체 반응식</button>
-      <button class="filter-chip" data-filter="5">화학식 암기</button>
-      <button class="filter-chip" data-filter="6">플래시카드</button>
+      <button class="filter-chip" data-filter="1">🔢 계수 맞추기</button>
+      <button class="filter-chip" data-filter="2">🧪 반응물 맞추기</button>
+      <button class="filter-chip" data-filter="3">⚗️ 생성물 맞추기</button>
+      <button class="filter-chip" data-filter="4">📝 전체 반응식</button>
+      <button class="filter-chip" data-filter="5">🧠 화학식 암기</button>
+      <button class="filter-chip" data-filter="6">🃏 플래시카드</button>
     </div>
     <div class="modal-content" id="wrongNoteList"></div>
   </div>
@@ -748,7 +752,6 @@ const App={
     this.buildModalList();
     this.attachEventListeners();
     document.body.addEventListener('click', () => this.initAudioContext(), {once:true});
-    this.setupScrollFade(this.$.wrongNoteFilters);
     this.setupScrollFade(document.querySelector('.header-right'));
     this.setupModalScrollLock();
     this.setupViewportVars();
@@ -1355,7 +1358,7 @@ const App={
 
     this.renderAll(null);
     this.$.resultBanner.className='result-banner wrong-banner show';
-    this.$.resultBanner.innerHTML=`<div style="display:flex;align-items:center;width:100%;justify-content:space-between"><span><span style="color:var(--c-wrong)">⏰ 시간 초과!</span> <span style="font-weight:400;margin-left:10px">마저 답을 입력해보세요.</span></span><button class="show-answer-btn">정답 확인</button></div>`;
+    this.$.resultBanner.innerHTML=`<div style="display:flex;align-items:center;width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px"><span><span style="color:var(--c-wrong)">⏰ 시간 초과!</span> <span style="font-weight:400;margin-left:10px">마저 답을 입력해보세요.</span></span><button class="show-answer-btn">정답 확인</button></div>`;
   },
 
   handleKeyPress(key){
@@ -1768,8 +1771,8 @@ const App={
       this.$.resultBanner.className='result-banner wrong-banner show';
       let w='';if(this.state.currentQuestion.coefOneErrorFlag)w=`<div style="color:var(--c-wrong);font-size:13px;margin-bottom:8px;width:100%">⚠️ 주의: 화학에서 계수 '1'은 생략해야 합니다.</div>`;
       if(this.state.isAnswerRevealed)this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%">❌ 오답입니다. 정답이 표시되었습니다.</div>`;
-      else if(this.state.isRetryPlaylistMode) this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between"><span>❌ 오답입니다. (계속 풀거나 건너뛰기 가능)</span><button class="show-answer-btn">정답 확인</button></div>`;
-      else this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between"><span>❌ 오답입니다.</span><button class="show-answer-btn">정답 확인</button></div>`;
+      else if(this.state.isRetryPlaylistMode) this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px"><span>❌ 오답입니다. (계속 풀거나 건너뛰기 가능)</span><button class="show-answer-btn">정답 확인</button></div>`;
+      else this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px"><span>❌ 오답입니다.</span><button class="show-answer-btn">정답 확인</button></div>`;
     }
   },
 
@@ -1895,7 +1898,7 @@ const App={
       });
       return {
         grid:`<div class="pt-grid pt-simple" style="grid-template-columns:40px repeat(8,1fr);grid-template-rows:repeat(7,1fr)">${cells}</div>`,
-        extra:`<div class="pt-extra-label">🔥 불꽃 반응 색</div><div class="pt-extra-row">${extraHTML}</div>`
+        extra:`<hr class="pt-extra-divider"><div class="pt-extra-label">🔥 불꽃 반응 색</div><div class="pt-extra-row">${extraHTML}</div>`
       };
     }
     cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:9px;line-height:1.1;text-align:center">족<br>주기</div>`;
