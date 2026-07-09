@@ -25,7 +25,11 @@
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html{background:var(--c-bg);overscroll-behavior:none;}
-  body{font-family:var(--font-ui);background:var(--c-bg);color:var(--c-text-primary);min-height:100vh;min-height:100dvh;transition:background .3s,color .3s;overflow-x:hidden;overscroll-behavior:none;}
+  /* 진짜 입력창(#authInput)이 아닌 곳에서 텍스트를 드래그/더블탭 선택하면 브라우저가 그 자리에
+     깜빡이는 선택 커서를 띄운다 — 커스텀 키보드는 그 위치를 모르므로 "입력했는데 안 먹힘"처럼 보임.
+     본문 전체는 선택 불가로 막고, 실제 입력 필드에서만 다시 허용한다. */
+  body{font-family:var(--font-ui);background:var(--c-bg);color:var(--c-text-primary);min-height:100vh;min-height:100dvh;transition:background .3s,color .3s;overflow-x:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;}
+  input,textarea{-webkit-user-select:text;user-select:text;}
   body.modal-open{overflow:hidden;}
   body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 25% 25%,var(--c-accent-1),transparent 30%),radial-gradient(circle at 75% 75%,var(--c-accent-2),transparent 30%);opacity:.35;filter:blur(100px);pointer-events:none;z-index:0;}
   #app{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:16px;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;transition:max-width 0.3s;}
@@ -33,7 +37,7 @@
   .logo-egg{font-size:16px;font-weight:900;color:var(--c-wrong);letter-spacing:1px;cursor:pointer;user-select:none;transition:transform .2s;white-space:nowrap;flex-shrink:0;}
   .logo-egg:active{transform:scale(.9);}
   header{flex-wrap:nowrap;min-width:0;}
-  .header-right{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none;min-width:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+  .header-right{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;min-width:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
   .header-right::-webkit-scrollbar{display:none;}
   .icon-btn{background:var(--c-surface-1);border:1px solid var(--c-border);color:var(--c-text-secondary);width:52px;height:52px;border-radius:12px;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;transition:all .2s;backdrop-filter:blur(10px);flex-shrink:0;}
   @media (max-width:460px){
@@ -89,6 +93,9 @@
   .kb-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
   /* 숫자패드는 줄바꿈되는 flex 대신 5열 그리드로 고정 → 마지막 줄(8·9·0)만 늘어나던 문제 방지, 항상 균일 */
   #numRow{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+  /* 원소패드(14개)도 동일한 문제: flex-wrap 마지막 줄에 하나만 남으면(B) 그 키가 flex-grow로 줄 전체를 채워 거대해짐.
+     7열 그리드로 고정하면 14개가 정확히 2줄로 나뉘어 항상 균일하다. */
+  #elemRow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
   .kb-key{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;font-family:var(--font-mono);font-size:18px;font-weight:700;min-height:54px;min-width:44px;flex:1 1 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .1s;}
   .kb-key:active{transform:scale(.95);}
   .kb-key.num{color:var(--c-accent-3);}.kb-key.elem{color:var(--c-text-primary);font-weight:500;}
@@ -101,14 +108,17 @@
   .modal-close{background:none;border:none;color:var(--c-text-secondary);font-size:32px;cursor:pointer;}
   .modal-content{overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;scrollbar-width:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
   .modal-content::-webkit-scrollbar{display:none;}
-  .filter-chips{display:flex;overflow-x:auto;gap:6px;margin-bottom:16px;padding-bottom:4px;scrollbar-width:none;}
+  .filter-chips{display:flex;overflow-x:auto;gap:6px;margin-bottom:16px;padding-bottom:4px;scrollbar-width:none;-ms-overflow-style:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
   .filter-chips::-webkit-scrollbar{display:none;}
   .filter-chip{flex:0 0 auto;background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:20px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
   .filter-chip.active{background:var(--c-accent-1);color:var(--c-bg);border-color:var(--c-accent-1);}
-  .reaction-item{background:var(--c-surface-2);border-radius:12px;padding:16px;font-family:var(--font-mono);font-size:15px;display:flex;flex-direction:column;gap:10px;}
-  .reaction-header{display:flex;justify-content:space-between;align-items:flex-start;}
-  .reaction-name{color:var(--c-accent-3);font-size:13px;font-family:var(--font-ui);font-weight:700;}
-  .reaction-eq{color:var(--c-text-primary);font-size:16px;line-height:1.6;background:rgba(0,0,0,.2);padding:14px;border-radius:8px;border:1px solid var(--c-border);text-align:center;}
+  .reaction-item{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:15px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,background .15s;}
+  .reaction-header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
+  .reaction-name{color:var(--c-text-primary);font-size:14px;font-family:var(--font-ui);font-weight:700;display:flex;align-items:center;gap:7px;flex-wrap:wrap;line-height:1.3;}
+  .reaction-num{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 5px;border-radius:7px;background:var(--c-surface-1);color:var(--c-accent-1);font-size:11px;font-family:var(--font-mono);font-weight:900;flex-shrink:0;}
+  .reaction-badge{display:inline-flex;align-items:center;gap:4px;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;padding:3px 10px 3px 8px;font-size:11px;font-family:var(--font-ui);font-weight:700;color:var(--c-text-secondary);white-space:nowrap;flex-shrink:0;}
+  .reaction-fail{color:var(--c-wrong);font-size:11px;font-family:var(--font-ui);font-weight:700;white-space:nowrap;}
+  .reaction-eq{color:var(--c-text-primary);font-size:16px;line-height:1.6;background:rgba(0,0,0,.22);padding:12px 14px;border-radius:10px;border-left:3px solid var(--c-border-active);text-align:center;}
   /* 오답노트 리스트 안에서는 플래시카드 앞/뒷면을 한 줄로, 폰트도 축소(카드 원본은 그대로) */
   .m6-note-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
   .reaction-eq .m6-korean,.reaction-eq .m6-formula{font-size:13px;line-height:1.35;}
@@ -131,7 +141,9 @@
   .pt-modal-box{max-width:1300px;width:96vw;background:var(--c-surface-solid);}
   .pt-rotate-btn{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
   /* 회전 = 전체화면 가로보기 오버레이: 화면 자체를 90도 돌려 쓰는 전용 뷰 */
-  .pt-fullscreen{display:none;position:fixed;inset:0;z-index:9999990;background:var(--c-bg);}
+  /* 이 뷰는 이미 화면에 맞춰 계산되므로 핀치 확대가 필요 없고, 회전+JS 실시간 재계산과
+     겹치면 오히려 끊겨 보인다 — 확대는 막고 스크롤(팬)만 허용 */
+  .pt-fullscreen{display:none;position:fixed;inset:0;z-index:9999990;background:var(--c-bg);touch-action:pan-x pan-y;}
   .pt-fullscreen.show{display:block;}
   /* --app-w/--app-h: JS가 visualViewport로 실측한 실제 가시 영역(px). 동적 주소창이 있는
      iOS Safari·삼성 인터넷에서도 vh/vw처럼 어긋나지 않는다. vh/vw는 로드 직후 값이 없을 때의 폴백. */
@@ -553,6 +565,7 @@ const COEF_TEMPLATES=[
 ];
 const CORE_ELEMENTS=['H','C','O','N','S','P','Na','Mg','Ca','Cu','Ag','Cl','A','B'];
 const MODE_NAMES={1:'계수 맞추기',2:'반응물 맞추기',3:'생성물 맞추기',4:'전체 반응식',5:'화학식 암기',6:'플래시카드'};
+const MODE_ICONS={1:'🔢',2:'🧪',3:'⚗️',4:'📝',5:'🧠',6:'🃏'};
 
 /* z=원자번호, sym=원소기호, name=한글이름, cat=분류(색상), group=족(1~18), period=주기(1~7), f=란타넘족/악티늄족일 때의 순번(1~15) */
 const ELEMENTS=[
@@ -683,7 +696,16 @@ const PT_CATEGORIES=[
 /* 간략히 보기: 일부 중학교에서 1~20번 외에 불꽃반응·할로젠 예시로 함께 다루는 원소 */
 const PT_SIMPLE_EXTRA_Z=[35,38,53,56]; // Br, Sr, I, Ba
 /* 간략히 보기: 족과 무관하게 실생활에서 자주 접하는 금속 */
-const PT_SIMPLE_EXTRA_METALS_Z=[30,29,26,82,25,48,79,78]; // Zn, Cu, Fe, Pb, Mn, Cd, Au, Pt
+/* 중학교 불꽃 반응 색 (원소기호별 실제 관찰색) */
+const PT_FLAME_COLORS=[
+  {z:29,color:'#22D3EE',label:'청록'}, // 구리
+  {z:3, color:'#EF4444',label:'빨강'}, // 리튬
+  {z:11,color:'#FDE047',label:'노랑'}, // 나트륨
+  {z:19,color:'#C084FC',label:'보라'}, // 칼륨
+  {z:38,color:'#F87171',label:'빨강'}, // 스트론튬
+  {z:56,color:'#A3E635',label:'황록'}, // 바륨
+  {z:20,color:'#FB923C',label:'주황'}  // 칼슘
+];
 
 /* ── 앱 ── */
 const App={
@@ -734,9 +756,13 @@ const App={
   },
 
   /* 실제 가시 영역(px)을 CSS 변수로 유지 — iOS Safari/삼성 인터넷의 동적 주소창 때문에
-     vh/vw가 실제 화면과 어긋나는 문제를 우회한다. 회전 전체화면이 열려 있으면 즉시 재계산. */
+     vh/vw가 실제 화면과 어긋나는 문제를 우회한다. 회전 전체화면이 열려 있으면 즉시 재계산.
+     핀치 줌 중에는 visualViewport의 resize/scroll이 프레임마다 여러 번 발생하므로,
+     매번 그리드를 다시 그리면 끊겨 보인다 — requestAnimationFrame으로 프레임당 1회로 묶는다. */
   setupViewportVars(){
-    const update=()=>{
+    let rafId=null;
+    const apply=()=>{
+      rafId=null;
       const vv=window.visualViewport;
       const w=vv?vv.width:window.innerWidth;
       const h=vv?vv.height:window.innerHeight;
@@ -744,7 +770,8 @@ const App={
       document.documentElement.style.setProperty('--app-h', h+'px');
       if(document.getElementById('ptFullscreen').classList.contains('show')) this.layoutPtFullscreen();
     };
-    update();
+    const update=()=>{ if(rafId==null) rafId=requestAnimationFrame(apply); };
+    apply();
     window.addEventListener('resize', update);
     window.addEventListener('orientationchange', update);
     if(window.visualViewport){
@@ -937,7 +964,7 @@ const App={
       this.$.keyboardWrap.style.display = '';
       this.$.mode6Wrap.classList.remove('m6-active');
       this.$.elemRowLabel.style.display = note.mode===1 ? 'none' : 'block';
-      this.$.elemRow.style.display = note.mode===1 ? 'none' : 'flex';
+      this.$.elemRow.style.display = note.mode===1 ? 'none' : 'grid';
 
       const q = JSON.parse(JSON.stringify(note.qData));
       q.inputs = {}; q.isTimedOut = false; q.cursor = {};
@@ -1006,7 +1033,7 @@ const App={
     this.$.mode6Wrap.classList.remove('m6-active');
     this.$.cycleWrap.style.display = 'none';
     this.$.elemRowLabel.style.display = note.mode===1 ? 'none' : 'block';
-    this.$.elemRow.style.display = note.mode===1 ? 'none' : 'flex';
+    this.$.elemRow.style.display = note.mode===1 ? 'none' : 'grid';
 
     const q = JSON.parse(JSON.stringify(note.qData));
     q.inputs = {}; q.isTimedOut = false; q.cursor = {};
@@ -1054,7 +1081,7 @@ const App={
   },
   buildModalList(){
     const fmt=side=>side.map(r=>(r.coef>1?`<span class="eq-text">${r.coef}</span>`:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' <span class="eq-plus">+</span> ');
-    this.$.reactionList.innerHTML=REACTIONS.map((rx,i)=>`<div class="reaction-item"><div class="reaction-info" style="width:100%"><div class="reaction-header"><div class="reaction-name" style="margin-bottom:8px">#${i+1} ${rx.name}</div></div><div class="reaction-eq">${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}</div></div></div>`).join('');
+    this.$.reactionList.innerHTML=REACTIONS.map((rx,i)=>`<div class="reaction-item"><div class="reaction-header"><div class="reaction-name"><span class="reaction-num">${i+1}</span>${rx.name}</div></div><div class="reaction-eq">${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}</div></div>`).join('');
     this.renderWrongNotes();
   },
   renderWrongNotes(){
@@ -1063,11 +1090,13 @@ const App={
     if(f.length===0){this.$.wrongNoteList.innerHTML=`<p style="color:var(--c-text-secondary);text-align:center;padding:40px 20px">이 모드의 오답 기록이 없습니다.</p>`;return;}
     this.$.wrongNoteList.innerHTML=f.map(n=>{
       const fc = n.failCount || 1;
-      let style = ''; let icon = '';
-      if(fc === 2) { style = 'background:rgba(239,68,68,0.1); border:1px solid var(--c-wrong);'; }
-      else if(fc >= 3) { style = 'background:rgba(239,68,68,0.2); border:2px solid var(--c-wrong);'; icon = '⚠️ '; }
+      let style = '';
+      if(fc === 2) style = 'background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.5);';
+      else if(fc >= 3) style = 'background:rgba(239,68,68,0.14);border-color:var(--c-wrong);border-width:2px;';
       const retryLabel = n.mode===6 ? '카드 다시보기' : '단일 풀기';
-      return `<div class="reaction-item" style="${style}"><div class="reaction-info" style="width:100%"><div class="reaction-header"><div class="reaction-name" style="font-size:13px;">${icon}[${MODE_NAMES[n.mode]||('모드 '+n.mode)}] ${n.title} <span style="color:var(--c-wrong);font-size:11px;">(오답 ${fc}회)</span></div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${n.id}">${retryLabel}</button><button class="delete-note-btn" data-id="${n.id}">삭제</button></div></div><div class="reaction-eq" style="border-color:var(--c-wrong)">${n.html}</div></div></div>`;
+      const modeIcon = MODE_ICONS[n.mode]||'📌';
+      const failBadge = fc>1?`<span class="reaction-fail">${fc>=3?'⚠️ ':''}오답 ${fc}회</span>`:'';
+      return `<div class="reaction-item" style="${style}"><div class="reaction-header"><div class="reaction-name"><span class="reaction-badge">${modeIcon} ${MODE_NAMES[n.mode]||('모드 '+n.mode)}</span>${n.title}${failBadge}</div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${n.id}">${retryLabel}</button><button class="delete-note-btn" data-id="${n.id}">삭제</button></div></div><div class="reaction-eq" style="border-left-color:var(--c-wrong)">${n.html}</div></div>`;
     }).join('');
   },
 
@@ -1347,8 +1376,26 @@ const App={
 
       if(key === 'LEFT') {
         if(pos > 0) q.cursor[q.activeKey] = pos - 1;
+        else {
+          /* 칸의 맨 왼쪽에서 한 번 더 누르면 바로 이전 블랭크의 맨 끝으로 이동 */
+          const idx = q.blanks.findIndex(b=>b.key===q.activeKey);
+          if(idx > 0) {
+            const prevKey = q.blanks[idx-1].key;
+            q.activeKey = prevKey;
+            q.cursor[prevKey] = (q.inputs[prevKey]||'').length;
+          }
+        }
       } else if(key === 'RIGHT') {
         if(pos < val.length) q.cursor[q.activeKey] = pos + 1;
+        else {
+          /* 칸의 맨 오른쪽에서 한 번 더 누르면 바로 다음 블랭크의 맨 앞으로 이동 */
+          const idx = q.blanks.findIndex(b=>b.key===q.activeKey);
+          if(idx >= 0 && idx < q.blanks.length-1) {
+            const nextKey = q.blanks[idx+1].key;
+            q.activeKey = nextKey;
+            q.cursor[nextKey] = 0;
+          }
+        }
       } else if(key.startsWith('NUM_')) {
         let char = key.replace('NUM_','');
         q.inputs[q.activeKey] = val.slice(0, pos) + char + val.slice(pos);
@@ -1430,7 +1477,7 @@ const App={
 
     if(is6){clearInterval(this.state.timerInterval);this.m6GenCards();this.m6Render();return;}
     if(mode===1){this.$.elemRowLabel.style.display='none';this.$.elemRow.style.display='none';}
-    else{this.$.elemRowLabel.style.display='block';this.$.elemRow.style.display='flex';}
+    else{this.$.elemRowLabel.style.display='block';this.$.elemRow.style.display='grid';}
     this.generateQuestion();
   },
 
@@ -1824,6 +1871,11 @@ const App={
     const pos = (col!=null && row!=null) ? `grid-column:${col};grid-row:${row}` : '';
     return `<div class="pt-cell pt-cat-${e.cat}" style="${pos}" title="${e.z}. ${e.name} (${e.sym})"><span class="pt-z">${e.z}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
   },
+  /* 원소 칸과 동일한 레이아웃(pt-z/pt-sym/pt-name)을 재사용하되, 배경을 족 색상 대신 실제 불꽃 반응 색으로,
+     맨 위 숫자 칸은 원자번호 대신 색 이름으로 바꿔서 보여준다 */
+  ptFlameCellHTML(e,fc){
+    return `<div class="pt-cell" style="background:${fc.color}" title="${e.name}(${e.sym}) 불꽃 반응: ${fc.label}색"><span class="pt-z">${fc.label}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
+  },
   /* 표 본체 HTML 생성 (모달·전체화면 공용). 1열/1행은 주기·족 번호 라벨용이라 원소는 +1 오프셋 배치 */
   ptTableHTML(){
     const simple=this.state.isSimplePeriodic;
@@ -1838,12 +1890,12 @@ const App={
         cells+=this.ptCellHTML(e,col,e.period+1);
       });
       let extraHTML='';
-      PT_SIMPLE_EXTRA_METALS_Z.forEach(z=>{
-        const e=ELEMENTS.find(el=>el.z===z);if(e)extraHTML+=this.ptCellHTML(e);
+      PT_FLAME_COLORS.forEach(fc=>{
+        const e=ELEMENTS.find(el=>el.z===fc.z);if(e)extraHTML+=this.ptFlameCellHTML(e,fc);
       });
       return {
         grid:`<div class="pt-grid pt-simple" style="grid-template-columns:40px repeat(8,1fr);grid-template-rows:repeat(7,1fr)">${cells}</div>`,
-        extra:`<div class="pt-extra-label">🧪 족과 상관없이 자주 나오는 금속</div><div class="pt-extra-row">${extraHTML}</div>`
+        extra:`<div class="pt-extra-label">🔥 불꽃 반응 색</div><div class="pt-extra-row">${extraHTML}</div>`
       };
     }
     cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:9px;line-height:1.1;text-align:center">족<br>주기</div>`;
