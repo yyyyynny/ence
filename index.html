@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" id="viewportMeta" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>반응물이 반응하면 생성물</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
@@ -786,9 +786,17 @@ const App={
   /* 어떤 팝업이든 .show면 body 스크롤 잠금 → 뒤 페이지로 스크롤 전파(바깥 노출) 차단 */
   setupModalScrollLock(){
     const overlays=[...document.querySelectorAll('.modal-overlay'),document.getElementById('ptFullscreen')].filter(Boolean);
+    const vpMeta=document.getElementById('viewportMeta');
+    const vpDefault='width=device-width, initial-scale=1.0, viewport-fit=cover';
+    const vpLocked='width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no';
     const sync=()=>{
       const anyOpen=overlays.some(o=>o.classList.contains('show'));
       document.body.classList.toggle('modal-open', anyOpen);
+      /* 모달이 열려 있는 동안은 핀치 확대 자체를 막는다. touch-action:pan-x pan-y만으로는 삼성 인터넷 등
+         일부 브라우저의 네이티브 핀치 줌을 막지 못해, 확대되는 도중 회전 뷰의 실시간 재계산(layoutPtFullscreen)과
+         충돌해 레이아웃이 깨지고 응답이 없어 보이는 문제가 있었다 — 뷰포트 메타태그를 직접 잠가 확실히 차단한다.
+         모달이 없는 일반 페이지에서는 원래대로 확대 가능하다. */
+      if(vpMeta) vpMeta.setAttribute('content', anyOpen?vpLocked:vpDefault);
     };
     const obs=new MutationObserver(sync);
     overlays.forEach(o=>obs.observe(o,{attributes:true,attributeFilter:['class']}));
