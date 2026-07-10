@@ -771,7 +771,7 @@ const App={
      핀치 줌 중에는 visualViewport의 resize/scroll이 프레임마다 여러 번 발생하므로,
      매번 그리드를 다시 그리면 끊겨 보인다 — requestAnimationFrame으로 프레임당 1회로 묶는다. */
   setupViewportVars(){
-    let settleTimer=null, lastW=0, lastH=0;
+    let settleTimer=null, lastW=0, lastH=0, lastOrient='';
     const apply=()=>{
       const vv=window.visualViewport;
       /* 핀치 확대 중(scale>1)에는 "보이는 영역"이 좁아진 것일 뿐 화면 크기가 바뀐 게 아니다.
@@ -781,11 +781,18 @@ const App={
       if(vv && vv.scale>1.001) return;
       const w=Math.round(vv?vv.width:window.innerWidth);
       const h=Math.round(vv?vv.height:window.innerHeight);
-      if(w===lastW && h===lastH) return; /* 크기 변화 없으면(예: 축소 후 원위치) 아예 손대지 않음 → 깜빡임 없음 */
-      lastW=w; lastH=h;
+      const orient = w>h ? 'l' : 'p';
+      const fsOpen = document.getElementById('ptFullscreen').classList.contains('show');
+      /* 회전 뷰는 "열 때 화면에 맞춰 고정된 스냅샷"이다. 핀치 도중 삼성 브라우저의 주소창이
+         나타났다 사라지며 화면 높이가 몇십 px 바뀌는데, 그때마다 회전 뷰를 다시 그리면
+         축소 순간 "화면 재로딩" 플래시로 보인다 → 회전 뷰가 열려 있는 동안은 실제 방향 전환
+         (세로↔가로)에만 재계산하고, 주소창발 미세한 높이 변화는 무시한다. */
+      if(fsOpen && orient===lastOrient) return;
+      if(w===lastW && h===lastH) return; /* 크기 변화 없으면 아예 손대지 않음 → 깜빡임 없음 */
+      lastW=w; lastH=h; lastOrient=orient;
       document.documentElement.style.setProperty('--app-w', w+'px');
       document.documentElement.style.setProperty('--app-h', h+'px');
-      if(document.getElementById('ptFullscreen').classList.contains('show')) this.layoutPtFullscreen();
+      if(fsOpen) this.layoutPtFullscreen();
     };
     /* 제스처(핀치/주소창 애니메이션) 도중에는 이벤트가 프레임마다 쏟아진다 — 매번 반응하지 않고
        150ms 잠잠해진 뒤 한 번만 적용해, 제스처 끝자락의 "찰나의 다시 그리기"와 끊김을 없앤다. */
