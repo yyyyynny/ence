@@ -24,23 +24,18 @@
     --c-correct:#059669; --c-wrong:#DC2626;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  /* 문서(루트) 스크롤바는 안드로이드 크로미움 계열(삼성 인터넷·웹뷰 등)에서 CSS로 숨길 수 없는
-     네이티브 오버레이라 어떤 규칙을 줘도 남는다 → 문서 스크롤 자체를 없애고(html overflow:hidden)
-     body를 내부 스크롤러로 만든다. 내부 요소의 스크롤바는 모든 엔진에서 확실히 숨겨진다. */
-  html{background:var(--c-bg);overscroll-behavior:none;height:100%;overflow:hidden;}
+  /* 스크롤바는 항상 숨긴다(플랫폼/브라우저 구분 없이). 문서 자체가 스크롤러라야 브라우저 기본
+     핀치줌(특히 모바일 크로미움 계열)과 가장 잘 맞으므로 body를 별도 내부 스크롤러로 만들지 않는다. */
+  html{background:var(--c-bg);overscroll-behavior:none;scrollbar-width:none;}
+  html::-webkit-scrollbar{width:0;height:0;display:none;}
   /* 진짜 입력창(#authInput)이 아닌 곳에서 텍스트를 드래그/더블탭 선택하면 브라우저가 그 자리에
      깜빡이는 선택 커서를 띄운다 — 커스텀 키보드는 그 위치를 모르므로 "입력했는데 안 먹힘"처럼 보임.
      본문 전체는 선택 불가로 막고, 실제 입력 필드에서만 다시 허용한다.
      touch-action:manipulation = 더블탭 확대만 끄고 핀치 확대·스크롤은 유지 → 키패드 연타가 즉각 반응. */
-  body{font-family:var(--font-ui);background:var(--c-bg);color:var(--c-text-primary);height:100%;transition:background .3s,color .3s;overflow-y:auto;overflow-x:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;}
+  body{font-family:var(--font-ui);background:var(--c-bg);color:var(--c-text-primary);transition:background .3s,color .3s;overflow-x:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;scrollbar-width:none;}
+  body::-webkit-scrollbar{width:0;height:0;display:none;}
   input,textarea{-webkit-user-select:text;user-select:text;}
   body.modal-open{overflow:hidden;}
-  /* 모바일(터치 기기): body(이제 내부 스크롤러)의 세로 스크롤바 숨김 — 스크롤 동작은 그대로.
-     데스크톱은 스크롤 위치 확인용으로 유지. */
-  @media (hover:none){
-    body{scrollbar-width:none;}
-    body::-webkit-scrollbar{width:0;height:0;display:none;}
-  }
   body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 25% 25%,var(--c-accent-1),transparent 30%),radial-gradient(circle at 75% 75%,var(--c-accent-2),transparent 30%);opacity:.35;filter:blur(100px);pointer-events:none;z-index:0;}
   #app{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:16px;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;transition:max-width 0.3s;}
   header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
@@ -161,7 +156,9 @@
   .pt-fs-rotor{position:absolute;top:50%;left:50%;width:var(--app-h,100vh);height:var(--app-w,100vw);transform:translate(-50%,-50%) rotate(90deg);display:flex;flex-direction:column;padding:16px;overflow:hidden;}
   .pt-fs-title{font-size:15px;font-weight:900;color:var(--c-accent-1);margin-bottom:10px;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;}
   .pt-fs-close{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:10px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer;}
-  .pt-fs-scroll{flex:1;overflow:auto;scrollbar-width:none;min-height:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+  /* overscroll-behavior/webkit-overflow-scrolling을 일부러 안 씀: 두 손가락 핀치가 이 내부
+     스크롤러에 pan으로 먹히지 않고 항상 브라우저 기본 확대로 전달되게 하기 위함(축소 멈춤 방지) */
+  .pt-fs-scroll{flex:1;overflow:auto;scrollbar-width:none;min-height:0;}
   .pt-fs-scroll::-webkit-scrollbar{display:none;}
   /* 그리드 열 폭·행 높이·폰트는 JS(layoutPtFullscreen)가 실측 픽셀로 인라인 계산해 적용한다 */
   .pt-fs-scroll .pt-grid.pt-simple{margin:0 auto;}
