@@ -153,15 +153,19 @@
   .pt-fullscreen.show{display:block;}
   /* --app-w/--app-h: JS가 visualViewport로 실측한 실제 가시 영역(px). 동적 주소창이 있는
      iOS Safari·삼성 인터넷에서도 vh/vw처럼 어긋나지 않는다. vh/vw는 로드 직후 값이 없을 때의 폴백. */
-  .pt-fs-rotor{position:absolute;top:50%;left:50%;width:var(--app-h,100vh);height:var(--app-w,100vw);transform:translate(-50%,-50%) rotate(90deg);display:flex;flex-direction:column;padding:16px;overflow:hidden;}
+  .pt-fs-rotor{position:absolute;top:50%;left:50%;width:var(--app-h,100vh);height:var(--app-w,100vw);transform:translate(-50%,-50%) rotate(90deg);display:flex;flex-direction:column;padding:16px;overflow:hidden;will-change:transform;backface-visibility:hidden;}
   .pt-fs-title{font-size:15px;font-weight:900;color:var(--c-accent-1);margin-bottom:10px;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;}
   .pt-fs-close{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:10px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer;}
   /* overscroll-behavior/webkit-overflow-scrolling을 일부러 안 씀: 두 손가락 핀치가 이 내부
      스크롤러에 pan으로 먹히지 않고 항상 브라우저 기본 확대로 전달되게 하기 위함(축소 멈춤 방지) */
   .pt-fs-scroll{flex:1;overflow:auto;scrollbar-width:none;min-height:0;}
   .pt-fs-scroll::-webkit-scrollbar{display:none;}
-  /* 그리드 열 폭·행 높이·폰트는 JS(layoutPtFullscreen)가 실측 픽셀로 인라인 계산해 적용한다 */
-  .pt-fs-scroll .pt-grid.pt-simple{margin:0 auto;}
+  /* 그리드 열 폭·행 높이·폰트는 JS(layoutPtFullscreen)가 실측 픽셀로 인라인 계산해 적용한다.
+     grid는 기본적으로 컨테이너 폭 전체를 채우는 블록이라, 열이 그보다 좁으면(특히 전체표)
+     안 쓰는 트랙 공간이 오른쪽에 그대로 남는다 → width:fit-content로 실제 열 합계만큼만
+     박스를 줄인 뒤 margin:auto로 중앙정렬. min-width:0은 기본 .pt-grid의 min-width:960px
+     (모달 가로스크롤용)이 fit-content 계산을 밀어붙이지 못하게 무효화한다. */
+  .pt-fs-scroll .pt-grid{margin:0 auto;min-width:0;width:fit-content;}
   .pt-fs-scroll .pt-extra-row{margin:12px auto 0;}
   .pt-fs-scroll .pt-sym{font-size:var(--pt-fs-sym,18px);}
   .pt-fs-scroll .pt-name{font-size:var(--pt-fs-name,9px);}
@@ -229,7 +233,10 @@
 
   /* ── MODE 6 플래시카드 ── */
   #mode6Wrap{display:none;flex-direction:column;gap:14px;flex-grow:1;}
-  #mode6Wrap.m6-active{display:flex;}
+  /* 다른 모드에서 넘어올 때 위 칸들이 사라지며 mode-tabs가 순간 점프하는 게 눈에 띄어서,
+     확 튀는 대신 부드럽게 나타나는 것처럼 보이도록 진입 애니메이션을 준다 */
+  @keyframes m6Enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  #mode6Wrap.m6-active{display:flex;animation:m6Enter .25s ease-out;}
   .m6-wrongnote-link{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:14px;padding:12px 16px;color:var(--c-text-primary);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;backdrop-filter:blur(10px);}
   .m6-wrongnote-link:hover{border-color:var(--c-border-active);color:var(--c-accent-1);}
   .m6-wrongnote-icon{font-size:15px;color:var(--c-accent-1);}
@@ -842,9 +849,9 @@ const App={
     this.$.simplePeriodicToggle.classList.toggle('on', this.state.isSimplePeriodic);
     this.$.simplePeriodicToggle.setAttribute('aria-checked', this.state.isSimplePeriodic);
 
-    if(localStorage.getItem('chem_auth_v4') === 'pass') {
-      document.getElementById('authOverlay').style.display = 'none';
-    }
+    let authed=false;
+    try{ authed = localStorage.getItem('chem_auth_v4')==='pass'; }catch(e){}
+    if(authed) document.getElementById('authOverlay').style.display = 'none';
   },
   updateFeedbackBtns(){
     this.$.soundBtn.textContent = this.state.isSoundOn ? '🔊' : '🔇';
