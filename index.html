@@ -151,25 +151,28 @@
   .pt-modal-box{max-width:1300px;width:96vw;background:var(--c-surface-solid);}
   .pt-rotate-btn{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
   /* 회전 = 전체화면 가로보기 오버레이: 화면 자체를 90도 돌려 쓰는 전용 뷰.
-     확대는 허용(manipulation=더블탭 확대만 차단) — 확대 중 레이아웃은 동결 가드가 지킨다 */
-  .pt-fullscreen{display:none;position:fixed;inset:0;z-index:9999990;background:var(--c-bg);touch-action:manipulation;}
+     확대는 브라우저 네이티브 줌이 아니라 자체 transform 줌(setupPtZoom)으로 처리한다 —
+     position:fixed + rotate 요소는 네이티브 핀치줌 중 매 프레임 재래스터화돼 버벅/깜빡이므로,
+     콘텐츠 레이어에 transform:scale만 걸어 GPU 합성만으로 매끈하게 확대한다. */
+  .pt-fullscreen{display:none;position:fixed;inset:0;z-index:9999990;background:var(--c-bg);}
   .pt-fullscreen.show{display:block;}
   /* --app-w/--app-h: JS가 visualViewport로 실측한 실제 가시 영역(px). 동적 주소창이 있는
      iOS Safari·삼성 인터넷에서도 vh/vw처럼 어긋나지 않는다. vh/vw는 로드 직후 값이 없을 때의 폴백. */
-  .pt-fs-rotor{position:absolute;top:50%;left:50%;width:var(--app-h,100vh);height:var(--app-w,100vw);transform:translate(-50%,-50%) rotate(90deg);display:flex;flex-direction:column;padding:16px;overflow:hidden;will-change:transform;backface-visibility:hidden;}
+  .pt-fs-rotor{position:absolute;top:50%;left:50%;width:var(--app-h,100vh);height:var(--app-w,100vw);transform:translate(-50%,-50%) rotate(90deg);display:flex;flex-direction:column;padding:16px;overflow:hidden;}
   .pt-fs-title{font-size:15px;font-weight:900;color:var(--c-accent-1);margin-bottom:10px;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;}
   .pt-fs-close{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:10px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer;}
-  /* overscroll-behavior/webkit-overflow-scrolling을 일부러 안 씀: 두 손가락 핀치가 이 내부
-     스크롤러에 pan으로 먹히지 않고 항상 브라우저 기본 확대로 전달되게 하기 위함(축소 멈춤 방지) */
-  .pt-fs-scroll{flex:1;overflow:auto;scrollbar-width:none;min-height:0;}
-  .pt-fs-scroll::-webkit-scrollbar{display:none;}
+  /* 뷰포트: 콘텐츠를 잘라내는 창. touch-action:none으로 브라우저 네이티브 줌/스크롤을 완전히
+     막아, 두 손가락 제스처가 우리 핸들러에만 온전히 들어오게 한다(닫기 버튼은 이 밖이라 정상 탭). */
+  .pt-fs-viewport{flex:1;min-height:0;overflow:hidden;position:relative;touch-action:none;}
+  /* 줌 레이어: transform(translate+scale)을 JS가 인라인으로 걸어 확대/이동. transform만
+     바뀌므로 리페인트/리플로우 없이 GPU 합성만 일어난다. width/height:100%로 뷰포트를 꽉 채워
+     내부 그리드가 margin:auto로 중앙에 오게 한다. */
+  .pt-fs-scroll{width:100%;height:100%;transform-origin:0 0;display:flex;flex-direction:column;justify-content:center;}
   /* 그리드 열 폭·행 높이·폰트는 JS(layoutPtFullscreen)가 실측 픽셀로 인라인 계산해 적용한다.
-     grid는 기본적으로 컨테이너 폭 전체를 채우는 블록이라, 열이 그보다 좁으면(특히 전체표)
-     안 쓰는 트랙 공간이 오른쪽에 그대로 남는다 → width:fit-content로 실제 열 합계만큼만
-     박스를 줄인 뒤 margin:auto로 중앙정렬. min-width:0은 기본 .pt-grid의 min-width:960px
-     (모달 가로스크롤용)이 fit-content 계산을 밀어붙이지 못하게 무효화한다. */
-  .pt-fs-scroll .pt-grid{margin:0 auto;min-width:0;width:fit-content;}
-  .pt-fs-scroll .pt-extra-row{margin:12px auto 0;}
+     width:fit-content + margin:0 auto로 실제 열 합계만큼만 잡아 중앙정렬. min-width:0은
+     기본 .pt-grid의 min-width:960px(모달 가로스크롤용)이 fit-content를 밀어붙이지 못하게 무효화. */
+  .pt-fs-scroll .pt-grid{margin:0 auto;min-width:0;width:fit-content;flex:0 0 auto;}
+  .pt-fs-scroll .pt-extra-row{margin:12px auto 0;flex:0 0 auto;}
   .pt-fs-scroll .pt-sym{font-size:var(--pt-fs-sym,18px);}
   .pt-fs-scroll .pt-name{font-size:var(--pt-fs-name,9px);}
   .pt-fs-scroll .pt-z{font-size:var(--pt-fs-z,8px);}
@@ -508,7 +511,9 @@
 <div class="pt-fullscreen" id="ptFullscreen">
   <div class="pt-fs-rotor">
     <div class="pt-fs-title"><span>⚛️ 주기율표 — 가로 보기</span><button class="pt-fs-close" id="ptFsClose">✕ 닫기</button></div>
-    <div class="pt-fs-scroll" id="ptFsContent"></div>
+    <div class="pt-fs-viewport" id="ptFsViewport">
+      <div class="pt-fs-scroll" id="ptFsContent"></div>
+    </div>
   </div>
 </div>
 
@@ -767,6 +772,7 @@ const App={
     this.setupScrollFade(document.querySelector('.header-right'));
     this.setupModalScrollLock();
     this.setupViewportVars();
+    this.setupPtZoom();
     this.setMode(1);
   },
 
@@ -1952,7 +1958,10 @@ const App={
   },
   openPtFullscreen(){
     const t=this.ptTableHTML();
-    document.getElementById('ptFsContent').innerHTML=`${t.grid}${t.extra}`;
+    const content=document.getElementById('ptFsContent');
+    content.innerHTML=`${t.grid}${t.extra}`;
+    content.style.transition='';
+    this.ptZoom={scale:1,tx:0,ty:0,baseFit:1,vpW:1,vpH:1,cw:1,ch:1};
     document.getElementById('ptFullscreen').classList.add('show');
     this.layoutPtFullscreen();
   },
@@ -1960,31 +1969,139 @@ const App={
     document.getElementById('ptFullscreen').classList.remove('show');
   },
   /* 회전 뷰의 열 폭·행 높이·폰트를 실측 픽셀 하나(cell)로 통일 계산해 인라인 적용.
-     예전엔 칸 너비(1fr+aspect-ratio)와 폰트(vh clamp)가 서로 다른 기준으로 따로 계산돼
-     화면·브라우저에 따라 어긋나며 겹쳤음 — 이제 같은 cell 값에서 전부 파생시켜 항상 맞물림. */
+     같은 cell 값에서 열폭·행높이·폰트를 전부 파생시켜 어떤 화면에서도 서로 맞물리게 한다.
+     gap(4px)까지 정산해 실제 콘텐츠가 뷰포트를 넘지 않게 하고, 넘으면 baseFit로 축소해
+     기본 배율(scale=1)에서 항상 전부 보이게 만든다. */
   layoutPtFullscreen(){
     const scrollEl=document.getElementById('ptFsContent');
     const grid=scrollEl.querySelector('.pt-grid');
     if(!grid) return;
+    const vp=document.getElementById('ptFsViewport');
     const title=document.querySelector('.pt-fs-title');
     const root=document.documentElement;
     const appW=parseFloat(getComputedStyle(root).getPropertyValue('--app-w'))||window.innerWidth;
     const appH=parseFloat(getComputedStyle(root).getPropertyValue('--app-h'))||window.innerHeight;
     const pad=32; /* .pt-fs-rotor padding:16px 상하좌우 */
+    const gap=4;  /* .pt-grid gap:4px */
     const titleH=(title?title.offsetHeight:32)+10; /* 10 = title margin-bottom */
     const availW=Math.max(200, appH-pad);        /* 회전 전 가로(=appH) → 열이 늘어서는 축 */
     const availH=Math.max(160, appW-pad-titleH); /* 회전 전 세로(=appW) → 행 높이를 제한하는 축 */
     const simple=this.state.isSimplePeriodic;
     const cols=simple?9:19, rows=simple?7:10;
     const labelPx=simple?36:48;
-    const cellByW=(availW-labelPx)/(cols-1);
-    const cellByH=availH/rows;
+    /* 열/행 사이 gap을 빼고 남는 폭·높이를 셀 개수로 나눠야 실제로 안 넘친다 */
+    const cellByW=(availW-labelPx-(cols-1)*gap)/(cols-1);
+    const cellByH=(availH-(rows-1)*gap)/rows;
     const cell=Math.max(28, Math.min(cellByW, cellByH, 64));
     grid.style.gridTemplateColumns=`${labelPx}px repeat(${cols-1},${cell}px)`;
     grid.style.gridTemplateRows=`repeat(${rows},${cell}px)`;
     scrollEl.style.setProperty('--pt-fs-sym', Math.max(10,Math.round(cell*.34))+'px');
     scrollEl.style.setProperty('--pt-fs-name', Math.max(6,Math.round(cell*.16))+'px');
     scrollEl.style.setProperty('--pt-fs-z', Math.max(6,Math.round(cell*.15))+'px');
+    /* 주입·사이징 후 실제 콘텐츠(그리드+불꽃반응 행)를 실측해 baseFit 산출 */
+    const extra=scrollEl.querySelector('.pt-extra-row');
+    let cw=grid.offsetWidth, ch=grid.offsetHeight;
+    if(extra){ cw=Math.max(cw, extra.offsetWidth); ch=grid.offsetHeight+extra.offsetHeight+12; }
+    const vpW=vp.clientWidth||1, vpH=vp.clientHeight||1;
+    const z=this.ptZoom||(this.ptZoom={scale:1,tx:0,ty:0});
+    z.baseFit=Math.min(vpW/cw, vpH/ch, 1);
+    z.vpW=vpW; z.vpH=vpH; z.cw=cw; z.ch=ch; z.scale=1;
+    this.clampPtZoom(); this.applyPtZoom();
+  },
+  /* 줌 레이어에 transform 적용. transform만 바꾸므로 리페인트/리플로우 없이 GPU 합성만. */
+  applyPtZoom(){
+    const z=this.ptZoom; if(!z) return;
+    const S=z.baseFit*z.scale;
+    document.getElementById('ptFsContent').style.transform=`translate(${z.tx}px,${z.ty}px) scale(${S})`;
+  },
+  /* 콘텐츠가 뷰포트를 벗어나지 않게 tx/ty 클램프. 콘텐츠는 뷰포트 크기 레이어 안에 중앙정렬돼
+     있으므로 그 중앙 오프셋(ox,oy)까지 감안한다. 렌더 크기가 뷰포트보다 작으면 정확히 중앙 고정. */
+  clampPtZoom(){
+    const z=this.ptZoom; if(!z) return;
+    const S=z.baseFit*z.scale, vpW=z.vpW, vpH=z.vpH, cw=z.cw, ch=z.ch;
+    const rw=cw*S, rh=ch*S;               /* 화면에 렌더되는 콘텐츠 크기 */
+    const ox=(vpW-cw)/2*S, oy=(vpH-ch)/2*S; /* 레이어 안 콘텐츠 중앙정렬 오프셋(스케일 반영) */
+    if(rw<=vpW){ z.tx=(vpW-rw)/2-ox; }
+    else { let l=z.tx+ox; l=Math.min(0,Math.max(vpW-rw,l)); z.tx=l-ox; }
+    if(rh<=vpH){ z.ty=(vpH-rh)/2-oy; }
+    else { let t=z.ty+oy; t=Math.min(0,Math.max(vpH-rh,t)); z.ty=t-oy; }
+  },
+  ptZoomWill(on){
+    const el=document.getElementById('ptFsContent');
+    clearTimeout(this._ptWillTimer);
+    if(on){ el.style.willChange='transform'; }
+    else { this._ptWillTimer=setTimeout(()=>{el.style.willChange='auto';},250); }
+  },
+  ptZoomReset(){
+    const z=this.ptZoom; if(!z) return;
+    const el=document.getElementById('ptFsContent');
+    el.style.transition='transform .25s ease';
+    clearTimeout(this._ptResetTimer);
+    this._ptResetTimer=setTimeout(()=>{el.style.transition='';},280);
+    z.scale=1; this.clampPtZoom(); this.applyPtZoom();
+    this.playSound('tap'); this.playHaptic('tap');
+  },
+  /* 회전 뷰 자체 핀치/팬/더블탭 줌 — 네이티브 줌(고정+회전 요소 재래스터화로 버벅/깜빡) 대신
+     transform:scale만 GPU로 걸어 매끈하게. 화면 좌표를 90° 역회전해 가로(로컬) 공간으로 매핑. */
+  setupPtZoom(){
+    const vp=document.getElementById('ptFsViewport');
+    const rotor=document.querySelector('.pt-fs-rotor');
+    if(!vp||!rotor) return;
+    let mode=null, startDist=0, startScale=1, focal=null, lastMid=null, lastPan=null, lastTap=0;
+    const dist=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    const mid=(a,b)=>({x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2});
+    /* 화면 좌표 → 뷰포트 로컬(가로 공간) 좌표. rotor는 화면 중앙 고정(회전 원점=바운딩 중심).
+       rotate(90°)의 역: 화면 오프셋(ox,oy) → 로컬(oy,-ox). rotor 바운딩 폭=appW, 높이=appH이고
+       rotor 로컬 폭=appH·높이=appW라 중앙기준→좌상단기준 보정은 각각 r.height/2, r.width/2. */
+    const toLocal=(cx,cy)=>{
+      const r=rotor.getBoundingClientRect();
+      const ox=cx-(r.left+r.width/2), oy=cy-(r.top+r.height/2);
+      return { x:(oy+r.height/2)-vp.offsetLeft, y:(-ox+r.width/2)-vp.offsetTop };
+    };
+    vp.addEventListener('touchstart',e=>{
+      if(e.touches.length===2){
+        mode='pinch'; startDist=dist(e.touches[0],e.touches[1])||1;
+        startScale=this.ptZoom.scale;
+        const m0=mid(e.touches[0],e.touches[1]); focal=toLocal(m0.x,m0.y); lastMid=m0;
+        this.ptZoomWill(true); e.preventDefault();
+      } else if(e.touches.length===1){
+        const now=Date.now();
+        if(now-lastTap<300){ lastTap=0; mode=null; this.ptZoomReset(); e.preventDefault(); return; }
+        lastTap=now;
+        if(this.ptZoom.scale>1.001){ mode='pan'; lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY}; this.ptZoomWill(true); e.preventDefault(); }
+        else { mode=null; }
+      }
+    },{passive:false});
+    vp.addEventListener('touchmove',e=>{
+      const z=this.ptZoom;
+      if(mode==='pinch'&&e.touches.length===2){
+        const d=dist(e.touches[0],e.touches[1]);
+        const ns=Math.max(1,Math.min(4,startScale*(d/startDist)));
+        const S0=z.baseFit*z.scale, S1=z.baseFit*ns;
+        z.tx=focal.x-(focal.x-z.tx)*(S1/S0);
+        z.ty=focal.y-(focal.y-z.ty)*(S1/S0);
+        z.scale=ns;
+        const m=mid(e.touches[0],e.touches[1]);
+        z.tx+=(m.y-lastMid.y); z.ty+=-(m.x-lastMid.x); lastMid=m; /* 두 손가락 드래그=팬 */
+        this.clampPtZoom(); this.applyPtZoom(); e.preventDefault();
+      } else if(mode==='pan'&&e.touches.length===1){
+        const dx=e.touches[0].clientX-lastPan.x, dy=e.touches[0].clientY-lastPan.y;
+        lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY};
+        z.tx+=dy; z.ty+=-dx; this.clampPtZoom(); this.applyPtZoom(); e.preventDefault();
+      }
+    },{passive:false});
+    const end=e=>{
+      if(e.touches.length===0){
+        if(this.ptZoom.scale<=1.001){ this.ptZoom.scale=1; this.clampPtZoom(); this.applyPtZoom(); }
+        mode=null; this.ptZoomWill(false);
+      } else if(e.touches.length===1&&mode==='pinch'){
+        mode=this.ptZoom.scale>1.001?'pan':null;
+        lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY};
+      }
+    };
+    vp.addEventListener('touchend',end,{passive:false});
+    vp.addEventListener('touchcancel',end,{passive:false});
+    vp.addEventListener('gesturestart',e=>e.preventDefault());
   }
 };
 
