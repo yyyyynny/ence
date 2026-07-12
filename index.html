@@ -2,12 +2,13 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="viewport" id="viewportMeta" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>반응물이 반응하면 생성물</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
   :root {
     --c-bg:#10141E; --c-surface-1:rgba(30,35,50,0.6); --c-surface-2:rgba(30,35,50,0.8);
+    --c-surface-solid:#1A2030;
     --c-border:rgba(136,150,191,0.2); --c-border-active:rgba(0,229,255,0.5);
     --c-text-primary:#F0F4FF; --c-text-secondary:#8896B0;
     --c-accent-1:#00E5FF; --c-accent-2:#7C3AED; --c-accent-3:#F59E0B;
@@ -16,37 +17,59 @@
   }
   .light {
     --c-bg:#F0F4FF; --c-surface-1:rgba(255,255,255,0.6); --c-surface-2:rgba(255,255,255,0.8);
+    --c-surface-solid:#FFFFFF;
     --c-border:rgba(45,60,100,0.15); --c-border-active:rgba(2,132,199,0.5);
     --c-text-primary:#0F172A; --c-text-secondary:#4A5568;
     --c-accent-1:#0284C7; --c-accent-2:#7C3AED; --c-accent-3:#D97706;
     --c-correct:#059669; --c-wrong:#DC2626;
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-  html{background:var(--c-bg);}
-  body{font-family:var(--font-ui);background:var(--c-bg);color:var(--c-text-primary);min-height:100vh;min-height:100dvh;transition:background .3s,color .3s;overflow-x:hidden;}
-  body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 25% 25%,var(--c-accent-1),transparent 30%),radial-gradient(circle at 75% 75%,var(--c-accent-2),transparent 30%);opacity:.35;filter:blur(100px);pointer-events:none;z-index:0;}
+  /* 스크롤바는 항상 숨긴다(플랫폼/브라우저 구분 없이). 문서 자체가 스크롤러라야 브라우저 기본
+     핀치줌(특히 모바일 크로미움 계열)과 가장 잘 맞으므로 body를 별도 내부 스크롤러로 만들지 않는다. */
+  html{background:var(--c-bg);overscroll-behavior:none;scrollbar-width:none;}
+  html::-webkit-scrollbar{width:0;height:0;display:none;}
+  /* 진짜 입력창(#authInput)이 아닌 곳에서 텍스트를 드래그/더블탭 선택하면 브라우저가 그 자리에
+     깜빡이는 선택 커서를 띄운다 — 커스텀 키보드는 그 위치를 모르므로 "입력했는데 안 먹힘"처럼 보임.
+     본문 전체는 선택 불가로 막고, 실제 입력 필드에서만 다시 허용한다.
+     touch-action:manipulation = 더블탭 확대만 끄고 핀치 확대·스크롤은 유지 → 키패드 연타가 즉각 반응. */
+  body{font-family:var(--font-ui);background:var(--c-bg);color:var(--c-text-primary);transition:background .3s,color .3s;overflow-x:hidden;overscroll-behavior:none;-webkit-user-select:none;user-select:none;touch-action:manipulation;scrollbar-width:none;}
+  body::-webkit-scrollbar{width:0;height:0;display:none;}
+  input,textarea{-webkit-user-select:text;user-select:text;}
+  body.modal-open{overflow:hidden;}
+  /* filter:blur(100px)를 전체화면 고정 요소에 걸어두면 확대/축소 제스처마다 매 프레임
+     다시 블러 연산을 해야 해서 모든 브라우저에서 렉의 주범이 된다 → 별도 필터 없이
+     그라디언트 자체의 색상 정지점을 넓게 퍼뜨려 비슷한 은은한 느낌만 남긴다 */
+  body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 25% 25%,var(--c-accent-1),transparent 55%),radial-gradient(circle at 75% 75%,var(--c-accent-2),transparent 55%);opacity:.2;pointer-events:none;z-index:0;}
   #app{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:16px;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;transition:max-width 0.3s;}
   header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-  .logo-egg{font-size:16px;font-weight:900;color:var(--c-wrong);letter-spacing:1px;cursor:pointer;user-select:none;transition:transform .2s;}
+  .logo-egg{font-size:16px;font-weight:900;color:var(--c-wrong);letter-spacing:1px;cursor:pointer;user-select:none;transition:transform .2s;white-space:nowrap;flex-shrink:0;}
   .logo-egg:active{transform:scale(.9);}
-  .header-right{display:flex;gap:8px;align-items:center;}
-  .icon-btn{background:var(--c-surface-1);border:1px solid var(--c-border);color:var(--c-text-secondary);width:52px;height:52px;border-radius:12px;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;transition:all .2s;backdrop-filter:blur(10px);}
+  header{flex-wrap:nowrap;min-width:0;}
+  .header-right{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;min-width:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+  .header-right::-webkit-scrollbar{display:none;}
+  .icon-btn{background:var(--c-surface-1);border:1px solid var(--c-border);color:var(--c-text-secondary);width:52px;height:52px;border-radius:12px;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;transition:all .2s;flex-shrink:0;}
+  @media (max-width:460px){
+    .logo-egg{font-size:13px;}
+    .icon-btn{width:42px;height:42px;font-size:18px;border-radius:10px;}
+    .header-right{gap:6px;}
+  }
   .icon-btn:hover{border-color:var(--c-border-active);color:var(--c-accent-1);}
-  .stat-bar{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:16px;margin-bottom:16px;backdrop-filter:blur(10px);}
+  .stat-bar{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:16px;margin-bottom:16px;}
   .stat-item{display:flex;align-items:center;gap:8px;}
   .stat-label{font-size:12px;color:var(--c-text-secondary);text-transform:uppercase;letter-spacing:1px;font-family:var(--font-mono);}
   .stat-value{font-family:var(--font-mono);font-size:26px;font-weight:700;line-height:1;transition:transform .2s;}
   .stat-value.bump{transform:scale(1.4);}
   #streakCount{color:var(--c-accent-3);}#totalCorrect{color:var(--c-correct);}#totalWrong{color:var(--c-wrong);}
   .streak-flames{font-size:22px;}
-  .timer-select-wrap{display:flex;align-items:center;gap:8px;margin-bottom:16px;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:12px 18px;backdrop-filter:blur(10px);}
+  .timer-select-wrap{display:flex;align-items:center;gap:8px;margin-bottom:16px;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:12px 18px;}
   .timer-select-label{font-size:12px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
   .timer-btns{display:flex;gap:6px;flex-wrap:wrap;}
   .timer-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-mono);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
   .timer-btn.active{background:var(--c-accent-3);border-color:var(--c-accent-3);color:#000;}
-  .mode-tabs{display:flex;overflow-x:auto;gap:8px;margin-bottom:16px;padding-bottom:4px;scrollbar-width:none;}
-  .mode-tabs::-webkit-scrollbar{display:none;}
-  .mode-tab{flex:0 0 auto;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:12px;color:var(--c-text-secondary);padding:14px 16px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;line-height:1.4;backdrop-filter:blur(10px);}
+  .mode-tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;}
+  .scroll-fade-x{-webkit-mask-image:linear-gradient(to right,black calc(100% - 28px),transparent 100%);mask-image:linear-gradient(to right,black calc(100% - 28px),transparent 100%);}
+  .scroll-fade-x.fade-end{-webkit-mask-image:none;mask-image:none;}
+  .mode-tab{flex:0 0 auto;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:12px;color:var(--c-text-secondary);padding:14px 16px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;line-height:1.4;}
   .mode-tab.active{background:var(--c-accent-1);border-color:var(--c-accent-1);color:var(--c-bg);}
   .mode-tab .tab-icon{font-size:20px;display:block;margin-bottom:2px;}
   .mode-tab .tab-desc{font-size:11px;display:block;font-weight:400;opacity:0.75;margin-top:2px;}
@@ -65,38 +88,54 @@
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
   @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
   .eq-text{color:var(--c-text-primary);}.eq-arrow{color:var(--c-accent-3);font-size:1.2em;margin:0 4px;}.eq-plus{color:var(--c-text-secondary);margin:0 4px;}
+  /* 항(계수·블랭크·화학식) 전체를 하나의 flex 아이템으로 묶어 내부 <sub> 첨자의 정상 인라인 배치를 보존 */
+  .eq-term{display:inline-block;vertical-align:middle;white-space:nowrap;}
   sub{font-size:.65em;line-height:0;vertical-align:sub;}
   .result-banner{border-radius:12px;padding:14px 18px;font-size:15px;font-weight:700;display:none;align-items:center;gap:10px;margin-top:auto;}
   .result-banner.show{display:flex;flex-direction:column;align-items:flex-start;}
   .result-banner.correct-banner{background:rgba(16,185,129,.2);color:var(--c-correct);border:1px solid var(--c-correct);flex-direction:row;}
   .result-banner.wrong-banner{background:rgba(239,68,68,.2);color:var(--c-wrong);border:1px solid var(--c-wrong);}
-  .show-answer-btn{background:var(--c-wrong);color:var(--c-bg);border:none;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer;transition:opacity .2s;align-self:flex-end;margin-top:8px;}
+  .show-answer-btn{background:var(--c-wrong);color:var(--c-bg);border:none;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer;transition:opacity .2s;align-self:flex-end;margin-top:8px;white-space:nowrap;flex-shrink:0;}
   .keyboard-wrap{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;padding:16px;}
   .kb-section-label{font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;margin-bottom:10px;margin-top:6px;}
   .kb-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;}
+  /* 숫자패드는 줄바꿈되는 flex 대신 5열 그리드로 고정 → 마지막 줄(8·9·0)만 늘어나던 문제 방지, 항상 균일 */
+  #numRow{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
+  /* 원소패드(14개)도 동일한 문제: flex-wrap 마지막 줄에 하나만 남으면(B) 그 키가 flex-grow로 줄 전체를 채워 거대해짐.
+     7열 그리드로 고정하면 14개가 정확히 2줄로 나뉘어 항상 균일하다. */
+  #elemRow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
   .kb-key{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;font-family:var(--font-mono);font-size:18px;font-weight:700;min-height:54px;min-width:44px;flex:1 1 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .1s;}
   .kb-key:active{transform:scale(.95);}
   .kb-key.num{color:var(--c-accent-3);}.kb-key.elem{color:var(--c-text-primary);font-weight:500;}
   .kb-key.del{color:var(--c-wrong);flex-grow:2;}.kb-key.confirm{background:var(--c-correct);color:#000;flex-grow:3;}.kb-key.next-q{background:var(--c-accent-2);color:#fff;flex-grow:3;}
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center;padding:16px;}
+  /* manipulation: 더블탭 확대만 끄고 핀치·팬은 그대로 — 확대는 이제 막지 않고 견디는 전략
+     (setupViewportVars의 동결 가드가 확대 중 재계산을 차단해 레이아웃이 안 깨진다) */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center;padding:16px;touch-action:manipulation;}
   .modal-overlay.show{display:flex;}
-  .modal-box{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;width:100%;max-width:600px;max-height:85vh;display:flex;flex-direction:column;padding:24px;position:relative;}
+  .modal-box{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;width:100%;max-width:700px;max-height:92vh;display:flex;flex-direction:column;padding:24px;position:relative;}
   .modal-header{display:flex;justify-content:space-between;margin-bottom:16px;align-items:center;}
   .modal-title{font-size:20px;font-weight:900;color:var(--c-accent-1);}
   .modal-close{background:none;border:none;color:var(--c-text-secondary);font-size:32px;cursor:pointer;}
-  .modal-content{overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;}
-  .filter-chips{display:flex;overflow-x:auto;gap:6px;margin-bottom:16px;padding-bottom:4px;scrollbar-width:none;}
-  .filter-chips::-webkit-scrollbar{display:none;}
-  .filter-chip{flex:0 0 auto;background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:20px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;}
+  .modal-content{overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;scrollbar-width:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+  .modal-content::-webkit-scrollbar{display:none;}
+  /* 가로 스크롤(+ 숨김 스크롤바) 대신 줄바꿈 — 스크롤바 잔상/끝 잘림 문제를 애초에 없앤다 */
+  .filter-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+  .filter-chip{flex:0 0 auto;background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:20px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
   .filter-chip.active{background:var(--c-accent-1);color:var(--c-bg);border-color:var(--c-accent-1);}
-  .reaction-item{background:var(--c-surface-2);border-radius:12px;padding:16px;font-family:var(--font-mono);font-size:15px;display:flex;flex-direction:column;gap:10px;}
-  .reaction-header{display:flex;justify-content:space-between;align-items:flex-start;}
-  .reaction-name{color:var(--c-accent-3);font-size:13px;font-family:var(--font-ui);font-weight:700;}
-  .reaction-eq{color:var(--c-text-primary);font-size:16px;line-height:1.6;background:rgba(0,0,0,.2);padding:14px;border-radius:8px;border:1px solid var(--c-border);text-align:center;}
+  .reaction-item{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:15px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,background .15s;}
+  .reaction-header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
+  .reaction-name{color:var(--c-text-primary);font-size:14px;font-family:var(--font-ui);font-weight:700;display:flex;align-items:center;gap:7px;flex-wrap:wrap;line-height:1.3;}
+  .reaction-num{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 5px;border-radius:7px;background:var(--c-surface-1);color:var(--c-accent-1);font-size:11px;font-family:var(--font-mono);font-weight:900;flex-shrink:0;}
+  .reaction-badge{display:inline-flex;align-items:center;gap:4px;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;padding:3px 10px 3px 8px;font-size:11px;font-family:var(--font-ui);font-weight:700;color:var(--c-text-secondary);white-space:nowrap;flex-shrink:0;}
+  .reaction-fail{color:var(--c-wrong);font-size:11px;font-family:var(--font-ui);font-weight:700;white-space:nowrap;}
+  .reaction-eq{color:var(--c-text-primary);font-size:16px;line-height:1.6;background:rgba(0,0,0,.22);padding:12px 14px;border-radius:10px;border-left:3px solid var(--c-border-active);text-align:center;}
+  /* 오답노트 리스트 안에서는 플래시카드 앞/뒷면을 한 줄로, 폰트도 축소(카드 원본은 그대로) */
+  .m6-note-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
+  .reaction-eq .m6-korean,.reaction-eq .m6-formula{font-size:13px;line-height:1.35;}
   .delete-note-btn{background:rgba(239,68,68,.1);border:1px solid var(--c-wrong);color:var(--c-wrong);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:bold;}
   .retry-note-btn{background:var(--c-accent-1);border:none;color:#000;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:12px;font-weight:bold;}
   .clear-all-btn{background:var(--c-wrong);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-weight:bold;cursor:pointer;margin-bottom:0;align-self:flex-end;}
-  .cycle-wrap{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:12px 18px;margin-bottom:16px;backdrop-filter:blur(10px);display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
+  .cycle-wrap{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:12px 18px;margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
   .cycle-label{font-size:12px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
   .cycle-btns{display:flex;gap:6px;}
   .cycle-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-ui);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
@@ -108,10 +147,109 @@
   .egg-particle{position:fixed;pointer-events:none;z-index:9999999;font-size:28px;animation:egg-pop .8s cubic-bezier(.25,1,.5,1) forwards;}
   @keyframes egg-pop{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1.5);opacity:0}}
 
+  /* ── 주기율표 ── */
+  .pt-modal-box{max-width:1300px;width:96vw;background:var(--c-surface-solid);}
+  .pt-rotate-btn{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
+  /* 회전 = 전체화면 가로보기 오버레이: 화면 자체를 90도 돌려 쓰는 전용 뷰.
+     확대는 브라우저 네이티브 줌이 아니라 자체 transform 줌(setupPtZoom)으로 처리한다 —
+     position:fixed + rotate 요소는 네이티브 핀치줌 중 매 프레임 재래스터화돼 버벅/깜빡이므로,
+     콘텐츠 레이어에 transform:scale만 걸어 GPU 합성만으로 매끈하게 확대한다. */
+  .pt-fullscreen{display:none;position:fixed;inset:0;z-index:9999990;background:var(--c-bg);}
+  .pt-fullscreen.show{display:block;}
+  /* --app-w/--app-h: JS가 visualViewport로 실측한 실제 가시 영역(px). 동적 주소창이 있는
+     iOS Safari·삼성 인터넷에서도 vh/vw처럼 어긋나지 않는다. vh/vw는 로드 직후 값이 없을 때의 폴백. */
+  .pt-fs-rotor{position:absolute;top:50%;left:50%;width:var(--app-h,100vh);height:var(--app-w,100vw);transform:translate(-50%,-50%) rotate(90deg);display:flex;flex-direction:column;padding:16px;overflow:hidden;}
+  .pt-fs-title{font-size:15px;font-weight:900;color:var(--c-accent-1);margin-bottom:10px;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;}
+  .pt-fs-close{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:10px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer;}
+  /* 뷰포트: 콘텐츠를 잘라내는 창. touch-action:none으로 브라우저 네이티브 줌/스크롤을 완전히
+     막아, 두 손가락 제스처가 우리 핸들러에만 온전히 들어오게 한다(닫기 버튼은 이 밖이라 정상 탭). */
+  .pt-fs-viewport{flex:1;min-height:0;overflow:hidden;position:relative;touch-action:none;}
+  /* 줌 레이어: transform(translate+scale)을 JS가 인라인으로 걸어 확대/이동. transform만
+     바뀌므로 리페인트/리플로우 없이 GPU 합성만 일어난다. width/height:100%로 뷰포트를 꽉 채워
+     내부 그리드가 margin:auto로 중앙에 오게 한다. */
+  .pt-fs-scroll{width:100%;height:100%;transform-origin:0 0;display:flex;flex-direction:column;justify-content:center;}
+  /* 그리드 열 폭·행 높이·폰트는 JS(layoutPtFullscreen)가 실측 픽셀로 인라인 계산해 적용한다.
+     width:fit-content + margin:0 auto로 실제 열 합계만큼만 잡아 중앙정렬. min-width:0은
+     기본 .pt-grid의 min-width:960px(모달 가로스크롤용)이 fit-content를 밀어붙이지 못하게 무효화. */
+  .pt-fs-scroll .pt-grid{margin:0 auto;min-width:0;width:fit-content;flex:0 0 auto;}
+  .pt-fs-scroll .pt-extra-row{margin:12px auto 0;flex:0 0 auto;}
+  .pt-fs-scroll .pt-sym{font-size:var(--pt-fs-sym,18px);}
+  .pt-fs-scroll .pt-name{font-size:var(--pt-fs-name,9px);}
+  .pt-fs-scroll .pt-z{font-size:var(--pt-fs-z,8px);}
+  /* 회전 뷰 전용: 번호/기호/이름 세 행을 layoutPtFullscreen이 예산 배분한 고정 px로 못박아,
+     콘텐츠 크기(auto/1fr)에 따라 가운데 행이 짜부러지며 겹치는 일을 원천 차단한다. */
+  .pt-fs-scroll .pt-cell{grid-template-rows:var(--pt-cell-zh,auto) var(--pt-cell-symh,1fr) var(--pt-cell-nameh,auto);padding:1px 2px;}
+  .pt-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;padding:12px 16px;margin-bottom:14px;}
+  .pt-toggle-label{font-size:13px;font-weight:700;color:var(--c-text-primary);}
+  .pt-toggle-label small{display:block;font-size:11px;font-weight:400;color:var(--c-text-secondary);margin-top:2px;}
+  .pt-toggle-switch{position:relative;width:52px;height:30px;border-radius:15px;background:var(--c-border);border:none;cursor:pointer;flex-shrink:0;transition:background .25s;padding:0;}
+  .pt-toggle-switch.on{background:var(--c-accent-1);}
+  .pt-toggle-knob{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform .25s;box-shadow:0 1px 3px rgba(0,0,0,.3);}
+  .pt-toggle-switch.on .pt-toggle-knob{transform:translateX(22px);}
+  .pt-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:14px;font-size:11px;color:var(--c-text-secondary);}
+  .pt-legend-item{display:flex;align-items:center;gap:5px;}
+  .pt-legend-swatch{width:11px;height:11px;border-radius:3px;flex-shrink:0;}
+  .pt-scroll{overflow-x:auto;padding-bottom:8px;scrollbar-width:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+  .pt-scroll::-webkit-scrollbar{display:none;}
+  .pt-grid{display:grid;gap:4px;min-width:960px;}
+  .pt-grid.pt-simple{min-width:0;max-width:680px;margin:0 auto;}
+  /* 칸 내부는 3행 그리드(번호 / 기호 / 이름)로 고정 → 어떤 크기에서도 겹치지 않음 */
+  .pt-cell{position:relative;aspect-ratio:1/1;border-radius:6px;display:grid;grid-template-rows:auto 1fr auto;align-items:center;justify-items:center;color:#0B0F19;padding:3px 2px;cursor:default;transition:transform .15s;overflow:hidden;min-width:0;}
+  .pt-cell:active{transform:scale(.9);}
+  .pt-z{font-size:clamp(7px,1.2vw,10px);font-family:var(--font-mono);font-weight:700;opacity:.8;justify-self:start;padding-left:2px;line-height:1;}
+  .pt-sym{font-size:clamp(13px,2.6vw,21px);font-family:var(--font-mono);font-weight:900;line-height:1;align-self:center;}
+  /* 이름은 한 줄 강제(nowrap)+말줄임 대신 최대 2줄로 자연 줄바꿈 → 4자 이상 긴 한국어 이름도
+     '...' 없이 전부 보인다. line-clamp:2로 박스 높이 자체를 정확히 2줄로 상한(overflow:hidden
+     만으론 박스가 커지는 걸 못 막아 옆 행을 짓누를 수 있음 — line-clamp가 그 상한을 보장). */
+  .pt-name{font-size:clamp(7px,1.3vw,10px);font-weight:700;line-height:1.05;text-align:center;white-space:normal;word-break:break-word;max-width:100%;align-self:end;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+  .pt-cell.pt-placeholder{background:var(--c-surface-2)!important;color:var(--c-text-secondary);border:1px dashed var(--c-border);font-family:var(--font-mono);font-size:clamp(9px,1.6vw,13px);font-weight:700;display:flex;align-items:center;justify-content:center;}
+  .pt-axis{display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:900;color:var(--c-text-primary);background:var(--c-surface-2);border-radius:4px;font-size:clamp(11px,1.8vw,15px);}
+  .pt-extra-divider{border:none;border-top:1px dashed var(--c-border);margin:18px 0 0;}
+  .pt-extra-label{font-size:12px;font-weight:700;color:var(--c-text-secondary);margin:14px 0 8px;text-align:center;}
+  .pt-extra-row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;}
+  .pt-extra-row .pt-cell{width:64px;flex:0 0 auto;border-radius:8px;}
+
+  /* ── 모바일 공통 폴리시 ── */
+  @media (max-width:640px){
+    .modal-overlay{padding:6px;}
+    .modal-box{padding:14px;max-height:96dvh;border-radius:16px;}
+    .modal-title{font-size:17px;}
+    .modal-close{font-size:26px;}
+    .pt-modal-box{width:100%;}
+    .pt-toggle-row{padding:10px 12px;margin-bottom:10px;}
+    .pt-toggle-label{font-size:12px;}
+    .pt-toggle-label small{font-size:10px;}
+    .pt-legend{gap:4px 10px;font-size:10px;margin-bottom:10px;}
+    .pt-legend-swatch{width:9px;height:9px;}
+    .pt-extra-row .pt-cell{width:56px;}
+    .reaction-eq{font-size:14px;padding:10px;}
+    .reaction-item{padding:12px;}
+  }
+  @media (min-width:768px){ #ptRotateBtn{display:none;} }
+  .pt-axis-group{align-self:end;padding-bottom:2px;}
+  .pt-axis-period{justify-self:end;padding-right:4px;}
+  .pt-cat-alkali{background:#F87171;}
+  .pt-cat-alkaline{background:#FB923C;}
+  .pt-cat-transition{background:#60A5FA;}
+  .pt-cat-lanth{background:#C084FC;}
+  .pt-cat-actin{background:#F472B6;}
+  .pt-cat-post{background:#4ADE80;}
+  .pt-cat-metalloid{background:#A3E635;}
+  .pt-cat-nonmetal{background:#22D3EE;}
+  .pt-cat-halogen{background:#FDE047;}
+  .pt-cat-noble{background:#818CF8;color:#fff;}
+  .pt-cat-unknown{background:#94A3B8;}
+
   /* ── MODE 6 플래시카드 ── */
   #mode6Wrap{display:none;flex-direction:column;gap:14px;flex-grow:1;}
-  #mode6Wrap.m6-active{display:flex;}
-  .m6-opt-row{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:14px 18px;backdrop-filter:blur(10px);}
+  /* 다른 모드에서 넘어올 때 위 칸들이 사라지며 mode-tabs가 순간 점프하는 게 눈에 띄어서,
+     확 튀는 대신 부드럽게 나타나는 것처럼 보이도록 진입 애니메이션을 준다 */
+  @keyframes m6Enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+  #mode6Wrap.m6-active{display:flex;animation:m6Enter .25s ease-out;}
+  .m6-wrongnote-link{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:14px;padding:12px 16px;color:var(--c-text-primary);font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+  .m6-wrongnote-link:hover{border-color:var(--c-border-active);color:var(--c-accent-1);}
+  .m6-wrongnote-icon{font-size:15px;color:var(--c-accent-1);}
+  .m6-opt-row{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:14px 18px;}
   .m6-opt-label{font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
   .m6-opt-btns{display:flex;gap:6px;flex-wrap:wrap;}
   .m6-opt-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
@@ -128,6 +266,11 @@
   .m6-korean{font-size:clamp(18px,5vw,26px);font-family:var(--font-ui);font-weight:700;color:var(--c-text-primary);line-height:1.5;}
   .m6-formula{font-size:clamp(16px,4.5vw,24px);font-family:var(--font-mono);font-weight:700;color:var(--c-text-primary);line-height:1.8;}
   .m6-hint{text-align:center;font-size:12px;color:var(--c-text-secondary);font-family:var(--font-mono);}
+  .m6-save-wrong-btn{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
+  .m6-save-wrong-btn:hover{border-color:var(--c-wrong);color:var(--c-wrong);}
+  .m6-save-wrong-btn.saved{background:var(--c-wrong);border-color:var(--c-wrong);color:#fff;}
+  .m6-save-wrong-btn:disabled{cursor:default;}
+  .m6-save-wrong-btn:disabled:hover{border-color:var(--c-wrong);color:#fff;}
   .m6-nav{display:flex;align-items:center;gap:14px;}
   .m6-nav-btn{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:14px;color:var(--c-text-primary);font-size:32px;font-weight:900;width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;line-height:1;}
   .m6-nav-btn:hover{border-color:var(--c-accent-1);color:var(--c-accent-1);}
@@ -180,11 +323,12 @@
       margin: 0;
       padding: 0;
     }
-    body.wide-mode .m6-card-area { grid-column: 1; grid-row: 1 / 4; min-height: 350px; }
-    body.wide-mode .m6-opt-row:nth-of-type(1) { grid-column: 2; grid-row: 1; }
-    body.wide-mode .m6-opt-row:nth-of-type(2) { grid-column: 2; grid-row: 2; }
-    body.wide-mode .m6-nav { grid-column: 2; grid-row: 3; align-self: end; padding-bottom: 4px; }
-    body.wide-mode .m6-progress-bar { grid-column: 1 / -1; grid-row: 4; }
+    body.wide-mode .m6-wrongnote-link { grid-column: 1 / -1; grid-row: 1; }
+    body.wide-mode .m6-card-area { grid-column: 1; grid-row: 2 / 5; min-height: 350px; }
+    body.wide-mode .m6-opt-row:nth-of-type(1) { grid-column: 2; grid-row: 2; }
+    body.wide-mode .m6-opt-row:nth-of-type(2) { grid-column: 2; grid-row: 3; }
+    body.wide-mode .m6-nav { grid-column: 2; grid-row: 4; align-self: end; padding-bottom: 4px; }
+    body.wide-mode .m6-progress-bar { grid-column: 1 / -1; grid-row: 5; }
   }
 </style>
 </head>
@@ -193,12 +337,13 @@
 <div id="app">
   <header>
     <div class="logo-egg" id="easterEggBtn">누루ズl ㅁトパㅔ요</div>
-    <div class="header-right">
+    <div class="header-right scroll-fade-x">
       <button class="icon-btn" id="layoutBtn" title="화면 분할 토글">↔️</button>
       <button class="icon-btn" id="soundBtn" title="소리 토글">🔊</button>
       <button class="icon-btn" id="hapticBtn" title="진동 토글">📳</button>
       <button class="icon-btn" id="wrongNoteBtn" title="오답 노트">📓</button>
       <button class="icon-btn" id="hintBtn" title="전체 반응식 보기">📋</button>
+      <button class="icon-btn" id="periodicBtn" title="주기율표 보기">⚛️</button>
       <button class="icon-btn" id="themeBtn" title="다크/라이트 모드">🌙</button>
     </div>
   </header>
@@ -262,7 +407,26 @@
     <div class="result-banner" id="resultBanner"></div>
   </div>
 
+  <div class="question-card" id="retryM6Card" style="display:none">
+    <div id="retryM6Header">
+      <div class="q-label">MODE 6 · 플래시카드 복습</div>
+      <div class="q-sublabel" id="retryM6Title"></div>
+    </div>
+    <div class="m6-perspective" style="flex-grow:1">
+      <div class="m6-flashcard" id="retryM6Flashcard">
+        <div class="m6-face m6-front"><div class="m6-tag" id="retryM6FTag"></div><div id="retryM6FContent"></div></div>
+        <div class="m6-face m6-back"><div class="m6-tag" id="retryM6BTag"></div><div id="retryM6BContent"></div></div>
+      </div>
+    </div>
+    <div class="m6-hint">탭하여 뒤집기 🔄</div>
+    <div style="display:flex;gap:10px">
+      <button class="m6-nav-btn" id="retryM6ForgotBtn" style="flex:1;width:auto;font-size:14px;font-weight:700;">➡️ 다음에 다시</button>
+      <button class="m6-nav-btn" id="retryM6KnowBtn" style="flex:1;width:auto;font-size:14px;font-weight:700;background:var(--c-correct);color:#000;border-color:var(--c-correct);">✅ 기억했어요</button>
+    </div>
+  </div>
+
   <div id="mode6Wrap">
+    <button class="m6-wrongnote-link" id="m6WrongNoteBtn"><span class="m6-wrongnote-icon">ⓘ</span> 오답노트 확인하기</button>
     <div class="m6-opt-row">
       <div class="m6-opt-label">📚 카드 유형</div>
       <div class="m6-opt-btns" id="m6TypeBtns">
@@ -293,6 +457,7 @@
         </div>
       </div>
       <div class="m6-hint">탭하여 뒤집기 🔄 &nbsp;|&nbsp; 스와이프로 이동 &nbsp;|&nbsp; ← → Space</div>
+      <button class="m6-save-wrong-btn" id="m6SaveWrongBtn">🔖 이 카드 오답노트에 저장</button>
     </div>
     <div class="m6-nav">
       <button class="m6-nav-btn" id="m6PrevBtn">‹</button>
@@ -338,6 +503,26 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="periodicModalOverlay">
+  <div class="modal-box pt-modal-box">
+    <div class="modal-header"><div class="modal-title">⚛️ 주기율표</div><div style="display:flex;gap:10px;align-items:center"><button class="pt-rotate-btn" id="ptRotateBtn" title="회전해서 보기">🔄 회전</button><button class="modal-close" id="periodicModalClose">✕</button></div></div>
+    <div class="pt-toggle-row">
+      <div class="pt-toggle-label">👁 간략히 보기<small>중학교 필수 원소 (1~20번) + 불꽃반응·자주 나오는 원소만 표시</small></div>
+      <button class="pt-toggle-switch" id="simplePeriodicToggle" role="switch" aria-checked="false"><span class="pt-toggle-knob"></span></button>
+    </div>
+    <div class="modal-content" id="periodicContent"></div>
+  </div>
+</div>
+
+<div class="pt-fullscreen" id="ptFullscreen">
+  <div class="pt-fs-rotor">
+    <div class="pt-fs-title"><span>⚛️ 주기율표 — 가로 보기</span><button class="pt-fs-close" id="ptFsClose">✕ 닫기</button></div>
+    <div class="pt-fs-viewport" id="ptFsViewport">
+      <div class="pt-fs-scroll" id="ptFsContent"></div>
+    </div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="wrongNoteModalOverlay">
   <div class="modal-box" style="height:90vh">
     <div class="modal-header"><div class="modal-title">📓 오답 노트</div><button class="modal-close" id="wrongNoteModalClose">✕</button></div>
@@ -347,11 +532,12 @@
     </div>
     <div class="filter-chips" id="wrongNoteFilters">
       <button class="filter-chip active" data-filter="all">전체</button>
-      <button class="filter-chip" data-filter="1">모드 1</button>
-      <button class="filter-chip" data-filter="2">모드 2</button>
-      <button class="filter-chip" data-filter="3">모드 3</button>
-      <button class="filter-chip" data-filter="4">모드 4</button>
-      <button class="filter-chip" data-filter="5">모드 5</button>
+      <button class="filter-chip" data-filter="1">🔢 계수 맞추기</button>
+      <button class="filter-chip" data-filter="2">🧪 반응물 맞추기</button>
+      <button class="filter-chip" data-filter="3">⚗️ 생성물 맞추기</button>
+      <button class="filter-chip" data-filter="4">📝 전체 반응식</button>
+      <button class="filter-chip" data-filter="5">🧠 화학식 암기</button>
+      <button class="filter-chip" data-filter="6">🃏 플래시카드</button>
     </div>
     <div class="modal-content" id="wrongNoteList"></div>
   </div>
@@ -405,6 +591,148 @@ const COEF_TEMPLATES=[
   {label:"A + B₂ → A₂B₃",gen:()=>({fmt:[{coef:4,formula:[{sym:"A"}]},{coef:3,formula:[{sym:"B",sub:2}]}],fmtP:[{coef:2,formula:[{sym:"A",sub:2},{sym:"B",sub:3}]}]})}
 ];
 const CORE_ELEMENTS=['H','C','O','N','S','P','Na','Mg','Ca','Cu','Ag','Cl','A','B'];
+const MODE_NAMES={1:'계수 맞추기',2:'반응물 맞추기',3:'생성물 맞추기',4:'전체 반응식',5:'화학식 암기',6:'플래시카드'};
+const MODE_ICONS={1:'🔢',2:'🧪',3:'⚗️',4:'📝',5:'🧠',6:'🃏'};
+
+/* z=원자번호, sym=원소기호, name=한글이름, cat=분류(색상), group=족(1~18), period=주기(1~7), f=란타넘족/악티늄족일 때의 순번(1~15) */
+const ELEMENTS=[
+  {z:1,sym:'H',name:'수소',cat:'nonmetal',group:1,period:1},
+  {z:2,sym:'He',name:'헬륨',cat:'noble',group:18,period:1},
+  {z:3,sym:'Li',name:'리튬',cat:'alkali',group:1,period:2},
+  {z:4,sym:'Be',name:'베릴륨',cat:'alkaline',group:2,period:2},
+  {z:5,sym:'B',name:'붕소',cat:'metalloid',group:13,period:2},
+  {z:6,sym:'C',name:'탄소',cat:'nonmetal',group:14,period:2},
+  {z:7,sym:'N',name:'질소',cat:'nonmetal',group:15,period:2},
+  {z:8,sym:'O',name:'산소',cat:'nonmetal',group:16,period:2},
+  {z:9,sym:'F',name:'플루오린',cat:'halogen',group:17,period:2},
+  {z:10,sym:'Ne',name:'네온',cat:'noble',group:18,period:2},
+  {z:11,sym:'Na',name:'나트륨',cat:'alkali',group:1,period:3},
+  {z:12,sym:'Mg',name:'마그네슘',cat:'alkaline',group:2,period:3},
+  {z:13,sym:'Al',name:'알루미늄',cat:'post',group:13,period:3},
+  {z:14,sym:'Si',name:'규소',cat:'metalloid',group:14,period:3},
+  {z:15,sym:'P',name:'인',cat:'nonmetal',group:15,period:3},
+  {z:16,sym:'S',name:'황',cat:'nonmetal',group:16,period:3},
+  {z:17,sym:'Cl',name:'염소',cat:'halogen',group:17,period:3},
+  {z:18,sym:'Ar',name:'아르곤',cat:'noble',group:18,period:3},
+  {z:19,sym:'K',name:'칼륨',cat:'alkali',group:1,period:4},
+  {z:20,sym:'Ca',name:'칼슘',cat:'alkaline',group:2,period:4},
+  {z:21,sym:'Sc',name:'스칸듐',cat:'transition',group:3,period:4},
+  {z:22,sym:'Ti',name:'타이타늄',cat:'transition',group:4,period:4},
+  {z:23,sym:'V',name:'바나듐',cat:'transition',group:5,period:4},
+  {z:24,sym:'Cr',name:'크로뮴',cat:'transition',group:6,period:4},
+  {z:25,sym:'Mn',name:'망가니즈',cat:'transition',group:7,period:4},
+  {z:26,sym:'Fe',name:'철',cat:'transition',group:8,period:4},
+  {z:27,sym:'Co',name:'코발트',cat:'transition',group:9,period:4},
+  {z:28,sym:'Ni',name:'니켈',cat:'transition',group:10,period:4},
+  {z:29,sym:'Cu',name:'구리',cat:'transition',group:11,period:4},
+  {z:30,sym:'Zn',name:'아연',cat:'transition',group:12,period:4},
+  {z:31,sym:'Ga',name:'갈륨',cat:'post',group:13,period:4},
+  {z:32,sym:'Ge',name:'저마늄',cat:'metalloid',group:14,period:4},
+  {z:33,sym:'As',name:'비소',cat:'metalloid',group:15,period:4},
+  {z:34,sym:'Se',name:'셀레늄',cat:'nonmetal',group:16,period:4},
+  {z:35,sym:'Br',name:'브로민',cat:'halogen',group:17,period:4},
+  {z:36,sym:'Kr',name:'크립톤',cat:'noble',group:18,period:4},
+  {z:37,sym:'Rb',name:'루비듐',cat:'alkali',group:1,period:5},
+  {z:38,sym:'Sr',name:'스트론튬',cat:'alkaline',group:2,period:5},
+  {z:39,sym:'Y',name:'이트륨',cat:'transition',group:3,period:5},
+  {z:40,sym:'Zr',name:'지르코늄',cat:'transition',group:4,period:5},
+  {z:41,sym:'Nb',name:'나이오븀',cat:'transition',group:5,period:5},
+  {z:42,sym:'Mo',name:'몰리브데넘',cat:'transition',group:6,period:5},
+  {z:43,sym:'Tc',name:'테크네튬',cat:'transition',group:7,period:5},
+  {z:44,sym:'Ru',name:'루테늄',cat:'transition',group:8,period:5},
+  {z:45,sym:'Rh',name:'로듐',cat:'transition',group:9,period:5},
+  {z:46,sym:'Pd',name:'팔라듐',cat:'transition',group:10,period:5},
+  {z:47,sym:'Ag',name:'은',cat:'transition',group:11,period:5},
+  {z:48,sym:'Cd',name:'카드뮴',cat:'transition',group:12,period:5},
+  {z:49,sym:'In',name:'인듐',cat:'post',group:13,period:5},
+  {z:50,sym:'Sn',name:'주석',cat:'post',group:14,period:5},
+  {z:51,sym:'Sb',name:'안티모니',cat:'metalloid',group:15,period:5},
+  {z:52,sym:'Te',name:'텔루륨',cat:'metalloid',group:16,period:5},
+  {z:53,sym:'I',name:'아이오딘',cat:'halogen',group:17,period:5},
+  {z:54,sym:'Xe',name:'제논',cat:'noble',group:18,period:5},
+  {z:55,sym:'Cs',name:'세슘',cat:'alkali',group:1,period:6},
+  {z:56,sym:'Ba',name:'바륨',cat:'alkaline',group:2,period:6},
+  {z:57,sym:'La',name:'란타넘',cat:'lanth',period:6,f:1},
+  {z:58,sym:'Ce',name:'세륨',cat:'lanth',period:6,f:2},
+  {z:59,sym:'Pr',name:'프라세오디뮴',cat:'lanth',period:6,f:3},
+  {z:60,sym:'Nd',name:'네오디뮴',cat:'lanth',period:6,f:4},
+  {z:61,sym:'Pm',name:'프로메튬',cat:'lanth',period:6,f:5},
+  {z:62,sym:'Sm',name:'사마륨',cat:'lanth',period:6,f:6},
+  {z:63,sym:'Eu',name:'유로퓸',cat:'lanth',period:6,f:7},
+  {z:64,sym:'Gd',name:'가돌리늄',cat:'lanth',period:6,f:8},
+  {z:65,sym:'Tb',name:'터븀',cat:'lanth',period:6,f:9},
+  {z:66,sym:'Dy',name:'디스프로슘',cat:'lanth',period:6,f:10},
+  {z:67,sym:'Ho',name:'홀뮴',cat:'lanth',period:6,f:11},
+  {z:68,sym:'Er',name:'어븀',cat:'lanth',period:6,f:12},
+  {z:69,sym:'Tm',name:'툴륨',cat:'lanth',period:6,f:13},
+  {z:70,sym:'Yb',name:'이터븀',cat:'lanth',period:6,f:14},
+  {z:71,sym:'Lu',name:'루테튬',cat:'lanth',period:6,f:15},
+  {z:72,sym:'Hf',name:'하프늄',cat:'transition',group:4,period:6},
+  {z:73,sym:'Ta',name:'탄탈럼',cat:'transition',group:5,period:6},
+  {z:74,sym:'W',name:'텅스텐',cat:'transition',group:6,period:6},
+  {z:75,sym:'Re',name:'레늄',cat:'transition',group:7,period:6},
+  {z:76,sym:'Os',name:'오스뮴',cat:'transition',group:8,period:6},
+  {z:77,sym:'Ir',name:'이리듐',cat:'transition',group:9,period:6},
+  {z:78,sym:'Pt',name:'백금',cat:'transition',group:10,period:6},
+  {z:79,sym:'Au',name:'금',cat:'transition',group:11,period:6},
+  {z:80,sym:'Hg',name:'수은',cat:'transition',group:12,period:6},
+  {z:81,sym:'Tl',name:'탈륨',cat:'post',group:13,period:6},
+  {z:82,sym:'Pb',name:'납',cat:'post',group:14,period:6},
+  {z:83,sym:'Bi',name:'비스무트',cat:'post',group:15,period:6},
+  {z:84,sym:'Po',name:'폴로늄',cat:'metalloid',group:16,period:6},
+  {z:85,sym:'At',name:'아스타틴',cat:'halogen',group:17,period:6},
+  {z:86,sym:'Rn',name:'라돈',cat:'noble',group:18,period:6},
+  {z:87,sym:'Fr',name:'프랑슘',cat:'alkali',group:1,period:7},
+  {z:88,sym:'Ra',name:'라듐',cat:'alkaline',group:2,period:7},
+  {z:89,sym:'Ac',name:'악티늄',cat:'actin',period:7,f:1},
+  {z:90,sym:'Th',name:'토륨',cat:'actin',period:7,f:2},
+  {z:91,sym:'Pa',name:'프로트악티늄',cat:'actin',period:7,f:3},
+  {z:92,sym:'U',name:'우라늄',cat:'actin',period:7,f:4},
+  {z:93,sym:'Np',name:'넵투늄',cat:'actin',period:7,f:5},
+  {z:94,sym:'Pu',name:'플루토늄',cat:'actin',period:7,f:6},
+  {z:95,sym:'Am',name:'아메리슘',cat:'actin',period:7,f:7},
+  {z:96,sym:'Cm',name:'퀴륨',cat:'actin',period:7,f:8},
+  {z:97,sym:'Bk',name:'버클륨',cat:'actin',period:7,f:9},
+  {z:98,sym:'Cf',name:'캘리포늄',cat:'actin',period:7,f:10},
+  {z:99,sym:'Es',name:'아인슈타이늄',cat:'actin',period:7,f:11},
+  {z:100,sym:'Fm',name:'페르뮴',cat:'actin',period:7,f:12},
+  {z:101,sym:'Md',name:'멘델레븀',cat:'actin',period:7,f:13},
+  {z:102,sym:'No',name:'노벨륨',cat:'actin',period:7,f:14},
+  {z:103,sym:'Lr',name:'로렌슘',cat:'actin',period:7,f:15},
+  {z:104,sym:'Rf',name:'러더포듐',cat:'transition',group:4,period:7},
+  {z:105,sym:'Db',name:'더브늄',cat:'transition',group:5,period:7},
+  {z:106,sym:'Sg',name:'시보귬',cat:'transition',group:6,period:7},
+  {z:107,sym:'Bh',name:'보륨',cat:'transition',group:7,period:7},
+  {z:108,sym:'Hs',name:'하슘',cat:'transition',group:8,period:7},
+  {z:109,sym:'Mt',name:'마이트너륨',cat:'unknown',group:9,period:7},
+  {z:110,sym:'Ds',name:'다름슈타튬',cat:'unknown',group:10,period:7},
+  {z:111,sym:'Rg',name:'뢴트게늄',cat:'unknown',group:11,period:7},
+  {z:112,sym:'Cn',name:'코페르니슘',cat:'transition',group:12,period:7},
+  {z:113,sym:'Nh',name:'니호늄',cat:'unknown',group:13,period:7},
+  {z:114,sym:'Fl',name:'플레로븀',cat:'post',group:14,period:7},
+  {z:115,sym:'Mc',name:'모스코븀',cat:'unknown',group:15,period:7},
+  {z:116,sym:'Lv',name:'리버모륨',cat:'unknown',group:16,period:7},
+  {z:117,sym:'Ts',name:'테네신',cat:'unknown',group:17,period:7},
+  {z:118,sym:'Og',name:'오가네손',cat:'unknown',group:18,period:7}
+];
+const PT_CATEGORIES=[
+  ['alkali','알칼리 금속'],['alkaline','알칼리 토금속'],['transition','전이 금속'],
+  ['lanth','란타넘족'],['actin','악티늄족'],['post','전이 후 금속'],
+  ['metalloid','준금속'],['nonmetal','비금속'],['halogen','할로젠'],['noble','비활성 기체']
+];
+/* 간략히 보기: 일부 중학교에서 1~20번 외에 불꽃반응·할로젠 예시로 함께 다루는 원소 */
+const PT_SIMPLE_EXTRA_Z=[35,38,53,56]; // Br, Sr, I, Ba
+/* 간략히 보기: 족과 무관하게 실생활에서 자주 접하는 금속 */
+/* 중학교 불꽃 반응 색 (원소기호별 실제 관찰색) */
+const PT_FLAME_COLORS=[
+  {z:29,color:'#22D3EE',label:'청록'}, // 구리
+  {z:3, color:'#EF4444',label:'빨강'}, // 리튬
+  {z:11,color:'#FDE047',label:'노랑'}, // 나트륨
+  {z:19,color:'#C084FC',label:'보라'}, // 칼륨
+  {z:38,color:'#F87171',label:'빨강'}, // 스트론튬
+  {z:56,color:'#A3E635',label:'황록'}, // 바륨
+  {z:20,color:'#FB923C',label:'주황'}  // 칼슘
+];
 
 /* ── 앱 ── */
 const App={
@@ -416,7 +744,7 @@ const App={
     wrongNotes:[],noteFilter:'all',retryNoteId:null,
     isCycleMode:false,cycleQueue:[],cycleTotal:0,lastQuestionName:null,
     m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,
-    isSoundOn:true, isHapticOn:true, isWideMode:false,
+    isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:false,
     savedCycleState:null,
     isRetryPlaylistMode:false, retryPlaylist:[]
   },
@@ -435,7 +763,9 @@ const App={
     cycleWrap:document.getElementById('cycleWrap'),cycleProgressWrap:document.getElementById('cycleProgressWrap'),
     cycleProgressText:document.getElementById('cycleProgressText'),cycleProgressFill:document.getElementById('cycleProgressFill'),
     soundBtn:document.getElementById('soundBtn'),hapticBtn:document.getElementById('hapticBtn'),
-    layoutBtn:document.getElementById('layoutBtn')
+    layoutBtn:document.getElementById('layoutBtn'),
+    periodicModalOverlay:document.getElementById('periodicModalOverlay'),periodicContent:document.getElementById('periodicContent'),
+    simplePeriodicToggle:document.getElementById('simplePeriodicToggle')
   },
 
   init(){
@@ -445,7 +775,77 @@ const App={
     this.buildModalList();
     this.attachEventListeners();
     document.body.addEventListener('click', () => this.initAudioContext(), {once:true});
+    this.setupScrollFade(document.querySelector('.header-right'));
+    this.setupModalScrollLock();
+    this.setupViewportVars();
+    this.setupPtZoom();
     this.setMode(1);
+  },
+
+  /* 실제 가시 영역(px)을 CSS 변수로 유지 — iOS Safari/삼성 인터넷의 동적 주소창 때문에
+     vh/vw가 실제 화면과 어긋나는 문제를 우회한다. 회전 전체화면이 열려 있으면 즉시 재계산.
+     핀치 줌 중에는 visualViewport의 resize/scroll이 프레임마다 여러 번 발생하므로,
+     매번 그리드를 다시 그리면 끊겨 보인다 — requestAnimationFrame으로 프레임당 1회로 묶는다. */
+  setupViewportVars(){
+    let settleTimer=null, lastW=0, lastH=0, lastOrient='';
+    const apply=()=>{
+      const vv=window.visualViewport;
+      /* 핀치 확대 중(scale>1)에는 "보이는 영역"이 좁아진 것일 뿐 화면 크기가 바뀐 게 아니다.
+         삼성 인터넷 등은 user-scalable=no와 touch-action을 모두 무시하고 확대를 허용하므로,
+         확대 도중 재계산하면 확대 제스처와 레이아웃 재계산이 서로 싸우며 화면이 찢어졌다.
+         → 확대 상태에서는 아무것도 갱신하지 않는다. 배율이 1로 돌아오면 그때 한 번만 확인. */
+      if(vv && vv.scale>1.001) return;
+      const w=Math.round(vv?vv.width:window.innerWidth);
+      const h=Math.round(vv?vv.height:window.innerHeight);
+      const orient = w>h ? 'l' : 'p';
+      const fsOpen = document.getElementById('ptFullscreen').classList.contains('show');
+      /* 회전 뷰는 "열 때 화면에 맞춰 고정된 스냅샷"이다. 핀치 도중 삼성 브라우저의 주소창이
+         나타났다 사라지며 화면 높이가 몇십 px 바뀌는데, 그때마다 회전 뷰를 다시 그리면
+         축소 순간 "화면 재로딩" 플래시로 보인다 → 회전 뷰가 열려 있는 동안은 실제 방향 전환
+         (세로↔가로)에만 재계산하고, 주소창발 미세한 높이 변화는 무시한다. */
+      if(fsOpen && orient===lastOrient) return;
+      if(w===lastW && h===lastH) return; /* 크기 변화 없으면 아예 손대지 않음 → 깜빡임 없음 */
+      lastW=w; lastH=h; lastOrient=orient;
+      document.documentElement.style.setProperty('--app-w', w+'px');
+      document.documentElement.style.setProperty('--app-h', h+'px');
+      if(fsOpen) this.layoutPtFullscreen();
+    };
+    /* 제스처(핀치/주소창 애니메이션) 도중에는 이벤트가 프레임마다 쏟아진다 — 매번 반응하지 않고
+       150ms 잠잠해진 뒤 한 번만 적용해, 제스처 끝자락의 "찰나의 다시 그리기"와 끊김을 없앤다. */
+    const update=()=>{ clearTimeout(settleTimer); settleTimer=setTimeout(()=>requestAnimationFrame(apply),150); };
+    apply();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize', update);
+      window.visualViewport.addEventListener('scroll', update);
+    }
+  },
+
+  /* 어떤 팝업이든 .show면 body 스크롤 잠금 → 뒤 페이지로 스크롤 전파(바깥 노출) 차단 */
+  setupModalScrollLock(){
+    /* 이전에 여기서 뷰포트 메타(maximum-scale)를 동적으로 잠갔었는데, 삼성 인터넷은 확대 차단은
+       무시하면서 축소 제스처는 잠금 범위와 비교하다 거부해 "축소가 안 되고 멈춤"의 원인이 됐다.
+       차단 효과는 없고 부작용만 있어 제거 — 확대는 setupViewportVars의 동결 가드가 감당한다. */
+    const overlays=[...document.querySelectorAll('.modal-overlay'),document.getElementById('ptFullscreen')].filter(Boolean);
+    const sync=()=>{
+      const anyOpen=overlays.some(o=>o.classList.contains('show'));
+      document.body.classList.toggle('modal-open', anyOpen);
+    };
+    const obs=new MutationObserver(sync);
+    overlays.forEach(o=>obs.observe(o,{attributes:true,attributeFilter:['class']}));
+    sync();
+  },
+
+  setupScrollFade(el){
+    if(!el) return;
+    const update=()=>{
+      const atEnd = el.scrollWidth - el.scrollLeft - el.clientWidth < 4;
+      el.classList.toggle('fade-end', atEnd);
+    };
+    el.addEventListener('scroll', update, {passive:true});
+    window.addEventListener('resize', update);
+    update();
   },
 
   loadSettings(){
@@ -453,14 +853,17 @@ const App={
       this.state.isSoundOn = localStorage.getItem('chem_sound') !== 'false';
       this.state.isHapticOn = localStorage.getItem('chem_haptic') !== 'false';
       this.state.isWideMode = localStorage.getItem('chem_wide') === 'true';
+      this.state.isSimplePeriodic = localStorage.getItem('chem_pt_simple') === 'true';
     }catch(e){}
     this.updateFeedbackBtns();
     if(this.state.isWideMode) document.body.classList.add('wide-mode');
     this.$.layoutBtn.textContent = this.state.isWideMode ? '📱' : '↔️';
+    this.$.simplePeriodicToggle.classList.toggle('on', this.state.isSimplePeriodic);
+    this.$.simplePeriodicToggle.setAttribute('aria-checked', this.state.isSimplePeriodic);
 
-    if(localStorage.getItem('chem_auth_v4') === 'pass') {
-      document.getElementById('authOverlay').style.display = 'none';
-    }
+    let authed=false;
+    try{ authed = localStorage.getItem('chem_auth_v4')==='pass'; }catch(e){}
+    if(authed) document.getElementById('authOverlay').style.display = 'none';
   },
   updateFeedbackBtns(){
     this.$.soundBtn.textContent = this.state.isSoundOn ? '🔊' : '🔇';
@@ -493,18 +896,18 @@ const App={
       const now = window.audioCtx.currentTime;
       if(type === 'tap') {
         osc.type = 'sine'; osc.frequency.setValueAtTime(600, now);
-        gain.gain.setValueAtTime(0.05, now);
+        gain.gain.setValueAtTime(0.16, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
         osc.start(now); osc.stop(now + 0.05);
       } else if(type === 'success') {
         osc.type = 'sine'; osc.frequency.setValueAtTime(800, now);
         osc.frequency.setValueAtTime(1200, now + 0.1);
-        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.setValueAtTime(0.28, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
         osc.start(now); osc.stop(now + 0.2);
       } else if(type === 'error') {
         osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
-        gain.gain.setValueAtTime(0.1, now);
+        gain.gain.setValueAtTime(0.28, now);
         gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
         osc.start(now); osc.stop(now + 0.2);
       }
@@ -513,16 +916,17 @@ const App={
   playHaptic(type){
     if(!this.state.isHapticOn || !navigator.vibrate) return;
     try {
-      if(type === 'tap') navigator.vibrate(5);
-      else if(type === 'success') navigator.vibrate([10, 30, 10]);
-      else if(type === 'error') navigator.vibrate([30]);
+      if(type === 'tap') navigator.vibrate(18);
+      else if(type === 'success') navigator.vibrate([25, 40, 25, 40, 25]);
+      else if(type === 'error') navigator.vibrate([70]);
     } catch(e) {}
   },
 
   loadWrongNotes(){try{const d=localStorage.getItem('chem_wrong_notes_v4');this.state.wrongNotes=d?JSON.parse(d):[];}catch(e){this.state.wrongNotes=[];}},
-  saveWrongNote(m,t,h,qData){
+  saveWrongNote(m,t,h,qData,bump=true){
     let existing = this.state.wrongNotes.find(n => n.mode === m && n.html === h);
     if(existing){
+      if(!bump) return; /* 플래시카드 수동 저장: 이미 있으면 아무 변화 없음 */
       existing.failCount = Math.min((existing.failCount || 1) + 1, 3);
       existing.qData = qData;
       this.state.wrongNotes = this.state.wrongNotes.filter(n => n.id !== existing.id);
@@ -539,6 +943,7 @@ const App={
     this.state.wrongNotes=this.state.wrongNotes.filter(n=>n.id!==id);
     try{localStorage.setItem('chem_wrong_notes_v4',JSON.stringify(this.state.wrongNotes));}catch(e){}
     this.renderWrongNotes();
+    if(this.state.currentMode===6)this.m6SyncSaveBtn();
   },
 
   clearWrongNotes(){
@@ -590,29 +995,67 @@ const App={
 
     this.state.currentMode = note.mode;
     this.$.modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.mode)===note.mode));
-    this.$.questionCard.style.display = '';
-    this.$.keyboardWrap.style.display = '';
     this.$.timerSelectWrap.style.display = 'none';
-    this.$.mode6Wrap.classList.remove('m6-active');
     this.$.cycleWrap.style.display = 'none';
-    this.$.elemRowLabel.style.display = note.mode===1 ? 'none' : 'block';
-    this.$.elemRow.style.display = note.mode===1 ? 'none' : 'flex';
 
-    const q = JSON.parse(JSON.stringify(note.qData));
-    q.inputs = {}; q.isTimedOut = false; q.cursor = {};
-    if(q.blanks.length > 0) q.activeKey = q.blanks[0].key;
-    this.state.currentQuestion = q;
+    if(note.mode===6){
+      this.$.questionCard.style.display = 'none';
+      this.$.keyboardWrap.style.display = 'none';
+      this.$.mode6Wrap.classList.remove('m6-active');
+      this.renderRetryFlashcard(note);
+    }else{
+      document.getElementById('retryM6Card').style.display = 'none';
+      this.$.questionCard.style.display = '';
+      this.$.keyboardWrap.style.display = '';
+      this.$.mode6Wrap.classList.remove('m6-active');
+      this.$.elemRowLabel.style.display = note.mode===1 ? 'none' : 'block';
+      this.$.elemRow.style.display = note.mode===1 ? 'none' : 'grid';
 
-    this.state.isAnswerChecked = false;
-    this.state.isAnswerRevealed = false;
-    this.state.isLastWrongAttempt = false;
-    this.state.wrongBlanks = {};
-    this.state.wrongAlreadyPenalized = false;
+      const q = JSON.parse(JSON.stringify(note.qData));
+      q.inputs = {}; q.isTimedOut = false; q.cursor = {};
+      if(q.blanks.length > 0) q.activeKey = q.blanks[0].key;
+      this.state.currentQuestion = q;
+
+      this.state.isAnswerChecked = false;
+      this.state.isAnswerRevealed = false;
+      this.state.isLastWrongAttempt = false;
+      this.state.wrongBlanks = {};
+      this.state.wrongAlreadyPenalized = false;
+      this.renderAll();
+      this.startTimer();
+    }
 
     document.getElementById('retryBanner').style.display = 'flex';
     document.getElementById('retryBannerText').innerHTML = `<span>⚠️ 연속 재풀이 모드 <span style="font-size:12px;opacity:0.8">(${this.state.retryPlaylist.length}문제 남음)</span></span>`;
-    this.renderAll();
-    this.startTimer();
+  },
+
+  /* 오답노트 재풀이 중 플래시카드(모드6) 노트 — 채점 없이 뒤집어 확인 후 기억/다시 로 진행 */
+  renderRetryFlashcard(note){
+    clearInterval(this.state.timerInterval);
+    document.getElementById('retryM6Card').style.display = '';
+    const q = note.qData||{};
+    const cards = this.m6BuildCards(q.m6Type||'full');
+    const idx = Math.min(q.cardIndex||0, cards.length-1);
+    const card = cards[idx];
+    const isKorFirst = (q.m6Order||'korean')==='korean';
+    document.getElementById('retryM6Title').textContent = note.title;
+    document.getElementById('retryM6FTag').textContent = isKorFirst?card.ftag:card.btag;
+    document.getElementById('retryM6FContent').innerHTML = isKorFirst?card.fhtml:card.bhtml;
+    document.getElementById('retryM6BTag').textContent = isKorFirst?card.btag:card.ftag;
+    document.getElementById('retryM6BContent').innerHTML = isKorFirst?card.bhtml:card.fhtml;
+    document.getElementById('retryM6Flashcard').classList.remove('flipped');
+  },
+  retryFlashcardKnow(){
+    this.playSound('success'); this.playHaptic('success');
+    this.deleteWrongNote(this.state.retryNoteId);
+    this.state.retryPlaylist.shift();
+    this.loadNextRetryPlaylistItem();
+  },
+  retryFlashcardNext(){
+    this.playSound('tap'); this.playHaptic('tap');
+    const skipped=this.state.retryPlaylist.shift();
+    this.state.retryPlaylist.push(skipped);
+    this.loadNextRetryPlaylistItem();
   },
 
   startRetry(id){
@@ -635,7 +1078,7 @@ const App={
     this.$.mode6Wrap.classList.remove('m6-active');
     this.$.cycleWrap.style.display = 'none';
     this.$.elemRowLabel.style.display = note.mode===1 ? 'none' : 'block';
-    this.$.elemRow.style.display = note.mode===1 ? 'none' : 'flex';
+    this.$.elemRow.style.display = note.mode===1 ? 'none' : 'grid';
 
     const q = JSON.parse(JSON.stringify(note.qData));
     q.inputs = {}; q.isTimedOut = false; q.cursor = {};
@@ -659,6 +1102,7 @@ const App={
     this.state.isRetryPlaylistMode = false;
     this.state.retryPlaylist = [];
     document.getElementById('retryBanner').style.display = 'none';
+    document.getElementById('retryM6Card').style.display = 'none';
     this.$.timerSelectWrap.style.display = 'flex';
 
     const savedState = this.state.savedCycleState;
@@ -682,7 +1126,7 @@ const App={
   },
   buildModalList(){
     const fmt=side=>side.map(r=>(r.coef>1?`<span class="eq-text">${r.coef}</span>`:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' <span class="eq-plus">+</span> ');
-    this.$.reactionList.innerHTML=REACTIONS.map((rx,i)=>`<div class="reaction-item"><div class="reaction-info" style="width:100%"><div class="reaction-header"><div class="reaction-name" style="margin-bottom:8px">#${i+1} ${rx.name}</div></div><div class="reaction-eq">${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}</div></div></div>`).join('');
+    this.$.reactionList.innerHTML=REACTIONS.map((rx,i)=>`<div class="reaction-item"><div class="reaction-header"><div class="reaction-name"><span class="reaction-num">${i+1}</span>${rx.name}</div></div><div class="reaction-eq">${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}</div></div>`).join('');
     this.renderWrongNotes();
   },
   renderWrongNotes(){
@@ -691,10 +1135,13 @@ const App={
     if(f.length===0){this.$.wrongNoteList.innerHTML=`<p style="color:var(--c-text-secondary);text-align:center;padding:40px 20px">이 모드의 오답 기록이 없습니다.</p>`;return;}
     this.$.wrongNoteList.innerHTML=f.map(n=>{
       const fc = n.failCount || 1;
-      let style = ''; let icon = '';
-      if(fc === 2) { style = 'background:rgba(239,68,68,0.1); border:1px solid var(--c-wrong);'; }
-      else if(fc >= 3) { style = 'background:rgba(239,68,68,0.2); border:2px solid var(--c-wrong);'; icon = '⚠️ '; }
-      return `<div class="reaction-item" style="${style}"><div class="reaction-info" style="width:100%"><div class="reaction-header"><div class="reaction-name" style="font-size:13px;">${icon}[모드 ${n.mode}] ${n.title} <span style="color:var(--c-wrong);font-size:11px;">(오답 ${fc}회)</span></div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${n.id}">단일 풀기</button><button class="delete-note-btn" data-id="${n.id}">삭제</button></div></div><div class="reaction-eq" style="border-color:var(--c-wrong)">${n.html}</div></div></div>`;
+      let style = '';
+      if(fc === 2) style = 'background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.5);';
+      else if(fc >= 3) style = 'background:rgba(239,68,68,0.14);border-color:var(--c-wrong);border-width:2px;';
+      const retryLabel = n.mode===6 ? '카드 다시보기' : '단일 풀기';
+      const modeIcon = MODE_ICONS[n.mode]||'📌';
+      const failBadge = fc>1?`<span class="reaction-fail">${fc>=3?'⚠️ ':''}오답 ${fc}회</span>`:'';
+      return `<div class="reaction-item" style="${style}"><div class="reaction-header"><div class="reaction-name"><span class="reaction-badge">${modeIcon} ${MODE_NAMES[n.mode]||('모드 '+n.mode)}</span>${n.title}${failBadge}</div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${n.id}">${retryLabel}</button><button class="delete-note-btn" data-id="${n.id}">삭제</button></div></div><div class="reaction-eq" style="border-left-color:var(--c-wrong)">${n.html}</div></div>`;
     }).join('');
   },
 
@@ -703,7 +1150,7 @@ const App={
       const mt=e.target.closest('.mode-tab'),bb=e.target.closest('.blank-box'),kb=e.target.closest('.kb-key');
       const th=e.target.closest('#themeBtn'),hi=e.target.closest('#hintBtn'),wn=e.target.closest('#wrongNoteBtn'),sa=e.target.closest('.show-answer-btn');
       const snd=e.target.closest('#soundBtn'),hpt=e.target.closest('#hapticBtn'),lyt=e.target.closest('#layoutBtn');
-      const extR=e.target.closest('#exitRetryBtn');
+      const extR=e.target.closest('#exitRetryBtn'),pt=e.target.closest('#periodicBtn');
       if(mt)this.setMode(parseInt(mt.dataset.mode));
       if(bb)this.setActiveBlank(bb.dataset.key);
       if(kb)this.handleKeyPress(kb.dataset.key);
@@ -712,6 +1159,7 @@ const App={
       if(wn){this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');}
       if(sa)this.revealAnswers();
       if(lyt) this.toggleWideMode();
+      if(pt){this.renderPeriodicTable();this.$.periodicModalOverlay.classList.add('show');this.playSound('tap');this.playHaptic('tap');}
       if(snd){
         this.state.isSoundOn = !this.state.isSoundOn;
         try{localStorage.setItem('chem_sound', this.state.isSoundOn);}catch(e){}
@@ -739,7 +1187,7 @@ const App={
       }
       const fl=document.createElement('div');
       Object.assign(fl.style,{position:'fixed',inset:0,zIndex:9999998,background:'linear-gradient(135deg,rgba(255,182,193,.9),rgba(200,162,200,.9))',display:'flex',alignItems:'center',justifyContent:'center',opacity:0,transition:'opacity .5s ease-out',pointerEvents:'none'});
-      fl.innerHTML='<div style="font-size:80px">💖 깜짝이야! 💖</div>';
+      fl.innerHTML='<div style="font-size:clamp(28px,9vw,80px);text-align:center;padding:0 24px;word-break:keep-all;white-space:normal">💖 깜짝이야! 💖</div>';
       document.body.appendChild(fl);
       setTimeout(()=>fl.style.opacity=1,50);
 
@@ -761,6 +1209,27 @@ const App={
     });
     document.getElementById('hintModalClose').addEventListener('click',()=>this.$.hintModalOverlay.classList.remove('show'));
     document.getElementById('wrongNoteModalClose').addEventListener('click',()=>this.$.wrongNoteModalOverlay.classList.remove('show'));
+    document.getElementById('periodicModalClose').addEventListener('click',()=>this.$.periodicModalOverlay.classList.remove('show'));
+    /* 어두운 배경 탭 시 모달 닫기 (인증 모달 제외) */
+    [this.$.hintModalOverlay,this.$.wrongNoteModalOverlay,this.$.periodicModalOverlay].forEach(ov=>{
+      ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('show');});
+    });
+    document.getElementById('ptRotateBtn').addEventListener('click',()=>{
+      this.openPtFullscreen();
+      this.playSound('tap'); this.playHaptic('tap');
+    });
+    document.getElementById('ptFsClose').addEventListener('click',()=>{
+      this.closePtFullscreen();
+      this.playSound('tap'); this.playHaptic('tap');
+    });
+    this.$.simplePeriodicToggle.addEventListener('click',()=>{
+      this.state.isSimplePeriodic=!this.state.isSimplePeriodic;
+      try{localStorage.setItem('chem_pt_simple', this.state.isSimplePeriodic);}catch(e){}
+      this.$.simplePeriodicToggle.classList.toggle('on', this.state.isSimplePeriodic);
+      this.$.simplePeriodicToggle.setAttribute('aria-checked', this.state.isSimplePeriodic);
+      this.playSound('tap'); this.playHaptic('tap');
+      this.renderPeriodicTable();
+    });
     document.getElementById('clearAllNotesBtn').addEventListener('click',()=>this.clearWrongNotes());
     document.getElementById('retryPlaylistBtn').addEventListener('click',()=>this.startRetryPlaylist());
 
@@ -785,8 +1254,14 @@ const App={
     });
     this.$.wrongNoteList.addEventListener('click',e=>{
       if(e.target.classList.contains('delete-note-btn'))this.deleteWrongNote(e.target.dataset.id);
-      if(e.target.classList.contains('retry-note-btn'))this.startRetry(e.target.dataset.id);
+      if(e.target.classList.contains('retry-note-btn')){
+        const id=e.target.dataset.id;
+        const note=this.state.wrongNotes.find(n=>n.id===id);
+        if(note && note.mode===6) this.viewFlashcardNote(note);
+        else this.startRetry(id);
+      }
     });
+    document.getElementById('m6SaveWrongBtn').addEventListener('click',()=>this.m6SaveCurrentAsWrong());
 
     document.getElementById('cycleWrap').addEventListener('click',e=>{
       const btn=e.target.closest('.cycle-btn');if(!btn)return;
@@ -804,8 +1279,22 @@ const App={
         if(e.key === 'Enter') document.getElementById('authBtn').click();
         return;
       }
+      if(document.getElementById('ptFullscreen').classList.contains('show')){
+        if(e.key==='Escape')this.closePtFullscreen();
+        return;
+      }
+      if(e.key==='Escape'){
+        if(this.$.periodicModalOverlay.classList.contains('show')){this.$.periodicModalOverlay.classList.remove('show');return;}
+        if(this.$.hintModalOverlay.classList.contains('show')){this.$.hintModalOverlay.classList.remove('show');return;}
+        if(this.$.wrongNoteModalOverlay.classList.contains('show')){this.$.wrongNoteModalOverlay.classList.remove('show');return;}
+      }
       if(this.$.hintModalOverlay.classList.contains('show')||this.$.wrongNoteModalOverlay.classList.contains('show'))return;
-      if(this.state.currentMode===6){
+      if(document.getElementById('retryM6Card').style.display!=='none'){
+        /* 오답노트 재풀이 중 플래시카드 복습 카드 — 숨겨진 실제 mode6 세션이 아니라 이 카드를 조작 */
+        if(e.key===' '){e.preventDefault();document.getElementById('retryM6Flashcard').classList.toggle('flipped');}
+        return;
+      }
+      if(this.state.currentMode===6&&this.$.mode6Wrap.classList.contains('m6-active')){
         if(e.key==='ArrowRight')this.m6Next();
         else if(e.key==='ArrowLeft')this.m6Prev();
         else if(e.key===' '){e.preventDefault();this.m6Flip();}
@@ -827,6 +1316,16 @@ const App={
     });
     m6o.addEventListener('click',()=>{if(!th2)this.m6Flip();th2=false;});
 
+    document.getElementById('m6WrongNoteBtn').addEventListener('click',()=>{
+      this.playSound('tap'); this.playHaptic('tap');
+      this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');
+    });
+    document.getElementById('retryM6Flashcard').addEventListener('click',()=>{
+      this.playSound('tap'); this.playHaptic('tap');
+      document.getElementById('retryM6Flashcard').classList.toggle('flipped');
+    });
+    document.getElementById('retryM6KnowBtn').addEventListener('click',()=>this.retryFlashcardKnow());
+    document.getElementById('retryM6ForgotBtn').addEventListener('click',()=>this.retryFlashcardNext());
     document.getElementById('m6NextBtn').addEventListener('click',()=>this.m6Next());
     document.getElementById('m6PrevBtn').addEventListener('click',()=>this.m6Prev());
     document.getElementById('m6ShuffleBtn').addEventListener('click',()=>this.m6Shuffle());
@@ -901,7 +1400,7 @@ const App={
 
     this.renderAll(null);
     this.$.resultBanner.className='result-banner wrong-banner show';
-    this.$.resultBanner.innerHTML=`<div style="display:flex;align-items:center;width:100%;justify-content:space-between"><span><span style="color:var(--c-wrong)">⏰ 시간 초과!</span> <span style="font-weight:400;margin-left:10px">마저 답을 입력해보세요.</span></span><button class="show-answer-btn">정답 확인</button></div>`;
+    this.$.resultBanner.innerHTML=`<div style="display:flex;align-items:center;width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px"><span><span style="color:var(--c-wrong)">⏰ 시간 초과!</span> <span style="font-weight:400;margin-left:10px">마저 답을 입력해보세요.</span></span><button class="show-answer-btn">정답 확인</button></div>`;
   },
 
   handleKeyPress(key){
@@ -922,8 +1421,26 @@ const App={
 
       if(key === 'LEFT') {
         if(pos > 0) q.cursor[q.activeKey] = pos - 1;
+        else {
+          /* 칸의 맨 왼쪽에서 한 번 더 누르면 바로 이전 블랭크의 맨 끝으로 이동 */
+          const idx = q.blanks.findIndex(b=>b.key===q.activeKey);
+          if(idx > 0) {
+            const prevKey = q.blanks[idx-1].key;
+            q.activeKey = prevKey;
+            q.cursor[prevKey] = (q.inputs[prevKey]||'').length;
+          }
+        }
       } else if(key === 'RIGHT') {
         if(pos < val.length) q.cursor[q.activeKey] = pos + 1;
+        else {
+          /* 칸의 맨 오른쪽에서 한 번 더 누르면 바로 다음 블랭크의 맨 앞으로 이동 */
+          const idx = q.blanks.findIndex(b=>b.key===q.activeKey);
+          if(idx >= 0 && idx < q.blanks.length-1) {
+            const nextKey = q.blanks[idx+1].key;
+            q.activeKey = nextKey;
+            q.cursor[nextKey] = 0;
+          }
+        }
       } else if(key.startsWith('NUM_')) {
         let char = key.replace('NUM_','');
         q.inputs[q.activeKey] = val.slice(0, pos) + char + val.slice(pos);
@@ -984,7 +1501,9 @@ const App={
   setMode(mode, preserveCycle = false){
     if(this.state.retryNoteId) {
       this.state.retryNoteId = null;
+      this.state.retryPlaylist = [];
       document.getElementById('retryBanner').style.display = 'none';
+      document.getElementById('retryM6Card').style.display = 'none';
       this.state.savedCycleState = null;
       this.state.isRetryPlaylistMode = false;
     }
@@ -1003,7 +1522,7 @@ const App={
 
     if(is6){clearInterval(this.state.timerInterval);this.m6GenCards();this.m6Render();return;}
     if(mode===1){this.$.elemRowLabel.style.display='none';this.$.elemRow.style.display='none';}
-    else{this.$.elemRowLabel.style.display='block';this.$.elemRow.style.display='flex';}
+    else{this.$.elemRowLabel.style.display='block';this.$.elemRow.style.display='grid';}
     this.generateQuestion();
   },
 
@@ -1233,9 +1752,13 @@ const App={
     if(q.isMode5){this.$.equationDisplay.innerHTML=this.renderBlankBox('M5',q.blanks[0].answer);return;}
     const fc=(list,pre)=>list.map((c,i)=>{
       const key=`${pre}${i}`,bd=q.blanks.find(b=>b.key===key);
-      if(this.state.currentMode===1)return bd?this.renderBlankBox(key,bd.answer)+this.formatFormula(c.formula):this.formatFormula(c.formula);
-      if(c.isBlank||bd)return this.renderBlankBox(key,bd?bd.answer:'');
-      return(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+this.formatFormula(c.formula);
+      let term;
+      if(this.state.currentMode===1)term=bd?this.renderBlankBox(key,bd.answer)+this.formatFormula(c.formula):this.formatFormula(c.formula);
+      else if(c.isBlank||bd)term=this.renderBlankBox(key,bd?bd.answer:'');
+      else term=(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+this.formatFormula(c.formula);
+      /* equation-display가 flex라 첨자(<sub>)까지 개별 flex 아이템이 되어 가운데 정렬+간격이 생기는 걸 방지:
+         한 항 전체를 inline-block으로 감싸 flex 아이템 단위를 "항"으로 고정 */
+      return `<span class="eq-term">${term}</span>`;
     }).join(' <span class="eq-plus">+</span> ');
     this.$.equationDisplay.innerHTML=`${fc(q.displayReactants,'R')} <span class="eq-arrow">→</span> ${fc(q.displayProducts,'P')}`;
   },
@@ -1290,8 +1813,8 @@ const App={
       this.$.resultBanner.className='result-banner wrong-banner show';
       let w='';if(this.state.currentQuestion.coefOneErrorFlag)w=`<div style="color:var(--c-wrong);font-size:13px;margin-bottom:8px;width:100%">⚠️ 주의: 화학에서 계수 '1'은 생략해야 합니다.</div>`;
       if(this.state.isAnswerRevealed)this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%">❌ 오답입니다. 정답이 표시되었습니다.</div>`;
-      else if(this.state.isRetryPlaylistMode) this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between"><span>❌ 오답입니다. (계속 풀거나 건너뛰기 가능)</span><button class="show-answer-btn">정답 확인</button></div>`;
-      else this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between"><span>❌ 오답입니다.</span><button class="show-answer-btn">정답 확인</button></div>`;
+      else if(this.state.isRetryPlaylistMode) this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px"><span>❌ 오답입니다. (계속 풀거나 건너뛰기 가능)</span><button class="show-answer-btn">정답 확인</button></div>`;
+      else this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px"><span>❌ 오답입니다.</span><button class="show-answer-btn">정답 확인</button></div>`;
     }
   },
 
@@ -1304,13 +1827,18 @@ const App={
 
   /* ── MODE 6 ── */
   m6Fmt(side){return side.map(r=>(r.coef>1?r.coef:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' + ');},
-  m6GenCards(){
-    const t=this.state.m6Type;let cards=[];
+  /* 카드 유형(t)에서 카드 배열만 순수하게 만들어낸다 — 오답노트 재풀이(renderRetryFlashcard)에서도
+     실제 mode6 세션 상태(state.m6Cards/m6Index)를 건드리지 않고 재사용하기 위해 분리 */
+  m6BuildCards(t){
+    let cards=[];
     if(t==='full'){cards=REACTIONS.map(rx=>({ftag:'한글 반응식',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'화학 반응식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.reactants)} → ${this.m6Fmt(rx.products)}</span>`}));}
     else if(t==='reactant'){cards=REACTIONS.map(rx=>({ftag:'반응물 이름',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'반응물 화학식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.reactants)}</span>`}));}
     else if(t==='product'){cards=REACTIONS.map(rx=>({ftag:'생성물 이름',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'생성물 화학식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.products)}</span>`}));}
     else{cards=CHEMICALS.map(c=>({ftag:'물질명',fhtml:`<span class="m6-korean">${c.name}</span>`,btag:'화학식',bhtml:`<span class="m6-formula">${c.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')}</span>`}));}
-    this.state.m6Cards=cards;this.state.m6Index=0;this.state.m6Flipped=false;
+    return cards;
+  },
+  m6GenCards(){
+    this.state.m6Cards=this.m6BuildCards(this.state.m6Type);this.state.m6Index=0;this.state.m6Flipped=false;
   },
   m6Render(dir){
     const{m6Cards,m6Index,m6Order}=this.state;const card=m6Cards[m6Index];if(!card)return;
@@ -1322,6 +1850,7 @@ const App={
     this.state.m6Flipped=false;document.getElementById('m6Card').classList.remove('flipped');
     document.getElementById('m6Counter').textContent=`${m6Index+1} / ${m6Cards.length}`;
     document.getElementById('m6PFill').style.width=`${((m6Index+1)/m6Cards.length)*100}%`;
+    this.m6SyncSaveBtn();
     if(dir){const o=document.getElementById('m6Outer'),cls=dir==='next'?'m6-slide-r':'m6-slide-l';o.classList.remove('m6-slide-r','m6-slide-l');void o.offsetWidth;o.classList.add(cls);}
   },
   m6Flip(){this.playSound('tap'); this.playHaptic('tap'); this.state.m6Flipped=!this.state.m6Flipped;document.getElementById('m6Card').classList.toggle('flipped',this.state.m6Flipped);},
@@ -1329,8 +1858,270 @@ const App={
   m6Prev(){this.playSound('tap'); this.state.m6Index=(this.state.m6Index-1+this.state.m6Cards.length)%this.state.m6Cards.length;this.m6Render('prev');},
   m6Shuffle(){this.playSound('tap'); const c=[...this.state.m6Cards];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}this.state.m6Cards=c;this.state.m6Index=0;this.m6Render();},
 
+  M6_SAVE_LABEL:'🔖 이 카드 오답노트에 저장',
+  /* 카드 → 오답노트 저장용 {title, html} (저장·저장여부 판정 공용) */
+  m6CardNoteData(card){
+    const title=card.fhtml.replace(/<[^>]+>/g,'').trim()||card.ftag;
+    /* 앞/뒤를 2단으로 쌓지 않고 "앞 → 뒤" 한 줄로 압축 (반응식 노트와 높이가 비슷해지도록) */
+    const html=`<div class="m6-note-row">${card.fhtml}<span class="eq-arrow">→</span>${card.bhtml}</div>`;
+    return {title,html};
+  },
+  m6CurrentSaved(){
+    const card=this.state.m6Cards[this.state.m6Index];if(!card)return false;
+    const {html}=this.m6CardNoteData(card);
+    return this.state.wrongNotes.some(n=>n.mode===6&&n.html===html);
+  },
+  m6SyncSaveBtn(){
+    const btn=document.getElementById('m6SaveWrongBtn');if(!btn)return;
+    if(this.m6CurrentSaved()){
+      btn.textContent='✅ 오답노트에 저장됨';
+      btn.classList.add('saved');
+      btn.disabled=true;
+    }else{
+      btn.textContent=this.M6_SAVE_LABEL;
+      btn.classList.remove('saved');
+      btn.disabled=false;
+    }
+  },
+  m6SaveCurrentAsWrong(){
+    const card=this.state.m6Cards[this.state.m6Index];if(!card)return;
+    if(this.m6CurrentSaved()){this.playSound('tap');return;} /* 이미 저장됨 → 중복 저장 방지 */
+    const {title,html}=this.m6CardNoteData(card);
+    const qData={m6Type:this.state.m6Type,m6Order:this.state.m6Order,cardIndex:this.state.m6Index,title};
+    this.saveWrongNote(6,title,html,qData,false);
+    this.playSound('success'); this.playHaptic('success');
+    this.m6SyncSaveBtn();
+  },
+  viewFlashcardNote(note){
+    this.$.wrongNoteModalOverlay.classList.remove('show');
+    this.setMode(6);
+    const q=note.qData||{};
+    this.state.m6Type=q.m6Type||'full';
+    document.querySelectorAll('#m6TypeBtns .m6-opt-btn').forEach(b=>b.classList.toggle('active',b.dataset.val===this.state.m6Type));
+    this.state.m6Order=q.m6Order||'korean';
+    document.querySelectorAll('#m6OrderBtns .m6-opt-btn').forEach(b=>b.classList.toggle('active',b.dataset.val===this.state.m6Order));
+    this.m6GenCards();
+    this.state.m6Index=Math.min(q.cardIndex||0,this.state.m6Cards.length-1);
+    this.m6Render();
+  },
+
   formatFormula(f){return f.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('');},
-  toggleTheme(){this.playSound('tap'); this.state.isDarkMode=!this.state.isDarkMode;document.body.classList.toggle('light',!this.state.isDarkMode);document.getElementById('themeBtn').textContent=this.state.isDarkMode?'🌙':'☀️';}
+  toggleTheme(){this.playSound('tap'); this.state.isDarkMode=!this.state.isDarkMode;document.body.classList.toggle('light',!this.state.isDarkMode);document.getElementById('themeBtn').textContent=this.state.isDarkMode?'🌙':'☀️';},
+
+  /* ── 주기율표 ── */
+  ptLegendHTML(){
+    return `<div class="pt-legend">${PT_CATEGORIES.map(([cls,label])=>`<span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-${cls}"></span>${label}</span>`).join('')}</div>`;
+  },
+  ptCellHTML(e,col,row){
+    const pos = (col!=null && row!=null) ? `grid-column:${col};grid-row:${row}` : '';
+    return `<div class="pt-cell pt-cat-${e.cat}" style="${pos}" title="${e.z}. ${e.name} (${e.sym})"><span class="pt-z">${e.z}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
+  },
+  /* 원소 칸과 동일한 레이아웃(pt-z/pt-sym/pt-name)을 재사용하되, 배경을 족 색상 대신 실제 불꽃 반응 색으로,
+     맨 위 숫자 칸은 원자번호 대신 색 이름으로 바꿔서 보여준다 */
+  ptFlameCellHTML(e,fc){
+    return `<div class="pt-cell" style="background:${fc.color}" title="${e.name}(${e.sym}) 불꽃 반응: ${fc.label}색"><span class="pt-z">${fc.label}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
+  },
+  /* 표 본체 HTML 생성 (모달·전체화면 공용). 1열/1행은 주기·족 번호 라벨용이라 원소는 +1 오프셋 배치 */
+  ptTableHTML(){
+    const simple=this.state.isSimplePeriodic;
+    let cells='';
+    if(simple){
+      cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:9px;line-height:1.1;text-align:center">족<br>주기</div>`;
+      const groupLabels=[1,2,13,14,15,16,17,18];
+      groupLabels.forEach((g,i)=>{cells+=`<div class="pt-axis pt-axis-group" style="grid-column:${i+2};grid-row:1">${g}족</div>`;});
+      [1,2,3,4,5,6].forEach(p=>{cells+=`<div class="pt-axis pt-axis-period" style="grid-column:1;grid-row:${p+1}">${p}주기</div>`;});
+      ELEMENTS.filter(e=>(e.z<=20||PT_SIMPLE_EXTRA_Z.includes(e.z))&&!e.f).forEach(e=>{
+        const col=(e.group<=2?e.group:e.group-10)+1;
+        cells+=this.ptCellHTML(e,col,e.period+1);
+      });
+      let extraHTML='';
+      PT_FLAME_COLORS.forEach(fc=>{
+        const e=ELEMENTS.find(el=>el.z===fc.z);if(e)extraHTML+=this.ptFlameCellHTML(e,fc);
+      });
+      return {
+        grid:`<div class="pt-grid pt-simple" style="grid-template-columns:40px repeat(8,1fr);grid-template-rows:repeat(7,1fr)">${cells}</div>`,
+        extra:`<hr class="pt-extra-divider"><div class="pt-extra-label">🔥 불꽃 반응 색</div><div class="pt-extra-row">${extraHTML}</div>`
+      };
+    }
+    cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:9px;line-height:1.1;text-align:center">족<br>주기</div>`;
+    for(let g=1;g<=18;g++){cells+=`<div class="pt-axis pt-axis-group" style="grid-column:${g+1};grid-row:1">${g}</div>`;}
+    for(let p=1;p<=7;p++){cells+=`<div class="pt-axis pt-axis-period" style="grid-column:1;grid-row:${p+1}">${p}</div>`;}
+    ELEMENTS.filter(e=>!e.f).forEach(e=>{cells+=this.ptCellHTML(e,e.group+1,e.period+1);});
+    cells+=`<div class="pt-cell pt-placeholder" style="grid-column:4;grid-row:7">57~71</div>`;
+    cells+=`<div class="pt-cell pt-placeholder" style="grid-column:4;grid-row:8">89~103</div>`;
+    ELEMENTS.filter(e=>e.f).forEach(e=>{
+      const row=e.period===6?9:10,col=3+e.f;
+      cells+=this.ptCellHTML(e,col,row);
+    });
+    return {
+      grid:`<div class="pt-grid" style="grid-template-columns:56px repeat(18,1fr);grid-template-rows:repeat(10,1fr)">${cells}</div>`,
+      extra:''
+    };
+  },
+  renderPeriodicTable(){
+    const t=this.ptTableHTML();
+    this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-scroll">${t.grid}</div>${t.extra}`;
+  },
+  openPtFullscreen(){
+    const t=this.ptTableHTML();
+    const content=document.getElementById('ptFsContent');
+    content.innerHTML=`${t.grid}${t.extra}`;
+    content.style.transition='';
+    this.ptZoom={scale:1,tx:0,ty:0,baseFit:1,vpW:1,vpH:1,cw:1,ch:1};
+    document.getElementById('ptFullscreen').classList.add('show');
+    this.layoutPtFullscreen();
+  },
+  closePtFullscreen(){
+    document.getElementById('ptFullscreen').classList.remove('show');
+  },
+  /* 회전 뷰의 열 폭·행 높이·폰트를 실측 픽셀 하나(cell)로 통일 계산해 인라인 적용.
+     같은 cell 값에서 열폭·행높이·폰트를 전부 파생시켜 어떤 화면에서도 서로 맞물리게 한다.
+     gap(4px)까지 정산해 실제 콘텐츠가 뷰포트를 넘지 않게 하고, 넘으면 baseFit로 축소해
+     기본 배율(scale=1)에서 항상 전부 보이게 만든다. */
+  layoutPtFullscreen(){
+    const scrollEl=document.getElementById('ptFsContent');
+    const grid=scrollEl.querySelector('.pt-grid');
+    if(!grid) return;
+    const vp=document.getElementById('ptFsViewport');
+    const title=document.querySelector('.pt-fs-title');
+    const root=document.documentElement;
+    const appW=parseFloat(getComputedStyle(root).getPropertyValue('--app-w'))||window.innerWidth;
+    const appH=parseFloat(getComputedStyle(root).getPropertyValue('--app-h'))||window.innerHeight;
+    const pad=32; /* .pt-fs-rotor padding:16px 상하좌우 */
+    const gap=4;  /* .pt-grid gap:4px */
+    const titleH=(title?title.offsetHeight:32)+10; /* 10 = title margin-bottom */
+    const availW=Math.max(200, appH-pad);        /* 회전 전 가로(=appH) → 열이 늘어서는 축 */
+    const availH=Math.max(160, appW-pad-titleH); /* 회전 전 세로(=appW) → 행 높이를 제한하는 축 */
+    const simple=this.state.isSimplePeriodic;
+    const cols=simple?9:19, rows=simple?7:10;
+    const labelPx=simple?36:48;
+    /* 열/행 사이 gap을 빼고 남는 폭·높이를 셀 개수로 나눠야 실제로 안 넘친다 */
+    const cellByW=(availW-labelPx-(cols-1)*gap)/(cols-1);
+    const cellByH=(availH-(rows-1)*gap)/rows;
+    const cell=Math.max(28, Math.min(cellByW, cellByH, 64));
+    grid.style.gridTemplateColumns=`${labelPx}px repeat(${cols-1},${cell}px)`;
+    grid.style.gridTemplateRows=`repeat(${rows},${cell}px)`;
+    /* 번호/기호/이름 세 폰트를 각자 독립 비율로 정하면(예전 방식) 합계가 칸 높이를 넘어서
+       가운데 기호 행이 짜부러지며 이름과 겹칠 수 있다 — 번호·기호는 고정 px 행으로 못박고
+       (그래야 이름이 아무리 커도 이 둘은 절대 밀리지 않음), 이름은 남는 공간에서 폰트를
+       역산한 뒤 그 폰트가 실제로 필요로 하는 높이(2줄×line-height)를 다시 계산해 행에
+       반영한다 — "이 정도 공간이 있으니 이 폰트려니" 식 어림값이 아니라 최종 폰트 크기에서
+       거꾸로 필요 높이를 구해야 line-clamp:2 박스 실측과 항상 맞아떨어진다. */
+    const padY=1; /* 회전 뷰 전용 .pt-fs-scroll .pt-cell padding:1px 2px와 짝 */
+    const contentH=cell-2*padY;
+    const zH=Math.max(7, Math.round(cell*.13));
+    const symH=Math.max(10, Math.round(cell*.30));
+    const nameBudget=Math.max(8, contentH-zH-symH);
+    const nameLH=1.05;
+    const nameFs=Math.max(4, Math.floor(nameBudget/(2*nameLH)));
+    const nameH=Math.ceil(nameFs*nameLH*2)+1; /* 실제 폰트 기준 필요 높이 + 1px 서브픽셀 안전마진 */
+    scrollEl.style.setProperty('--pt-fs-sym', Math.max(9,symH-1)+'px');
+    scrollEl.style.setProperty('--pt-fs-name', nameFs+'px');
+    scrollEl.style.setProperty('--pt-fs-z', Math.max(6,zH-1)+'px');
+    scrollEl.style.setProperty('--pt-cell-zh', zH+'px');
+    scrollEl.style.setProperty('--pt-cell-symh', symH+'px');
+    scrollEl.style.setProperty('--pt-cell-nameh', nameH+'px');
+    /* 주입·사이징 후 실제 콘텐츠(그리드+불꽃반응 행)를 실측해 baseFit 산출 */
+    const extra=scrollEl.querySelector('.pt-extra-row');
+    let cw=grid.offsetWidth, ch=grid.offsetHeight;
+    if(extra){ cw=Math.max(cw, extra.offsetWidth); ch=grid.offsetHeight+extra.offsetHeight+12; }
+    const vpW=vp.clientWidth||1, vpH=vp.clientHeight||1;
+    const z=this.ptZoom||(this.ptZoom={scale:1,tx:0,ty:0});
+    z.baseFit=Math.min(vpW/cw, vpH/ch, 1);
+    z.vpW=vpW; z.vpH=vpH; z.cw=cw; z.ch=ch; z.scale=1;
+    this.clampPtZoom(); this.applyPtZoom();
+  },
+  /* 줌 레이어에 transform 적용. transform만 바꾸므로 리페인트/리플로우 없이 GPU 합성만.
+     translate3d(3D 변환)로 오버레이가 열려 있는 동안 레이어를 상시 승격시켜, will-change를
+     껐다 켤 때 생기던 승격/강등 재래스터화 플래시(=이따금 깜빡임)를 없앤다. */
+  applyPtZoom(){
+    const z=this.ptZoom; if(!z) return;
+    const S=z.baseFit*z.scale;
+    document.getElementById('ptFsContent').style.transform=`translate3d(${z.tx}px,${z.ty}px,0) scale(${S})`;
+  },
+  /* 콘텐츠가 뷰포트를 벗어나지 않게 tx/ty 클램프. 콘텐츠는 뷰포트 크기 레이어 안에 중앙정렬돼
+     있으므로 그 중앙 오프셋(ox,oy)까지 감안한다. 렌더 크기가 뷰포트보다 작으면 정확히 중앙 고정. */
+  clampPtZoom(){
+    const z=this.ptZoom; if(!z) return;
+    const S=z.baseFit*z.scale, vpW=z.vpW, vpH=z.vpH, cw=z.cw, ch=z.ch;
+    const rw=cw*S, rh=ch*S;               /* 화면에 렌더되는 콘텐츠 크기 */
+    const ox=(vpW-cw)/2*S, oy=(vpH-ch)/2*S; /* 레이어 안 콘텐츠 중앙정렬 오프셋(스케일 반영) */
+    if(rw<=vpW){ z.tx=(vpW-rw)/2-ox; }
+    else { let l=z.tx+ox; l=Math.min(0,Math.max(vpW-rw,l)); z.tx=l-ox; }
+    if(rh<=vpH){ z.ty=(vpH-rh)/2-oy; }
+    else { let t=z.ty+oy; t=Math.min(0,Math.max(vpH-rh,t)); z.ty=t-oy; }
+  },
+  ptZoomReset(){
+    const z=this.ptZoom; if(!z) return;
+    const el=document.getElementById('ptFsContent');
+    el.style.transition='transform .25s ease';
+    clearTimeout(this._ptResetTimer);
+    this._ptResetTimer=setTimeout(()=>{el.style.transition='';},280);
+    z.scale=1; this.clampPtZoom(); this.applyPtZoom();
+    this.playSound('tap'); this.playHaptic('tap');
+  },
+  /* 회전 뷰 자체 핀치/팬/더블탭 줌 — 네이티브 줌(고정+회전 요소 재래스터화로 버벅/깜빡) 대신
+     transform:scale만 GPU로 걸어 매끈하게. 화면 좌표를 90° 역회전해 가로(로컬) 공간으로 매핑. */
+  setupPtZoom(){
+    const vp=document.getElementById('ptFsViewport');
+    const rotor=document.querySelector('.pt-fs-rotor');
+    if(!vp||!rotor) return;
+    let mode=null, startDist=0, startScale=1, focal=null, lastMid=null, lastPan=null, lastTap=0;
+    const dist=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    const mid=(a,b)=>({x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2});
+    /* 화면 좌표 → 뷰포트 로컬(가로 공간) 좌표. rotor는 화면 중앙 고정(회전 원점=바운딩 중심).
+       rotate(90°)의 역: 화면 오프셋(ox,oy) → 로컬(oy,-ox). rotor 바운딩 폭=appW, 높이=appH이고
+       rotor 로컬 폭=appH·높이=appW라 중앙기준→좌상단기준 보정은 각각 r.height/2, r.width/2. */
+    const toLocal=(cx,cy)=>{
+      const r=rotor.getBoundingClientRect();
+      const ox=cx-(r.left+r.width/2), oy=cy-(r.top+r.height/2);
+      return { x:(oy+r.height/2)-vp.offsetLeft, y:(-ox+r.width/2)-vp.offsetTop };
+    };
+    vp.addEventListener('touchstart',e=>{
+      if(e.touches.length===2){
+        mode='pinch'; startDist=dist(e.touches[0],e.touches[1])||1;
+        startScale=this.ptZoom.scale;
+        const m0=mid(e.touches[0],e.touches[1]); focal=toLocal(m0.x,m0.y); lastMid=m0;
+        e.preventDefault();
+      } else if(e.touches.length===1){
+        const now=Date.now();
+        if(now-lastTap<300){ lastTap=0; mode=null; this.ptZoomReset(); e.preventDefault(); return; }
+        lastTap=now;
+        if(this.ptZoom.scale>1.001){ mode='pan'; lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY}; e.preventDefault(); }
+        else { mode=null; }
+      }
+    },{passive:false});
+    vp.addEventListener('touchmove',e=>{
+      const z=this.ptZoom;
+      if(mode==='pinch'&&e.touches.length===2){
+        const d=dist(e.touches[0],e.touches[1]);
+        const ns=Math.max(1,Math.min(4,startScale*(d/startDist)));
+        const S0=z.baseFit*z.scale, S1=z.baseFit*ns;
+        z.tx=focal.x-(focal.x-z.tx)*(S1/S0);
+        z.ty=focal.y-(focal.y-z.ty)*(S1/S0);
+        z.scale=ns;
+        const m=mid(e.touches[0],e.touches[1]);
+        z.tx+=(m.y-lastMid.y); z.ty+=-(m.x-lastMid.x); lastMid=m; /* 두 손가락 드래그=팬 */
+        this.clampPtZoom(); this.applyPtZoom(); e.preventDefault();
+      } else if(mode==='pan'&&e.touches.length===1){
+        const dx=e.touches[0].clientX-lastPan.x, dy=e.touches[0].clientY-lastPan.y;
+        lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY};
+        z.tx+=dy; z.ty+=-dx; this.clampPtZoom(); this.applyPtZoom(); e.preventDefault();
+      }
+    },{passive:false});
+    const end=e=>{
+      if(e.touches.length===0){
+        if(this.ptZoom.scale<=1.001){ this.ptZoom.scale=1; this.clampPtZoom(); this.applyPtZoom(); }
+        mode=null;
+      } else if(e.touches.length===1&&mode==='pinch'){
+        mode=this.ptZoom.scale>1.001?'pan':null;
+        lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY};
+      }
+    };
+    vp.addEventListener('touchend',end,{passive:false});
+    vp.addEventListener('touchcancel',end,{passive:false});
+    vp.addEventListener('gesturestart',e=>e.preventDefault());
+  }
 };
 
 document.addEventListener('DOMContentLoaded',()=>App.init());
