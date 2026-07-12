@@ -195,7 +195,10 @@
   .pt-cell:active{transform:scale(.9);}
   .pt-z{font-size:clamp(7px,1.2vw,10px);font-family:var(--font-mono);font-weight:700;opacity:.8;justify-self:start;padding-left:2px;line-height:1;}
   .pt-sym{font-size:clamp(13px,2.6vw,21px);font-family:var(--font-mono);font-weight:900;line-height:1;align-self:center;}
-  .pt-name{font-size:clamp(7px,1.3vw,10px);font-weight:700;line-height:1;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;align-self:end;}
+  /* 이름은 한 줄 강제(nowrap)+말줄임 대신 최대 2줄로 자연 줄바꿈 → 4자 이상 긴 한국어 이름도
+     '...' 없이 전부 보인다. 셀은 grid-rows:auto 1fr auto라 이름(auto)이 2줄이면 기호(1fr)가
+     자리를 내주므로 겹침/넘침 없음. */
+  .pt-name{font-size:clamp(7px,1.3vw,10px);font-weight:700;line-height:1.05;text-align:center;white-space:normal;word-break:break-word;overflow:hidden;max-width:100%;align-self:end;}
   .pt-cell.pt-placeholder{background:var(--c-surface-2)!important;color:var(--c-text-secondary);border:1px dashed var(--c-border);font-family:var(--font-mono);font-size:clamp(9px,1.6vw,13px);font-weight:700;display:flex;align-items:center;justify-content:center;}
   .pt-axis{display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-weight:900;color:var(--c-text-primary);background:var(--c-surface-2);border-radius:4px;font-size:clamp(11px,1.8vw,15px);}
   .pt-extra-divider{border:none;border-top:1px dashed var(--c-border);margin:18px 0 0;}
@@ -2008,11 +2011,13 @@ const App={
     z.vpW=vpW; z.vpH=vpH; z.cw=cw; z.ch=ch; z.scale=1;
     this.clampPtZoom(); this.applyPtZoom();
   },
-  /* 줌 레이어에 transform 적용. transform만 바꾸므로 리페인트/리플로우 없이 GPU 합성만. */
+  /* 줌 레이어에 transform 적용. transform만 바꾸므로 리페인트/리플로우 없이 GPU 합성만.
+     translate3d(3D 변환)로 오버레이가 열려 있는 동안 레이어를 상시 승격시켜, will-change를
+     껐다 켤 때 생기던 승격/강등 재래스터화 플래시(=이따금 깜빡임)를 없앤다. */
   applyPtZoom(){
     const z=this.ptZoom; if(!z) return;
     const S=z.baseFit*z.scale;
-    document.getElementById('ptFsContent').style.transform=`translate(${z.tx}px,${z.ty}px) scale(${S})`;
+    document.getElementById('ptFsContent').style.transform=`translate3d(${z.tx}px,${z.ty}px,0) scale(${S})`;
   },
   /* 콘텐츠가 뷰포트를 벗어나지 않게 tx/ty 클램프. 콘텐츠는 뷰포트 크기 레이어 안에 중앙정렬돼
      있으므로 그 중앙 오프셋(ox,oy)까지 감안한다. 렌더 크기가 뷰포트보다 작으면 정확히 중앙 고정. */
@@ -2025,12 +2030,6 @@ const App={
     else { let l=z.tx+ox; l=Math.min(0,Math.max(vpW-rw,l)); z.tx=l-ox; }
     if(rh<=vpH){ z.ty=(vpH-rh)/2-oy; }
     else { let t=z.ty+oy; t=Math.min(0,Math.max(vpH-rh,t)); z.ty=t-oy; }
-  },
-  ptZoomWill(on){
-    const el=document.getElementById('ptFsContent');
-    clearTimeout(this._ptWillTimer);
-    if(on){ el.style.willChange='transform'; }
-    else { this._ptWillTimer=setTimeout(()=>{el.style.willChange='auto';},250); }
   },
   ptZoomReset(){
     const z=this.ptZoom; if(!z) return;
@@ -2063,12 +2062,12 @@ const App={
         mode='pinch'; startDist=dist(e.touches[0],e.touches[1])||1;
         startScale=this.ptZoom.scale;
         const m0=mid(e.touches[0],e.touches[1]); focal=toLocal(m0.x,m0.y); lastMid=m0;
-        this.ptZoomWill(true); e.preventDefault();
+        e.preventDefault();
       } else if(e.touches.length===1){
         const now=Date.now();
         if(now-lastTap<300){ lastTap=0; mode=null; this.ptZoomReset(); e.preventDefault(); return; }
         lastTap=now;
-        if(this.ptZoom.scale>1.001){ mode='pan'; lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY}; this.ptZoomWill(true); e.preventDefault(); }
+        if(this.ptZoom.scale>1.001){ mode='pan'; lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY}; e.preventDefault(); }
         else { mode=null; }
       }
     },{passive:false});
@@ -2093,7 +2092,7 @@ const App={
     const end=e=>{
       if(e.touches.length===0){
         if(this.ptZoom.scale<=1.001){ this.ptZoom.scale=1; this.clampPtZoom(); this.applyPtZoom(); }
-        mode=null; this.ptZoomWill(false);
+        mode=null;
       } else if(e.touches.length===1&&mode==='pinch'){
         mode=this.ptZoom.scale>1.001?'pan':null;
         lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY};
