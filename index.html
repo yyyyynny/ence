@@ -90,6 +90,8 @@
   .eq-text{color:var(--c-text-primary);}.eq-arrow{color:var(--c-accent-3);font-size:1.2em;margin:0 4px;}.eq-plus{color:var(--c-text-secondary);margin:0 4px;}
   /* 항(계수·블랭크·화학식) 전체를 하나의 flex 아이템으로 묶어 내부 <sub> 첨자의 정상 인라인 배치를 보존 */
   .eq-term{display:inline-block;vertical-align:middle;white-space:nowrap;}
+  /* MODE 7: 빈칸 바로 뒤에 붙는 '주기'·'족' 단위 — 빈칸 테두리에 딱 붙지 않게 한 칸 띄운다 */
+  .eq-unit{margin-left:5px;}
   sub{font-size:.65em;line-height:0;vertical-align:sub;}
   .result-banner{border-radius:12px;padding:14px 18px;font-size:15px;font-weight:700;display:none;align-items:center;gap:10px;margin-top:auto;}
   .result-banner.show{display:flex;flex-direction:column;align-items:flex-start;}
@@ -138,8 +140,12 @@
   .cycle-wrap{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:12px 18px;margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
   .cycle-label{font-size:12px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
   .cycle-btns{display:flex;gap:6px;}
-  .cycle-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-ui);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
-  .cycle-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
+  .cycle-btn,.dir-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-ui);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
+  .cycle-btn.active,.dir-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
+  /* 출제 방향은 MODE 7 전용 — 별도 카드로 빼면 와이드 모드 그리드(.cycle-wrap은 2열/4행 고정)와
+     충돌하므로 기존 출제 방식 카드 안에 접어 넣고 여기서만 보이게 한다 */
+  #cycleWrap:not(.m7) .m7-only{display:none;}
+  #cycleWrap .cycle-label.m7-only{flex-basis:100%;}
   .cycle-progress-wrap{display:flex;align-items:center;gap:8px;flex:1;min-width:140px;}
   .cycle-progress-text{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--c-text-primary);white-space:nowrap;}
   .cycle-progress-bar{flex:1;height:8px;background:var(--c-border);border-radius:4px;overflow:hidden;}
@@ -401,6 +407,7 @@
     <button class="mode-tab" data-mode="4"><span class="tab-icon">📝</span>전체 반응식<span class="tab-desc">16개 전체</span></button>
     <button class="mode-tab" data-mode="5"><span class="tab-icon">🧠</span>화학식 암기<span class="tab-desc">30종 전체</span></button>
     <button class="mode-tab" data-mode="6"><span class="tab-icon">🃏</span>플래시카드</button>
+    <button class="mode-tab" data-mode="7"><span class="tab-icon">🧭</span>주기·족 맞추기<span class="tab-desc">1~20번 + 할로젠·알칼리</span></button>
   </div>
 
   <div class="cycle-wrap" id="cycleWrap" style="display:none">
@@ -412,6 +419,11 @@
     <div class="cycle-progress-wrap" id="cycleProgressWrap" style="display:none">
       <div class="cycle-progress-text" id="cycleProgressText">0 / 16</div>
       <div class="cycle-progress-bar"><div class="cycle-progress-fill" id="cycleProgressFill" style="width:0%"></div></div>
+    </div>
+    <div class="cycle-label m7-only">🧭 출제 방향</div>
+    <div class="cycle-btns m7-only">
+      <button class="dir-btn active" data-dir="toPG">원소 → 주기·족</button>
+      <button class="dir-btn" data-dir="toElem">주기·족 → 원소</button>
     </div>
   </div>
 
@@ -563,6 +575,7 @@
       <button class="filter-chip" data-filter="4">📝 전체 반응식</button>
       <button class="filter-chip" data-filter="5">🧠 화학식 암기</button>
       <button class="filter-chip" data-filter="6">🃏 플래시카드</button>
+      <button class="filter-chip" data-filter="7">🧭 주기·족 맞추기</button>
     </div>
     <div class="modal-content" id="wrongNoteList"></div>
   </div>
@@ -616,8 +629,8 @@ const COEF_TEMPLATES=[
   {label:"A + B₂ → A₂B₃",gen:()=>({fmt:[{coef:4,formula:[{sym:"A"}]},{coef:3,formula:[{sym:"B",sub:2}]}],fmtP:[{coef:2,formula:[{sym:"A",sub:2},{sym:"B",sub:3}]}]})}
 ];
 const CORE_ELEMENTS=['H','C','O','N','S','P','Na','Mg','Ca','Cu','Ag','Cl','A','B'];
-const MODE_NAMES={1:'계수 맞추기',2:'반응물 맞추기',3:'생성물 맞추기',4:'전체 반응식',5:'화학식 암기',6:'플래시카드'};
-const MODE_ICONS={1:'🔢',2:'🧪',3:'⚗️',4:'📝',5:'🧠',6:'🃏'};
+const MODE_NAMES={1:'계수 맞추기',2:'반응물 맞추기',3:'생성물 맞추기',4:'전체 반응식',5:'화학식 암기',6:'플래시카드',7:'주기·족 맞추기'};
+const MODE_ICONS={1:'🔢',2:'🧪',3:'⚗️',4:'📝',5:'🧠',6:'🃏',7:'🧭'};
 
 /* z=원자번호, sym=원소기호, name=한글이름, cat=분류(색상), group=족(1~18), period=주기(1~7), f=란타넘족/악티늄족일 때의 순번(1~15) */
 const ELEMENTS=[
@@ -759,9 +772,9 @@ const PT_CAT_COLORS_LIGHT={
   actin:'#DB2777', post:'#57534E', metalloid:'#4D7C0F', nonmetal:'#0E7490',
   halogen:'#A16207', noble:'#4F46E5', unknown:'#475569'
 };
-/* 간략히 보기: 일부 중학교에서 1~20번 외에 불꽃반응·할로젠 예시로 함께 다루는 원소 */
-const PT_SIMPLE_EXTRA_Z=[35,38,53,56]; // Br, Sr, I, Ba
-/* 간략히 보기: 족과 무관하게 실생활에서 자주 접하는 금속 */
+/* 간략히 보기: 1~20번 외에 불꽃반응 예시로 다루는 원소 + 1족·17족 세로줄이 2족처럼 6주기까지
+   끊기지 않고 이어지도록 채워 넣는 알칼리 금속·할로젠 (Fr은 7주기라 간략히 보기 격자에 자리가 없음) */
+const PT_SIMPLE_EXTRA_Z=[35,37,38,53,55,56,85]; // Br, Rb, Sr, I, Cs, Ba, At
 /* 중학교 불꽃 반응 색 (원소기호별 실제 관찰색) */
 const PT_FLAME_COLORS=[
   {z:29,color:'#22D3EE',label:'청록'}, // 구리
@@ -772,6 +785,11 @@ const PT_FLAME_COLORS=[
   {z:56,color:'#A3E635',label:'황록'}, // 바륨
   {z:20,color:'#FB923C',label:'주황'}  // 칼슘
 ];
+/* MODE 7(주기·족 맞추기) 출제 범위: 1~20번 + 할로젠 전부 + 알칼리 금속 전부 = 26종.
+   Ts(117)는 실제로는 17족이지만 cat이 'unknown'이라 여기서 자동으로 빠진다 — 교육과정에서 다루지 않으므로 의도된 결과.
+   이 26종 안에서는 (주기, 족) 좌표가 서로 겹치지 않아 「주기·족 → 원소」 방향도 정답이 하나로 확정된다. */
+const PT_QUIZ_ELEMENTS=ELEMENTS.filter(e=>e.z<=20||e.cat==='halogen'||e.cat==='alkali');
+const PT_QUIZ_SYMBOLS=PT_QUIZ_ELEMENTS.map(e=>e.sym);
 
 /* ── 앱 ── */
 const App={
@@ -783,6 +801,7 @@ const App={
     wrongNotes:[],noteFilter:'all',retryNoteId:null,
     isCycleMode:false,cycleQueue:[],cycleTotal:0,lastQuestionName:null,
     m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,
+    m7Dir:'toPG',
     isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:false,
     savedCycleState:null,
     isRetryPlaylistMode:false, retryPlaylist:[]
@@ -1048,13 +1067,12 @@ const App={
       this.$.questionCard.style.display = '';
       this.$.keyboardWrap.style.display = '';
       this.$.mode6Wrap.classList.remove('m6-active');
-      this.$.elemRowLabel.style.display = note.mode===1 ? 'none' : 'block';
-      this.$.elemRow.style.display = note.mode===1 ? 'none' : 'grid';
-
       const q = JSON.parse(JSON.stringify(note.qData));
       q.inputs = {}; q.isTimedOut = false; q.cursor = {};
       if(q.blanks.length > 0) q.activeKey = q.blanks[0].key;
       this.state.currentQuestion = q;
+      /* MODE 7은 저장된 문제의 출제 방향(q.dir)에 따라 키패드가 달라지므로 q를 복원한 뒤에 맞춘다 */
+      this.syncElemRow(note.mode, q);
 
       this.state.isAnswerChecked = false;
       this.state.isAnswerRevealed = false;
@@ -1117,13 +1135,12 @@ const App={
     this.$.timerSelectWrap.style.display = 'none';
     this.$.mode6Wrap.classList.remove('m6-active');
     this.$.cycleWrap.style.display = 'none';
-    this.$.elemRowLabel.style.display = note.mode===1 ? 'none' : 'block';
-    this.$.elemRow.style.display = note.mode===1 ? 'none' : 'grid';
-
     const q = JSON.parse(JSON.stringify(note.qData));
     q.inputs = {}; q.isTimedOut = false; q.cursor = {};
     if(q.blanks.length > 0) q.activeKey = q.blanks[0].key;
     this.state.currentQuestion = q;
+    /* MODE 7은 저장된 문제의 출제 방향(q.dir)에 따라 키패드가 달라지므로 q를 복원한 뒤에 맞춘다 */
+    this.syncElemRow(note.mode, q);
 
     this.state.isAnswerChecked = false;
     this.state.isAnswerRevealed = false;
@@ -1162,7 +1179,22 @@ const App={
 
   buildKeyboard(){
     this.$.numRow.innerHTML=[1,2,3,4,5,6,7,8,9,0].map(n=>`<button class="kb-key num" data-key="NUM_${n}">${n}</button>`).join('');
-    this.$.elemRow.innerHTML=CORE_ELEMENTS.map(e=>`<button class="kb-key elem" data-key="ELEM_${e}">${e}</button>`).join('');
+    this.syncElemRow(null,null);
+  },
+  /* 원소 기호 키패드의 표시 여부와 내용은 모드마다 다르다 — 세 군데(모드 전환·오답노트 재풀이 두 곳)에서
+     같은 판단이 필요해 여기 한 곳으로 모은다.
+     · MODE 1(계수)과 MODE 7 정방향(주기·족 입력)은 숫자만 쓰므로 숨긴다
+     · MODE 7 역방향은 CORE_ELEMENTS(반응식용 14종) 대신 출제 범위 26종으로 갈아끼운다 */
+  syncElemRow(mode,q){
+    const isM7=mode===7, revM7=isM7&&q&&q.dir==='toElem';
+    const show=revM7||(mode!==1&&!isM7);
+    this.$.elemRowLabel.style.display=show?'block':'none';
+    this.$.elemRow.style.display=show?'grid':'none';
+    const syms=revM7?PT_QUIZ_SYMBOLS:CORE_ELEMENTS;
+    if(this._elemRowSyms!==syms){
+      this.$.elemRow.innerHTML=syms.map(s=>`<button class="kb-key elem" data-key="ELEM_${s}">${s}</button>`).join('');
+      this._elemRowSyms=syms;
+    }
   },
   buildModalList(){
     const fmt=side=>side.map(r=>(r.coef>1?`<span class="eq-text">${r.coef}</span>`:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' <span class="eq-plus">+</span> ');
@@ -1322,6 +1354,17 @@ const App={
     document.getElementById('m6SaveWrongBtn').addEventListener('click',()=>this.m6SaveCurrentAsWrong());
 
     document.getElementById('cycleWrap').addEventListener('click',e=>{
+      const dirBtn=e.target.closest('.dir-btn');
+      if(dirBtn){
+        document.querySelectorAll('.dir-btn').forEach(b=>b.classList.remove('active'));
+        dirBtn.classList.add('active');
+        this.state.m7Dir=dirBtn.dataset.dir;
+        /* 방향이 바뀌면 남은 순환 큐도 새 방향으로 다시 돌아야 하므로 큐부터 초기화 */
+        this.initCycleQueue();
+        this.generateQuestion();
+        this.playSound('tap'); this.playHaptic('tap');
+        return;
+      }
       const btn=e.target.closest('.cycle-btn');if(!btn)return;
       document.querySelectorAll('.cycle-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
@@ -1403,6 +1446,7 @@ const App={
     const mode=this.state.currentMode;
     let pool=[];
     if(mode===5) pool=CHEMICALS.map((_,i)=>i);
+    else if(mode===7) pool=PT_QUIZ_ELEMENTS.map((_,i)=>i);
     else if(mode===1) pool=Array.from({length: 23}, (_,i)=>i);
     else pool=REACTIONS.map((_,i)=>i);
     for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
@@ -1575,12 +1619,12 @@ const App={
     this.$.timerSelectWrap.style.display=is6?'none':'';
     this.$.mode6Wrap.classList.toggle('m6-active', is6);
     this.$.cycleWrap.style.display=(!is6)?'flex':'none';
+    this.$.cycleWrap.classList.toggle('m7', mode===7);
 
     if(!preserveCycle) this.initCycleQueue();
 
     if(is6){clearInterval(this.state.timerInterval);this.m6GenCards();this.m6Render();return;}
-    if(mode===1){this.$.elemRowLabel.style.display='none';this.$.elemRow.style.display='none';}
-    else{this.$.elemRowLabel.style.display='block';this.$.elemRow.style.display='grid';}
+    /* 원소 기호 키패드는 generateQuestion이 문제를 만든 뒤 syncElemRow로 맞춘다 (MODE 7은 출제 방향에 따라 달라짐) */
     this.generateQuestion();
   },
 
@@ -1647,10 +1691,26 @@ const App={
       case 3:{const idx=pickIndex(REACTIONS);const rx=REACTIONS[idx];q.reaction=rx;q.name=rx.name;q.type='생성물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:false}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
       case 4:{const idx=pickIndex(REACTIONS);const rx=REACTIONS[idx];q.reaction=rx;q.name=rx.name;q.type='전체 반응식';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
       case 5:{const idx=pickIndex(CHEMICALS);const c=CHEMICALS[idx];q.name=c.name;q.type='화학식 암기';q.isMode5=true;q.isAbstract=false;const fs=c.formula.map(p=>p.sym+(p.sub?p.sub.toString():'')).join('');q.blanks.push({key:'M5',answer:fs});break;}
+      case 7:{
+        const idx=pickIndex(PT_QUIZ_ELEMENTS);const el=PT_QUIZ_ELEMENTS[idx];
+        q.type='주기·족 맞추기';q.isMode7=true;q.isAbstract=false;
+        /* q.name은 어느 방향이든 한글 원소명 — 중복 출제 회피(lastQuestionName)와 오답노트 제목이 이걸 쓴다 */
+        q.name=el.name;q.z=el.z;q.sym=el.sym;q.dir=this.state.m7Dir;
+        if(q.dir==='toElem'){
+          /* 역방향에서는 헤더에 q.name(=정답)을 그대로 띄우면 답이 새므로 문제 문구를 따로 둔다 */
+          q.sub=`${el.period}주기 ${el.group}족`;
+          q.blanks.push({key:'M7E',answer:el.sym});
+        }else{
+          q.blanks.push({key:'M7P',answer:String(el.period)});
+          q.blanks.push({key:'M7G',answer:String(el.group)});
+        }
+        break;
+      }
     }
     this.state.lastQuestionName=q.name;
     if(q.blanks.length>0)q.activeKey=q.blanks[0].key;
     this.state.currentQuestion=q;
+    this.syncElemRow(this.state.currentMode,q);
     this.renderCycleProgress();
     this.renderAll();this.startTimer();
   },
@@ -1658,7 +1718,8 @@ const App={
   checkAnswer(){
     const q=this.state.currentQuestion;if(!q)return;
     let ok=true,ce=false;
-    q.blanks.forEach(b=>{const v=q.inputs[b.key]||'';if(v!==b.answer){ok=false;if(this.state.currentMode!==1&&v==='1'+b.answer)ce=true;}});
+    /* '1'+정답 오입력은 계수 생략 규칙을 놓친 것 — 계수를 안 쓰는 MODE 1과, 답이 애초에 숫자인 MODE 7(예: 7족에 17 입력)은 제외 */
+    q.blanks.forEach(b=>{const v=q.inputs[b.key]||'';if(v!==b.answer){ok=false;if(this.state.currentMode!==1&&this.state.currentMode!==7&&v==='1'+b.answer)ce=true;}});
 
     if(this.state.isRetryPlaylistMode) {
       if(ok) {
@@ -1772,6 +1833,10 @@ const App={
     const fmt=side=>side.map(c=>(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+c.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' <span class="eq-plus">+</span> ');
     let h='';
     if(q.isMode5){h=`<span class="eq-text" style="font-size:20px;font-weight:bold;color:var(--c-correct)">${this.formatInput(q.blanks[0].answer)}</span>`;}
+    else if(q.isMode7){
+      const el=PT_QUIZ_ELEMENTS.find(e=>e.z===q.z);
+      h=`<span class="eq-text" style="font-size:20px;font-weight:bold;color:var(--c-correct)">${q.sym} · ${el?`${el.period}주기 ${el.group}족`:''}</span>`;
+    }
     else if(q.isAbstract===true){
       const r=q.displayReactants.map((c,i)=>{const bd=q.blanks.find(b=>b.key===`R${i}`); return(bd?`<span class="eq-text">${bd.answer}</span>`:'')+this.formatFormula(c.formula);}).join(' <span class="eq-plus">+</span> ');
       const p=q.displayProducts.map((c,i)=>{const bd=q.blanks.find(b=>b.key===`P${i}`); return(bd?`<span class="eq-text">${bd.answer}</span>`:'')+this.formatFormula(c.formula);}).join(' <span class="eq-plus">+</span> ');
@@ -1803,11 +1868,25 @@ const App={
     this.$.streakFlames.textContent=streak>=10?'🔥🔥🔥':streak>=5?'🔥🔥':streak>=3?'🔥':'';
   },
 
-  renderQuestionHeader(){const q=this.state.currentQuestion;if(!q)return;this.$.qLabel.textContent=`MODE ${this.state.currentMode} · ${q.type}`;this.$.qSubLabel.textContent=q.name;},
+  /* q.sub는 q.name이 곧 정답이라 헤더에 띄울 수 없는 문제(MODE 7 역방향)를 위한 대체 문구 */
+  renderQuestionHeader(){const q=this.state.currentQuestion;if(!q)return;this.$.qLabel.textContent=`MODE ${this.state.currentMode} · ${q.type}`;this.$.qSubLabel.textContent=q.sub||q.name;},
 
   renderEquation(){
     const q=this.state.currentQuestion;if(!q){this.$.equationDisplay.innerHTML='';return;}
     if(q.isMode5){this.$.equationDisplay.innerHTML=this.renderBlankBox('M5',q.blanks[0].answer);return;}
+    /* MODE 7은 반응식이 아니라서 아래 반응물/생성물 렌더링 경로를 절대 타면 안 된다 (displayReactants가 없음) */
+    if(q.isMode7){
+      if(q.dir==='toElem'){
+        this.$.equationDisplay.innerHTML=`<span class="eq-term">${this.renderBlankBox('M7E',q.blanks[0].answer)}</span>`;
+      }else{
+        const b=q.blanks;
+        this.$.equationDisplay.innerHTML=
+          `<span class="eq-term"><span class="eq-text">${q.sym}</span></span>`+
+          `<span class="eq-term">${this.renderBlankBox('M7P',b[0].answer)}<span class="eq-text eq-unit">주기</span></span>`+
+          `<span class="eq-term">${this.renderBlankBox('M7G',b[1].answer)}<span class="eq-text eq-unit">족</span></span>`;
+      }
+      return;
+    }
     const fc=(list,pre)=>list.map((c,i)=>{
       const key=`${pre}${i}`,bd=q.blanks.find(b=>b.key===key);
       let term;
