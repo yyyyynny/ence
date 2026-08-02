@@ -153,10 +153,14 @@
   </div>
 
   <div class="keyboard-wrap" id="keyboardWrap">
-    <div class="kb-section-label">Numbers</div>
+    <div class="kb-section-label" id="numRowLabel">Numbers</div>
     <div class="kb-row" id="numRow"></div>
     <div class="kb-section-label" id="elemRowLabel">Elements</div>
     <div class="kb-row" id="elemRow"></div>
+    <!-- 보기 버튼: 답이 숫자도 원소 기호도 아닌 문제용. q.choices가 있으면 숫자·원소 줄 대신 나온다.
+         고르면 q.inputs에 값이 들어가므로 채점 엔진은 지금 그대로 문자열 비교만 한다. -->
+    <div class="kb-section-label" id="choiceRowLabel" style="display:none">보기</div>
+    <div id="choiceRow" style="display:none"></div>
     <div class="kb-row" style="margin-top:14px">
       <button class="kb-key" data-key="LEFT" style="flex-grow:1; max-width: 60px;">◀</button>
       <button class="kb-key" data-key="RIGHT" style="flex-grow:1; max-width: 60px;">▶</button>

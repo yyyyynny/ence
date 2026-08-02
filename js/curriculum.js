@@ -35,7 +35,12 @@ const MODES={
   4:{parent:2, subLabel:'전체식'},
   5:{section:'ms', icon:'🧠', name:'화학식 암기',   desc:'30종 전체', std:'9과11-01'},
   6:{section:'ms', icon:'🃏', name:'플래시카드',    custom:'flashcard'},
-  7:{section:'is1',icon:'🧭', name:'주기·족 맞추기', desc:'1~20번 + 할로젠·알칼리', std:'10통과1-02-03', noCoefWarning:true}
+  7:{section:'is1',icon:'🧭', name:'주기·족 맞추기', desc:'1~20번 + 할로젠·알칼리', std:'10통과1-02-03', noCoefWarning:true},
+  /* 이온식을 외우는 모드가 아니다. 2022 개정 [9과11-04] 해설이 "전자를 잃으면 양이온이 되고
+     전자를 얻으면 음이온이 된다는 수준에서 다룬다"로 상한선을 그었으므로 전자껍질로 접근한다. */
+  8:{section:'ms', icon:'⚡', name:'이온 만들기', desc:'1~20번 전자껍질', std:'9과11-04', noCoefWarning:true,
+     subLabel:'최외각 전자', subModes:[{id:8,label:'최외각 전자'},{id:9,label:'이온 되기'}]},
+  9:{parent:8, subLabel:'이온 되기'}
 };
 
 /* 하위 유형(parent)이면 부모 모드의 이름·아이콘·구역을 따른다 */

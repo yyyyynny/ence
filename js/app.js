@@ -403,7 +403,9 @@ const App={
      · MODE 7 역방향은 CORE_ELEMENTS(반응식용 14종) 대신 출제 범위 26종으로 갈아끼운다 */
   syncElemRow(mode,q){
     const isM7=mode===7, revM7=isM7&&q&&q.dir==='toElem';
-    const show=revM7||(mode!==1&&!isM7);
+    /* 답이 숫자뿐이거나(MODE 8) 보기 버튼으로 고르는(MODE 9) 모드에서는 원소 기호 줄이 필요 없다 */
+    const numOrChoice=mode===8||mode===9;
+    const show=revM7||(mode!==1&&!isM7&&!numOrChoice);
     this.$.elemRowLabel.style.display=show?'block':'none';
     this.$.elemRow.style.display=show?'grid':'none';
     const syms=revM7?PT_QUIZ_SYMBOLS:CORE_ELEMENTS;
@@ -513,6 +515,8 @@ const App={
       const mt=e.target.closest('.mode-tab'),bb=e.target.closest('.blank-box'),kb=e.target.closest('.kb-key');
       const st=e.target.closest('.section-tab');
       if(st){this.setSection(st.dataset.section);this.playSound('tap');this.playHaptic('tap');return;}
+      const ch=e.target.closest('.choice-btn');
+      if(ch){this.pickChoice(ch.dataset.choice);return;}
       const th=e.target.closest('#themeBtn'),hi=e.target.closest('#hintBtn'),wn=e.target.closest('#wrongNoteBtn'),sa=e.target.closest('.show-answer-btn');
       const snd=e.target.closest('#soundBtn'),hpt=e.target.closest('#hapticBtn'),lyt=e.target.closest('#layoutBtn');
       const extR=e.target.closest('#exitRetryBtn'),pt=e.target.closest('#periodicBtn');
@@ -742,11 +746,59 @@ const App={
     });
   },
 
+  /* ── 이온 되기 (MODE 9) ──
+     이온을 만드는 원소 + 이온이 되지 않는 18족을 한 풀에 담는다. 18족이 "이온이 되지 않는다"는
+     것 자체가 [9과11-04]의 학습 내용이라 오답 보기가 아니라 정답으로 나와야 한다. */
+  /* 보기를 고르면 그 문자열이 그대로 답이 된다. 다시 고를 수 있게 두고 확인은 따로 누르게 한다 —
+     잘못 눌렀는데 바로 채점되면 억울하다. */
+  pickChoice(val){
+    const q=this.state.currentQuestion;
+    if(!q||!q.choices) return;
+    if(this.state.isAnswerChecked&&!q.isTimedOut) return;
+    if(this.state.isLastWrongAttempt){this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};}
+    q.inputs[q.blanks[0].key]=val;
+    this.playSound('tap'); this.playHaptic('tap');
+    this.renderAll();
+  },
+  ionPool(){
+    if(!this._ionPool){
+      this._ionPool=ION_FORMING.concat(ION_NOBLE.map(z=>({z,noble:true})));
+    }
+    return this._ionPool;
+  },
+  ionAnswerText(item){
+    if(item.noble) return '이온이 되지 않는다';
+    return `전자 ${item.n}개를 ${item.dir==='lose'?'잃는다':'얻는다'}`;
+  },
+  /* 오답 보기는 무작위가 아니라 학생이 실제로 하는 착각에서 만든다.
+     ① 방향 착각: 잃어야 하는데 얻는다고 생각
+     ② 옥텟 착각: 최외각 2개인 Mg가 6개를 "얻어서" 8을 채운다고 생각 (가장 흔한 오답)
+     ③ 18족도 이온이 된다고 생각
+     보기는 매번 섞어서 위치로 답을 외우지 못하게 한다. */
+  ionChoices(item,answer){
+    const v=valenceOf(item.z);
+    const set=new Set([answer]);
+    if(item.noble){
+      set.add(`전자 ${v}개를 잃는다`);
+      set.add(`전자 ${v}개를 얻는다`);
+      set.add('전자 1개를 얻는다');
+    }else{
+      set.add(`전자 ${item.n}개를 ${item.dir==='lose'?'얻는다':'잃는다'}`);
+      const other=8-item.n;
+      if(other>0&&other!==item.n) set.add(`전자 ${other}개를 ${item.dir==='lose'?'얻는다':'잃는다'}`);
+      set.add('이온이 되지 않는다');
+    }
+    const arr=[...set].slice(0,4);
+    for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
+    return arr;
+  },
   initCycleQueue(){
     const mode=this.state.currentMode;
     let pool=[];
     if(mode===5) pool=CHEMICALS.map((_,i)=>i);
     else if(mode===7) pool=PT_QUIZ_ELEMENTS.map((_,i)=>i);
+    else if(mode===8) pool=SHELL_QUIZ_ELEMENTS.map((_,i)=>i);
+    else if(mode===9) pool=this.ionPool().map((_,i)=>i);
     else if(mode===1) pool=Array.from({length: 23}, (_,i)=>i);
     else pool=REACTIONS.map((_,i)=>i);
     for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
@@ -1017,6 +1069,24 @@ const App={
         }
         break;
       }
+      case 8:{
+        const idx=pickIndex(SHELL_QUIZ_ELEMENTS);const el=SHELL_QUIZ_ELEMENTS[idx];
+        q.type='최외각 전자';q.isMode8=true;q.isAbstract=false;
+        q.name=el.name;q.z=el.z;q.sym=el.sym;q.shells=shellsOf(el.z);
+        q.blanks.push({key:'M8',answer:String(valenceOf(el.z))});
+        break;
+      }
+      case 9:{
+        const pool=this.ionPool();
+        const idx=pickIndex(pool);const item=pool[idx];
+        const el=ELEMENTS.find(x=>x.z===item.z);
+        q.type='이온 되기';q.isMode9=true;q.isAbstract=false;
+        q.name=el.name;q.z=el.z;q.sym=el.sym;q.shells=shellsOf(el.z);q.ion=item;
+        const ans=this.ionAnswerText(item);
+        q.choices=this.ionChoices(item,ans);
+        q.blanks.push({key:'M9',answer:ans});
+        break;
+      }
     }
     this.state.lastQuestionName=q.name;
     if(q.blanks.length>0)q.activeKey=q.blanks[0].key;
@@ -1151,6 +1221,10 @@ const App={
       const el=PT_QUIZ_ELEMENTS.find(e=>e.z===q.z);
       h=`<span class="eq-text" style="font-size:20px;font-weight:bold;color:var(--c-correct)">${q.sym} · ${el?`${el.period}주기 ${el.group}족`:''}</span>`;
     }
+    else if(q.isMode8||q.isMode9){
+      /* 껍질 배치를 같이 남겨야 나중에 노트만 봐도 왜 그 답인지 알 수 있다 */
+      h=`<span class="eq-text" style="font-size:18px;font-weight:bold;color:var(--c-correct)">${q.sym} (${(q.shells||[]).join('-')}) · ${q.blanks[0].answer}</span>`;
+    }
     else if(q.isAbstract===true){
       const r=q.displayReactants.map((c,i)=>{const bd=q.blanks.find(b=>b.key===`R${i}`); return(bd?`<span class="eq-text">${bd.answer}</span>`:'')+this.formatFormula(c.formula);}).join(' <span class="eq-plus">+</span> ');
       const p=q.displayProducts.map((c,i)=>{const bd=q.blanks.find(b=>b.key===`P${i}`); return(bd?`<span class="eq-text">${bd.answer}</span>`:'')+this.formatFormula(c.formula);}).join(' <span class="eq-plus">+</span> ');
@@ -1183,7 +1257,9 @@ const App={
   },
 
   /* q.sub는 q.name이 곧 정답이라 헤더에 띄울 수 없는 문제(MODE 7 역방향)를 위한 대체 문구 */
-  renderQuestionHeader(){const q=this.state.currentQuestion;if(!q)return;this.$.qLabel.textContent=`MODE ${this.state.currentMode} · ${q.type}`;this.$.qSubLabel.textContent=q.sub||q.name;},
+  /* 하위 유형이 생기면서 모드 번호와 탭이 1:1이 아니게 됐다("MODE 9"인데 9번 탭이 없음).
+     번호 대신 모드 이름을 띄운다 — MODE_NAMES가 "이온 만들기 · 이온 되기"처럼 하위 유형까지 담는다. */
+  renderQuestionHeader(){const q=this.state.currentQuestion;if(!q)return;this.$.qLabel.textContent=MODE_NAMES[this.state.currentMode]||q.type;this.$.qSubLabel.textContent=q.sub||q.name;},
 
   renderEquation(){
     const q=this.state.currentQuestion;if(!q){this.$.equationDisplay.innerHTML='';return;}
@@ -1198,6 +1274,21 @@ const App={
           `<span class="eq-term"><span class="eq-text">${q.sym}</span></span>`+
           `<span class="eq-term">${this.renderBlankBox('M7P',b[0].answer)}<span class="eq-text eq-unit">주기</span></span>`+
           `<span class="eq-term">${this.renderBlankBox('M7G',b[1].answer)}<span class="eq-text eq-unit">족</span></span>`;
+      }
+      return;
+    }
+    /* MODE 8·9도 반응식이 아니다 — 전자껍질 배치를 보여주고 그 위에서 묻는다.
+       배치를 보여주는 게 핵심이다. 외운 답을 떠올리는 게 아니라 그림에서 세도록 하는 게
+       [9과11-04]가 요구하는 접근이다. */
+    if(q.isMode8||q.isMode9){
+      const shells=`<span class="shell-line">${q.shells.map((n,i)=>`<span class="shell-cell"><span class="shell-n">${'KLMN'[i]}</span>${n}</span>`).join('')}</span>`;
+      const head=`<span class="eq-term"><span class="eq-text">${q.sym}</span></span>${shells}`;
+      if(q.isMode8){
+        this.$.equationDisplay.innerHTML=head+
+          `<span class="eq-term">${this.renderBlankBox('M8',q.blanks[0].answer)}<span class="eq-text eq-unit">개</span></span>`;
+      }else{
+        this.$.equationDisplay.innerHTML=head+
+          `<span class="eq-term">${this.renderBlankBox('M9',q.blanks[0].answer,'choice')}</span>`;
       }
       return;
     }
@@ -1230,10 +1321,11 @@ const App={
     return html;
   },
 
-  renderBlankBox(key,answer){
+  /* extraCls: 보기 답처럼 한글 문장이 들어가는 칸은 'choice'를 넘겨 폭이 늘어나게 한다 */
+  renderBlankBox(key,answer,extraCls){
     const q=this.state.currentQuestion;
     let inp=q.inputs[key]||'';
-    let cls='blank-box';
+    let cls='blank-box'+(extraCls?' '+extraCls:'');
     let isActive = q.activeKey===key && (!this.state.isAnswerChecked||q.isTimedOut);
 
     if(isActive) cls+=' active';
@@ -1269,9 +1361,27 @@ const App={
     }
   },
 
+  /* 보기 버튼은 q.choices가 있을 때만 나오고, 그때는 숫자·원소 줄을 숨긴다.
+     고른 값을 q.inputs에 넣는 것으로 끝나므로 채점 엔진은 문자열 비교 그대로다. */
+  renderChoiceRow(){
+    const q=this.state.currentQuestion;
+    const row=document.getElementById('choiceRow'), label=document.getElementById('choiceRowLabel');
+    const on=!!(q&&q.choices);
+    row.style.display=on?'grid':'none';
+    label.style.display=on?'block':'none';
+    document.getElementById('numRow').style.display=on?'none':'grid';
+    document.getElementById('numRowLabel').style.display=on?'none':'block';
+    if(!on){row.innerHTML='';return;}
+    const key=q.blanks[0].key, picked=q.inputs[key];
+    const locked=this.state.isAnswerChecked&&!q.isTimedOut;
+    row.innerHTML=q.choices.map(c=>
+      `<button class="choice-btn${c===picked?' picked':''}"${locked?' disabled':''} data-choice="${c}">${c}</button>`
+    ).join('');
+  },
   renderKeyboard(){
     const done=this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut;
     const wrongPending=this.state.isLastWrongAttempt;
+    this.renderChoiceRow();
     this.$.confirmBtn.style.display=done?'none':'flex';
     this.$.nextBtn.style.display=(done||wrongPending)?'flex':'none';
   },

@@ -208,3 +208,47 @@ const PT_FLAME_COLORS=[
 const PT_QUIZ_ELEMENTS=ELEMENTS.filter(e=>e.period<=6&&(e.z<=20||e.cat==='halogen'||e.cat==='alkali'));
 const PT_QUIZ_SYMBOLS=PT_QUIZ_ELEMENTS.map(e=>e.sym);
 
+/* ── 전자껍질 ──
+   1~20번은 K·L·M·N 껍질에 2·8·8·2 순으로 채우면 교과서 배치와 정확히 일치한다.
+   (M 껍질은 원리상 18개까지 들어가지만 19·20번 전자는 M이 8개 찬 뒤 N 껍질부터 들어가므로
+    학교에서 쓰는 모형은 2,8,8,2다. 네 값의 합이 정확히 20이라 1~20번은 이 규칙만으로 전부 맞는다.)
+   21번부터는 3d가 끼어들어 이 규칙이 깨지므로 이 함수는 1~20번 전용이다. */
+const SHELL_CAPS=[2,8,8,2];
+function shellsOf(z){
+  const out=[]; let left=z;
+  for(const cap of SHELL_CAPS){ if(left<=0) break; const n=Math.min(cap,left); out.push(n); left-=n; }
+  return out;
+}
+/* 최외각 전자를 족 번호로 구하면 헬륨에서 틀린다 — He는 18족이지만 K 껍질뿐이라 2개다.
+   껍질 배치의 마지막 값을 쓰면 항상 옳다. */
+function valenceOf(z){ const s=shellsOf(z); return s[s.length-1]; }
+
+/* ── 이온 형성 (중학 [9과11-04]) ──
+   단원자 이온을 만드는 1~20번 원소만 명시적으로 적는다. 규칙으로 자동 생성하지 않는 이유는
+   족만 보고 만들면 화학적으로 틀린 이온이 섞이기 때문이다.
+   · B(13족)·C·Si(14족)는 단원자 이온을 만들지 않고 공유결합을 하므로 뺐다.
+   · He·Ne·Ar은 이미 안정해서 이온이 되지 않는다 — 그 자체가 학습 내용이라 문제에는 넣는다.
+   n = 주고받는 전자 수, dir = 'lose'(양이온) | 'gain'(음이온) */
+const ION_FORMING=[
+  {z:1,  n:1, dir:'lose'},   /* H  → H⁺   */
+  {z:3,  n:1, dir:'lose'},   /* Li → Li⁺  */
+  {z:11, n:1, dir:'lose'},   /* Na → Na⁺  */
+  {z:19, n:1, dir:'lose'},   /* K  → K⁺   */
+  {z:4,  n:2, dir:'lose'},   /* Be → Be²⁺ */
+  {z:12, n:2, dir:'lose'},   /* Mg → Mg²⁺ */
+  {z:20, n:2, dir:'lose'},   /* Ca → Ca²⁺ */
+  {z:13, n:3, dir:'lose'},   /* Al → Al³⁺ */
+  {z:7,  n:3, dir:'gain'},   /* N  → N³⁻  질화 이온 */
+  {z:15, n:3, dir:'gain'},   /* P  → P³⁻  인화 이온 */
+  {z:8,  n:2, dir:'gain'},   /* O  → O²⁻  */
+  {z:16, n:2, dir:'gain'},   /* S  → S²⁻  */
+  {z:9,  n:1, dir:'gain'},   /* F  → F⁻   */
+  {z:17, n:1, dir:'gain'}    /* Cl → Cl⁻  */
+];
+/* 이온이 되지 않는 원소 — 최외각이 이미 꽉 차 있다 */
+const ION_NOBLE=[2,10,18];   /* He, Ne, Ar */
+
+/* 최외각 전자 문제는 1~20번 전부 낼 수 있다(모든 원소에 최외각 전자가 있다).
+   이온 문제만 위 목록으로 제한된다. */
+const SHELL_QUIZ_ELEMENTS=ELEMENTS.filter(e=>e.z<=20);
+
