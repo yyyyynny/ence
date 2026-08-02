@@ -45,14 +45,13 @@
     </div>
   </div>
 
-  <div class="mode-tabs">
-    <button class="mode-tab" data-mode="1"><span class="tab-icon">🔢</span>계수 맞추기<span class="tab-desc">계수 1도 입력 필수</span></button>
-    <button class="mode-tab" data-mode="2"><span class="tab-icon">🧪</span>반응물 맞추기<span class="tab-desc">16개 전체</span></button>
-    <button class="mode-tab" data-mode="3"><span class="tab-icon">⚗️</span>생성물 맞추기<span class="tab-desc">16개 전체</span></button>
-    <button class="mode-tab" data-mode="4"><span class="tab-icon">📝</span>전체 반응식<span class="tab-desc">16개 전체</span></button>
-    <button class="mode-tab" data-mode="5"><span class="tab-icon">🧠</span>화학식 암기<span class="tab-desc">30종 전체</span></button>
-    <button class="mode-tab" data-mode="6"><span class="tab-icon">🃏</span>플래시카드</button>
-    <button class="mode-tab" data-mode="7"><span class="tab-icon">🧭</span>주기·족 맞추기<span class="tab-desc">1~20번 + 할로젠·알칼리</span></button>
+  <!-- 구역·모드 탭은 js/curriculum.js의 SECTIONS/MODES에서 렌더된다.
+       와이드 모드 그리드가 .mode-tabs를 칸에 배치하므로(css :330) 구역 줄을 형제로 두면 칸이 겹친다.
+       #modeNav로 감싸고 그 규칙을 #modeNav에 걸어 기존 행 번호를 건드리지 않는다. -->
+  <div id="modeNav">
+    <div class="section-tabs scroll-fade-x" id="sectionTabs"></div>
+    <div class="mode-tabs"></div>
+    <p class="section-note" id="sectionNote"></p>
   </div>
 
   <div class="cycle-wrap" id="cycleWrap" style="display:none">
@@ -65,6 +64,9 @@
       <div class="cycle-progress-text" id="cycleProgressText">0 / 16</div>
       <div class="cycle-progress-bar"><div class="cycle-progress-fill" id="cycleProgressFill" style="width:0%"></div></div>
     </div>
+    <!-- 하위 유형: 반응물·생성물·전체식처럼 한 탭 안에서 갈리는 모드용. MODES[n].subModes에서 렌더된다 -->
+    <div class="cycle-label sub-only">📚 문제 유형</div>
+    <div class="cycle-btns sub-only" id="subModeBtns"></div>
     <div class="cycle-label m7-only">🧭 출제 방향</div>
     <div class="cycle-btns m7-only">
       <button class="dir-btn active" data-dir="toPG">원소 → 주기·족</button>
@@ -212,21 +214,15 @@
         <button id="retryPlaylistBtn" style="background:var(--c-accent-1);color:#000;border:none;border-radius:8px;padding:10px 18px;font-size:15px;font-weight:bold;cursor:pointer;transition:transform 0.2s;">♾️ 랜덤 연속 풀기</button>
         <button class="clear-all-btn" id="clearAllNotesBtn" style="margin-bottom:0">🗑 전체 삭제</button>
     </div>
-    <div class="filter-chips" id="wrongNoteFilters">
-      <button class="filter-chip active" data-filter="all">전체</button>
-      <button class="filter-chip" data-filter="1">🔢 계수 맞추기</button>
-      <button class="filter-chip" data-filter="2">🧪 반응물 맞추기</button>
-      <button class="filter-chip" data-filter="3">⚗️ 생성물 맞추기</button>
-      <button class="filter-chip" data-filter="4">📝 전체 반응식</button>
-      <button class="filter-chip" data-filter="5">🧠 화학식 암기</button>
-      <button class="filter-chip" data-filter="6">🃏 플래시카드</button>
-      <button class="filter-chip" data-filter="7">🧭 주기·족 맞추기</button>
-    </div>
+    <!-- 모드 단위로 칩을 두면 모드 수만큼 늘어나 못 쓰게 된다. 구역 단위로 거르고,
+         어떤 모드였는지는 각 노트의 배지에 이미 보인다. -->
+    <div class="filter-chips" id="wrongNoteFilters"></div>
     <div class="modal-content" id="wrongNoteList"></div>
   </div>
 </div>
 
 <script src="js/data.js"></script>
+<script src="js/curriculum.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

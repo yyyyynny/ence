@@ -9,6 +9,7 @@ const App={
     isCycleMode:false,cycleQueue:[],cycleTotal:0,lastQuestionName:null,
     m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,
     m7Dir:'toPG',
+    section:'ms',
     isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:false,
     savedCycleState:null,
     isRetryPlaylistMode:false, retryPlaylist:[]
@@ -45,7 +46,12 @@ const App={
     this.setupModalScrollLock();
     this.setupViewportVars();
     this.setupPtZoom();
-    this.setMode(1);
+    this.renderSectionTabs();
+    this.renderSectionNote();
+    this.renderNoteFilters();
+    /* 저장된 구역의 첫 모드로 시작한다 */
+    const first=modesInSection(this.state.section)[0];
+    if(first!==undefined) this.setMode(first); else this.setSection(this.state.section);
   },
 
   /* 실제 가시 영역(px)을 CSS 변수로 유지 — iOS Safari/삼성 인터넷의 동적 주소창 때문에
@@ -120,6 +126,9 @@ const App={
       this.state.isHapticOn = localStorage.getItem('chem_haptic') !== 'false';
       this.state.isWideMode = localStorage.getItem('chem_wide') === 'true';
       this.state.isSimplePeriodic = localStorage.getItem('chem_pt_simple') === 'true';
+      /* 저장된 구역이 개정으로 사라졌을 수 있으므로 실재하는지 확인하고 쓴다 */
+      const savedSec = localStorage.getItem('chem_section');
+      if(savedSec && sectionMeta(savedSec)) this.state.section = savedSec;
     }catch(e){}
     this.updateFeedbackBtns();
     if(this.state.isWideMode) document.body.classList.add('wide-mode');
@@ -209,7 +218,7 @@ const App={
     this.state.wrongNotes=this.state.wrongNotes.filter(n=>n.id!==id);
     try{localStorage.setItem('chem_wrong_notes_v4',JSON.stringify(this.state.wrongNotes));}catch(e){}
     this.renderWrongNotes();
-    if(this.state.currentMode===6)this.m6SyncSaveBtn();
+    if(isCardMode(this.state.currentMode))this.m6SyncSaveBtn();
   },
 
   clearWrongNotes(){
@@ -260,11 +269,11 @@ const App={
     this.state.retryNoteId = note.id;
 
     this.state.currentMode = note.mode;
-    this.$.modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.mode)===note.mode));
+    this.syncNavForMode(note.mode);
     this.$.timerSelectWrap.style.display = 'none';
     this.$.cycleWrap.style.display = 'none';
 
-    if(note.mode===6){
+    if(isCardMode(note.mode)){
       this.$.questionCard.style.display = 'none';
       this.$.keyboardWrap.style.display = 'none';
       this.$.mode6Wrap.classList.remove('m6-active');
@@ -336,7 +345,7 @@ const App={
     this.state.isRetryPlaylistMode = false;
     this.state.currentMode = note.mode;
 
-    this.$.modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.mode)===note.mode));
+    this.syncNavForMode(note.mode);
     this.$.questionCard.style.display = '';
     this.$.keyboardWrap.style.display = '';
     this.$.timerSelectWrap.style.display = 'none';
@@ -403,6 +412,79 @@ const App={
       this._elemRowSyms=syms;
     }
   },
+  /* ── 구역·모드 탐색 ──
+     탭과 오답노트 필터는 전부 curriculum.js의 SECTIONS/MODES에서 파생된다.
+     모드를 추가할 때 손댈 곳이 여기 말고 없어야 한다. */
+  renderSectionTabs(){
+    document.getElementById('sectionTabs').innerHTML=SECTIONS.map(s=>
+      `<button class="section-tab${s.id===this.state.section?' active':''}" data-section="${s.id}">${s.label}<span class="section-sub">${s.sub}</span></button>`
+    ).join('');
+  },
+  renderModeTabs(){
+    const modes=modesInSection(this.state.section);
+    this.$.modeTabs.innerHTML = modes.length
+      ? modes.map(m=>{
+          const d=MODES[m];
+          return `<button class="mode-tab${m===modeRootId(this.state.currentMode)?' active':''}" data-mode="${m}">`+
+                 `<span class="tab-icon">${d.icon}</span>${d.name}`+
+                 (d.desc?`<span class="tab-desc">${d.desc}</span>`:'')+`</button>`;
+        }).join('')
+      : `<div class="section-empty">아직 준비 중인 구역이에요 🚧</div>`;
+  },
+  renderSectionNote(){
+    const meta=sectionMeta(this.state.section);
+    document.getElementById('sectionNote').textContent = meta && meta.note ? meta.note : '';
+  },
+  /* 하위 유형 줄(반응물·생성물·전체식)은 subModes를 가진 모드에서만 나온다.
+     버튼이 고르는 값은 모드 번호 그 자체라, 눌러도 저장된 오답노트의 mode 값 체계가 유지된다. */
+  renderSubModeBtns(){
+    const root=modeRoot(this.state.currentMode);
+    const subs=root&&root.subModes;
+    this.$.cycleWrap.classList.toggle('has-sub', !!subs);
+    if(!subs){document.getElementById('subModeBtns').innerHTML='';return;}
+    document.getElementById('subModeBtns').innerHTML=subs.map(s=>
+      `<button class="sub-btn${s.id===this.state.currentMode?' active':''}" data-sub="${s.id}">${s.label}</button>`
+    ).join('');
+  },
+  /* 오답노트 재풀이는 setMode를 거치지 않고 모드로 바로 들어간다. 다른 구역의 노트일 수 있으므로
+     구역·탭을 여기서 맞춰 주지 않으면 활성 탭이 없는 상태가 된다. */
+  syncNavForMode(mode){
+    const sec=sectionOf(mode);
+    if(sec && sec!==this.state.section){
+      this.state.section=sec;
+      try{localStorage.setItem('chem_section', sec);}catch(e){}
+      this.renderSectionTabs();
+      this.renderSectionNote();
+    }
+    this.renderModeTabs();
+    this.renderSubModeBtns();
+  },
+  renderNoteFilters(){
+    this.$.wrongNoteFilters.innerHTML=
+      `<button class="filter-chip${this.state.noteFilter==='all'?' active':''}" data-filter="all">전체</button>`+
+      SECTIONS.map(s=>`<button class="filter-chip${this.state.noteFilter===s.id?' active':''}" data-filter="${s.id}">${s.label}</button>`).join('');
+  },
+  /* 구역을 바꾸면 그 구역의 첫 모드로 들어간다. 빈 구역이면 문제 카드·키보드를 접는다. */
+  setSection(secId){
+    if(!sectionMeta(secId)) return;
+    this.state.section=secId;
+    try{localStorage.setItem('chem_section', secId);}catch(e){}
+    this.renderSectionTabs();
+    this.renderSectionNote();
+    const modes=modesInSection(secId);
+    if(modes.length){
+      this.setMode(modes[0]);
+    }else{
+      this.state.currentMode=null;
+      clearInterval(this.state.timerInterval);
+      this.renderModeTabs();
+      this.$.questionCard.style.display='none';
+      this.$.keyboardWrap.style.display='none';
+      this.$.timerSelectWrap.style.display='none';
+      this.$.cycleWrap.style.display='none';
+      this.$.mode6Wrap.classList.remove('m6-active');
+    }
+  },
   buildModalList(){
     const fmt=side=>side.map(r=>(r.coef>1?`<span class="eq-text">${r.coef}</span>`:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' <span class="eq-plus">+</span> ');
     this.$.reactionList.innerHTML=REACTIONS.map((rx,i)=>`<div class="reaction-item"><div class="reaction-header"><div class="reaction-name"><span class="reaction-num">${i+1}</span>${rx.name}</div></div><div class="reaction-eq">${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}</div></div>`).join('');
@@ -410,14 +492,16 @@ const App={
   },
   renderWrongNotes(){
     let f=this.state.wrongNotes;
-    if(this.state.noteFilter!=='all')f=f.filter(n=>n.mode.toString()===this.state.noteFilter);
-    if(f.length===0){this.$.wrongNoteList.innerHTML=`<p style="color:var(--c-text-secondary);text-align:center;padding:40px 20px">이 모드의 오답 기록이 없습니다.</p>`;return;}
+    /* 필터는 구역 단위다. 모드 단위로 두면 모드 수만큼 칩이 늘어나 못 쓰게 된다. */
+    if(this.state.noteFilter!=='all')f=f.filter(n=>sectionOf(n.mode)===this.state.noteFilter);
+    if(f.length===0){this.$.wrongNoteList.innerHTML=`<p style="color:var(--c-text-secondary);text-align:center;padding:40px 20px">이 구역의 오답 기록이 없습니다.</p>`;return;}
     this.$.wrongNoteList.innerHTML=f.map(n=>{
       const fc = n.failCount || 1;
       let style = '';
       if(fc === 2) style = 'background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.5);';
       else if(fc >= 3) style = 'background:rgba(239,68,68,0.14);border-color:var(--c-wrong);border-width:2px;';
-      const retryLabel = n.mode===6 ? '카드 다시보기' : '단일 풀기';
+      const isCard = modeRoot(n.mode) && modeRoot(n.mode).custom==='flashcard';
+      const retryLabel = isCard ? '카드 다시보기' : '단일 풀기';
       const modeIcon = MODE_ICONS[n.mode]||'📌';
       const failBadge = fc>1?`<span class="reaction-fail">${fc>=3?'⚠️ ':''}오답 ${fc}회</span>`:'';
       return `<div class="reaction-item" style="${style}"><div class="reaction-header"><div class="reaction-name"><span class="reaction-badge">${modeIcon} ${MODE_NAMES[n.mode]||('모드 '+n.mode)}</span>${n.title}${failBadge}</div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${n.id}">${retryLabel}</button><button class="delete-note-btn" data-id="${n.id}">삭제</button></div></div><div class="reaction-eq" style="border-left-color:var(--c-wrong)">${n.html}</div></div>`;
@@ -427,6 +511,8 @@ const App={
   attachEventListeners(){
     this.$.app.addEventListener('click',e=>{
       const mt=e.target.closest('.mode-tab'),bb=e.target.closest('.blank-box'),kb=e.target.closest('.kb-key');
+      const st=e.target.closest('.section-tab');
+      if(st){this.setSection(st.dataset.section);this.playSound('tap');this.playHaptic('tap');return;}
       const th=e.target.closest('#themeBtn'),hi=e.target.closest('#hintBtn'),wn=e.target.closest('#wrongNoteBtn'),sa=e.target.closest('.show-answer-btn');
       const snd=e.target.closest('#soundBtn'),hpt=e.target.closest('#hapticBtn'),lyt=e.target.closest('#layoutBtn');
       const extR=e.target.closest('#exitRetryBtn'),pt=e.target.closest('#periodicBtn');
@@ -554,13 +640,20 @@ const App={
       if(e.target.classList.contains('retry-note-btn')){
         const id=e.target.dataset.id;
         const note=this.state.wrongNotes.find(n=>n.id===id);
-        if(note && note.mode===6) this.viewFlashcardNote(note);
+        if(note && isCardMode(note.mode)) this.viewFlashcardNote(note);
         else this.startRetry(id);
       }
     });
     document.getElementById('m6SaveWrongBtn').addEventListener('click',()=>this.m6SaveCurrentAsWrong());
 
     document.getElementById('cycleWrap').addEventListener('click',e=>{
+      /* 하위 유형 버튼이 고르는 값은 모드 번호 그 자체다 — setMode가 그대로 처리한다 */
+      const subBtn=e.target.closest('.sub-btn');
+      if(subBtn){
+        this.setMode(parseInt(subBtn.dataset.sub));
+        this.playSound('tap'); this.playHaptic('tap');
+        return;
+      }
       const dirBtn=e.target.closest('.dir-btn');
       if(dirBtn){
         document.querySelectorAll('.dir-btn').forEach(b=>b.classList.remove('active'));
@@ -602,7 +695,7 @@ const App={
         if(e.key===' '){e.preventDefault();document.getElementById('retryM6Flashcard').classList.toggle('flipped');}
         return;
       }
-      if(this.state.currentMode===6&&this.$.mode6Wrap.classList.contains('m6-active')){
+      if(isCardMode(this.state.currentMode)&&this.$.mode6Wrap.classList.contains('m6-active')){
         if(e.key==='ArrowRight')this.m6Next();
         else if(e.key==='ArrowLeft')this.m6Prev();
         else if(e.key===' '){e.preventDefault();this.m6Flip();}
@@ -819,18 +912,29 @@ const App={
     if(this.state.currentMode===mode)return;
 
     this.state.currentMode=mode;
-    this.$.modeTabs.querySelectorAll('.mode-tab').forEach(t=>t.classList.toggle('active',parseInt(t.dataset.mode)===mode));
-    const is6=mode===6;
-    this.$.questionCard.style.display=is6?'none':'';
-    this.$.keyboardWrap.style.display=is6?'none':'';
-    this.$.timerSelectWrap.style.display=is6?'none':'';
-    this.$.mode6Wrap.classList.toggle('m6-active', is6);
-    this.$.cycleWrap.style.display=(!is6)?'flex':'none';
+    /* 다른 구역의 모드로 바로 들어올 수 있다(오답노트 재풀이). 구역 표시를 먼저 맞춰야
+       활성 탭이 사라진 것처럼 보이지 않는다. */
+    const sec=sectionOf(mode);
+    if(sec && sec!==this.state.section){
+      this.state.section=sec;
+      try{localStorage.setItem('chem_section', sec);}catch(e){}
+      this.renderSectionTabs();
+      this.renderSectionNote();
+    }
+    this.renderModeTabs();
+    this.renderSubModeBtns();
+    /* 플래시카드는 구역마다 하나씩 있으므로 모드 번호로 판별하면 안 된다 */
+    const isCard=modeRoot(mode)&&modeRoot(mode).custom==='flashcard';
+    this.$.questionCard.style.display=isCard?'none':'';
+    this.$.keyboardWrap.style.display=isCard?'none':'';
+    this.$.timerSelectWrap.style.display=isCard?'none':'';
+    this.$.mode6Wrap.classList.toggle('m6-active', isCard);
+    this.$.cycleWrap.style.display=(!isCard)?'flex':'none';
     this.$.cycleWrap.classList.toggle('m7', mode===7);
 
     if(!preserveCycle) this.initCycleQueue();
 
-    if(is6){clearInterval(this.state.timerInterval);this.m6GenCards();this.m6Render();return;}
+    if(isCard){clearInterval(this.state.timerInterval);this.m6GenCards();this.m6Render();return;}
     /* 원소 기호 키패드는 generateQuestion이 문제를 만든 뒤 syncElemRow로 맞춘다 (MODE 7은 출제 방향에 따라 달라짐) */
     this.generateQuestion();
   },
@@ -926,7 +1030,10 @@ const App={
     const q=this.state.currentQuestion;if(!q)return;
     let ok=true,ce=false;
     /* '1'+정답 오입력은 계수 생략 규칙을 놓친 것 — 계수를 안 쓰는 MODE 1과, 답이 애초에 숫자인 MODE 7(예: 7족에 17 입력)은 제외 */
-    q.blanks.forEach(b=>{const v=q.inputs[b.key]||'';if(v!==b.answer){ok=false;if(this.state.currentMode!==1&&this.state.currentMode!==7&&v==='1'+b.answer)ce=true;}});
+    /* '1'+정답 오입력은 계수 생략 규칙을 놓친 것. 정답이 애초에 숫자인 모드에서는
+       (예: 7족 답에 17을 입력) 오작동하므로 MODES의 noCoefWarning으로 끈다. */
+    const skipCoefWarn=!!(modeRoot(this.state.currentMode)||{}).noCoefWarning;
+    q.blanks.forEach(b=>{const v=q.inputs[b.key]||'';if(v!==b.answer){ok=false;if(!skipCoefWarn&&v==='1'+b.answer)ce=true;}});
 
     if(this.state.isRetryPlaylistMode) {
       if(ok) {
@@ -1213,7 +1320,7 @@ const App={
   m6CurrentSaved(){
     const card=this.state.m6Cards[this.state.m6Index];if(!card)return false;
     const {html}=this.m6CardNoteData(card);
-    return this.state.wrongNotes.some(n=>n.mode===6&&n.html===html);
+    return this.state.wrongNotes.some(n=>isCardMode(n.mode)&&n.html===html);
   },
   m6SyncSaveBtn(){
     const btn=document.getElementById('m6SaveWrongBtn');if(!btn)return;
@@ -1232,7 +1339,7 @@ const App={
     if(this.m6CurrentSaved()){this.playSound('tap');return;} /* 이미 저장됨 → 중복 저장 방지 */
     const {title,html}=this.m6CardNoteData(card);
     const qData={m6Type:this.state.m6Type,m6Order:this.state.m6Order,cardIndex:this.state.m6Index,title};
-    this.saveWrongNote(6,title,html,qData,false);
+    this.saveWrongNote(this.state.currentMode,title,html,qData,false);
     this.playSound('success'); this.playHaptic('success');
     this.m6SyncSaveBtn();
   },

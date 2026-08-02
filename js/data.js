@@ -45,8 +45,7 @@ const COEF_TEMPLATES=[
   {label:"A + B₂ → A₂B₃",gen:()=>({fmt:[{coef:4,formula:[{sym:"A"}]},{coef:3,formula:[{sym:"B",sub:2}]}],fmtP:[{coef:2,formula:[{sym:"A",sub:2},{sym:"B",sub:3}]}]})}
 ];
 const CORE_ELEMENTS=['H','C','O','N','S','P','Na','Mg','Ca','Cu','Ag','Cl','A','B'];
-const MODE_NAMES={1:'계수 맞추기',2:'반응물 맞추기',3:'생성물 맞추기',4:'전체 반응식',5:'화학식 암기',6:'플래시카드',7:'주기·족 맞추기'};
-const MODE_ICONS={1:'🔢',2:'🧪',3:'⚗️',4:'📝',5:'🧠',6:'🃏',7:'🧭'};
+/* MODE_NAMES / MODE_ICONS는 js/curriculum.js의 MODES에서 파생된다 */
 
 /* z=원자번호, sym=원소기호, name=한글이름, cat=분류(색상), group=족(1~18), period=주기(1~7), f=란타넘족/악티늄족일 때의 순번(1~15) */
 const ELEMENTS=[
@@ -201,9 +200,11 @@ const PT_FLAME_COLORS=[
   {z:56,color:'#A3E635',label:'황록'}, // 바륨
   {z:20,color:'#FB923C',label:'주황'}  // 칼슘
 ];
-/* MODE 7(주기·족 맞추기) 출제 범위: 1~20번 + 할로젠 전부 + 알칼리 금속 전부 = 26종.
+/* MODE 7(주기·족 맞추기) 출제 범위: 1~20번 + 할로젠 전부 + 알칼리 금속 전부 = 25종.
+   7주기(Fr)는 교육과정에서 다루지 않으므로 period<=6으로 자른다 — 간략히 보기 표도 6주기까지만
+   그리므로 이렇게 해야 퀴즈 범위와 주기율표가 정확히 일치한다.
    Ts(117)는 실제로는 17족이지만 cat이 'unknown'이라 여기서 자동으로 빠진다 — 교육과정에서 다루지 않으므로 의도된 결과.
-   이 26종 안에서는 (주기, 족) 좌표가 서로 겹치지 않아 「주기·족 → 원소」 방향도 정답이 하나로 확정된다. */
-const PT_QUIZ_ELEMENTS=ELEMENTS.filter(e=>e.z<=20||e.cat==='halogen'||e.cat==='alkali');
+   이 25종 안에서는 (주기, 족) 좌표가 서로 겹치지 않아 「주기·족 → 원소」 방향도 정답이 하나로 확정된다. */
+const PT_QUIZ_ELEMENTS=ELEMENTS.filter(e=>e.period<=6&&(e.z<=20||e.cat==='halogen'||e.cat==='alkali'));
 const PT_QUIZ_SYMBOLS=PT_QUIZ_ELEMENTS.map(e=>e.sym);
 
