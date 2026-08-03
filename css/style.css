@@ -152,8 +152,12 @@
      충돌하므로 기존 출제 방식 카드 안에 접어 넣고 여기서만 보이게 한다 */
   #cycleWrap:not(.m7) .m7-only{display:none;}
   #cycleWrap:not(.has-sub) .sub-only{display:none;}
+  #cycleWrap:not(.has-dia) .dia-only{display:none;}
   #cycleWrap .cycle-label.m7-only,
+  #cycleWrap .cycle-label.dia-only,
   #cycleWrap .cycle-label.sub-only{flex-basis:100%;}
+  .dia-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-ui);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
+  .dia-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
   /* 보기 버튼 — 한 줄에 하나씩 두어 긴 한글 보기가 잘리지 않게 한다 */
   #choiceRow{display:grid;grid-template-columns:1fr;gap:8px;}
   .choice-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:12px;color:var(--c-text-primary);font-family:var(--font-ui);font-size:16px;font-weight:700;padding:15px 16px;cursor:pointer;transition:all .2s;text-align:center;}
@@ -164,6 +168,30 @@
   .shell-line{display:inline-flex;gap:4px;vertical-align:middle;margin:0 10px;}
   .shell-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:32px;padding:4px 6px;border:1px solid var(--c-border);border-radius:8px;background:var(--c-surface-2);font-family:var(--font-mono);font-size:15px;font-weight:700;color:var(--c-text-primary);line-height:1.1;}
   .shell-n{font-size:9px;font-weight:400;color:var(--c-text-secondary);letter-spacing:1px;}
+
+  /* ── 전자껍질·결합 그림 ──
+     색은 전부 CSS 변수라 라이트/다크가 자동으로 따라온다.
+     viewBox + width:100%라 화면 폭에 맞춰 줄어든다(고정 px를 쓰면 좁은 화면에서 넘친다). */
+  .dia-wrap{margin-top:14px;}
+  .dia-panel{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;padding:10px;margin-bottom:10px;}
+  .dia-cap{font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:4px;text-align:center;}
+  .dia{display:block;width:100%;height:auto;overflow:visible;}
+  .dia-nuc{fill:var(--c-surface-1);stroke:var(--c-accent-1);stroke-width:2;}
+  .dia-ring{fill:none;stroke:var(--c-border);stroke-width:1.5;}
+  .dia-fill{fill:var(--c-surface-1);}
+  .dia-sym{fill:var(--c-text-primary);font-family:var(--font-mono);font-size:15px;font-weight:700;text-anchor:middle;dominant-baseline:central;}
+  .dia-sym-lg{font-size:20px;}
+  .dia-e{fill:var(--c-accent-3);}
+  .dia-e-share{fill:#FDE047;stroke:var(--c-bg);stroke-width:.8;}
+  .dia-arrow{fill:none;stroke:var(--c-accent-1);stroke-width:2;stroke-dasharray:5 4;animation:diaFlow 1.4s linear infinite;}
+  .dia-arrowhead{fill:var(--c-accent-1);}
+  .dia-charge{fill:var(--c-accent-1);font-family:var(--font-mono);font-size:17px;font-weight:700;text-anchor:middle;}
+  .dia-note{fill:var(--c-text-secondary);font-family:var(--font-ui);font-size:12px;text-anchor:middle;}
+  .dia-exp{font-size:13px;line-height:1.6;color:var(--c-text-secondary);margin:8px 2px 0;}
+  .dia-exp b{color:var(--c-text-primary);}
+  @keyframes diaFlow{to{stroke-dashoffset:-18;}}
+  /* 움직임에 민감한 사용자를 위해 흐름 애니메이션만 끈다 — 그림 내용은 그대로 남는다 */
+  @media (prefers-reduced-motion: reduce){ .dia-arrow{animation:none;} }
   .sub-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-ui);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
   .sub-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
   .cycle-progress-wrap{display:flex;align-items:center;gap:8px;flex:1;min-width:140px;}

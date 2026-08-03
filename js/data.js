@@ -252,3 +252,36 @@ const ION_NOBLE=[2,10,18];   /* He, Ne, Ar */
    이온 문제만 위 목록으로 제한된다. */
 const SHELL_QUIZ_ELEMENTS=ELEMENTS.filter(e=>e.z<=20);
 
+/* ── 화학 결합 (통합과학1 [10통과1-02-04]) ──
+   성취기준의 예시가 "물, 산소, 소금"이고, 내용 요소는 이온 결합·공유 결합 두 가지뿐이다.
+   금속결합은 통합과학1 내용 요소에 없으므로 넣지 않는다.
+   결합 차수(단일·이중·삼중)라는 용어도 고2 「화학」 소관이라 여기서는 쓰지 않는다 —
+   공유 전자쌍의 개수는 그림에 사실대로 그리되 이름을 붙이지 않는다.
+
+   ionic:    give = 금속 1개가 내놓는 전자 수, take = 비금속 1개가 받는 전자 수,
+             nM·nX = 화학식 속 금속·비금속 원자 수. nM*give === nX*take 여야 전자 수지가 맞는다.
+   covalent: center를 가운데 두고 ligands가 둘러싼 모양으로 그린다.
+             pairs = 그 원자와 나누는 공유 전자쌍 수. */
+const BONDS=[
+  /* 이온 결합 — 금속이 전자를 내주고 비금속이 받는다 */
+  {name:'염화나트륨', f:'NaCl',  type:'ionic', M:'Na', X:'Cl', give:1, take:1, nM:1, nX:1, note:'소금'},
+  {name:'산화마그네슘',f:'MgO',   type:'ionic', M:'Mg', X:'O',  give:2, take:2, nM:1, nX:1},
+  {name:'염화칼슘',   f:'CaCl2', type:'ionic', M:'Ca', X:'Cl', give:2, take:1, nM:1, nX:2},
+  {name:'염화마그네슘',f:'MgCl2', type:'ionic', M:'Mg', X:'Cl', give:2, take:1, nM:1, nX:2},
+  {name:'산화칼슘',   f:'CaO',   type:'ionic', M:'Ca', X:'O',  give:2, take:2, nM:1, nX:1},
+  {name:'산화리튬',   f:'Li2O',  type:'ionic', M:'Li', X:'O',  give:1, take:2, nM:2, nX:1},
+  {name:'플루오린화나트륨',f:'NaF',type:'ionic', M:'Na', X:'F',  give:1, take:1, nM:1, nX:1},
+  {name:'염화칼륨',   f:'KCl',   type:'ionic', M:'K',  X:'Cl', give:1, take:1, nM:1, nX:1},
+
+  /* 공유 결합 — 비금속끼리 전자쌍을 나눠 갖는다 */
+  {name:'수소',   f:'H2',  type:'covalent', center:'H', ligands:[{sym:'H', pairs:1}]},
+  {name:'염소',   f:'Cl2', type:'covalent', center:'Cl',ligands:[{sym:'Cl',pairs:1}]},
+  {name:'산소',   f:'O2',  type:'covalent', center:'O', ligands:[{sym:'O', pairs:2}]},
+  {name:'질소',   f:'N2',  type:'covalent', center:'N', ligands:[{sym:'N', pairs:3}]},
+  {name:'물',     f:'H2O', type:'covalent', center:'O', ligands:[{sym:'H',pairs:1},{sym:'H',pairs:1}]},
+  {name:'암모니아',f:'NH3', type:'covalent', center:'N', ligands:[{sym:'H',pairs:1},{sym:'H',pairs:1},{sym:'H',pairs:1}]},
+  {name:'메테인', f:'CH4', type:'covalent', center:'C', ligands:[{sym:'H',pairs:1},{sym:'H',pairs:1},{sym:'H',pairs:1},{sym:'H',pairs:1}]},
+  {name:'이산화탄소',f:'CO2',type:'covalent',center:'C', ligands:[{sym:'O',pairs:2},{sym:'O',pairs:2}]},
+  {name:'염화수소',f:'HCl', type:'covalent', center:'Cl',ligands:[{sym:'H',pairs:1}]}
+];
+

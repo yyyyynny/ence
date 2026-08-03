@@ -67,6 +67,12 @@
     <!-- 하위 유형: 반응물·생성물·전체식처럼 한 탭 안에서 갈리는 모드용. MODES[n].subModes에서 렌더된다 -->
     <div class="cycle-label sub-only">📚 문제 유형</div>
     <div class="cycle-btns sub-only" id="subModeBtns"></div>
+    <!-- 그림이 있는 모드에서만 나온다. 문제를 그림 없이 풀고 싶은 경우를 위해 끌 수 있게 한다. -->
+    <div class="cycle-label dia-only">🔬 해설 그림</div>
+    <div class="cycle-btns dia-only">
+      <button class="dia-btn active" data-dia="on">보기</button>
+      <button class="dia-btn" data-dia="off">끄기</button>
+    </div>
     <div class="cycle-label m7-only">🧭 출제 방향</div>
     <div class="cycle-btns m7-only">
       <button class="dir-btn active" data-dir="toPG">원소 → 주기·족</button>
@@ -87,6 +93,8 @@
     </div>
     <div class="equation-display" id="equationDisplay"></div>
     <div class="result-banner" id="resultBanner"></div>
+    <!-- 정답 후 해설 그림(전자껍질·결합)이 들어간다. 「해설 그림」을 끄면 비어 있다. -->
+    <div id="explainBox"></div>
   </div>
 
   <div class="question-card" id="retryM6Card" style="display:none">
@@ -227,6 +235,7 @@
 
 <script src="js/data.js"></script>
 <script src="js/curriculum.js"></script>
+<script src="js/diagram.js"></script>
 <script src="js/app.js"></script>
 </body>
 </html>

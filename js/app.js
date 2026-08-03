@@ -9,7 +9,7 @@ const App={
     isCycleMode:false,cycleQueue:[],cycleTotal:0,lastQuestionName:null,
     m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,
     m7Dir:'toPG',
-    section:'ms',
+    section:'ms', showDiagram:true,
     isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:false,
     savedCycleState:null,
     isRetryPlaylistMode:false, retryPlaylist:[]
@@ -49,6 +49,7 @@ const App={
     this.renderSectionTabs();
     this.renderSectionNote();
     this.renderNoteFilters();
+    document.querySelectorAll('.dia-btn').forEach(b=>b.classList.toggle('active', (b.dataset.dia==='on')===this.state.showDiagram));
     /* 저장된 구역의 첫 모드로 시작한다 */
     const first=modesInSection(this.state.section)[0];
     if(first!==undefined) this.setMode(first); else this.setSection(this.state.section);
@@ -129,6 +130,7 @@ const App={
       /* 저장된 구역이 개정으로 사라졌을 수 있으므로 실재하는지 확인하고 쓴다 */
       const savedSec = localStorage.getItem('chem_section');
       if(savedSec && sectionMeta(savedSec)) this.state.section = savedSec;
+      this.state.showDiagram = localStorage.getItem('chem_diagram') !== 'false';
     }catch(e){}
     this.updateFeedbackBtns();
     if(this.state.isWideMode) document.body.classList.add('wide-mode');
@@ -404,7 +406,7 @@ const App={
   syncElemRow(mode,q){
     const isM7=mode===7, revM7=isM7&&q&&q.dir==='toElem';
     /* 답이 숫자뿐이거나(MODE 8) 보기 버튼으로 고르는(MODE 9) 모드에서는 원소 기호 줄이 필요 없다 */
-    const numOrChoice=mode===8||mode===9;
+    const numOrChoice=mode===8||mode===9||mode===10;
     const show=revM7||(mode!==1&&!isM7&&!numOrChoice);
     this.$.elemRowLabel.style.display=show?'block':'none';
     this.$.elemRow.style.display=show?'grid':'none';
@@ -651,6 +653,15 @@ const App={
     document.getElementById('m6SaveWrongBtn').addEventListener('click',()=>this.m6SaveCurrentAsWrong());
 
     document.getElementById('cycleWrap').addEventListener('click',e=>{
+      const diaBtn=e.target.closest('.dia-btn');
+      if(diaBtn){
+        this.state.showDiagram = diaBtn.dataset.dia==='on';
+        try{localStorage.setItem('chem_diagram', this.state.showDiagram);}catch(e){}
+        document.querySelectorAll('.dia-btn').forEach(x=>x.classList.toggle('active', x===diaBtn));
+        this.renderExplain();
+        this.playSound('tap'); this.playHaptic('tap');
+        return;
+      }
       /* 하위 유형 버튼이 고르는 값은 모드 번호 그 자체다 — setMode가 그대로 처리한다 */
       const subBtn=e.target.closest('.sub-btn');
       if(subBtn){
@@ -799,6 +810,7 @@ const App={
     else if(mode===7) pool=PT_QUIZ_ELEMENTS.map((_,i)=>i);
     else if(mode===8) pool=SHELL_QUIZ_ELEMENTS.map((_,i)=>i);
     else if(mode===9) pool=this.ionPool().map((_,i)=>i);
+    else if(mode===10) pool=BONDS.map((_,i)=>i);
     else if(mode===1) pool=Array.from({length: 23}, (_,i)=>i);
     else pool=REACTIONS.map((_,i)=>i);
     for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
@@ -983,6 +995,7 @@ const App={
     this.$.mode6Wrap.classList.toggle('m6-active', isCard);
     this.$.cycleWrap.style.display=(!isCard)?'flex':'none';
     this.$.cycleWrap.classList.toggle('m7', mode===7);
+    this.$.cycleWrap.classList.toggle('has-dia', mode===8||mode===9||mode===10);
 
     if(!preserveCycle) this.initCycleQueue();
 
@@ -1085,6 +1098,14 @@ const App={
         const ans=this.ionAnswerText(item);
         q.choices=this.ionChoices(item,ans);
         q.blanks.push({key:'M9',answer:ans});
+        break;
+      }
+      case 10:{
+        const idx=pickIndex(BONDS);const bd=BONDS[idx];
+        q.type='결합 맞추기';q.isMode10=true;q.isAbstract=false;
+        q.name=bd.name;q.bondIdx=idx;q.f=bd.f;
+        q.choices=['이온결합','공유결합'];
+        q.blanks.push({key:'M10',answer:bd.type==='ionic'?'이온결합':'공유결합'});
         break;
       }
     }
@@ -1221,6 +1242,10 @@ const App={
       const el=PT_QUIZ_ELEMENTS.find(e=>e.z===q.z);
       h=`<span class="eq-text" style="font-size:20px;font-weight:bold;color:var(--c-correct)">${q.sym} · ${el?`${el.period}주기 ${el.group}족`:''}</span>`;
     }
+    else if(q.isMode10){
+      const bd=BONDS[q.bondIdx];
+      h=`<span class="eq-text" style="font-size:18px;font-weight:bold;color:var(--c-correct)">${this.fmtFormulaStr(bd.f)} · ${q.blanks[0].answer}</span>`;
+    }
     else if(q.isMode8||q.isMode9){
       /* 껍질 배치를 같이 남겨야 나중에 노트만 봐도 왜 그 답인지 알 수 있다 */
       h=`<span class="eq-text" style="font-size:18px;font-weight:bold;color:var(--c-correct)">${q.sym} (${(q.shells||[]).join('-')}) · ${q.blanks[0].answer}</span>`;
@@ -1240,8 +1265,28 @@ const App={
     clearInterval(this.state.timerInterval);this.renderAll(false);
   },
 
+  /* ── 해설 그림 ──
+     정답을 확인한 뒤에만 띄운다. 그림이 먼저 보이면 답이 새기 때문이다.
+     [10통과1-02-03] 해설이 결합 이유를 "전자껍질 모형을 이용한 전자배치를 통해" 설명하라고
+     명시하므로, 이 그림은 정답을 알려주는 장식이 아니라 왜 그런지를 보여주는 본문이다. */
+  hasDiagram(q){ return !!(q&&(q.isMode8||q.isMode9||q.isMode10)); },
+  renderExplain(){
+    const box=document.getElementById('explainBox');
+    if(!box) return;
+    const q=this.state.currentQuestion;
+    const revealed=this.state.isAnswerChecked&&!q?.isTimedOut;
+    if(!revealed||!this.state.showDiagram||!this.hasDiagram(q)){box.innerHTML='';return;}
+    if(q.isMode10) box.innerHTML=bondDiagramHTML(BONDS[q.bondIdx]);
+    else{
+      /* 이온 되기에서는 이온이 된 뒤 모습을 함께 보여줘야 "왜 그 답인지"가 보인다 */
+      const ion=q.isMode9&&q.ion&&!q.ion.noble?q.ion:null;
+      box.innerHTML=shellDiagramHTML(q.z)+
+        (ion?`<p class="dia-exp">최외각 전자 ${valenceOf(q.z)}개인 ${q.name}은 전자 ${ion.n}개를 `+
+             `${ion.dir==='lose'?'내주고':'받아'} 최외각이 꽉 찬 안정한 상태가 된다.</p>`:'');
+    }
+  },
   renderAll(isCorrect=null){
-    this.renderScore();this.renderQuestionHeader();this.renderEquation();this.renderKeyboard();
+    this.renderScore();this.renderQuestionHeader();this.renderEquation();this.renderKeyboard();this.renderExplain();
     if(this.state.currentQuestion&&this.state.currentQuestion.isTimedOut&&!this.state.isAnswerChecked&&isCorrect===null){}
     else if(isCorrect!==null)this.renderResultBanner(isCorrect);
     else this.$.resultBanner.className='result-banner';
@@ -1280,6 +1325,13 @@ const App={
     /* MODE 8·9도 반응식이 아니다 — 전자껍질 배치를 보여주고 그 위에서 묻는다.
        배치를 보여주는 게 핵심이다. 외운 답을 떠올리는 게 아니라 그림에서 세도록 하는 게
        [9과11-04]가 요구하는 접근이다. */
+    if(q.isMode10){
+      const bd=BONDS[q.bondIdx];
+      this.$.equationDisplay.innerHTML=
+        `<span class="eq-term"><span class="eq-text">${this.fmtFormulaStr(bd.f)}</span></span>`+
+        `<span class="eq-term">${this.renderBlankBox('M10',q.blanks[0].answer,'choice')}</span>`;
+      return;
+    }
     if(q.isMode8||q.isMode9){
       const shells=`<span class="shell-line">${q.shells.map((n,i)=>`<span class="shell-cell"><span class="shell-n">${'KLMN'[i]}</span>${n}</span>`).join('')}</span>`;
       const head=`<span class="eq-term"><span class="eq-text">${q.sym}</span></span>${shells}`;
@@ -1467,6 +1519,8 @@ const App={
   },
 
   formatFormula(f){return f.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('');},
+  /* BONDS의 화학식은 'CaCl2' 같은 문자열이다 — 숫자를 아래첨자로 바꾼다 */
+  fmtFormulaStr(s){return String(s).replace(/(\d+)/g,'<sub>$1</sub>');},
   toggleTheme(){
     this.playSound('tap'); this.state.isDarkMode=!this.state.isDarkMode;document.body.classList.toggle('light',!this.state.isDarkMode);document.getElementById('themeBtn').textContent=this.state.isDarkMode?'🌙':'☀️';
     /* 열려 있는 상세 패널의 헤더 색은 테마별 팔레트를 쓰므로, 테마 전환 시 다시 그려 새 팔레트를 즉시 반영 */
