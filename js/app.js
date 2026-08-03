@@ -397,6 +397,11 @@ const App={
 
   buildKeyboard(){
     this.$.numRow.innerHTML=[1,2,3,4,5,6,7,8,9,0].map(n=>`<button class="kb-key num" data-key="NUM_${n}">${n}</button>`).join('');
+    document.getElementById('chargeRow').innerHTML=
+      ['+','2+','3+','-','2-','3-'].map(c=>{
+        const label=c.replace('-','−');
+        return `<button class="kb-key num" data-key="CHG_${c}">${label}</button>`;
+      }).join('');
     this.syncElemRow(null,null);
   },
   /* 원소 기호 키패드의 표시 여부와 내용은 모드마다 다르다 — 세 군데(모드 전환·오답노트 재풀이 두 곳)에서
@@ -405,12 +410,18 @@ const App={
      · MODE 7 역방향은 CORE_ELEMENTS(반응식용 14종) 대신 출제 범위 26종으로 갈아끼운다 */
   syncElemRow(mode,q){
     const isM7=mode===7, revM7=isM7&&q&&q.dir==='toElem';
-    /* 답이 숫자뿐이거나(MODE 8) 보기 버튼으로 고르는(MODE 9) 모드에서는 원소 기호 줄이 필요 없다 */
-    const numOrChoice=mode===8||mode===9||mode===10;
-    const show=revM7||(mode!==1&&!isM7&&!numOrChoice);
+    const isIonWrite=mode===11;
+    /* 답이 숫자뿐이거나(MODE 8) 보기 버튼으로 고르는(MODE 9·10·12) 모드에서는 원소 기호 줄이 필요 없다 */
+    const numOrChoice=mode===8||mode===9||mode===10||mode===12||mode===13||mode===14||mode===15;
+    const show=revM7||isIonWrite||(mode!==1&&!isM7&&!numOrChoice);
     this.$.elemRowLabel.style.display=show?'block':'none';
     this.$.elemRow.style.display=show?'grid':'none';
-    const syms=revM7?PT_QUIZ_SYMBOLS:CORE_ELEMENTS;
+    /* 전하 키는 이온식을 쓸 때만 필요하다 */
+    const chg=isIonWrite;
+    document.getElementById('chargeRow').style.display=chg?'grid':'none';
+    document.getElementById('chargeRowLabel').style.display=chg?'block':'none';
+    /* 이온식에는 K·Al처럼 반응식용 키패드에 없는 기호가 필요해 전용 목록으로 갈아끼운다 */
+    const syms=revM7?PT_QUIZ_SYMBOLS:(isIonWrite?ION_WRITE_SYMBOLS:CORE_ELEMENTS);
     if(this._elemRowSyms!==syms){
       this.$.elemRow.innerHTML=syms.map(s=>`<button class="kb-key elem" data-key="ELEM_${s}">${s}</button>`).join('');
       this._elemRowSyms=syms;
@@ -771,6 +782,15 @@ const App={
     this.playSound('tap'); this.playHaptic('tap');
     this.renderAll();
   },
+  /* 결합 차수 문제는 공유 결합만 대상이고, 분자 안의 결합이 전부 같은 차수여야 답이 하나로 정해진다.
+     (지금 데이터는 전부 균일하지만 나중에 섞인 분자를 넣더라도 자동으로 걸러지게 해 둔다.) */
+  orderPool(){
+    if(!this._orderPool){
+      this._orderPool=BONDS.filter(b=>b.type==='covalent'&&
+        b.ligands.every(l=>l.pairs===b.ligands[0].pairs)&&BOND_ORDER_NAME[b.ligands[0].pairs]);
+    }
+    return this._orderPool;
+  },
   ionPool(){
     if(!this._ionPool){
       this._ionPool=ION_FORMING.concat(ION_NOBLE.map(z=>({z,noble:true})));
@@ -811,6 +831,11 @@ const App={
     else if(mode===8) pool=SHELL_QUIZ_ELEMENTS.map((_,i)=>i);
     else if(mode===9) pool=this.ionPool().map((_,i)=>i);
     else if(mode===10) pool=BONDS.map((_,i)=>i);
+    else if(mode===11) pool=IONS_WRITE.map((_,i)=>i);
+    else if(mode===12) pool=this.orderPool().map((_,i)=>i);
+    else if(mode===13) pool=PRECIPITATES.map((_,i)=>i);
+    else if(mode===14) pool=ORBITAL_KINDS.map((_,i)=>i);
+    else if(mode===15) pool=ORBITAL_SHELLS.map((_,i)=>i);
     else if(mode===1) pool=Array.from({length: 23}, (_,i)=>i);
     else pool=REACTIONS.map((_,i)=>i);
     for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
@@ -870,7 +895,7 @@ const App={
   },
 
   handleKeyPress(key){
-    if(key.startsWith('NUM_')||key.startsWith('ELEM_')||key==='DEL'||key==='LEFT'||key==='RIGHT'){
+    if(key.startsWith('NUM_')||key.startsWith('ELEM_')||key.startsWith('CHG_')||key==='DEL'||key==='LEFT'||key==='RIGHT'){
       if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)return;
       const q=this.state.currentQuestion;if(!q||!q.activeKey)return;
 
@@ -911,6 +936,11 @@ const App={
         let char = key.replace('NUM_','');
         q.inputs[q.activeKey] = val.slice(0, pos) + char + val.slice(pos);
         q.cursor[q.activeKey] = pos + char.length;
+      } else if(key.startsWith('CHG_')) {
+        /* 전하는 늘 맨 끝에 하나만 붙는다. 커서 위치와 무관하게 끝에 놓고, 이미 있으면 교체한다. */
+        const body = val.replace(/\^\d*[+-]$/, '');
+        q.inputs[q.activeKey] = body + '^' + key.replace('CHG_','');
+        q.cursor[q.activeKey] = q.inputs[q.activeKey].length;
       } else if(key.startsWith('ELEM_')) {
         let char = key.replace('ELEM_','');
         q.inputs[q.activeKey] = val.slice(0, pos) + char + val.slice(pos);
@@ -920,6 +950,9 @@ const App={
           let dl = 1;
           let beforeCursor = val.slice(0, pos);
           if(/[a-z]$/.test(beforeCursor) && beforeCursor.length >= 2 && /[A-Z]/.test(beforeCursor.slice(-2,-1))) dl = 2;
+          /* 전하는 '^2-'처럼 한 덩어리로 들어갔으니 지울 때도 한 덩어리로 지운다 */
+          const chg = beforeCursor.match(/\^\d*[+-]$/);
+          if(chg) dl = chg[0].length;
           q.inputs[q.activeKey] = val.slice(0, pos - dl) + val.slice(pos);
           q.cursor[q.activeKey] = pos - dl;
         }
@@ -995,7 +1028,7 @@ const App={
     this.$.mode6Wrap.classList.toggle('m6-active', isCard);
     this.$.cycleWrap.style.display=(!isCard)?'flex':'none';
     this.$.cycleWrap.classList.toggle('m7', mode===7);
-    this.$.cycleWrap.classList.toggle('has-dia', mode===8||mode===9||mode===10);
+    this.$.cycleWrap.classList.toggle('has-dia', this.hasDiagram({['isMode'+mode]:true}));
 
     if(!preserveCycle) this.initCycleQueue();
 
@@ -1098,6 +1131,45 @@ const App={
         const ans=this.ionAnswerText(item);
         q.choices=this.ionChoices(item,ans);
         q.blanks.push({key:'M9',answer:ans});
+        break;
+      }
+      case 13:{
+        const idx=pickIndex(PRECIPITATES);const p=PRECIPITATES[idx];
+        q.type='앙금 생성';q.isMode13=true;q.isAbstract=false;
+        q.name=`${p.a} + ${p.b}`;q.pIdx=idx;
+        q.sub='두 이온을 섞으면?';
+        q.choices=['흰색 앙금','노란색 앙금','검은색 앙금','앙금이 생기지 않는다'];
+        q.blanks.push({key:'M13',answer:p.none?'앙금이 생기지 않는다':p.color+' 앙금'});
+        break;
+      }
+      case 14:{
+        const idx=pickIndex(ORBITAL_KINDS);const o=ORBITAL_KINDS[idx];
+        q.type='오비탈 개수';q.isMode14=true;q.isAbstract=false;
+        q.name=`${o.kind} 오비탈`;q.orb=o;
+        q.blanks.push({key:'M14',answer:String(o.count)});
+        break;
+      }
+      case 15:{
+        const idx=pickIndex(ORBITAL_SHELLS);const o=ORBITAL_SHELLS[idx];
+        q.type='껍질 최대 전자';q.isMode15=true;q.isAbstract=false;
+        q.name=`${o.name} 껍질 (n=${o.n})`;q.orb=o;
+        q.blanks.push({key:'M15',answer:String(o.max)});
+        break;
+      }
+      case 11:{
+        const idx=pickIndex(IONS_WRITE);const it=IONS_WRITE[idx];
+        q.type='이온식 쓰기';q.isMode11=true;q.isAbstract=false;
+        q.name=it.name;
+        q.blanks.push({key:'M11',answer:it.f});
+        break;
+      }
+      case 12:{
+        const pool=this.orderPool();
+        const idx=pickIndex(pool);const bd=pool[idx];
+        q.type='결합 차수';q.isMode12=true;q.isAbstract=false;
+        q.name=bd.name;q.f=bd.f;
+        q.choices=['단일결합','이중결합','삼중결합'];
+        q.blanks.push({key:'M12',answer:BOND_ORDER_NAME[bd.ligands[0].pairs]});
         break;
       }
       case 10:{
@@ -1242,6 +1314,20 @@ const App={
       const el=PT_QUIZ_ELEMENTS.find(e=>e.z===q.z);
       h=`<span class="eq-text" style="font-size:20px;font-weight:bold;color:var(--c-correct)">${q.sym} · ${el?`${el.period}주기 ${el.group}족`:''}</span>`;
     }
+    else if(q.isMode13){
+      const p=PRECIPITATES[q.pIdx];
+      h=`<span class="eq-text" style="font-size:18px;font-weight:bold;color:var(--c-correct)">`+
+        `${this.formatInput(p.a)} + ${this.formatInput(p.b)} → `+
+        (p.none?'앙금 없음':`${this.fmtFormulaStr(p.f)} (${p.name}, ${p.color})`)+`</span>`;
+    }
+    else if(q.isMode14||q.isMode15){
+      h=`<span class="eq-text" style="font-size:18px;font-weight:bold;color:var(--c-correct)">${q.name} · ${q.blanks[0].answer}개</span>`;
+    }
+    else if(q.isMode11||q.isMode12){
+      h=`<span class="eq-text" style="font-size:20px;font-weight:bold;color:var(--c-correct)">`+
+        (q.isMode12?`${this.fmtFormulaStr(q.f)} · `:'')+
+        `${this.formatInput(q.blanks[0].answer)}</span>`;
+    }
     else if(q.isMode10){
       const bd=BONDS[q.bondIdx];
       h=`<span class="eq-text" style="font-size:18px;font-weight:bold;color:var(--c-correct)">${this.fmtFormulaStr(bd.f)} · ${q.blanks[0].answer}</span>`;
@@ -1269,7 +1355,7 @@ const App={
      정답을 확인한 뒤에만 띄운다. 그림이 먼저 보이면 답이 새기 때문이다.
      [10통과1-02-03] 해설이 결합 이유를 "전자껍질 모형을 이용한 전자배치를 통해" 설명하라고
      명시하므로, 이 그림은 정답을 알려주는 장식이 아니라 왜 그런지를 보여주는 본문이다. */
-  hasDiagram(q){ return !!(q&&(q.isMode8||q.isMode9||q.isMode10)); },
+  hasDiagram(q){ return !!(q&&(q.isMode8||q.isMode9||q.isMode10||q.isMode13||q.isMode14||q.isMode15)); },
   renderExplain(){
     const box=document.getElementById('explainBox');
     if(!box) return;
@@ -1277,6 +1363,26 @@ const App={
     const revealed=this.state.isAnswerChecked&&!q?.isTimedOut;
     if(!revealed||!this.state.showDiagram||!this.hasDiagram(q)){box.innerHTML='';return;}
     if(q.isMode10) box.innerHTML=bondDiagramHTML(BONDS[q.bondIdx]);
+    else if(q.isMode13){
+      const p=PRECIPITATES[q.pIdx];
+      box.innerHTML=`<div class="dia-wrap"><p class="dia-exp">`+(p.none
+        ? `${this.formatInput(p.a)}과 ${this.formatInput(p.b)}은 만나도 <b>앙금이 생기지 않는다</b>. `+
+          `1족 이온이나 질산 이온이 든 염은 물에 잘 녹기 때문이다.`
+        : `${this.formatInput(p.a)} + ${this.formatInput(p.b)} → <b>${this.fmtFormulaStr(p.f)}</b> `+
+          `(${p.name}) — <b>${p.color}</b> 앙금이 가라앉는다.`)+`</p></div>`;
+    }
+    else if(q.isMode14){
+      const o=q.orb;
+      box.innerHTML=`<div class="dia-wrap"><p class="dia-exp">`+
+        `<b>${o.kind}</b> 오비탈은 한 껍질에 <b>${o.count}개</b> 있고, 오비탈 하나에 전자가 2개씩 들어가므로 `+
+        `모두 <b>${o.max}개</b>를 담는다.</p></div>`;
+    }
+    else if(q.isMode15){
+      const o=q.orb;
+      box.innerHTML=`<div class="dia-wrap"><p class="dia-exp">`+
+        `${o.name} 껍질은 <b>${o.make}</b> 오비탈로 이루어져 최대 <b>${o.max}개</b>다. `+
+        `2×${o.n}<sup>2</sup> = ${o.max} — 껍질에 2·8·18·32가 들어가는 이유가 이것이다.</p></div>`;
+    }
     else{
       /* 이온 되기에서는 이온이 된 뒤 모습을 함께 보여줘야 "왜 그 답인지"가 보인다 */
       const ion=q.isMode9&&q.ion&&!q.ion.noble?q.ion:null;
@@ -1325,6 +1431,33 @@ const App={
     /* MODE 8·9도 반응식이 아니다 — 전자껍질 배치를 보여주고 그 위에서 묻는다.
        배치를 보여주는 게 핵심이다. 외운 답을 떠올리는 게 아니라 그림에서 세도록 하는 게
        [9과11-04]가 요구하는 접근이다. */
+    if(q.isMode13){
+      const p=PRECIPITATES[q.pIdx];
+      this.$.equationDisplay.innerHTML=
+        `<span class="eq-term"><span class="eq-text">${this.formatInput(p.a)}</span></span>`+
+        `<span class="eq-plus">+</span>`+
+        `<span class="eq-term"><span class="eq-text">${this.formatInput(p.b)}</span></span>`+
+        `<span class="eq-arrow">→</span>`+
+        `<span class="eq-term">${this.renderBlankBox('M13',q.blanks[0].answer,'choice')}</span>`;
+      return;
+    }
+    if(q.isMode14||q.isMode15){
+      const key=q.isMode14?'M14':'M15';
+      const unit=q.isMode14?'개':'개';
+      this.$.equationDisplay.innerHTML=
+        `<span class="eq-term">${this.renderBlankBox(key,q.blanks[0].answer)}<span class="eq-text eq-unit">${unit}</span></span>`;
+      return;
+    }
+    if(q.isMode11){
+      this.$.equationDisplay.innerHTML=`<span class="eq-term">${this.renderBlankBox('M11',q.blanks[0].answer)}</span>`;
+      return;
+    }
+    if(q.isMode12){
+      this.$.equationDisplay.innerHTML=
+        `<span class="eq-term"><span class="eq-text">${this.fmtFormulaStr(q.f)}</span></span>`+
+        `<span class="eq-term">${this.renderBlankBox('M12',q.blanks[0].answer,'choice')}</span>`;
+      return;
+    }
     if(q.isMode10){
       const bd=BONDS[q.bondIdx];
       this.$.equationDisplay.innerHTML=
@@ -1357,13 +1490,19 @@ const App={
     this.$.equationDisplay.innerHTML=`${fc(q.displayReactants,'R')} <span class="eq-arrow">→</span> ${fc(q.displayProducts,'P')}`;
   },
 
+  /* '^' 뒤는 전하라 위첨자로 올린다. '^'는 화면에 그리지 않는다 —
+     전하 키가 넣어 주는 경계 표시일 뿐이고, 이게 있어야 SO4^2-를 SO₄²⁻로 확정해서 읽을 수 있다.
+     빼기 기호는 하이픈이 아니라 진짜 빼기표(−)로 그린다. */
   formatInput(s, cursorPos = -1) {
     if(!s) s = '';
+    const caret = s.indexOf('^');
     let html = '';
     for(let i=0; i<=s.length; i++){
       if(cursorPos === i) html += '<b style="border-left:2px solid var(--c-accent-1); animation:blink 1s step-end infinite; margin-right:-2px; vertical-align:middle; display:inline-block; height:1em"></b>';
       if(i<s.length){
         let c = s[i];
+        if(c === '^') continue;
+        if(caret >= 0 && i > caret){ html += `<sup>${c === '-' ? '−' : c}</sup>`; continue; }
         let isCoef = true;
         for(let j=0; j<=i; j++) if(/[a-zA-Z]/.test(s[j])) isCoef = false;
         if(/\d/.test(c) && !isCoef) html += `<sub>${c}</sub>`;
@@ -1442,15 +1581,59 @@ const App={
   m6Fmt(side){return side.map(r=>(r.coef>1?r.coef:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' + ');},
   /* 카드 유형(t)에서 카드 배열만 순수하게 만들어낸다 — 오답노트 재풀이(renderRetryFlashcard)에서도
      실제 mode6 세션 상태(state.m6Cards/m6Index)를 건드리지 않고 재사용하기 위해 분리 */
+  /* 카드 유형 정의 — 구역마다 다루는 내용이 다르므로 MODES[n].cards로 어떤 유형을 쓸지 고른다 */
+  m6TypeLabel(t){
+    return {full:'전체 반응식',reactant:'반응물',product:'생성물',formula:'화학식',
+            bond:'결합 그림',group:'주기·족',ion:'이온식',order:'결합 차수',
+            precip:'앙금',orbital:'오비탈'}[t]||t;
+  },
   m6BuildCards(t){
     let cards=[];
-    if(t==='full'){cards=REACTIONS.map(rx=>({ftag:'한글 반응식',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'화학 반응식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.reactants)} → ${this.m6Fmt(rx.products)}</span>`}));}
+    if(t==='bond'){
+      cards=BONDS.map(b=>({ftag:'물질명',fhtml:`<span class="m6-korean">${b.name}</span><div class="m6-formula" style="font-size:.7em;opacity:.7">${this.fmtFormulaStr(b.f)}</div>`,
+        btag:b.type==='ionic'?'이온 결합':'공유 결합',bhtml:bondDiagramHTML(b)}));
+    }
+    else if(t==='group'){
+      cards=PT_QUIZ_ELEMENTS.map(e=>({ftag:'원소',fhtml:`<span class="m6-korean">${e.name} (${e.sym})</span>`,
+        btag:'주기 · 족',bhtml:`<span class="m6-formula">${e.period}주기 ${e.group}족</span>`}));
+    }
+    else if(t==='ion'){
+      cards=IONS_WRITE.map(i=>({ftag:'이온 이름',fhtml:`<span class="m6-korean">${i.name}</span>`,
+        btag:'이온식',bhtml:`<span class="m6-formula">${this.formatInput(i.f)}</span>`}));
+    }
+    else if(t==='order'){
+      cards=this.orderPool().map(b=>({ftag:'물질',fhtml:`<span class="m6-korean">${b.name}</span><div class="m6-formula" style="font-size:.7em;opacity:.7">${this.fmtFormulaStr(b.f)}</div>`,
+        btag:'결합 차수',bhtml:`<span class="m6-formula">${BOND_ORDER_NAME[b.ligands[0].pairs]}</span>`}));
+    }
+    else if(t==='precip'){
+      cards=PRECIPITATES.map(p=>({ftag:'두 이온을 섞으면?',fhtml:`<span class="m6-formula">${this.formatInput(p.a)} + ${this.formatInput(p.b)}</span>`,
+        btag:p.none?'앙금 없음':'앙금',
+        bhtml:`<span class="m6-formula">${p.none?'물에 잘 녹아 앙금이 생기지 않는다':`${this.fmtFormulaStr(p.f)}<br><span style="font-size:.7em">${p.name} · ${p.color}</span>`}</span>`}));
+    }
+    else if(t==='orbital'){
+      cards=ORBITAL_SHELLS.map(o=>({ftag:'껍질',fhtml:`<span class="m6-korean">${o.name} 껍질 (n=${o.n})</span>`,
+        btag:'최대 전자 수',bhtml:`<span class="m6-formula">${o.max}개<br><span style="font-size:.6em">${o.make} · 2×${o.n}²</span></span>`}))
+        .concat(ORBITAL_KINDS.map(o=>({ftag:'오비탈',fhtml:`<span class="m6-korean">${o.kind} 오비탈</span>`,
+        btag:'개수 · 최대 전자',bhtml:`<span class="m6-formula">${o.count}개 · 전자 ${o.max}개</span>`})));
+    }
+    else if(t==='full'){cards=REACTIONS.map(rx=>({ftag:'한글 반응식',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'화학 반응식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.reactants)} → ${this.m6Fmt(rx.products)}</span>`}));}
     else if(t==='reactant'){cards=REACTIONS.map(rx=>({ftag:'반응물 이름',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'반응물 화학식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.reactants)}</span>`}));}
     else if(t==='product'){cards=REACTIONS.map(rx=>({ftag:'생성물 이름',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'생성물 화학식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.products)}</span>`}));}
     else{cards=CHEMICALS.map(c=>({ftag:'물질명',fhtml:`<span class="m6-korean">${c.name}</span>`,btag:'화학식',bhtml:`<span class="m6-formula">${c.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')}</span>`}));}
     return cards;
   },
+  /* 구역마다 쓸 수 있는 카드 유형이 다르다. MODES[n].cards에서 버튼을 만들고,
+     현재 유형이 그 구역에 없으면 첫 번째로 되돌린다(다른 구역 유형이 남아 빈 카드가 되는 걸 막는다). */
+  m6SyncTypes(){
+    const root=modeRoot(this.state.currentMode);
+    const list=(root&&root.cards)||['full','reactant','product','formula'];
+    if(!list.includes(this.state.m6Type)) this.state.m6Type=list[0];
+    document.getElementById('m6TypeBtns').innerHTML=list.map(t=>
+      `<button class="m6-opt-btn${t===this.state.m6Type?' active':''}" data-val="${t}">${this.m6TypeLabel(t)}</button>`
+    ).join('');
+  },
   m6GenCards(){
+    this.m6SyncTypes();
     this.state.m6Cards=this.m6BuildCards(this.state.m6Type);this.state.m6Index=0;this.state.m6Flipped=false;
   },
   m6Render(dir){

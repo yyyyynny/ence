@@ -159,6 +159,7 @@
   .dia-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-ui);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
   .dia-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
   /* 보기 버튼 — 한 줄에 하나씩 두어 긴 한글 보기가 잘리지 않게 한다 */
+  #chargeRow{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}
   #choiceRow{display:grid;grid-template-columns:1fr;gap:8px;}
   .choice-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:12px;color:var(--c-text-primary);font-family:var(--font-ui);font-size:16px;font-weight:700;padding:15px 16px;cursor:pointer;transition:all .2s;text-align:center;}
   .choice-btn.picked{background:var(--c-accent-1);border-color:var(--c-accent-1);color:var(--c-bg);}
