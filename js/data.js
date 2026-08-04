@@ -407,6 +407,10 @@ const BONDS=[
   {name:'암모니아',f:'NH3', type:'covalent', center:'N', ligands:[{sym:'H',pairs:1},{sym:'H',pairs:1},{sym:'H',pairs:1}]},
   {name:'메테인', f:'CH4', type:'covalent', center:'C', ligands:[{sym:'H',pairs:1},{sym:'H',pairs:1},{sym:'H',pairs:1},{sym:'H',pairs:1}]},
   {name:'이산화탄소',f:'CO2',type:'covalent',center:'C', ligands:[{sym:'O',pairs:2},{sym:'O',pairs:2}]},
-  {name:'염화수소',f:'HCl', type:'covalent', center:'Cl',ligands:[{sym:'H',pairs:1}]}
+  {name:'염화수소',f:'HCl', type:'covalent', center:'Cl',ligands:[{sym:'H',pairs:1}]},
+  /* 이중결합 예가 O₂·CO₂ 둘뿐이라 결합 차수 문제가 「단일결합」쪽으로 기울었다.
+     이황화탄소는 이산화탄소와 같은 직선형(S=C=S)이고 중심 탄소에 비공유 전자가 없어
+     이 그림 모형으로 정확히 그려진다. */
+  {name:'이황화탄소',f:'CS2',type:'covalent',center:'C', ligands:[{sym:'S',pairs:2},{sym:'S',pairs:2}]}
 ];
 

@@ -7,7 +7,7 @@ const App={
     timerDuration:DEFAULT_TIMER,currentMaxTime:DEFAULT_TIMER,timerLeft:DEFAULT_TIMER,timerInterval:null,
     wrongNotes:[],noteFilter:'all',retryNoteId:null,
     isCycleMode:false,cycleQueue:[],cycleTotal:0,lastQuestionName:null,
-    m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,
+    m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,lastBondOrder:null,
     m7Dir:'toPG',
     section:'ms', showDiagram:true,
     isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:false,
@@ -733,6 +733,11 @@ const App={
         else if(e.key===' '){e.preventDefault();this.m6Flip();}
         return;
       }
+      /* 버튼에 포커스를 두고 Enter·Space를 누르면 그 버튼이 눌려야 한다. 여기서 가로채면
+         보기 버튼으로 이동해 놓고 Enter를 눌러도 고르지 못하고 채점부터 되어, 키보드만으로는
+         보기를 바꿀 수 없었다. 브라우저 기본 동작에 맡긴다. */
+      const onBtn=document.activeElement&&document.activeElement.closest('button');
+      if(onBtn&&(e.key==='Enter'||e.key===' ')) return;
       if(e.key>='0'&&e.key<='9')this.handleKeyPress(`NUM_${e.key}`);
       else if(e.key==='Backspace')this.handleKeyPress('DEL');
       else if(e.key==='ArrowLeft')this.handleKeyPress('LEFT');
@@ -861,7 +866,9 @@ const App={
     else if(mode===13) pool=PRECIPITATES.map((_,i)=>i);
     else if(mode===14) pool=ORBITAL_KINDS.map((_,i)=>i);
     else if(mode===15) pool=ORBITAL_SHELLS.map((_,i)=>i);
-    else if(mode===1) pool=Array.from({length: 23}, (_,i)=>i);
+    /* 모드 1의 순환 큐는 「계수 템플릿 + 반응식」을 한 줄로 이어 붙인 것이다.
+       길이를 숫자로 박아 두면 반응식을 하나만 더해도 마지막 문제가 영영 안 나온다. */
+    else if(mode===1) pool=Array.from({length: COEF_TEMPLATES.length+REACTIONS.length}, (_,i)=>i);
     else pool=REACTIONS.map((_,i)=>i);
     for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
     this.state.cycleQueue=[...pool];
@@ -1090,36 +1097,42 @@ const App={
     const q={blanks:[],inputs:{},isTimedOut:false};
     const f2s=c=>{let s=c.coef>1?c.coef.toString():'';s+=c.formula.map(p=>p.sym+(p.sub?p.sub.toString():'')).join('');return s;};
 
-    const useCycle=this.state.isCycleMode&&this.state.currentMode!==6;
-    const pickIndex=(pool)=>{
+    const useCycle=this.state.isCycleMode&&!isCardMode(this.state.currentMode);
+    /* 같은 문제가 연달아 나오지 않게 한다. 그런데 풀 항목의 name과 화면에 뜨는 q.name의 꼴이
+       다른 모드가 있어서 비교가 늘 빗나갔다 — 이온 되기 풀은 {z,n,dir}뿐이라 name이 아예 없고,
+       앙금 제목은 「은 이온 + 염화 이온」이며, 오비탈 제목은 「K 껍질 (n=1)」이다.
+       특히 오비탈은 문항이 4개뿐이라 회피가 안 되면 같은 문제가 바로 다시 나온다.
+       그래서 항목에서 비교할 이름을 꺼내는 함수를 받는다 — 그 모드가 q.name을 짓는 방식과
+       똑같이 지어야 한다(검증에서 연속 중복이 나오는지로 확인한다). */
+    const pickRandom=(pool,nameOf)=>{
+      const nameAt=nameOf||(it=>it&&it.name);
+      let idx=Math.floor(Math.random()*pool.length);
+      if(pool.length>1&&this.state.lastQuestionName){
+        let tries=0;
+        while(nameAt(pool[idx])===this.state.lastQuestionName&&tries<10){idx=Math.floor(Math.random()*pool.length);tries++;}
+      }
+      return idx;
+    };
+    const pickIndex=(pool,nameOf)=>{
       if(useCycle){
         if(this.state.cycleQueue.length===0) this.initCycleQueue();
         return this.state.cycleQueue.shift();
       }
-      let idx=Math.floor(Math.random()*pool.length);
-      if(pool.length>1&&this.state.lastQuestionName){
-        let tries=0;
-        while(pool[idx].name===this.state.lastQuestionName&&tries<10){idx=Math.floor(Math.random()*pool.length);tries++;}
-      }
-      return idx;
+      return pickRandom(pool,nameOf);
     };
 
     switch(this.state.currentMode){
       case 1:
         let isTemplate = false; let rxIdx = 0;
         if(useCycle) {
-          const idx = pickIndex(Array.from({length: 23}, (_,i)=>i));
+          const idx = pickIndex(Array.from({length: COEF_TEMPLATES.length+REACTIONS.length}, (_,i)=>i));
           if(idx < COEF_TEMPLATES.length) { isTemplate = true; rxIdx = idx; }
           else { isTemplate = false; rxIdx = idx - COEF_TEMPLATES.length; }
         } else {
           isTemplate = Math.random() < 0.5;
-          if(isTemplate) rxIdx = Math.floor(Math.random() * COEF_TEMPLATES.length);
-          else {
-            rxIdx = Math.floor(Math.random() * REACTIONS.length);
-            if(REACTIONS.length > 1 && this.state.lastQuestionName) {
-              let t2=0; while(REACTIONS[rxIdx].name === this.state.lastQuestionName && t2<10) { rxIdx=Math.floor(Math.random()*REACTIONS.length); t2++; }
-            }
-          }
+          /* 계수 템플릿 쪽에는 중복 회피가 아예 없어서 7개짜리 풀에서 같은 문제가 연달아 나왔다.
+             템플릿은 이름이 label이고 반응식은 name이라 뽑는 함수에 그 차이만 알려 준다. */
+          rxIdx = isTemplate ? pickRandom(COEF_TEMPLATES, t=>t.label) : pickRandom(REACTIONS);
         }
         if(isTemplate){
           const tmpl = COEF_TEMPLATES[rxIdx];
@@ -1161,7 +1174,7 @@ const App={
       }
       case 9:{
         const pool=this.ionPool();
-        const idx=pickIndex(pool);const item=pool[idx];
+        const idx=pickIndex(pool,it=>(ELEMENTS.find(x=>x.z===it.z)||{}).name);const item=pool[idx];
         const el=ELEMENTS.find(x=>x.z===item.z);
         q.type='이온 되기';q.isMode9=true;q.isAbstract=false;
         q.name=el.name;q.z=el.z;q.sym=el.sym;q.shells=shellsOf(el.z);q.ion=item;
@@ -1171,26 +1184,30 @@ const App={
         break;
       }
       case 13:{
-        const idx=pickIndex(PRECIPITATES);const p=PRECIPITATES[idx];
+        const idx=pickIndex(PRECIPITATES,p=>`${ionKo(p.a)} + ${ionKo(p.b)}`);const p=PRECIPITATES[idx];
         q.type='앙금 생성';q.isMode13=true;q.isAbstract=false;
         /* 제목은 오답노트 목록에 그대로 뜬다 — 식을 쓰면 ^가 노출되므로 한글 이름으로 짓는다 */
-        q.name=`${ionKo(p.a)} + ${ionKo(p.b)}`;q.pIdx=idx;
+        q.name=`${ionKo(p.a)} + ${ionKo(p.b)}`;q.pIdx=idx;q.pKey=`${p.a}|${p.b}`;
         q.sub='두 이온을 섞으면?';
         q.choices=['흰색 앙금','노란색 앙금','검은색 앙금','앙금이 생기지 않는다'];
         q.blanks.push({key:'M13',answer:p.none?'앙금이 생기지 않는다':p.color+' 앙금'});
         break;
       }
       case 14:{
-        const idx=pickIndex(ORBITAL_KINDS);const o=ORBITAL_KINDS[idx];
+        const idx=pickIndex(ORBITAL_KINDS,o=>`${o.kind} 오비탈`);const o=ORBITAL_KINDS[idx];
         q.type='오비탈 개수';q.isMode14=true;q.isAbstract=false;
         q.name=`${o.kind} 오비탈`;q.orb=o;
+        /* 헤더는 「s 오비탈」, 본문은 「[ ] 개」뿐이라 개수를 묻는지 전자 수를 묻는지 알 수 없었다.
+           q.sub로 넣으면 헤더의 원소·껍질 이름이 사라지므로 발문은 본문 앞에 붙인다. */
+        q.prompt='한 껍질에';
         q.blanks.push({key:'M14',answer:String(o.count)});
         break;
       }
       case 15:{
-        const idx=pickIndex(ORBITAL_SHELLS);const o=ORBITAL_SHELLS[idx];
+        const idx=pickIndex(ORBITAL_SHELLS,o=>`${o.name} 껍질 (n=${o.n})`);const o=ORBITAL_SHELLS[idx];
         q.type='껍질 최대 전자';q.isMode15=true;q.isAbstract=false;
         q.name=`${o.name} 껍질 (n=${o.n})`;q.orb=o;
+        q.prompt='전자가 최대';
         q.blanks.push({key:'M15',answer:String(o.max)});
         break;
       }
@@ -1203,7 +1220,11 @@ const App={
       }
       case 12:{
         const pool=this.orderPool();
-        const idx=pickIndex(pool);const bd=pool[idx];
+        /* 답이 세 가지뿐인데 분자 구성이 단일에 몰려 있어(6 : 2 : 1) 「단일결합」만 찍어도
+           3분의 2를 맞혔다. 분자를 고르기 전에 답(결합 차수)부터 고르고 그 안에서 분자를 뽑아
+           세 답이 고르게 나오게 한다. 직전과 같은 차수는 가능하면 피한다.
+           순환 출제에서는 큐가 이미 모든 분자를 한 바퀴 돌리므로 그대로 둔다. */
+        const idx=useCycle?pickIndex(pool):this.pickByBondOrder(pool);const bd=pool[idx];
         q.type='결합 차수';q.isMode12=true;q.isAbstract=false;
         q.name=bd.name;q.f=bd.f;q.bondName=bd.name;
         q.choices=['단일결합','이중결합','삼중결합'];
@@ -1216,6 +1237,14 @@ const App={
         q.name=bd.name;q.bondIdx=idx;q.bondName=bd.name;q.f=bd.f;
         q.choices=['이온결합','공유결합'];
         q.blanks.push({key:'M10',answer:bd.type==='ionic'?'이온결합':'공유결합'});
+        break;
+      }
+      default:{
+        /* 등록되지 않은 모드 — 저장된 설정이나 옛 오답노트에 남은 번호로 들어올 수 있다.
+           그대로 두면 blanks가 빈 문제로 렌더가 돌아 화면이 통째로 멈춘다. */
+        const fallback=(modesInSection(this.state.section)||[])[0]||1;
+        if(fallback!==this.state.currentMode){ this.setMode(fallback); return; }
+        q.type='문제를 만들 수 없습니다';q.name='다른 모드를 골라 주세요';q.isAbstract=false;
         break;
       }
     }
@@ -1359,7 +1388,7 @@ const App={
       h=`<span class="eq-text" style="font-size:20px;font-weight:bold;color:var(--c-correct)">${q.sym} · ${el?`${el.period}주기 ${el.group}족`:''}</span>`;
     }
     else if(q.isMode13){
-      const p=PRECIPITATES[q.pIdx];
+      const p=this.precipOf(q);
       h=`<span class="eq-text" style="font-size:18px;font-weight:bold;color:var(--c-correct)">`+
         `${this.formatInput(p.a)} + ${this.formatInput(p.b)} → `+
         (p.none?'앙금 없음':`${this.fmtFormulaStr(p.f)} (${p.name}, ${p.color})`)+`</span>`;
@@ -1402,6 +1431,19 @@ const App={
   /* 오답노트는 오래 남는다. 배열 인덱스를 저장해 두면 BONDS 순서를 바꾼 순간
      옛 노트가 다른 물질로 바뀐다. 이름으로 찾고, 이름이 없는 옛 노트만 인덱스로 되돌린다. */
   bondOf(q){ return BONDS.find(x=>x.name===q.bondName) || BONDS[q.bondIdx]; },
+  precipOf(q){ return PRECIPITATES.find(p=>`${p.a}|${p.b}`===q.pKey) || PRECIPITATES[q.pIdx]; },
+  /* 결합 차수별로 나눠 담고 차수를 먼저 고른다 — 분자 수가 아니라 답이 고르게 나오도록 */
+  pickByBondOrder(pool){
+    const groups={};
+    pool.forEach((b,i)=>{ const k=b.ligands[0].pairs; (groups[k]=groups[k]||[]).push(i); });
+    const all=Object.keys(groups);
+    const rest=all.filter(k=>k!==String(this.state.lastBondOrder));
+    const from=rest.length?rest:all;
+    const k=from[Math.floor(Math.random()*from.length)];
+    this.state.lastBondOrder=k;
+    const g=groups[k];
+    return g[Math.floor(Math.random()*g.length)];
+  },
   hasDiagram(q){ return !!(q&&(q.isMode8||q.isMode9||q.isMode10||q.isMode12||q.isMode13||q.isMode14||q.isMode15)); },
   renderExplain(){
     const box=document.getElementById('explainBox');
@@ -1411,7 +1453,7 @@ const App={
     if(!revealed||!this.state.showDiagram||!this.hasDiagram(q)){box.innerHTML='';return;}
     if(q.isMode10) box.innerHTML=bondDiagramHTML(this.bondOf(q));
     else if(q.isMode13){
-      const p=PRECIPITATES[q.pIdx];
+      const p=this.precipOf(q);
       box.innerHTML=`<div class="dia-wrap"><p class="dia-exp">`+(p.none
         ? `${this.formatInput(p.a)}과 ${this.formatInput(p.b)}은 만나도 <b>앙금이 생기지 않는다</b>. `+
           `1족 이온이나 질산 이온이 든 염은 물에 잘 녹기 때문이다.`
@@ -1508,7 +1550,7 @@ const App={
        배치를 보여주는 게 핵심이다. 외운 답을 떠올리는 게 아니라 그림에서 세도록 하는 게
        [9과11-04]가 요구하는 접근이다. */
     if(q.isMode13){
-      const p=PRECIPITATES[q.pIdx];
+      const p=this.precipOf(q);
       this.$.equationDisplay.innerHTML=
         `<span class="eq-term"><span class="eq-text">${this.formatInput(p.a)}</span></span>`+
         `<span class="eq-plus">+</span>`+
@@ -1519,9 +1561,9 @@ const App={
     }
     if(q.isMode14||q.isMode15){
       const key=q.isMode14?'M14':'M15';
-      const unit=q.isMode14?'개':'개';
       this.$.equationDisplay.innerHTML=
-        `<span class="eq-term">${this.renderBlankBox(key,q.blanks[0].answer)}<span class="eq-text eq-unit">${unit}</span></span>`;
+        (q.prompt?`<span class="eq-term"><span class="eq-text eq-unit">${q.prompt}</span></span>`:'')+
+        `<span class="eq-term">${this.renderBlankBox(key,q.blanks[0].answer)}<span class="eq-text eq-unit">개</span></span>`;
       return;
     }
     if(q.isMode11){
