@@ -27,7 +27,9 @@ const DIA = {
      시작이 끝나 버린다. 카드에서는 뒤집기 전환(0.5s)까지 지나가야 하므로 그보다 넉넉히 잡는다. */
   T0: 0.9,
   STEP: 0.30,    /* 전자 하나와 다음 전자 사이 간격(초) */
-  FLY: 42,       /* 화면 밖에서 날아 들어오는 거리 */
+  /* 날아 들어오는 전자의 출발 거리. 이 거리만큼 캔버스에 여백이 필요하므로 크게 잡으면
+     정작 원자가 작아진다(전자는 출발할 때 투명해서 끝까지 다 보이지도 않는다). */
+  FLY: 30,
 
   /* from → to 이동. 요소는 to에 그려 두고 시작 오프셋만 준다. */
   from(fx, fy, tx, ty, delay){
@@ -86,7 +88,9 @@ const DIA = {
     const L = cx - w, R = cx + w, T = cy - h, B = cy + h;
     let s = `<path class="dia-bracket dia-anim-pop" d="M ${(L+tick).toFixed(1)} ${T.toFixed(1)} L ${L.toFixed(1)} ${T.toFixed(1)} L ${L.toFixed(1)} ${B.toFixed(1)} L ${(L+tick).toFixed(1)} ${B.toFixed(1)}`+
             ` M ${(R-tick).toFixed(1)} ${T.toFixed(1)} L ${R.toFixed(1)} ${T.toFixed(1)} L ${R.toFixed(1)} ${B.toFixed(1)} L ${(R-tick).toFixed(1)} ${B.toFixed(1)}"${this.at(delay)}/>`;
-    if(charge) s += `<text class="dia-charge dia-anim-pop" x="${(R+11).toFixed(1)}" y="${(T+7).toFixed(1)}"${this.at(delay)}>${charge}</text>`;
+    /* 전하는 오른쪽 괄호 바깥에서 오른쪽으로 자라야 한다. 가운데 정렬이면 「2−」처럼
+       두 글자짜리 전하가 왼쪽으로 번져 괄호 모서리를 덮는다. */
+    if(charge) s += `<text class="dia-charge dia-charge-br dia-anim-pop" x="${(R+6).toFixed(1)}" y="${(T+8).toFixed(1)}"${this.at(delay)}>${charge}</text>`;
     return s;
   },
 
@@ -332,8 +336,12 @@ function ionFormingDiagramHTML(z, item){
      1~20번에서 금속이 잃는 개수는 언제나 바깥 껍질 전자 전부다. */
   const fin = gain ? sh.slice(0, -1).concat(outer + n) : lose ? sh.slice(0, -1) : sh;
   const outR = DIA.R0 + (sh.length - 1) * DIA.RSTEP;
-  const rDraw = DIA.atomRadius(sh);
-  const W = 2 * (rDraw + DIA.FLY + 16), H = W, cx = W / 2, cy = H / 2;
+  const finR = DIA.atomRadius(fin);
+  /* 필요한 반폭은 둘 중 큰 쪽이다 — 전자가 날아오는 거리, 또는 대괄호+전하가 차지하는 폭.
+     예전에는 무조건 원자 반지름 + 날아오는 거리 + 여백으로 잡아 원자가 캔버스의 3할밖에
+     안 됐고, 전하 기호가 원자에서 한참 떨어져 붕 떠 보였다. */
+  const half = Math.max(outR + DIA.FLY, finR + 36) + 6;
+  const W = 2 * half, H = W, cx = W / 2, cy = H / 2;
   const lastAt = DIA.T0 + Math.max(0, (n || outer) - 1) * DIA.STEP;
 
   let s = `<circle class="dia-nuc" cx="${cx}" cy="${cy}" r="${DIA.NUC}"/>`;
@@ -375,10 +383,9 @@ function ionFormingDiagramHTML(z, item){
     });
   }
 
-  if(n > 0){
-    const fr = DIA.atomRadius(fin);
-    s += `<text class="dia-charge dia-anim-pop" x="${(cx + fr + 12).toFixed(1)}" y="${(cy - fr - 4).toFixed(1)}"${DIA.at(lastAt + 0.5)}>${DIA.chargeText(n, lose ? '+' : '−')}</text>`;
-  }
+  /* 이온이 되고 나면 이온 결합 그림과 똑같이 대괄호로 감싼다 — 두 화면에서 같은 표기를
+     써야 「이게 이온이다」가 같은 뜻으로 읽힌다. 18족은 이온이 되지 않으므로 씌우지 않는다. */
+  if(n > 0) s += DIA.ionBracket(cx, cy, finR, DIA.chargeText(n, lose ? '+' : '−'), lastAt + 0.5);
   const cap = gain ? `전자 ${n}개가 들어온다` : lose ? `바깥 껍질 전자 ${n}개가 빠져나간다` : '이미 꽉 차 있다';
   return `<div class="dia-wrap"><div class="dia-panel"><div class="dia-cap">${cap}</div>
     <svg class="dia" viewBox="0 0 ${W} ${H}" role="img">${s}</svg></div>${DIA.replayBtn()}</div>`;

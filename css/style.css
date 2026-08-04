@@ -218,6 +218,8 @@
   .dia-charge{fill:var(--c-accent-1);font-family:var(--font-mono);font-size:17px;font-weight:700;text-anchor:middle;}
   /* 이온을 감싸는 대괄호 — [Na]⁺ 처럼 "여기까지가 이온 하나"라는 경계를 그어 준다 */
   .dia-bracket{fill:none;stroke:var(--c-accent-1);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
+  /* 대괄호 옆 전하는 괄호 바깥에서 오른쪽으로 자란다 — 가운데 정렬이면 괄호를 덮는다 */
+  .dia-charge-br{text-anchor:start;}
   .dia-note{fill:var(--c-text-secondary);font-family:var(--font-ui);font-size:12px;text-anchor:middle;}
   .dia-exp{font-size:13px;line-height:1.6;color:var(--c-text-secondary);margin:8px 2px 0;}
   .dia-exp b{color:var(--c-text-primary);}
