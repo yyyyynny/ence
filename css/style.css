@@ -110,8 +110,11 @@
   /* 숫자패드는 줄바꿈되는 flex 대신 5열 그리드로 고정 → 마지막 줄(8·9·0)만 늘어나던 문제 방지, 항상 균일 */
   #numRow{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;}
   /* 원소패드(14개)도 동일한 문제: flex-wrap 마지막 줄에 하나만 남으면(B) 그 키가 flex-grow로 줄 전체를 채워 거대해짐.
-     7열 그리드로 고정하면 14개가 정확히 2줄로 나뉘어 항상 균일하다. */
-  #elemRow{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;}
+     그렇다고 7열로 고정하면 좁은 폰에서 잘린다 — 7×44 + 6×6 = 344px가 필요한데
+     390px(아이폰)·360px(갤럭시)에서 키보드 안쪽 가용 폭이 그보다 좁아 마지막 키가 잘려 나갔다
+     (body에 overflow-x:hidden이 걸려 있어 스크롤로 볼 수도 없었다).
+     auto-fit + minmax로 두면 좁을수록 열이 줄고 줄 수가 늘어난다. 44px 터치 타깃은 그대로 지킨다. */
+  #elemRow{display:grid;grid-template-columns:repeat(auto-fit,minmax(44px,1fr));gap:6px;}
   .kb-key{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;font-family:var(--font-mono);font-size:18px;font-weight:700;min-height:54px;min-width:44px;flex:1 1 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .1s;}
   .kb-key:active{transform:scale(.95);}
   .kb-key.num{color:var(--c-accent-3);}.kb-key.elem{color:var(--c-text-primary);font-weight:500;}
@@ -159,7 +162,7 @@
   .dia-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-ui);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
   .dia-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
   /* 보기 버튼 — 한 줄에 하나씩 두어 긴 한글 보기가 잘리지 않게 한다 */
-  #chargeRow{display:grid;grid-template-columns:repeat(6,1fr);gap:6px;}
+  #chargeRow{display:grid;grid-template-columns:repeat(auto-fit,minmax(44px,1fr));gap:6px;}
   #choiceRow{display:grid;grid-template-columns:1fr;gap:8px;}
   .choice-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:12px;color:var(--c-text-primary);font-family:var(--font-ui);font-size:16px;font-weight:700;padding:15px 16px;cursor:pointer;transition:all .2s;text-align:center;}
   .choice-btn.picked{background:var(--c-accent-1);border-color:var(--c-accent-1);color:var(--c-bg);}

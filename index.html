@@ -173,10 +173,12 @@
     <div class="kb-row" id="chargeRow" style="display:none"></div>
     <div class="kb-section-label" id="choiceRowLabel" style="display:none">보기</div>
     <div id="choiceRow" style="display:none"></div>
+    <!-- kb-edit: 글자 단위 편집키. 보기에서 고르는 문제에서는 답이 통째로 들어오므로
+         이 키들이 눌리면 답이 깨진다(「이온결합」→⌫→「이온결」). 그때는 통째로 숨긴다. -->
     <div class="kb-row" style="margin-top:14px">
-      <button class="kb-key" data-key="LEFT" style="flex-grow:1; max-width: 60px;">◀</button>
-      <button class="kb-key" data-key="RIGHT" style="flex-grow:1; max-width: 60px;">▶</button>
-      <button class="kb-key del" data-key="DEL" style="flex-grow:2">⌫ 지우기</button>
+      <button class="kb-key kb-edit" data-key="LEFT" style="flex-grow:1; max-width: 60px;">◀</button>
+      <button class="kb-key kb-edit" data-key="RIGHT" style="flex-grow:1; max-width: 60px;">▶</button>
+      <button class="kb-key del kb-edit" data-key="DEL" style="flex-grow:2">⌫ 지우기</button>
       <button class="kb-key confirm" data-key="CONFIRM" style="flex-grow:3">✓ 확인</button>
       <button class="kb-key next-q" data-key="NEXT" style="display:none; flex-grow:3">▶ 다음 문제</button>
     </div>

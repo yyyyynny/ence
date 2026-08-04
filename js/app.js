@@ -353,6 +353,9 @@ const App={
     this.$.timerSelectWrap.style.display = 'none';
     this.$.mode6Wrap.classList.remove('m6-active');
     this.$.cycleWrap.style.display = 'none';
+    /* 카드 복습 화면이 떠 있는 상태에서 단일 풀기로 들어오면 두 화면이 겹친 채로 남아
+       어느 쪽 입력도 먹지 않았다. 다른 진입점들과 똑같이 여기서도 내린다. */
+    document.getElementById('retryM6Card').style.display = 'none';
     const q = JSON.parse(JSON.stringify(note.qData));
     q.inputs = {}; q.isTimedOut = false; q.cursor = {};
     if(q.blanks.length > 0) q.activeKey = q.blanks[0].key;
@@ -881,7 +884,11 @@ const App={
     void this.$.timerBar.offsetWidth;this.$.timerBar.style.transition='width 0.1s linear, background 0.3s';
     let lt=Date.now();
     this.state.timerInterval=setInterval(()=>{
-      if(document.getElementById('authOverlay').style.display !== 'none') {
+      /* 모달이 열려 있는 동안은 시간을 세지 않는다. 주기율표나 반응식 목록을 띄워 두면
+         뒤에서 제한시간이 만료돼 풀지도 않은 문제가 오답으로 기록됐다.
+         (인증 화면도 같은 이유로 여기서 걸린다.) */
+      if(document.getElementById('authOverlay').style.display !== 'none' ||
+         document.querySelector('.modal-overlay.show')) {
         lt = Date.now();
         return;
       }
@@ -916,6 +923,11 @@ const App={
   handleKeyPress(key){
     if(key.startsWith('NUM_')||key.startsWith('ELEM_')||key.startsWith('CHG_')||key==='DEL'||key==='LEFT'||key==='RIGHT'){
       if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)return;
+      /* 보기에서 고르는 문제는 답이 통째로 들어오므로 글자 단위 편집이 있으면 안 된다.
+         화면의 편집키는 숨기지만 물리 키보드는 그대로 살아 있어서, 「이온결합」을 고른 뒤
+         ⌫를 누르면 「이온결」이 되고 숫자를 누르면 「이온결합5」가 되어 오답 처리됐다.
+         입력 경로 자체를 여기서 막는다 — 숨기는 것만으로는 부족하다. */
+      if(this.state.currentQuestion?.choices) return;
       const q=this.state.currentQuestion;if(!q||!q.activeKey)return;
 
       const wasWrong=this.state.isLastWrongAttempt;
@@ -1017,13 +1029,13 @@ const App={
   },
 
   setMode(mode, preserveCycle = false){
-    if(this.state.retryNoteId) {
-      this.state.retryNoteId = null;
-      this.state.retryPlaylist = [];
-      document.getElementById('retryBanner').style.display = 'none';
-      document.getElementById('retryM6Card').style.display = 'none';
-      this.state.savedCycleState = null;
-      this.state.isRetryPlaylistMode = false;
+    if(this.state.retryNoteId || this.state.isRetryPlaylistMode) {
+      /* 재풀이 중에 모드 탭을 누르면 재풀이에서 나간다. 예전에는 여기서 상태만 지웠는데,
+         마침 지금 모드의 탭을 누른 경우 바로 아래 "같은 모드면 반환"에 걸려 화면이
+         제한시간·출제 방식 줄이 사라진 채로 굳었고, 남아 있던 재풀이 문제가 정상 문제인 양
+         점수에 기록됐다. exitRetry가 화면 복구와 순환 큐 복원까지 하므로 그쪽으로 넘긴다. */
+      this.exitRetry();
+      if(this.state.currentMode===mode) return;  /* exitRetry가 이미 이 모드로 되돌려 놨다 */
     }
     if(this.state.currentMode===mode)return;
 
@@ -1155,7 +1167,8 @@ const App={
       case 13:{
         const idx=pickIndex(PRECIPITATES);const p=PRECIPITATES[idx];
         q.type='앙금 생성';q.isMode13=true;q.isAbstract=false;
-        q.name=`${p.a} + ${p.b}`;q.pIdx=idx;
+        /* 제목은 오답노트 목록에 그대로 뜬다 — 식을 쓰면 ^가 노출되므로 한글 이름으로 짓는다 */
+        q.name=`${ionKo(p.a)} + ${ionKo(p.b)}`;q.pIdx=idx;
         q.sub='두 이온을 섞으면?';
         q.choices=['흰색 앙금','노란색 앙금','검은색 앙금','앙금이 생기지 않는다'];
         q.blanks.push({key:'M13',answer:p.none?'앙금이 생기지 않는다':p.color+' 앙금'});
@@ -1249,6 +1262,9 @@ const App={
             this.renderWrongNotes();
           }
         }
+        /* 채점이 끝났으면 타이머는 멈춰야 한다. 안 멈추면 틀린 뒤 화면을 그대로 두었을 때
+           제한시간이 다시 만료되면서 같은 문제의 오답 횟수가 한 번 더 올라갔다. */
+        clearInterval(this.state.timerInterval);
         this.state.wrongBlanks={};
         q.blanks.forEach(b=>{if((q.inputs[b.key]||'')!==b.answer)this.state.wrongBlanks[b.key]=true;});
         q.coefOneErrorFlag=ce;
@@ -1287,6 +1303,9 @@ const App={
             this.renderWrongNotes();
           }
         }
+        /* 채점이 끝났으면 타이머는 멈춰야 한다. 안 멈추면 틀린 뒤 화면을 그대로 두었을 때
+           제한시간이 다시 만료되면서 같은 문제의 오답 횟수가 한 번 더 올라갔다. */
+        clearInterval(this.state.timerInterval);
         this.state.wrongBlanks={};
         q.blanks.forEach(b=>{if((q.inputs[b.key]||'')!==b.answer)this.state.wrongBlanks[b.key]=true;});
         q.coefOneErrorFlag=ce;
@@ -1606,6 +1625,9 @@ const App={
     label.style.display=on?'block':'none';
     document.getElementById('numRow').style.display=on?'none':'grid';
     document.getElementById('numRowLabel').style.display=on?'none':'block';
+    /* 편집키도 같이 숨긴다 — 보기 답은 통째로 들어오므로 글자를 지우거나 커서를 옮길 일이 없고,
+       눌리면 답이 깨진다. (물리 키보드는 handleKeyPress에서 따로 막는다.) */
+    document.querySelectorAll('.kb-edit').forEach(b=>{b.style.display=on?'none':'flex';});
     if(!on){row.innerHTML='';return;}
     const key=q.blanks[0].key, picked=q.inputs[key];
     const locked=this.state.isAnswerChecked&&!q.isTimedOut;
@@ -1737,7 +1759,9 @@ const App={
   },
   viewFlashcardNote(note){
     this.$.wrongNoteModalOverlay.classList.remove('show');
-    this.setMode(6);
+    /* 플래시카드는 구역마다 하나씩(6·16·17·18) 있으므로 6번으로 고정하면 안 된다.
+       고2 「이온식」 카드를 저장해 놓고 다시보기를 누르면 중학 반응식 카드가 떴다. */
+    this.setMode(note.mode);
     const q=note.qData||{};
     this.state.m6Type=q.m6Type||'full';
     document.querySelectorAll('#m6TypeBtns .m6-opt-btn').forEach(b=>b.classList.toggle('active',b.dataset.val===this.state.m6Type));
