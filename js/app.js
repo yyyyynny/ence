@@ -851,8 +851,18 @@ const App={
     if(item.z===1&&v==='전자 1개를 잃는다') return '고2에서 다시 만나요';
     return '';
   },
-  /* 보기 항목은 문자열이거나 {v, note} 객체다. 채점·비교는 언제나 v 문자열로 한다. */
+  /* 보기 항목은 문자열이거나 {v, note, swatch} 객체다. 채점·비교는 언제나 v 문자열로 한다. */
   choiceValue(c){ return typeof c==='string'?c:c.v; },
+  /* 앙금 색 동그라미. 색 이름이 표에 없으면 아무것도 안 그린다(「앙금이 생기지 않는다」). */
+  swatch(colorName){
+    const c=PRECIP_COLORS[colorName];
+    return c?`<span class="ppt-sw" style="--sw:${c}"></span>`:'';
+  },
+  /* 「흰색 앙금」처럼 색 이름으로 시작하는 문구 앞에 그 색 동그라미를 붙인다 */
+  withSwatch(text){
+    const name=Object.keys(PRECIP_COLORS).find(k=>String(text).startsWith(k));
+    return (name?this.swatch(name):'')+text;
+  },
   initCycleQueue(){
     const mode=this.state.currentMode;
     let pool=[];
@@ -1189,7 +1199,8 @@ const App={
         /* 제목은 오답노트 목록에 그대로 뜬다 — 식을 쓰면 ^가 노출되므로 한글 이름으로 짓는다 */
         q.name=`${ionKo(p.a)} + ${ionKo(p.b)}`;q.pIdx=idx;q.pKey=`${p.a}|${p.b}`;
         q.sub='두 이온을 섞으면?';
-        q.choices=['흰색 앙금','노란색 앙금','검은색 앙금','앙금이 생기지 않는다'];
+        q.choices=[{v:'흰색 앙금',swatch:'흰색'},{v:'노란색 앙금',swatch:'노란색'},
+                   {v:'검은색 앙금',swatch:'검은색'},'앙금이 생기지 않는다'];
         q.blanks.push({key:'M13',answer:p.none?'앙금이 생기지 않는다':p.color+' 앙금'});
         break;
       }
@@ -1458,7 +1469,7 @@ const App={
         ? `${this.formatInput(p.a)} + ${this.formatInput(p.b)} → <b>앙금이 생기지 않는다</b>. `+
           `1족 이온이나 질산 이온이 든 염은 물에 잘 녹기 때문이다.`
         : `${this.formatInput(p.a)} + ${this.formatInput(p.b)} → <b>${this.fmtFormulaStr(p.f)}</b> `+
-          `(${p.name}) — <b>${p.color}</b> 앙금이 가라앉는다.`)+`</p></div>`;
+          `(${p.name}) — ${this.swatch(p.color)}<b>${p.color}</b> 앙금이 가라앉는다.`)+`</p></div>`;
     }
     else if(q.isMode14){
       const o=q.orb;
@@ -1647,8 +1658,10 @@ const App={
     let disp='';
     if(this.state.isAnswerChecked&&!q.isTimedOut){
       const ok=inp===answer;cls+=ok?' correct':' wrong';
-      if(this.state.isAnswerRevealed&&!ok)disp=this.formatInput(answer);
-      else disp=this.formatInput(inp);
+      /* 보기형 답은 화학식이 아니라 한글 문구다 — 색 이름으로 시작하면 동그라미를 앞에 붙인다 */
+      const fmt=v=>extraCls==='choice'?this.withSwatch(v):this.formatInput(v);
+      if(this.state.isAnswerRevealed&&!ok)disp=fmt(answer);
+      else disp=fmt(inp);
     }else if(this.state.isLastWrongAttempt&&(this.state.wrongBlanks||{})[key]){
       cls+=' wrong';
       disp=this.formatInput(inp, isActive ? (q.cursor && q.cursor[key] !== undefined ? q.cursor[key] : inp.length) : -1);
@@ -1693,8 +1706,9 @@ const App={
     const locked=this.state.isAnswerChecked&&!q.isTimedOut;
     row.innerHTML=q.choices.map(c=>{
       const v=this.choiceValue(c), note=typeof c==='string'?'':c.note;
+      const sw=(typeof c==='string'?false:c.swatch)?this.swatch(c.swatch):'';
       return `<button class="choice-btn${v===picked?' picked':''}"${locked?' disabled':''} data-choice="${v}">`+
-             `<span class="choice-main">${v}</span>`+
+             `<span class="choice-main">${sw}${v}</span>`+
              (note?`<span class="choice-note">${note}</span>`:'')+`</button>`;
     }).join('');
   },

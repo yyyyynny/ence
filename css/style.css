@@ -170,6 +170,10 @@
   /* 보기 주석 — "완전히 틀린 말은 아니고 나중에 다시 배운다"를 알려 주는 한 줄.
      본문보다 작지만 12px 밑으로는 내리지 않는다(폰에서 안 읽힌다). */
   .choice-note{display:block;margin-top:4px;font-size:12px;font-weight:600;opacity:.72;}
+  /* 앙금 색 동그라미 — 검은색 앙금은 다크 배경에 묻히므로 테두리로 가장자리를 살린다.
+     글자에 이미 색 이름이 있으니 이건 거드는 표시다(색만으로 뜻을 전하지 않는다). */
+  .ppt-sw{display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--sw);
+          border:1.5px solid var(--c-text-secondary);vertical-align:-2px;margin-right:7px;flex-shrink:0;}
   /* 해설 안의 「나중에 다시 배운다」 한 줄. dia-note는 SVG text 전용 클래스라 이름을 겹치면 안 된다 */
   .later-note{display:block;margin-top:6px;font-size:13px;opacity:.75;}
   /* 보기 답은 한글 문장이라 정사각 빈칸에 안 들어간다 — 폭이 늘어나는 형태로 바꾼다 */
