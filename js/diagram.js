@@ -78,6 +78,18 @@ const DIA = {
   /* 전하 표기 — 1은 생략한다(Na⁺이지 Na¹⁺가 아니다) */
   chargeText(n, sign){ return (n > 1 ? n : '') + sign; },
 
+  /* 이온 하나를 대괄호로 감싸고 오른쪽 위에 전하를 올린다 — 교과서의 [Na]⁺ [Cl]⁻ 표기.
+     원자 그림 옆에 +/−만 띄우면 그 부호가 어느 원자 것인지, 이게 아직 원자인지 이미
+     이온인지가 흐릿하다. 대괄호가 "여기까지가 이온 하나"라는 경계를 그어 준다. */
+  ionBracket(cx, cy, r, charge, delay){
+    const w = r + 10, h = r + 8, tick = 9;
+    const L = cx - w, R = cx + w, T = cy - h, B = cy + h;
+    let s = `<path class="dia-bracket dia-anim-pop" d="M ${(L+tick).toFixed(1)} ${T.toFixed(1)} L ${L.toFixed(1)} ${T.toFixed(1)} L ${L.toFixed(1)} ${B.toFixed(1)} L ${(L+tick).toFixed(1)} ${B.toFixed(1)}`+
+            ` M ${(R-tick).toFixed(1)} ${T.toFixed(1)} L ${R.toFixed(1)} ${T.toFixed(1)} L ${R.toFixed(1)} ${B.toFixed(1)} L ${(R-tick).toFixed(1)} ${B.toFixed(1)}"${this.at(delay)}/>`;
+    if(charge) s += `<text class="dia-charge dia-anim-pop" x="${(R+11).toFixed(1)}" y="${(T+7).toFixed(1)}"${this.at(delay)}>${charge}</text>`;
+    return s;
+  },
+
   /* 비공유 전자는 낱개가 아니라 쌍으로 존재한다 — 두 개씩 붙여 찍어야 교과서 그림과 같아진다.
      baseDeg 방향을 중심으로 쌍들을 부채꼴로 펼친다. centerAtom이면 결합 반대편 넓은 쪽에 놓는다. */
   lonePairs(cx, cy, r, count, baseDeg, centerAtom, delay){
@@ -124,7 +136,7 @@ function ionicDiagramHTML(b){
   const TOP = 26;                                   /* 「전자 N개」 라벨 자리 — 전하 표기와 겹치지 않게 따로 뗀다 */
   const rowH = 2 * Math.max(mR, xR) + 30;
   const H = TOP + rows * rowH;
-  const lx = 90, rx = 310, W = 400;
+  const lx = 90, rx = 310, W = 420;   /* 대괄호와 전하가 오른쪽으로 더 나가므로 폭을 넓힌다 */
   /* 한쪽 원자가 하나뿐이면(CaCl₂의 Ca) 세로 가운데에 둔다. 첫 줄에 붙여 두면
      아래쪽이 통째로 비어 그림이 한쪽으로 쏠린다. */
   const rowY = (k, cnt) => TOP + rowH * ((cnt === 1 ? (rows - 1) / 2 : k) + 0.5);
@@ -148,7 +160,8 @@ function ionicDiagramHTML(b){
   for(let i = 0; i < b.nM; i++){
     s += DIA.atom(b.M, mIon, lx, my(i));
     s += `<circle class="dia-ring dia-anim-fade" cx="${lx}" cy="${my(i)}" r="${mOutR}"${DIA.at(lastAt + 0.35)}/>`;
-    s += `<text class="dia-charge dia-anim-pop" x="${lx + DIA.atomRadius(mIon) + 12}" y="${my(i) - DIA.atomRadius(mIon) - 4}"${DIA.at(lastAt + 0.55)}>${DIA.chargeText(b.give, '+')}</text>`;
+    /* 대괄호는 껍질이 사라진 뒤에 씌운다 — 그래야 "이제 이온이 되었다"는 순서가 보인다 */
+    s += DIA.ionBracket(lx, my(i), DIA.atomRadius(mIon), DIA.chargeText(b.give, '+'), lastAt + 0.55);
   }
   /* 비금속 — 원래 갖고 있던 전자는 그대로, 받는 전자만 금속에서 날아온다 */
   for(let j = 0; j < b.nX; j++){
@@ -156,7 +169,7 @@ function ionicDiagramHTML(b){
     s += `<circle class="dia-ring" cx="${rx}" cy="${xy(j)}" r="${xOutR}"/>`;
     const slots = DIA.dotPos(rx, xy(j), xOutR, 8);
     slots.forEach(([x, y], k) => { if(k < 8 - b.take) s += DIA.dot(x, y, 'dia-e'); });
-    s += `<text class="dia-charge dia-anim-pop" x="${rx + xR + 12}" y="${xy(j) - xR - 4}"${DIA.at(lastAt + 0.55)}>${DIA.chargeText(b.take, '−')}</text>`;
+    s += DIA.ionBracket(rx, xy(j), xR, DIA.chargeText(b.take, '−'), lastAt + 0.55);
   }
   /* 넘어가는 전자 — 도착지에 그리고 출발점만 금속 쪽으로 */
   for(let k = 0; k < moved; k++){
@@ -166,12 +179,13 @@ function ionicDiagramHTML(b){
   /* 화살표는 전자가 지나갈 길을 미리 보여 주는 안내선이다. 이동이 끝나면 할 일이 없으므로 흐려진다 */
   for(let i = 0; i < rows; i++){
     const y1 = my(b.nM === 1 ? 0 : i), y2 = xy(b.nX === 1 ? 0 : i);
-    s += `<path class="dia-arrow dia-anim-fade" d="M ${lx + mR + 8} ${y1.toFixed(1)} Q 200 ${((y1 + y2) / 2 - 16).toFixed(1)} ${rx - xR - 8} ${y2.toFixed(1)}" marker-end="url(#diaHead)"${DIA.at(lastAt + 0.35)}/>`;
+    /* 끝점을 대괄호 바깥에 둔다(대괄호 반폭 = 반지름+10) — 안 그러면 화살촉이 괄호를 파고든다 */
+    s += `<path class="dia-arrow dia-anim-fade" d="M ${lx + mR + 8} ${y1.toFixed(1)} Q 210 ${((y1 + y2) / 2 - 16).toFixed(1)} ${rx - xR - 18} ${y2.toFixed(1)}" marker-end="url(#diaHead)"${DIA.at(lastAt + 0.35)}/>`;
   }
   /* 화살표가 여러 개면 "전자 2개"가 화살표마다 2개인지 통틀어 2개인지 헷갈린다.
      여러 개일 때는 화살표 하나가 나르는 양을 쓴다. */
   const per = b.nM >= b.nX ? b.give : b.take;
-  s += `<text class="dia-note dia-anim-fade" x="200" y="${TOP - 9}"${DIA.at(lastAt + 0.35)}>${rows === 1 ? `전자 ${b.give}개` : `각각 전자 ${per}개씩`}</text>`;
+  s += `<text class="dia-note dia-anim-fade" x="${W/2}" y="${TOP - 9}"${DIA.at(lastAt + 0.35)}>${rows === 1 ? `전자 ${b.give}개` : `각각 전자 ${per}개씩`}</text>`;
 
   const svg = `<svg class="dia" viewBox="0 0 ${W} ${H}" role="img"><defs>
        <marker id="diaHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
@@ -229,21 +243,25 @@ function covalentDiagramHTML(b, opts){
     const mx = cx + ax * d, my = cy + ay * d;
     const px = -ay, py = ax;                 /* 결합축에 수직 */
     for(let p = 0; p < l.pairs; p++){
-      const off = (p - (l.pairs - 1) / 2) * 11;
-      /* 한 쌍 = 전자 2개. 결합축을 따라 살짝 벌려 두 원자가 하나씩 내놓은 것을 보인다.
-         애니메이션도 그 사실 그대로다 — 안쪽 전자는 중심 원자에서, 바깥 전자는 리간드에서
-         출발해 가운데서 만난다.
+      /* 한 쌍 = 전자 2개. 쌍 안의 두 전자는 결합축에 <b>수직</b>으로 세워 찍는다 —
+         교과서의 H:Cl 표기에서 가운데 콜론이 결합축과 직각인 것과 같다.
+         (전에는 반대로 축을 따라 나란히 찍어서, 가로 결합이면 두 점이 가로로 누워
+          "이게 한 쌍인지 서로 다른 쌍인지" 구분되지 않았다.)
+         쌍이 여럿이면 그 쌍들을 결합축을 따라 늘어놓는다 — O::O처럼. */
+      const along = (p - (l.pairs - 1) / 2) * 11;   /* 몇 번째 쌍인가 → 결합축 방향 */
 
-         순서는 "몇 번째 전자쌍인가"(p)가 먼저다. 결합이 여러 개인 분자에서 전자쌍을
+      /* 등장 순서는 "몇 번째 전자쌍인가"(p)가 먼저다. 결합이 여러 개인 분자에서 전자쌍을
          일렬로 늘어놓으면(CO₂를 1·2·3·4번째로) 이중결합이 두 개인지 사중결합 하나인지
          구분이 안 된다. 결합마다 첫 쌍이 함께 들어오고 그다음 둘째 쌍이 들어와야
          단일·이중·삼중이 눈에 들어온다. i는 결합끼리 살짝 어긋나게 하는 잔물결일 뿐이다. */
       const delay = DIA.T0 + p * 0.42 + i * 0.09;
-      [-4.2, 4.2].forEach(t => {
-        const tx = mx + px * off + ax * t, ty = my + py * off + ay * t;
-        /* 출발점: 안쪽(t<0)이면 중심 원자 테두리, 바깥이면 리간드 테두리 */
-        const fx = t < 0 ? cx + R * ax + px * off * .4 : lx - lR * ax + px * off * .4;
-        const fy = t < 0 ? cy + R * ay + py * off * .4 : ly - lR * ay + py * off * .4;
+      [-4.6, 4.6].forEach(u => {                    /* 쌍 안의 두 전자 → 결합축에 수직 */
+        const tx = mx + ax * along + px * u, ty = my + ay * along + py * u;
+        /* 출발점: 한 전자는 중심 원자에서, 다른 하나는 리간드에서 나와 가운데서 만난다.
+           수직으로 서게 되면서 "누가 어느 쪽에서 왔는지"는 위·아래로 갈린다. */
+        const fromCenter = u < 0;
+        const fx = fromCenter ? cx + R * ax : lx - lR * ax;
+        const fy = fromCenter ? cy + R * ay : ly - lR * ay;
         s += DIA.dot(tx, ty, 'dia-e dia-e-share dia-anim-in',
           ` data-pair="${p}"` + DIA.from(fx, fy, tx, ty, delay));
       });
