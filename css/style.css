@@ -386,9 +386,21 @@
   .m6-opt-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
   .m6-card-area{flex-grow:1;display:flex;flex-direction:column;gap:10px;}
   .m6-perspective{perspective:1200px;flex-grow:1;}
-  .m6-flashcard{position:relative;min-height:240px;height:100%;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,0,.2,1);cursor:pointer;user-select:none;}
+  /* 결합 그림 카드는 그림 패널 + 다시 보기 + 해설이 들어가 240px으로는 어림도 없었다.
+     화면 높이에 맞춰 늘리되 상한을 둔다. */
+  .m6-flashcard{position:relative;min-height:clamp(300px,54vh,460px);height:100%;transform-style:preserve-3d;transition:transform .5s cubic-bezier(.4,0,.2,1);cursor:pointer;user-select:none;}
   .m6-flashcard.flipped{transform:rotateY(180deg);}
-  .m6-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:16px;text-align:center;overflow:hidden;}
+  /* 그래도 넘치는 카드가 있으므로(그림 + 긴 해설) 면 안에서만 세로로 스크롤되게 둔다.
+     overflow:hidden이면 뒷부분이 그냥 잘려 나가 답을 못 읽는다. 탭으로 뒤집는 동작과
+     부딪히지 않도록 스크롤은 최후 수단이고, 아래 규칙들로 웬만하면 안 넘치게 줄여 둔다. */
+  .m6-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 18px;gap:12px;text-align:center;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;}
+  /* 카드 안에서는 그림·해설을 한 단계 줄인다 — 카드는 해설 상자보다 훨씬 좁다 */
+  .m6-face .dia{max-height:clamp(140px,26vh,220px);}
+  .m6-face .dia-wrap{margin-top:0;width:100%;}
+  .m6-face .dia-panel{padding:6px;margin-bottom:6px;}
+  .m6-face .dia-exp{font-size:12px;line-height:1.5;margin:4px 0 0;}
+  .m6-face .later-note{font-size:11px;}
+  .m6-face .dia-replay{margin:0 auto 4px;padding:7px 14px;font-size:12px;min-height:40px;}
   .m6-front{background:var(--c-surface-1);border:2px solid var(--c-border);}
   .m6-back{background:linear-gradient(135deg,rgba(124,58,237,.25),rgba(30,35,50,.85));border:2px solid var(--c-accent-2);transform:rotateY(180deg);}
   .m6-tag{font-size:11px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1.5px;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:20px;padding:4px 14px;color:var(--c-text-secondary);}

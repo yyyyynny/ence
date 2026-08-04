@@ -535,7 +535,8 @@ const App={
       const ch=e.target.closest('.choice-btn');
       if(ch){this.pickChoice(ch.dataset.choice);return;}
       /* 그림은 매번 다시 그려지므로 버튼에 직접 리스너를 달 수 없다 — 위임으로 받는다 */
-      if(e.target.closest('.dia-replay')){this.replayDiagram();return;}
+      const rp=e.target.closest('.dia-replay');
+      if(rp){this.replayDiagram(rp);return;}
       const th=e.target.closest('#themeBtn'),hi=e.target.closest('#hintBtn'),wn=e.target.closest('#wrongNoteBtn'),sa=e.target.closest('.show-answer-btn');
       const snd=e.target.closest('#soundBtn'),hpt=e.target.closest('#hapticBtn'),lyt=e.target.closest('#layoutBtn');
       const extR=e.target.closest('#exitRetryBtn'),pt=e.target.closest('#periodicBtn');
@@ -748,19 +749,27 @@ const App={
     const m6o=document.getElementById('m6Outer');
     let tx=0,th2=false;
     m6o.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;th2=false;},{passive:true});
+    /* 카드 안에 「다시 보기」 버튼이 들어가면서 탭 = 뒤집기와 겹쳤다.
+       버튼을 눌렀을 때는 뒤집지 않는다 — 애니메이션만 다시 보고 싶은 것이다. */
+    const onReplay=e=>!!(e.target&&e.target.closest&&e.target.closest('.dia-replay'));
     m6o.addEventListener('touchend',e=>{
       th2=true;const dx=e.changedTouches[0].clientX-tx;
-      if(Math.abs(dx)>50){if(dx<0)this.m6Next();else this.m6Prev();}else this.m6Flip();
+      if(Math.abs(dx)>50){if(dx<0)this.m6Next();else this.m6Prev();}
+      else if(!onReplay(e)) this.m6Flip();
     });
-    m6o.addEventListener('click',()=>{if(!th2)this.m6Flip();th2=false;});
+    m6o.addEventListener('click',e=>{if(!th2&&!onReplay(e))this.m6Flip();th2=false;});
 
     document.getElementById('m6WrongNoteBtn').addEventListener('click',()=>{
       this.playSound('tap'); this.playHaptic('tap');
       this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');
     });
-    document.getElementById('retryM6Flashcard').addEventListener('click',()=>{
+    document.getElementById('retryM6Flashcard').addEventListener('click',e=>{
+      /* 카드 안의 「다시 보기」를 누른 것이면 뒤집지 않는다 — 위임 처리 쪽에 맡긴다 */
+      if(e.target.closest('.dia-replay')) return;
       this.playSound('tap'); this.playHaptic('tap');
-      document.getElementById('retryM6Flashcard').classList.toggle('flipped');
+      const card=document.getElementById('retryM6Flashcard');
+      card.classList.toggle('flipped');
+      this.restartAnim(document.getElementById(card.classList.contains('flipped')?'retryM6BContent':'retryM6FContent'));
     });
     document.getElementById('retryM6KnowBtn').addEventListener('click',()=>this.retryFlashcardKnow());
     document.getElementById('retryM6ForgotBtn').addEventListener('click',()=>this.retryFlashcardNext());
@@ -1493,9 +1502,21 @@ const App={
         `<p class="dia-exp">${q.isMode8?this.valenceExplain(q):this.ionExplain(q)}</p>`;
     }
   },
-  /* 「다시 보기」 — 그림 HTML을 다시 렌더하면 CSS 애니메이션이 처음부터 재생된다.
-     별도 재생 제어가 필요 없다. */
-  replayDiagram(){ this.playSound('tap'); this.playHaptic('tap'); this.renderExplain(); },
+  /* 「다시 보기」 — 같은 HTML을 다시 넣으면 요소가 새로 만들어져 CSS 애니메이션이
+     처음부터 재생된다. 별도 재생 제어가 필요 없다.
+
+     예전에는 무조건 renderExplain()을 불렀는데, 그건 퀴즈 화면의 해설 상자만 다시 그린다.
+     같은 버튼이 플래시카드 안에도 들어가므로 카드에서는 눌러도 아무 일이 없었다.
+     버튼이 들어 있는 상자를 찾아 그 상자만 다시 그린다. */
+  replayDiagram(btn){
+    this.playSound('tap'); this.playHaptic('tap');
+    const host=btn&&btn.closest('#explainBox, .m6-face, #retryM6FContent, #retryM6BContent');
+    if(!host||host.id==='explainBox'){ this.renderExplain(); return; }
+    this.restartAnim(host);
+  },
+  /* 상자 안의 애니메이션을 처음부터 다시 재생한다. innerHTML을 그대로 다시 넣으면
+     요소가 새로 만들어지면서 CSS 애니메이션도 새로 시작한다. */
+  restartAnim(host){ if(host) host.innerHTML=host.innerHTML; },
   /* 원자가 전자 해설 — 18족 답이 0인 이유를 여기서 설명하지 않으면
      껍질에 8개가 그려져 있는데 답은 0이라 학생 눈에는 오류로 보인다. */
   valenceExplain(q){
@@ -1802,7 +1823,15 @@ const App={
     this.m6SyncSaveBtn();
     if(dir){const o=document.getElementById('m6Outer'),cls=dir==='next'?'m6-slide-r':'m6-slide-l';o.classList.remove('m6-slide-r','m6-slide-l');void o.offsetWidth;o.classList.add(cls);}
   },
-  m6Flip(){this.playSound('tap'); this.playHaptic('tap'); this.state.m6Flipped=!this.state.m6Flipped;document.getElementById('m6Card').classList.toggle('flipped',this.state.m6Flipped);},
+  /* 카드는 앞·뒷면 HTML을 한꺼번에 넣어 둔다. 그래서 그림이 든 면의 애니메이션은
+     뒤집기도 전에 뒤에서 이미 다 끝나 있었다 — 뒤집으면 볼 게 없었다.
+     이제 보이게 되는 면을 그때 다시 그려 그 시점부터 재생시킨다. */
+  m6Flip(){
+    this.playSound('tap'); this.playHaptic('tap');
+    this.state.m6Flipped=!this.state.m6Flipped;
+    document.getElementById('m6Card').classList.toggle('flipped',this.state.m6Flipped);
+    this.restartAnim(document.getElementById(this.state.m6Flipped?'m6BContent':'m6FContent'));
+  },
   m6Next(){this.playSound('tap'); this.state.m6Index=(this.state.m6Index+1)%this.state.m6Cards.length;this.m6Render('next');},
   m6Prev(){this.playSound('tap'); this.state.m6Index=(this.state.m6Index-1+this.state.m6Cards.length)%this.state.m6Cards.length;this.m6Render('prev');},
   m6Shuffle(){this.playSound('tap'); const c=[...this.state.m6Cards];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}this.state.m6Cards=c;this.state.m6Index=0;this.m6Render();},
