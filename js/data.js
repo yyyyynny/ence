@@ -238,6 +238,16 @@ function valenceOf(z){
    이걸 8로 고정하면 수소 문제에 「전자 7개를 잃는다」 같은, 있지도 않은 전자를 잃는 보기가 생긴다. */
 function fullShellOf(z){ return z<=2 ? 2 : 8; }
 
+/* ── 한글 조사 ──
+   받침이 있으면 은/이/을, 없으면 는/가/를다. 원소 이름을 문장에 끼워 넣는 곳이 여럿이라
+   「수소은」·「염소은」처럼 나오고 있었다. 공부하라고 만든 화면에서 이런 게 보이면
+   내용까지 못 미덥게 읽힌다. */
+function hasJong(w){
+  const c = String(w).charCodeAt(String(w).length - 1);
+  return c >= 0xAC00 && c <= 0xD7A3 ? (c - 0xAC00) % 28 !== 0 : false;
+}
+function josa(w, withJong, without){ return w + (hasJong(w) ? withJong : without); }
+
 /* ── 이온 형성 (중학 [9과11-04]) ──
    단원자 이온을 만드는 1~20번 원소만 명시적으로 적는다. 규칙으로 자동 생성하지 않는 이유는
    족만 보고 만들면 화학적으로 틀린 이온이 섞이기 때문이다.
@@ -359,11 +369,13 @@ function ionKo(f){ return ION_KO[f]||String(f).replace(/\^/g,''); }
    2015 화학Ⅰ에 있던 원자 구조·오비탈이 2022 개정 「화학」에서 통째로 빠졌다.
    그래서 학생은 전자껍질에 2·8·18개가 들어간다는 것을 쓰기만 하고 왜 그런지는 안 배운다.
    그 "왜"를 채우는 용도라 심화에 두기 딱 맞다. */
+/* from = 그 오비탈이 처음 생기는 껍질 번호. s는 1번(K)부터 있지만 p는 2번(L), d는 3번(M),
+   f는 4번(N)부터다. 이 단서가 없으면 해설이 "K 껍질에도 d 오비탈이 있다"처럼 읽힌다. */
 const ORBITAL_KINDS=[
-  {kind:'s', count:1, max:2},
-  {kind:'p', count:3, max:6},
-  {kind:'d', count:5, max:10},
-  {kind:'f', count:7, max:14}
+  {kind:'s', count:1, max:2,  from:1},
+  {kind:'p', count:3, max:6,  from:2},
+  {kind:'d', count:5, max:10, from:3},
+  {kind:'f', count:7, max:14, from:4}
 ];
 /* 껍질별 최대 전자 수 = 2n². 그 안에 어떤 오비탈이 들어차는지도 함께 보여 준다. */
 const ORBITAL_SHELLS=[

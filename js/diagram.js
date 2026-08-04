@@ -179,7 +179,7 @@ function ionicDiagramHTML(b){
   return `<div class="dia-wrap">
     <div class="dia-panel"><div class="dia-cap">전자가 넘어가 이온이 된다</div>${svg}</div>
     ${DIA.replayBtn()}
-    <p class="dia-exp">${M.name}은 원자가 전자 ${valenceOf(M.z)}개를 내주고, ${X.name}은 ${b.take}개를 받아 둘 다 바깥 껍질이 꽉 찬다.
+    <p class="dia-exp">${josa(M.name,'은','는')} 원자가 전자 ${valenceOf(M.z)}개를 내주고, ${josa(X.name,'은','는')} ${b.take}개를 받아 둘 다 바깥 껍질이 꽉 찬다.
     반대 전하를 띤 이온이 서로 끌어당기는 것이 <b>이온 결합</b>이다.</p>
   </div>`;
 }
@@ -269,17 +269,25 @@ function covalentDiagramHTML(b, opts){
   const vb = `${minX.toFixed(0)} ${minY.toFixed(0)} ${(maxX - minX).toFixed(0)} ${(maxY - minY).toFixed(0)}`;
 
   const pairWord = l => l.pairs === 1 ? '전자쌍 1개' : `전자쌍 ${l.pairs}개`;
-  const uniq = [...new Set(b.ligands.map(l => `${b.center}–${l.sym} 사이에 공유 ${pairWord(l)}`))].join(', ');
+  /* 결합을 부를 때 원자 순서는 화학식을 따른다. 중심 원자를 앞에 두면 HCl을 보면서
+     "Cl–H 사이에"라고 읽게 되어, 같은 화면 안에서 순서가 어긋난다.
+     (중심 원자는 결합을 여러 개 낼 수 있는 쪽이라 정해지는 것이라 화학식 순서와 무관하다.) */
+  const bondName = sym => b.f.indexOf(b.center) > b.f.indexOf(sym)
+    ? `${sym}–${b.center}` : `${b.center}–${sym}`;
+  const uniq = [...new Set(b.ligands.map(l => `${bondName(l.sym)} 사이에 공유 ${pairWord(l)}`))].join(', ');
   /* 결합 차수 모드에서는 같은 그림을 쓰되 "몇 쌍인가"에 초점을 맞춘다 —
      전자쌍이 하나씩 자리잡는 애니메이션이 그대로 답의 근거가 된다. */
   const order = opts && opts.order;
   const pairs0 = b.ligands[0].pairs;
   const cap = order ? '공유 전자쌍이 몇 쌍인지 세어 보자' : '바깥 껍질 전자와 공유 전자쌍';
-  const exp = order
+  /* 이온 결합 그림은 껍질을 다 그리는데 여기는 바깥 껍질만 그린다. 같은 앱에서 둘을 번갈아
+     보면 "얘는 왜 껍질이 없지?" 하게 되므로, 화면이 그 이유를 직접 말하게 한다. */
+  const shellNote = `<span class="later-note">원 하나가 바깥 껍질이다 — 안쪽 껍질은 결합에 참여하지 않아 그리지 않았다.</span>`;
+  const exp = (order
     ? `${uniq} — 전자쌍 <b>${pairs0}쌍</b>을 공유하므로 <b>${BOND_ORDER_NAME[pairs0]}</b>이다.
        공유하는 전자쌍이 늘수록 두 원자가 더 세게 붙잡혀 결합이 짧고 강해진다.`
     : `${uniq}. 전자를 주고받는 대신 <b>함께 쓰는</b> 것이 <b>공유 결합</b>이다.
-       노란 점이 두 원자가 나눠 갖는 전자다.`;
+       노란 점이 두 원자가 나눠 갖는 전자다.`) + shellNote;
   return `<div class="dia-wrap">
     <div class="dia-panel"><div class="dia-cap">${cap}</div>
       <svg class="dia" viewBox="${vb}" role="img">${s}</svg></div>

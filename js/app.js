@@ -1455,16 +1455,19 @@ const App={
     else if(q.isMode13){
       const p=this.precipOf(q);
       box.innerHTML=`<div class="dia-wrap"><p class="dia-exp">`+(p.none
-        ? `${this.formatInput(p.a)}과 ${this.formatInput(p.b)}은 만나도 <b>앙금이 생기지 않는다</b>. `+
+        ? `${this.formatInput(p.a)} + ${this.formatInput(p.b)} → <b>앙금이 생기지 않는다</b>. `+
           `1족 이온이나 질산 이온이 든 염은 물에 잘 녹기 때문이다.`
         : `${this.formatInput(p.a)} + ${this.formatInput(p.b)} → <b>${this.fmtFormulaStr(p.f)}</b> `+
           `(${p.name}) — <b>${p.color}</b> 앙금이 가라앉는다.`)+`</p></div>`;
     }
     else if(q.isMode14){
       const o=q.orb;
+      /* d는 3번째(M), f는 4번째(N) 껍질부터 생긴다. 그냥 "한 껍질에"라고 쓰면
+         K·L 껍질에도 d 오비탈이 있는 것처럼 읽힌다. */
+      const where=o.from>1?`${'KLMN'[o.from-1]} 껍질(n=${o.from})부터 `:'';
       box.innerHTML=`<div class="dia-wrap"><p class="dia-exp">`+
-        `<b>${o.kind}</b> 오비탈은 한 껍질에 <b>${o.count}개</b> 있고, 오비탈 하나에 전자가 2개씩 들어가므로 `+
-        `모두 <b>${o.max}개</b>를 담는다.</p></div>`;
+        `<b>${o.kind}</b> 오비탈은 ${where}한 껍질에 <b>${o.count}개</b>씩 있고, `+
+        `오비탈 하나에 전자가 2개씩 들어가므로 모두 <b>${o.max}개</b>를 담는다.</p></div>`;
     }
     else if(q.isMode15){
       const o=q.orb;
@@ -1487,10 +1490,10 @@ const App={
   valenceExplain(q){
     const outer=outerShellOf(q.z), v=valenceOf(q.z), shell='KLMN'[q.shells.length-1];
     if(v===0)
-      return `${q.name}은 바깥 껍질(${shell})에 전자가 <b>${outer}개</b> 있어 이미 꽉 찼다. `+
+      return `${josa(q.name,'은','는')} 바깥 껍질(${shell})에 전자가 <b>${outer}개</b> 있어 이미 꽉 찼다. `+
              `꽉 찬 껍질의 전자는 결합에 쓰이지 않으므로 <b>원자가 전자는 0개</b>다.`;
-    return `${q.name}은 바깥 껍질(${shell})에 전자가 <b>${outer}개</b> 있고 이 전자들이 결합에 참여하므로, `+
-           `<b>원자가 전자는 ${v}개</b>다.`;
+    return `${josa(q.name,'은','는')} 바깥 껍질(${shell})에 전자가 <b>${outer}개</b> 있고 `+
+           `${outer===1?'이 전자가':'이 전자들이'} 결합에 참여하므로, <b>원자가 전자는 ${v}개</b>다.`;
   },
   /* 이온 되기 해설 — 주고받는 개수가 "그냥 외우는 숫자"가 아니라
      비활성 기체와 같은 배치가 되는 개수라는 점이 핵심이다. */
@@ -1498,15 +1501,18 @@ const App={
     const ion=q.ion;
     if(!ion) return '';
     if(ion.noble)
-      return `${q.name}은 바깥 껍질이 이미 꽉 차 <b>원자가 전자가 0개</b>다. `+
+      return `${josa(q.name,'은','는')} 바깥 껍질이 이미 꽉 차 <b>원자가 전자가 0개</b>다. `+
              `주고받을 전자가 없으니 <b>이온이 되지 않는다</b>.`;
     const target=ionTargetNoble(ion);
     const like=target?`<b>${target.name}(${target.sym})과 같은 배치</b>`:'꽉 찬 배치';
+    /* 예전에는 「전자를 잃으면 껍질에 남는 전자가 없다 → 그러니 얻는다」고 적었는데,
+       이건 성립하지 않는 논리다. 전자를 잃은 것이 바로 H⁺이고 산에서 배우는 실제 이온이다.
+       여기서 보는 쪽이 어느 쪽인지만 분명히 하고, 다른 쪽도 있다는 사실을 감추지 않는다. */
     if(q.z===1)
-      return `수소는 전자가 <b>1개뿐</b>이라 그걸 잃으면 껍질에 남는 전자가 없다. `+
-             `전자 <b>1개를 얻어</b> K 껍질을 2개로 채우면 ${like}가 되어 안정해진다. `+
-             `<span class="later-note">수소가 전자를 잃어 H<sup>+</sup>가 되는 것은 산을 배울 때 다시 나온다.</span>`;
-    return `원자가 전자 <b>${valenceOf(q.z)}개</b>인 ${q.name}은 전자 <b>${ion.n}개</b>를 `+
+      return `수소는 바깥 껍질에 전자가 <b>1개</b> 있다. 전자 <b>1개를 얻어</b> K 껍질을 전자 2개로 채우면 `+
+             `${like}가 되어 안정해진다 — 금속과 만날 때 이렇게 된다. `+
+             `<span class="later-note">반대로 전자를 잃어 H<sup>+</sup>가 되는 길도 있다. 산을 배울 때 다시 나온다.</span>`;
+    return `원자가 전자 <b>${valenceOf(q.z)}개</b>인 ${josa(q.name,'은','는')} 전자 <b>${ion.n}개</b>를 `+
            `${ion.dir==='lose'?'내주면':'받으면'} ${like}가 되어 안정해진다.`;
   },
   renderAll(isCorrect=null){
