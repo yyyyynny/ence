@@ -803,26 +803,45 @@ const App={
   },
   /* 오답 보기는 무작위가 아니라 학생이 실제로 하는 착각에서 만든다.
      ① 방향 착각: 잃어야 하는데 얻는다고 생각
-     ② 옥텟 착각: 최외각 2개인 Mg가 6개를 "얻어서" 8을 채운다고 생각 (가장 흔한 오답)
+     ② 옥텟 착각: 바깥 껍질에 2개뿐인 Mg가 6개를 "얻어서" 8을 채운다고 생각 (가장 흔한 오답)
      ③ 18족도 이온이 된다고 생각
-     보기는 매번 섞어서 위치로 답을 외우지 못하게 한다. */
+     보기는 매번 섞어서 위치로 답을 외우지 못하게 한다.
+
+     숫자는 원자가 전자가 아니라 outerShellOf(실제로 껍질에 든 개수)로 만든다.
+     원자가 전자로 만들면 18족 보기가 「전자 0개를 잃는다」가 되어 보기 자체가 성립하지 않는다. */
   ionChoices(item,answer){
-    const v=valenceOf(item.z);
+    const outer=outerShellOf(item.z);
+    const full=fullShellOf(item.z);
     const set=new Set([answer]);
     if(item.noble){
-      set.add(`전자 ${v}개를 잃는다`);
-      set.add(`전자 ${v}개를 얻는다`);
+      set.add(`전자 ${outer}개를 잃는다`);
+      set.add(`전자 ${outer}개를 얻는다`);
       set.add('전자 1개를 얻는다');
     }else{
-      set.add(`전자 ${item.n}개를 ${item.dir==='lose'?'얻는다':'잃는다'}`);
-      const other=8-item.n;
-      if(other>0&&other!==item.n) set.add(`전자 ${other}개를 ${item.dir==='lose'?'얻는다':'잃는다'}`);
+      const opp=item.dir==='lose'?'얻는다':'잃는다';
+      set.add(`전자 ${item.n}개를 ${opp}`);
+      const other=full-item.n;
+      if(other>0&&other!==item.n) set.add(`전자 ${other}개를 ${opp}`);
       set.add('이온이 되지 않는다');
+      /* 수소는 full이 2라 옥텟 착각 보기가 정답과 겹쳐 사라진다. 대신 "꽉 찬 껍질이 2개니까
+         2개를 얻어야 한다"는, 껍질 정원과 주고받는 개수를 헷갈리는 착각을 보기로 쓴다. */
+      if(set.size<4) set.add(`전자 ${full}개를 ${item.dir==='lose'?'잃는다':'얻는다'}`);
     }
-    const arr=[...set].slice(0,4);
+    const arr=[...set].slice(0,4).map(v=>{
+      const note=this.ionChoiceNote(item,v);
+      return note?{v,note}:v;
+    });
     for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
     return arr;
   },
+  /* 오답 보기가 "완전히 틀린 말"이 아닐 때는 왜 여기서는 답이 아닌지 한 줄 붙인다.
+     수소의 H⁺는 실제로 존재하고 산·염기에서 배우는 내용이라, 없는 것처럼 하면 그것도 거짓말이 된다. */
+  ionChoiceNote(item,v){
+    if(item.z===1&&v==='전자 1개를 잃는다') return '고2에서 다시 만나요';
+    return '';
+  },
+  /* 보기 항목은 문자열이거나 {v, note} 객체다. 채점·비교는 언제나 v 문자열로 한다. */
+  choiceValue(c){ return typeof c==='string'?c:c.v; },
   initCycleQueue(){
     const mode=this.state.currentMode;
     let pool=[];
@@ -1117,7 +1136,7 @@ const App={
       }
       case 8:{
         const idx=pickIndex(SHELL_QUIZ_ELEMENTS);const el=SHELL_QUIZ_ELEMENTS[idx];
-        q.type='최외각 전자';q.isMode8=true;q.isAbstract=false;
+        q.type='원자가 전자';q.isMode8=true;q.isAbstract=false;
         q.name=el.name;q.z=el.z;q.sym=el.sym;q.shells=shellsOf(el.z);
         q.blanks.push({key:'M8',answer:String(valenceOf(el.z))});
         break;
@@ -1385,11 +1404,36 @@ const App={
     }
     else{
       /* 이온 되기에서는 이온이 된 뒤 모습을 함께 보여줘야 "왜 그 답인지"가 보인다 */
-      const ion=q.isMode9&&q.ion&&!q.ion.noble?q.ion:null;
       box.innerHTML=shellDiagramHTML(q.z)+
-        (ion?`<p class="dia-exp">최외각 전자 ${valenceOf(q.z)}개인 ${q.name}은 전자 ${ion.n}개를 `+
-             `${ion.dir==='lose'?'내주고':'받아'} 최외각이 꽉 찬 안정한 상태가 된다.</p>`:'');
+        `<p class="dia-exp">${q.isMode8?this.valenceExplain(q):this.ionExplain(q)}</p>`;
     }
+  },
+  /* 원자가 전자 해설 — 18족 답이 0인 이유를 여기서 설명하지 않으면
+     껍질에 8개가 그려져 있는데 답은 0이라 학생 눈에는 오류로 보인다. */
+  valenceExplain(q){
+    const outer=outerShellOf(q.z), v=valenceOf(q.z), shell='KLMN'[q.shells.length-1];
+    if(v===0)
+      return `${q.name}은 바깥 껍질(${shell})에 전자가 <b>${outer}개</b> 있어 이미 꽉 찼다. `+
+             `꽉 찬 껍질의 전자는 결합에 쓰이지 않으므로 <b>원자가 전자는 0개</b>다.`;
+    return `${q.name}은 바깥 껍질(${shell})에 전자가 <b>${outer}개</b> 있고 이 전자들이 결합에 참여하므로, `+
+           `<b>원자가 전자는 ${v}개</b>다.`;
+  },
+  /* 이온 되기 해설 — 주고받는 개수가 "그냥 외우는 숫자"가 아니라
+     비활성 기체와 같은 배치가 되는 개수라는 점이 핵심이다. */
+  ionExplain(q){
+    const ion=q.ion;
+    if(!ion) return '';
+    if(ion.noble)
+      return `${q.name}은 바깥 껍질이 이미 꽉 차 <b>원자가 전자가 0개</b>다. `+
+             `주고받을 전자가 없으니 <b>이온이 되지 않는다</b>.`;
+    const target=ionTargetNoble(ion);
+    const like=target?`<b>${target.name}(${target.sym})과 같은 배치</b>`:'꽉 찬 배치';
+    if(q.z===1)
+      return `수소는 전자가 <b>1개뿐</b>이라 그걸 잃으면 껍질에 남는 전자가 없다. `+
+             `전자 <b>1개를 얻어</b> K 껍질을 2개로 채우면 ${like}가 되어 안정해진다. `+
+             `<span class="dia-note">수소가 전자를 잃어 H<sup>+</sup>가 되는 것은 산을 배울 때 다시 나온다.</span>`;
+    return `원자가 전자 <b>${valenceOf(q.z)}개</b>인 ${q.name}은 전자 <b>${ion.n}개</b>를 `+
+           `${ion.dir==='lose'?'내주면':'받으면'} ${like}가 되어 안정해진다.`;
   },
   renderAll(isCorrect=null){
     this.renderScore();this.renderQuestionHeader();this.renderEquation();this.renderKeyboard();this.renderExplain();
@@ -1565,9 +1609,12 @@ const App={
     if(!on){row.innerHTML='';return;}
     const key=q.blanks[0].key, picked=q.inputs[key];
     const locked=this.state.isAnswerChecked&&!q.isTimedOut;
-    row.innerHTML=q.choices.map(c=>
-      `<button class="choice-btn${c===picked?' picked':''}"${locked?' disabled':''} data-choice="${c}">${c}</button>`
-    ).join('');
+    row.innerHTML=q.choices.map(c=>{
+      const v=this.choiceValue(c), note=typeof c==='string'?'':c.note;
+      return `<button class="choice-btn${v===picked?' picked':''}"${locked?' disabled':''} data-choice="${v}">`+
+             `<span class="choice-main">${v}</span>`+
+             (note?`<span class="choice-note">${note}</span>`:'')+`</button>`;
+    }).join('');
   },
   renderKeyboard(){
     const done=this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut;

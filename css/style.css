@@ -163,6 +163,10 @@
   #choiceRow{display:grid;grid-template-columns:1fr;gap:8px;}
   .choice-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:12px;color:var(--c-text-primary);font-family:var(--font-ui);font-size:16px;font-weight:700;padding:15px 16px;cursor:pointer;transition:all .2s;text-align:center;}
   .choice-btn.picked{background:var(--c-accent-1);border-color:var(--c-accent-1);color:var(--c-bg);}
+  /* 보기 주석 — "완전히 틀린 말은 아니고 나중에 다시 배운다"를 알려 주는 한 줄.
+     본문보다 작지만 12px 밑으로는 내리지 않는다(폰에서 안 읽힌다). */
+  .choice-note{display:block;margin-top:4px;font-size:12px;font-weight:600;opacity:.72;}
+  .dia-note{display:block;margin-top:6px;font-size:13px;opacity:.75;}
   /* 보기 답은 한글 문장이라 정사각 빈칸에 안 들어간다 — 폭이 늘어나는 형태로 바꾼다 */
   .blank-box.choice{min-width:110px;font-family:var(--font-ui);font-size:1em;}
   /* 전자껍질 배치 — 답을 외우는 게 아니라 그림에서 세도록 문제에 같이 띄운다 */

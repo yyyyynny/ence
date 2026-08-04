@@ -1,12 +1,12 @@
 /* ── 전자껍질·화학 결합 그림 ──
    2022 개정 [10통과1-02-03] 해설이 화학 결합을 형성하는 이유를 "전자껍질 모형을 이용한
    전자배치를 통해" 설명하라고 명시한다. 그래서 이 그림은 곁다리 장식이 아니라 학습 내용 자체다.
-   그린 내용이 화학적으로 틀리면 안 되므로 전자 개수는 전부 shellsOf/valenceOf에서 계산하고
+   그린 내용이 화학적으로 틀리면 안 되므로 전자 개수는 전부 shellsOf/outerShellOf에서 계산하고
    좌표만 여기서 정한다.
 
    이온 결합은 껍질 전체를 그린다 — 어느 껍질에 있던 전자가 어디로 가는지가 핵심이라서다.
-   공유 결합은 최외각만 그린다 — CH₄처럼 원자가 다섯 개인 분자에서 모든 껍질을 그리면
-   겹쳐서 오히려 안 보인다. 교과서 공유결합 그림도 최외각만 그린다. */
+   공유 결합은 바깥 껍질만 그린다 — CH₄처럼 원자가 다섯 개인 분자에서 모든 껍질을 그리면
+   겹쳐서 오히려 안 보인다. 교과서 공유결합 그림도 바깥 껍질만 그린다. */
 
 const DIA = {
   NUC: 15,      /* 원자핵 원 반지름 */
@@ -73,7 +73,7 @@ const DIA = {
 function ionicDiagramHTML(b){
   const M = ELEMENTS.find(e => e.sym === b.M), X = ELEMENTS.find(e => e.sym === b.X);
   const mS = shellsOf(M.z), xS = shellsOf(X.z);
-  /* 금속은 최외각을 통째로 내주므로 껍질 하나가 사라진다. 비금속은 최외각이 8이 된다. */
+  /* 금속은 바깥 껍질을 통째로 내주므로 껍질 하나가 사라진다. 비금속은 바깥 껍질이 8이 된다. */
   const mIon = mS.slice(0, -1);
   const xIon = xS.slice(0, -1).concat(8);
 
@@ -119,19 +119,21 @@ function ionicDiagramHTML(b){
   return `<div class="dia-wrap">
     <div class="dia-panel"><div class="dia-cap">결합 전 — 중성 원자</div>${before}</div>
     <div class="dia-panel"><div class="dia-cap">결합 후 — 이온</div>${after}</div>
-    <p class="dia-exp">${M.name}은 최외각 전자 ${valenceOf(M.z)}개를 내주고, ${X.name}은 ${b.take}개를 받아 둘 다 최외각이 꽉 찬다.
+    <p class="dia-exp">${M.name}은 원자가 전자 ${valenceOf(M.z)}개를 내주고, ${X.name}은 ${b.take}개를 받아 둘 다 바깥 껍질이 꽉 찬다.
     반대 전하를 띤 이온이 서로 끌어당기는 것이 <b>이온 결합</b>이다.</p>
   </div>`;
 }
 
 /* ── 공유 결합 ──
-   중심 원자를 가운데 두고 리간드를 방사형으로 배치한다. 최외각만 그린다.
+   중심 원자를 가운데 두고 리간드를 방사형으로 배치한다. 바깥 껍질만 그린다.
    각 결합에는 공유 전자쌍을 pairs개 찍고, 남은 전자는 원자 바깥쪽에 비공유 전자로 찍는다.
-   비공유 전자 수 = 최외각 전자 수 − 그 원자가 내놓은 전자 수(= 참여한 전자쌍 수). */
+   비공유 전자 수 = 바깥 껍질에 실제로 든 전자 수 − 그 원자가 내놓은 전자 수(= 참여한 전자쌍 수).
+   여기서는 원자가 전자가 아니라 outerShellOf를 쓴다 — 그리는 것은 "결합에 참여하는 개수"가 아니라
+   "화면에 찍히는 점의 개수"라서, 두 값이 갈리는 18족에서 원자가 전자를 쓰면 점이 사라진다. */
 function covalentDiagramHTML(b){
   const C = ELEMENTS.find(e => e.sym === b.center);
   const cPairs = b.ligands.reduce((s, l) => s + l.pairs, 0);
-  const cLone = valenceOf(C.z) - cPairs;
+  const cLone = outerShellOf(C.z) - cPairs;
   const R = 36, BOND = 104, cx = 200, cy = 165, W = 400, H = 330;
   const ligR = sym => sym === 'H' ? 24 : R;
 
@@ -172,7 +174,7 @@ function covalentDiagramHTML(b){
       });
     }
     /* 리간드의 비공유 전자 — 중심 반대쪽 바깥에 쌍으로 찍는다 */
-    s += DIA.lonePairs(lx, ly, lR, valenceOf(L.z) - l.pairs, angles[i]);
+    s += DIA.lonePairs(lx, ly, lR, outerShellOf(L.z) - l.pairs, angles[i]);
   });
 
   /* 중심 원자의 비공유 전자 — 결합이 없는 쪽에 몰아 찍는다 */
@@ -195,7 +197,7 @@ function covalentDiagramHTML(b){
   const pairWord = l => l.pairs === 1 ? '전자쌍 1개' : `전자쌍 ${l.pairs}개`;
   const uniq = [...new Set(b.ligands.map(l => `${b.center}–${l.sym} 사이에 공유 ${pairWord(l)}`))].join(', ');
   return `<div class="dia-wrap">
-    <div class="dia-panel"><div class="dia-cap">최외각 전자와 공유 전자쌍</div>
+    <div class="dia-panel"><div class="dia-cap">바깥 껍질 전자와 공유 전자쌍</div>
       <svg class="dia" viewBox="${vb}" role="img">${s}</svg></div>
     <p class="dia-exp">${uniq}. 전자를 주고받는 대신 <b>함께 쓰는</b> 것이 <b>공유 결합</b>이다.
     노란 점이 두 원자가 나눠 갖는 전자다.</p>

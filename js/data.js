@@ -50,7 +50,7 @@ const CORE_ELEMENTS=['H','C','O','N','S','P','Na','Mg','Ca','Cu','Ag','Cl','A','
 /* z=원자번호, sym=원소기호, name=한글이름, cat=분류(색상), group=족(1~18), period=주기(1~7), f=란타넘족/악티늄족일 때의 순번(1~15) */
 const ELEMENTS=[
   {z:1,sym:'H',name:'수소',cat:'nonmetal',group:1,period:1,desc:'수소는 <strong>공유결합</strong>으로 동일 원소끼리 이원자 분자(<strong>H₂</strong>)를 이루며, 다른 비금속과도 전자쌍을 공유하는 <strong>공유결합</strong>을 주로 만든다. 금속과 결합할 땐 <strong>H⁻</strong>(수소화 이온), 산에서는 <strong>H⁺</strong>(양성자)가 되기도 한다. 물(H₂O)을 이루는 원소이며 수소 연료전지 자동차의 에너지원으로도 쓰인다.'},
-  {z:2,sym:'He',name:'헬륨',cat:'noble',group:18,period:1,desc:'헬륨은 최외각 전자껍질이 이미 채워져 있어 다른 원자와 결합도, 이온도 거의 만들지 않는 비활성 기체로 언제나 낱개 원자(단원자 분자) 상태로 존재한다. 공기보다 가벼워 풍선에 쓰이고, 끓는점이 매우 낮아 MRI 장비의 초전도 자석 냉각에도 활용된다.'},
+  {z:2,sym:'He',name:'헬륨',cat:'noble',group:18,period:1,desc:'헬륨은 바깥 껍질이 이미 꽉 차 있어 <strong>원자가 전자가 0개</strong>다. 그래서 다른 원자와 결합도, 이온도 거의 만들지 않는 비활성 기체로 언제나 낱개 원자(단원자 분자) 상태로 존재한다. 공기보다 가벼워 풍선에 쓰이고, 끓는점이 매우 낮아 MRI 장비의 초전도 자석 냉각에도 활용된다.'},
   {z:3,sym:'Li',name:'리튬',cat:'alkali',group:1,period:2,desc:'리튬은 <strong>금속결합</strong>을 하는 알칼리 금속으로, 비금속과 만나면 전자 1개를 잃고 <strong>Li⁺</strong> 양이온이 되어 <strong>이온결합</strong> 화합물을 만든다. 물에 넣으면 반응해 수소 기체를 내는데, 알칼리 금속 중에서는 가장 온화하게 반응한다. 리튬이온전지의 핵심 원료로 스마트폰과 전기차에 널리 쓰인다.'},
   {z:4,sym:'Be',name:'베릴륨',cat:'alkaline',group:2,period:2,desc:'베릴륨은 <strong>금속결합</strong>을 하는 알칼리 토금속으로, 화합물에서는 전자 2개를 잃고 <strong>Be²⁺</strong> 양이온이 되지만 다른 2족 원소보다 <strong>공유결합</strong>성이 강한 편이다. X선을 잘 투과시켜 X선 장비의 창(window) 재료로 쓰이며, 분진 흡입 시 독성이 있어 취급에 주의가 필요하다.'},
   {z:5,sym:'B',name:'붕소',cat:'metalloid',group:13,period:2,desc:'붕소는 원자가전자가 3개뿐이라 이온이 되기보다 전자쌍을 공유하는 <strong>공유결합</strong> 화합물(삼플루오린화붕소 등)을 주로 만드는 준금속이다. 붕산은 소독제·바퀴벌레 퇴치제로, 붕규산유리(파이렉스)는 내열 조리기구 재료로 쓰인다.'},
@@ -58,15 +58,15 @@ const ELEMENTS=[
   {z:7,sym:'N',name:'질소',cat:'nonmetal',group:15,period:2,desc:'질소는 삼중 <strong>공유결합</strong>(N≡N)으로 동일 원소 이원자 분자(<strong>N₂</strong>)를 이루어 매우 안정하고 반응성이 낮다. 화합물에서는 전자를 받아 <strong>N³⁻</strong> 음이온이 되거나 암모늄이온(<strong>NH₄⁺</strong>)처럼 양전하를 띠기도 한다. 대기의 약 78%를 차지하며, 하버-보슈법으로 합성한 암모니아는 화학비료 생산에 필수적이다.'},
   {z:8,sym:'O',name:'산소',cat:'nonmetal',group:16,period:2,desc:'산소는 <strong>공유결합</strong>으로 동일 원소 이원자 분자(<strong>O₂</strong>)를 이루며, 화합물에서는 전자 2개를 받아 <strong>O²⁻</strong> 음이온이 되는 반응성 큰 비금속이다. 동소체로 우리가 호흡하는 산소(O₂)와 자외선을 막아주는 오존(O₃)이 있으며, 생명체의 호흡과 물질의 연소에 필수적이다.'},
   {z:9,sym:'F',name:'플루오린',cat:'halogen',group:17,period:2,desc:'플루오린은 전기음성도가 모든 원소 중 가장 커서 전자 1개를 강하게 끌어당겨 <strong>F⁻</strong> 음이온이 되기 쉬우며, 같은 원소끼리는 <strong>공유결합</strong>으로 이원자 분자(<strong>F₂</strong>)를 이룬다. 치약 속 불소 성분이 충치 예방에 쓰이고, 프라이팬 코팅재 테플론의 원료이기도 하다.'},
-  {z:10,sym:'Ne',name:'네온',cat:'noble',group:18,period:2,desc:'네온은 최외각 전자껍질이 채워져 있어 결합도 이온도 거의 만들지 않는 비활성 기체로, 언제나 낱개 원자로 존재한다. 저압에서 방전시키면 붉은빛을 내는 성질 때문에 네온사인 조명에 쓰이며, 극저온 냉각제로도 활용된다.'},
+  {z:10,sym:'Ne',name:'네온',cat:'noble',group:18,period:2,desc:'네온은 바깥 껍질이 전자 8개로 꽉 차 있어 <strong>원자가 전자가 0개</strong>이고, 그래서 결합도 이온도 거의 만들지 않는 비활성 기체로 언제나 낱개 원자로 존재한다. 저압에서 방전시키면 붉은빛을 내는 성질 때문에 네온사인 조명에 쓰이며, 극저온 냉각제로도 활용된다.'},
   {z:11,sym:'Na',name:'나트륨',cat:'alkali',group:1,period:3,desc:'나트륨은 <strong>금속결합</strong>을 하는 알칼리 금속으로, 비금속과 만나면 전자 1개를 잃고 <strong>Na⁺</strong> 양이온이 되는 <strong>이온결합</strong> 화합물을 만든다. 염화 이온(<strong>Cl⁻</strong>)과 결합해 우리가 먹는 소금(염화나트륨)을 이루며, 신경 신호 전달에 필수적인 전해질이다.'},
   {z:12,sym:'Mg',name:'마그네슘',cat:'alkaline',group:2,period:3,desc:'마그네슘은 <strong>금속결합</strong>을 하는 알칼리 토금속으로, 화합물에서는 전자 2개를 잃고 <strong>Mg²⁺</strong> 양이온이 되는 <strong>이온결합</strong>을 형성한다. 식물의 엽록소 분자 중심에 자리해 광합성에 필수적이며, 불에 타면서 밝은 흰빛을 내 불꽃놀이 재료로도 쓰인다.'},
   {z:13,sym:'Al',name:'알루미늄',cat:'post',group:13,period:3,desc:'알루미늄은 <strong>금속결합</strong>을 하는 금속으로, 화합물에서는 전자 3개를 잃고 <strong>Al³⁺</strong> 양이온이 되는 <strong>이온결합</strong>을 만든다. 표면에 얇은 산화막(산화알루미늄)이 저절로 생겨 부식에 강하며, 알루미늄 캔·호일과 항공기 동체 재료로 널리 쓰인다.'},
   {z:14,sym:'Si',name:'규소',cat:'metalloid',group:14,period:3,desc:'규소는 탄소처럼 최대 4개의 원자와 전자쌍을 공유하는 <strong>공유결합</strong>을 하는 준금속으로, 이온이 되는 경우는 드물다. 반도체 성질을 지녀 컴퓨터 칩의 핵심 재료이며, 모래와 유리의 주성분(이산화규소)이기도 하다.'},
-  {z:15,sym:'P',name:'인',cat:'nonmetal',group:15,period:3,desc:'인은 비금속으로 주로 <strong>공유결합</strong> 화합물을 만들며, 인산이온(<strong>PO₄³⁻</strong>)처럼 여러 원자가 뭉친 음이온 형태로 존재하는 경우가 많다. 동소체로 자연발화하는 흰인과 비교적 안정한 붉은인이 있고, 인산칼슘 형태로 뼈와 치아를 구성한다.'},
-  {z:16,sym:'S',name:'황',cat:'nonmetal',group:16,period:3,desc:'황은 비금속으로 <strong>공유결합</strong>을 통해 원자끼리 고리 구조(대표 동소체 사방황은 황 원자 8개가 고리를 이룬 S₈)를 잘 만들며, 화합물에서는 황산이온(<strong>SO₄²⁻</strong>)처럼 음이온이 되기도 한다. 화약과 성냥의 원료이며, 생고무를 가황하면 탄력 있고 단단한 고무가 된다.'},
+  {z:15,sym:'P',name:'인',cat:'nonmetal',group:15,period:3,desc:'인은 비금속으로 주로 <strong>공유결합</strong> 화합물을 만들며, 금속과 만나면 전자 3개를 받아 <strong>P³⁻</strong>(인화 이온)이 되기도 한다. 인산이온(<strong>PO₄³⁻</strong>)처럼 여러 원자가 뭉친 음이온 형태로 존재하는 경우가 많다. 동소체로 자연발화하는 흰인과 비교적 안정한 붉은인이 있고, 인산칼슘 형태로 뼈와 치아를 구성한다.'},
+  {z:16,sym:'S',name:'황',cat:'nonmetal',group:16,period:3,desc:'황은 비금속으로 <strong>공유결합</strong>을 통해 원자끼리 고리 구조(대표 동소체 사방황은 황 원자 8개가 고리를 이룬 S₈)를 잘 만들며, 금속과 만나면 전자 2개를 받아 <strong>S²⁻</strong>(황화 이온)이 되며, 황산이온(<strong>SO₄²⁻</strong>)처럼 여러 원자가 뭉친 음이온으로도 존재한다. 화약과 성냥의 원료이며, 생고무를 가황하면 탄력 있고 단단한 고무가 된다.'},
   {z:17,sym:'Cl',name:'염소',cat:'halogen',group:17,period:3,desc:'염소는 같은 원소끼리 <strong>공유결합</strong>해 이원자 분자(<strong>Cl₂</strong>)를 이루며, 금속과 만나면 전자 1개를 받아 <strong>Cl⁻</strong> 음이온이 되는 반응성 큰 할로젠이다. 수돗물과 수영장 물을 소독하는 데 쓰이며, 나트륨과 결합해 소금(염화나트륨)을 이룬다.'},
-  {z:18,sym:'Ar',name:'아르곤',cat:'noble',group:18,period:3,desc:'아르곤은 최외각 전자껍질이 채워진 비활성 기체로 결합도 이온도 거의 만들지 않아 언제나 낱개 원자로 존재한다. 백열전구나 형광등 내부를 채워 필라멘트의 산화를 막고, 용접 시 산소를 차단하는 보호 기체로도 쓰인다.'},
+  {z:18,sym:'Ar',name:'아르곤',cat:'noble',group:18,period:3,desc:'아르곤은 바깥 껍질이 전자 8개로 꽉 차 <strong>원자가 전자가 0개</strong>인 비활성 기체로, 결합도 이온도 거의 만들지 않아 언제나 낱개 원자로 존재한다. 백열전구나 형광등 내부를 채워 필라멘트의 산화를 막고, 용접 시 산소를 차단하는 보호 기체로도 쓰인다.'},
   {z:19,sym:'K',name:'칼륨',cat:'alkali',group:1,period:4,desc:'칼륨은 <strong>금속결합</strong>을 하는 알칼리 금속으로, 비금속과 만나면 전자 1개를 잃고 <strong>K⁺</strong> 양이온이 되는 <strong>이온결합</strong> 화합물을 만든다. 물에 넣으면 격렬히 반응하며 보라색 불꽃을 낸다. 식물 비료의 핵심 성분이며 바나나 등에 풍부해 신경과 근육 기능 유지에 중요하다.'},
   {z:20,sym:'Ca',name:'칼슘',cat:'alkaline',group:2,period:4,desc:'칼슘은 <strong>금속결합</strong>을 하는 알칼리 토금속으로, 화합물에서는 전자 2개를 잃고 <strong>Ca²⁺</strong> 양이온이 되는 <strong>이온결합</strong>을 형성한다. 인산칼슘 형태로 뼈와 치아를, 탄산칼슘 형태로 석회암·대리석·조개껍데기를 이루며, 불꽃 반응 시 주황빛을 낸다.'},
   {z:21,sym:'Sc',name:'스칸듐',cat:'transition',group:3,period:4,desc:'스칸듐은 <strong>금속결합</strong>을 하는 전이 금속으로, 화합물에서는 주로 <strong>Sc³⁺</strong> 양이온이 되는 <strong>이온결합</strong>을 만든다. 알루미늄에 소량 첨가하면 강도를 크게 높이는 합금이 되어 항공우주 부품이나 고급 자전거 프레임에 쓰인다.'},
@@ -219,9 +219,24 @@ function shellsOf(z){
   for(const cap of SHELL_CAPS){ if(left<=0) break; const n=Math.min(cap,left); out.push(n); left-=n; }
   return out;
 }
-/* 최외각 전자를 족 번호로 구하면 헬륨에서 틀린다 — He는 18족이지만 K 껍질뿐이라 2개다.
+/* ── 최외각 전자 vs 원자가 전자 ──
+   두 값은 18족에서만 다르고, 그 차이가 이 앱에서 중요하다.
+
+   · 최외각 전자 = 가장 바깥 껍질에 "실제로 들어 있는" 전자 수. He 2개, Ne·Ar 8개.
+     그림에 점을 몇 개 찍을지, 오답 보기의 숫자를 뭘로 할지 같은 "눈에 보이는 개수"는 이쪽이다.
+   · 원자가 전자 = 화학 결합에 "참여하는" 전자 수. 18족은 이미 안정해 결합에 관여하지 않으므로 0.
+     퀴즈 정답은 이쪽이다 — 「Ne의 원자가 전자 = 0」이 「Ne은 이온이 되지 않는다」를 그 자체로 설명한다.
+
+   족 번호로 구하면 헬륨에서 틀린다(He는 18족이지만 K 껍질뿐이라 최외각 2개다).
    껍질 배치의 마지막 값을 쓰면 항상 옳다. */
-function valenceOf(z){ const s=shellsOf(z); return s[s.length-1]; }
+function outerShellOf(z){ const s=shellsOf(z); return s[s.length-1]; }
+function valenceOf(z){
+  const e=ELEMENTS.find(x=>x.z===z);
+  return e && e.group===18 ? 0 : outerShellOf(z);
+}
+/* 그 껍질이 꽉 찬 상태의 전자 수. 1주기(H·He)는 K 껍질뿐이라 8이 아니라 2다(듀엣 규칙).
+   이걸 8로 고정하면 수소 문제에 「전자 7개를 잃는다」 같은, 있지도 않은 전자를 잃는 보기가 생긴다. */
+function fullShellOf(z){ return z<=2 ? 2 : 8; }
 
 /* ── 이온 형성 (중학 [9과11-04]) ──
    단원자 이온을 만드는 1~20번 원소만 명시적으로 적는다. 규칙으로 자동 생성하지 않는 이유는
@@ -230,7 +245,11 @@ function valenceOf(z){ const s=shellsOf(z); return s[s.length-1]; }
    · He·Ne·Ar은 이미 안정해서 이온이 되지 않는다 — 그 자체가 학습 내용이라 문제에는 넣는다.
    n = 주고받는 전자 수, dir = 'lose'(양이온) | 'gain'(음이온) */
 const ION_FORMING=[
-  {z:1,  n:1, dir:'lose'},   /* H  → H⁺   */
+  /* 수소는 전자가 1개뿐이라 그걸 잃으면 껍질이 통째로 사라진다 — 「전자를 주고받아 안정한
+     배치가 된다」는 이 모드의 논리가 성립하지 않는다. 전자 1개를 얻어 K 껍질을 2개로 채우면
+     헬륨과 같은 배치가 되고, 이것이 같은 앱의 공유결합 그림(H는 전부 pairs:1)과도 맞는다.
+     H⁺가 틀린 게 아니라 산·염기에서 배우는 내용이라, 오답 보기에 그 안내를 붙여 둔다. */
+  {z:1,  n:1, dir:'gain'},   /* H  → H⁻   전자 1개를 얻어 헬륨과 같은 배치 */
   {z:3,  n:1, dir:'lose'},   /* Li → Li⁺  */
   {z:11, n:1, dir:'lose'},   /* Na → Na⁺  */
   {z:19, n:1, dir:'lose'},   /* K  → K⁺   */
@@ -245,10 +264,18 @@ const ION_FORMING=[
   {z:9,  n:1, dir:'gain'},   /* F  → F⁻   */
   {z:17, n:1, dir:'gain'}    /* Cl → Cl⁻  */
 ];
-/* 이온이 되지 않는 원소 — 최외각이 이미 꽉 차 있다 */
+/* 이온이 되지 않는 원소 — 바깥 껍질이 이미 꽉 차서 원자가 전자가 0이다 */
 const ION_NOBLE=[2,10,18];   /* He, Ne, Ar */
 
-/* 최외각 전자 문제는 1~20번 전부 낼 수 있다(모든 원소에 최외각 전자가 있다).
+/* 이온이 된 뒤의 전자 수는 위 14종 전부 정확히 He(2)·Ne(10)·Ar(18) 중 하나가 된다.
+   "왜 하필 그 개수를 주고받는가"에 대한 답이 이것이므로 해설에서 이름으로 불러 준다.
+   (수소가 전자를 얻어 헬륨과 같은 배치가 되는 것도 이 규칙 안에 있다.) */
+function ionTargetNoble(item){
+  const after=item.z+(item.dir==='gain'?item.n:-item.n);
+  return ELEMENTS.find(e=>e.z===after&&e.group===18)||null;
+}
+
+/* 원자가 전자 문제는 1~20번 전부 낼 수 있다(18족은 답이 0이고, 그 0이 학습 내용이다).
    이온 문제만 위 목록으로 제한된다. */
 const SHELL_QUIZ_ELEMENTS=ELEMENTS.filter(e=>e.z<=20);
 
