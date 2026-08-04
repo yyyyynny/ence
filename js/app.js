@@ -533,6 +533,8 @@ const App={
       if(st){this.setSection(st.dataset.section);this.playSound('tap');this.playHaptic('tap');return;}
       const ch=e.target.closest('.choice-btn');
       if(ch){this.pickChoice(ch.dataset.choice);return;}
+      /* 그림은 매번 다시 그려지므로 버튼에 직접 리스너를 달 수 없다 — 위임으로 받는다 */
+      if(e.target.closest('.dia-replay')){this.replayDiagram();return;}
       const th=e.target.closest('#themeBtn'),hi=e.target.closest('#hintBtn'),wn=e.target.closest('#wrongNoteBtn'),sa=e.target.closest('.show-answer-btn');
       const snd=e.target.closest('#soundBtn'),hpt=e.target.closest('#hapticBtn'),lyt=e.target.closest('#layoutBtn');
       const extR=e.target.closest('#exitRetryBtn'),pt=e.target.closest('#periodicBtn');
@@ -1199,7 +1201,7 @@ const App={
         const pool=this.orderPool();
         const idx=pickIndex(pool);const bd=pool[idx];
         q.type='결합 차수';q.isMode12=true;q.isAbstract=false;
-        q.name=bd.name;q.f=bd.f;
+        q.name=bd.name;q.f=bd.f;q.bondName=bd.name;
         q.choices=['단일결합','이중결합','삼중결합'];
         q.blanks.push({key:'M12',answer:BOND_ORDER_NAME[bd.ligands[0].pairs]});
         break;
@@ -1207,7 +1209,7 @@ const App={
       case 10:{
         const idx=pickIndex(BONDS);const bd=BONDS[idx];
         q.type='결합 맞추기';q.isMode10=true;q.isAbstract=false;
-        q.name=bd.name;q.bondIdx=idx;q.f=bd.f;
+        q.name=bd.name;q.bondIdx=idx;q.bondName=bd.name;q.f=bd.f;
         q.choices=['이온결합','공유결합'];
         q.blanks.push({key:'M10',answer:bd.type==='ionic'?'이온결합':'공유결합'});
         break;
@@ -1393,14 +1395,17 @@ const App={
      정답을 확인한 뒤에만 띄운다. 그림이 먼저 보이면 답이 새기 때문이다.
      [10통과1-02-03] 해설이 결합 이유를 "전자껍질 모형을 이용한 전자배치를 통해" 설명하라고
      명시하므로, 이 그림은 정답을 알려주는 장식이 아니라 왜 그런지를 보여주는 본문이다. */
-  hasDiagram(q){ return !!(q&&(q.isMode8||q.isMode9||q.isMode10||q.isMode13||q.isMode14||q.isMode15)); },
+  /* 오답노트는 오래 남는다. 배열 인덱스를 저장해 두면 BONDS 순서를 바꾼 순간
+     옛 노트가 다른 물질로 바뀐다. 이름으로 찾고, 이름이 없는 옛 노트만 인덱스로 되돌린다. */
+  bondOf(q){ return BONDS.find(x=>x.name===q.bondName) || BONDS[q.bondIdx]; },
+  hasDiagram(q){ return !!(q&&(q.isMode8||q.isMode9||q.isMode10||q.isMode12||q.isMode13||q.isMode14||q.isMode15)); },
   renderExplain(){
     const box=document.getElementById('explainBox');
     if(!box) return;
     const q=this.state.currentQuestion;
     const revealed=this.state.isAnswerChecked&&!q?.isTimedOut;
     if(!revealed||!this.state.showDiagram||!this.hasDiagram(q)){box.innerHTML='';return;}
-    if(q.isMode10) box.innerHTML=bondDiagramHTML(BONDS[q.bondIdx]);
+    if(q.isMode10) box.innerHTML=bondDiagramHTML(this.bondOf(q));
     else if(q.isMode13){
       const p=PRECIPITATES[q.pIdx];
       box.innerHTML=`<div class="dia-wrap"><p class="dia-exp">`+(p.none
@@ -1421,12 +1426,16 @@ const App={
         `${o.name} 껍질은 <b>${o.make}</b> 오비탈로 이루어져 최대 <b>${o.max}개</b>다. `+
         `2×${o.n}<sup>2</sup> = ${o.max} — 껍질에 2·8·18·32가 들어가는 이유가 이것이다.</p></div>`;
     }
+    else if(q.isMode12) box.innerHTML=covalentDiagramHTML(this.bondOf(q),{order:true});
     else{
-      /* 이온 되기에서는 이온이 된 뒤 모습을 함께 보여줘야 "왜 그 답인지"가 보인다 */
-      box.innerHTML=shellDiagramHTML(q.z)+
+      /* 이온 되기에서는 이온이 되는 "과정"을 보여줘야 "왜 그 답인지"가 보인다 */
+      box.innerHTML=(q.isMode8?shellDiagramHTML(q.z):ionFormingDiagramHTML(q.z,q.ion))+
         `<p class="dia-exp">${q.isMode8?this.valenceExplain(q):this.ionExplain(q)}</p>`;
     }
   },
+  /* 「다시 보기」 — 그림 HTML을 다시 렌더하면 CSS 애니메이션이 처음부터 재생된다.
+     별도 재생 제어가 필요 없다. */
+  replayDiagram(){ this.playSound('tap'); this.playHaptic('tap'); this.renderExplain(); },
   /* 원자가 전자 해설 — 18족 답이 0인 이유를 여기서 설명하지 않으면
      껍질에 8개가 그려져 있는데 답은 0이라 학생 눈에는 오류로 보인다. */
   valenceExplain(q){
@@ -1450,7 +1459,7 @@ const App={
     if(q.z===1)
       return `수소는 전자가 <b>1개뿐</b>이라 그걸 잃으면 껍질에 남는 전자가 없다. `+
              `전자 <b>1개를 얻어</b> K 껍질을 2개로 채우면 ${like}가 되어 안정해진다. `+
-             `<span class="dia-note">수소가 전자를 잃어 H<sup>+</sup>가 되는 것은 산을 배울 때 다시 나온다.</span>`;
+             `<span class="later-note">수소가 전자를 잃어 H<sup>+</sup>가 되는 것은 산을 배울 때 다시 나온다.</span>`;
     return `원자가 전자 <b>${valenceOf(q.z)}개</b>인 ${q.name}은 전자 <b>${ion.n}개</b>를 `+
            `${ion.dir==='lose'?'내주면':'받으면'} ${like}가 되어 안정해진다.`;
   },
@@ -1522,9 +1531,8 @@ const App={
       return;
     }
     if(q.isMode10){
-      const bd=BONDS[q.bondIdx];
       this.$.equationDisplay.innerHTML=
-        `<span class="eq-term"><span class="eq-text">${this.fmtFormulaStr(bd.f)}</span></span>`+
+        `<span class="eq-term"><span class="eq-text">${this.fmtFormulaStr(q.f)}</span></span>`+
         `<span class="eq-term">${this.renderBlankBox('M10',q.blanks[0].answer,'choice')}</span>`;
       return;
     }

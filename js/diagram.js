@@ -14,15 +14,46 @@ const DIA = {
   RSTEP: 14,    /* 껍질 간격 */
   E: 3.4,       /* 전자 점 반지름 */
 
-  /* 껍질 배치대로 전자를 원 위에 고르게 찍는다. 12시부터 시계 방향. */
-  dots(cx, cy, r, n, cls){
-    let s = '';
+  /* ── 애니메이션 ──
+     "전자가 어디로 가는지"는 그림 한 장으로는 안 보인다. 산소가 전자를 2개 얻는다면
+     전자가 정말 2개 날아 들어와야 왜 2개인지가 눈에 남는다.
+
+     최종 좌표는 이미 계산돼 있으므로 "어디서 출발하는지"만 --dx/--dy로 넘기고
+     CSS transform이 제자리로 되돌린다. 그래서 애니메이션이 끝난 화면은 정지 그림과
+     완전히 같다 — 움직임을 끄고 보는 사람(prefers-reduced-motion)에게도 답이 똑같이 보인다.
+     이게 이 방식을 고른 이유다. 좌표를 시간에 따라 다시 계산했다면 중간 프레임에서
+     전자 개수가 달라 보일 수 있는데, 그건 교육용으로 허용할 수 없다. */
+  T0: 0.45,      /* 원자가 자리잡고 첫 전자가 움직이기 시작하는 시각(초) */
+  STEP: 0.30,    /* 전자 하나와 다음 전자 사이 간격(초) */
+  FLY: 42,       /* 화면 밖에서 날아 들어오는 거리 */
+
+  /* from → to 이동. 요소는 to에 그려 두고 시작 오프셋만 준다. */
+  from(fx, fy, tx, ty, delay){
+    return ` style="--dx:${(fx - tx).toFixed(1)}px;--dy:${(fy - ty).toFixed(1)}px;animation-delay:${delay.toFixed(2)}s"`;
+  },
+  at(delay){ return ` style="animation-delay:${delay.toFixed(2)}s"`; },
+
+  /* 껍질 위 전자 자리 — 12시부터 시계 방향. 개수만 바꿔 부르면 같은 규칙으로 자리가 정해지므로
+     "원래 있던 전자"와 "새로 들어온 전자"가 한 원 위에서 자연스럽게 이어진다. */
+  dotPos(cx, cy, r, n){
+    const out = [];
     for(let i = 0; i < n; i++){
       const a = (-90 + i * 360 / n) * Math.PI / 180;
-      s += `<circle class="${cls}" cx="${(cx + r * Math.cos(a)).toFixed(1)}" cy="${(cy + r * Math.sin(a)).toFixed(1)}" r="${this.E}"/>`;
+      out.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
     }
-    return s;
+    return out;
   },
+  dot(x, y, cls, extra){
+    return `<circle class="${cls}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${this.E}"${extra || ''}/>`;
+  },
+  /* 껍질 배치대로 전자를 원 위에 고르게 찍는다. */
+  dots(cx, cy, r, n, cls){
+    return this.dotPos(cx, cy, r, n).map(([x, y]) => this.dot(x, y, cls)).join('');
+  },
+
+  /* 다시 보기 — 그림 HTML을 다시 렌더하면 CSS 애니메이션이 처음부터 재생된다.
+     별도 재생 제어가 필요 없어서 버튼 하나로 끝난다. */
+  replayBtn(){ return `<button type="button" class="dia-replay">↻ 다시 보기</button>`; },
 
   /* 전체 껍질을 그린 원자 하나. shells를 그대로 받으므로 이온(전자를 잃은 뒤)도 같은 함수로 그린다. */
   atom(sym, shells, cx, cy, charge){
@@ -47,7 +78,7 @@ const DIA = {
 
   /* 비공유 전자는 낱개가 아니라 쌍으로 존재한다 — 두 개씩 붙여 찍어야 교과서 그림과 같아진다.
      baseDeg 방향을 중심으로 쌍들을 부채꼴로 펼친다. centerAtom이면 결합 반대편 넓은 쪽에 놓는다. */
-  lonePairs(cx, cy, r, count, baseDeg, centerAtom){
+  lonePairs(cx, cy, r, count, baseDeg, centerAtom, delay){
     if(count <= 0) return '';
     const pairs = Math.floor(count / 2), odd = count % 2;
     const slots = pairs + odd;
@@ -60,7 +91,10 @@ const DIA = {
       const halves = isPair ? [-7, 7] : [0];       /* 한 쌍이면 두 점, 홀수로 남으면 한 점 */
       halves.forEach(dd => {
         const a = (base + dd) * Math.PI / 180;
-        s += `<circle class="dia-e" cx="${(cx + rr * Math.cos(a)).toFixed(1)}" cy="${(cy + rr * Math.sin(a)).toFixed(1)}" r="${this.E}"/>`;
+        const x = cx + rr * Math.cos(a), y = cy + rr * Math.sin(a);
+        s += delay === undefined
+          ? this.dot(x, y, 'dia-e')
+          : this.dot(x, y, 'dia-e dia-anim-pop', this.at(delay));
       });
     }
     return s;
@@ -68,57 +102,83 @@ const DIA = {
 };
 
 /* ── 이온 결합 ──
-   결합 전(중성 원자 + 전자 이동 화살표)과 결합 후(이온) 두 장을 나란히 보여준다.
-   화학식의 원자 개수(nM·nX)대로 그려서 전자 수지가 눈에 보이게 한다. */
+   전에는 「결합 전」·「결합 후」 두 장을 나란히 뒀는데, 정작 중요한 "전자가 넘어간다"는
+   두 장 사이의 빈틈에 있어서 보이지 않았다. 한 장으로 합치고 그 이동을 애니메이션으로 보인다.
+   화학식의 원자 개수(nM·nX)대로 그려서 전자 수지가 눈에 보이게 한다.
+
+   넘어가는 전자는 "도착지"(비금속 바깥 껍질의 빈자리)에 그려 두고 출발점만 금속 쪽으로 잡는다.
+   그래야 애니메이션이 끝난 최종 그림이 정확히 이온 상태가 되고, 전자 총수도 저절로 보존된다. */
 function ionicDiagramHTML(b){
   const M = ELEMENTS.find(e => e.sym === b.M), X = ELEMENTS.find(e => e.sym === b.X);
   const mS = shellsOf(M.z), xS = shellsOf(X.z);
   /* 금속은 바깥 껍질을 통째로 내주므로 껍질 하나가 사라진다. 비금속은 바깥 껍질이 8이 된다. */
   const mIon = mS.slice(0, -1);
   const xIon = xS.slice(0, -1).concat(8);
+  const mR = DIA.atomRadius(mS), xR = DIA.atomRadius(xS);
+  const mOutR = DIA.R0 + (mS.length - 1) * DIA.RSTEP;   /* 금속이 내줄 전자가 있는 껍질 */
+  const xOutR = DIA.R0 + (xS.length - 1) * DIA.RSTEP;   /* 비금속이 받을 껍질 */
 
   const rows = Math.max(b.nM, b.nX);
-  const H = rows * (2 * DIA.atomRadius(mS.length >= xS.length ? mS : xS) + 26);
-  const cellH = H / rows;
+  const TOP = 26;                                   /* 「전자 N개」 라벨 자리 — 전하 표기와 겹치지 않게 따로 뗀다 */
+  const rowH = 2 * Math.max(mR, xR) + 30;
+  const H = TOP + rows * rowH;
   const lx = 90, rx = 310, W = 400;
+  /* 한쪽 원자가 하나뿐이면(CaCl₂의 Ca) 세로 가운데에 둔다. 첫 줄에 붙여 두면
+     아래쪽이 통째로 비어 그림이 한쪽으로 쏠린다. */
+  const rowY = (k, cnt) => TOP + rowH * ((cnt === 1 ? (rows - 1) / 2 : k) + 0.5);
+  const my = i => rowY(i, b.nM), xy = j => rowY(j, b.nX);
 
-  const col = (sym, shells, n, x, charge) => {
-    let s = '';
-    for(let i = 0; i < n; i++) s += DIA.atom(sym, shells, x, cellH * (i + 0.5), charge);
-    return s;
-  };
-  /* 화살표: 금속 하나가 give개씩 내주고 비금속 하나가 take개씩 받는다.
-     개수가 다르면 많은 쪽에 맞춰 선을 그어 어느 원자에서 어디로 가는지 보이게 한다. */
-  const arrows = () => {
-    let s = '';
-    const n = Math.max(b.nM, b.nX);
-    for(let i = 0; i < n; i++){
-      const y1 = cellH * ((b.nM === 1 ? 0 : i) + 0.5);
-      const y2 = cellH * ((b.nX === 1 ? 0 : i) + 0.5);
-      s += `<path class="dia-arrow" d="M ${lx + DIA.atomRadius(mS) + 8} ${y1} Q 200 ${(y1 + y2) / 2 - 16} ${rx - DIA.atomRadius(xS) - 8} ${y2}" marker-end="url(#diaHead)"/>`;
-    }
-    /* 화살표가 여러 개면 "전자 2개"가 화살표마다 2개인지 통틀어 2개인지 헷갈린다.
-       여러 개일 때는 화살표 하나가 나르는 양을 쓴다. */
-    const per = b.nM >= b.nX ? b.give : b.take;
-    const label = n === 1 ? `전자 ${b.give}개` : `각각 전자 ${per}개씩`;
-    s += `<text class="dia-note" x="200" y="${cellH * 0.5 - DIA.atomRadius(mS) - 6}">${label}</text>`;
-    return s;
-  };
+  /* 내주는 전자 ↔ 받는 자리를 하나씩 짝짓는다. 금속이 내놓는 총 개수(nM×give)와
+     비금속이 받는 총 개수(nX×take)는 화학식이 맞다면 반드시 같다 — 그 짝을 그대로 쓴다. */
+  const outs = [];
+  for(let i = 0; i < b.nM; i++)
+    for(const [x, y] of DIA.dotPos(lx, my(i), mOutR, mS[mS.length - 1])) outs.push([x, y]);
+  const ins = [];
+  for(let j = 0; j < b.nX; j++){
+    const slots = DIA.dotPos(rx, xy(j), xOutR, 8);
+    for(let t = 0; t < b.take; t++) ins.push(slots[8 - b.take + t]);
+  }
+  const moved = Math.min(outs.length, ins.length);
+  const lastAt = DIA.T0 + Math.max(0, moved - 1) * DIA.STEP;
 
-  const svg = (inner, w, h) =>
-    `<svg class="dia" viewBox="0 0 ${w} ${h}" role="img"><defs>
+  let s = '';
+  /* 금속 — 이온이 된 뒤의 껍질은 그대로 두고, 사라질 바깥 껍질만 따로 얹어 흐려지게 한다 */
+  for(let i = 0; i < b.nM; i++){
+    s += DIA.atom(b.M, mIon, lx, my(i));
+    s += `<circle class="dia-ring dia-anim-fade" cx="${lx}" cy="${my(i)}" r="${mOutR}"${DIA.at(lastAt + 0.35)}/>`;
+    s += `<text class="dia-charge dia-anim-pop" x="${lx + DIA.atomRadius(mIon) + 12}" y="${my(i) - DIA.atomRadius(mIon) - 4}"${DIA.at(lastAt + 0.55)}>${DIA.chargeText(b.give, '+')}</text>`;
+  }
+  /* 비금속 — 원래 갖고 있던 전자는 그대로, 받는 전자만 금속에서 날아온다 */
+  for(let j = 0; j < b.nX; j++){
+    s += DIA.atom(b.X, xIon.slice(0, -1), rx, xy(j));
+    s += `<circle class="dia-ring" cx="${rx}" cy="${xy(j)}" r="${xOutR}"/>`;
+    const slots = DIA.dotPos(rx, xy(j), xOutR, 8);
+    slots.forEach(([x, y], k) => { if(k < 8 - b.take) s += DIA.dot(x, y, 'dia-e'); });
+    s += `<text class="dia-charge dia-anim-pop" x="${rx + xR + 12}" y="${xy(j) - xR - 4}"${DIA.at(lastAt + 0.55)}>${DIA.chargeText(b.take, '−')}</text>`;
+  }
+  /* 넘어가는 전자 — 도착지에 그리고 출발점만 금속 쪽으로 */
+  for(let k = 0; k < moved; k++){
+    const [fx, fy] = outs[k], [tx, ty] = ins[k];
+    s += DIA.dot(tx, ty, 'dia-e dia-e-move dia-anim-in', DIA.from(fx, fy, tx, ty, DIA.T0 + k * DIA.STEP));
+  }
+  /* 화살표는 전자가 지나갈 길을 미리 보여 주는 안내선이다. 이동이 끝나면 할 일이 없으므로 흐려진다 */
+  for(let i = 0; i < rows; i++){
+    const y1 = my(b.nM === 1 ? 0 : i), y2 = xy(b.nX === 1 ? 0 : i);
+    s += `<path class="dia-arrow dia-anim-fade" d="M ${lx + mR + 8} ${y1.toFixed(1)} Q 200 ${((y1 + y2) / 2 - 16).toFixed(1)} ${rx - xR - 8} ${y2.toFixed(1)}" marker-end="url(#diaHead)"${DIA.at(lastAt + 0.35)}/>`;
+  }
+  /* 화살표가 여러 개면 "전자 2개"가 화살표마다 2개인지 통틀어 2개인지 헷갈린다.
+     여러 개일 때는 화살표 하나가 나르는 양을 쓴다. */
+  const per = b.nM >= b.nX ? b.give : b.take;
+  s += `<text class="dia-note dia-anim-fade" x="200" y="${TOP - 9}"${DIA.at(lastAt + 0.35)}>${rows === 1 ? `전자 ${b.give}개` : `각각 전자 ${per}개씩`}</text>`;
+
+  const svg = `<svg class="dia" viewBox="0 0 ${W} ${H}" role="img"><defs>
        <marker id="diaHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
          <path d="M 0 0 L 10 5 L 0 10 z" class="dia-arrowhead"/>
-       </marker></defs>${inner}</svg>`;
-
-  const before = svg(col(b.M, mS, b.nM, lx) + col(b.X, xS, b.nX, rx) + arrows(), W, H);
-  const after = svg(
-    col(b.M, mIon, b.nM, lx, DIA.chargeText(b.give, '+')) +
-    col(b.X, xIon, b.nX, rx, DIA.chargeText(b.take, '−')), W, H);
+       </marker></defs>${s}</svg>`;
 
   return `<div class="dia-wrap">
-    <div class="dia-panel"><div class="dia-cap">결합 전 — 중성 원자</div>${before}</div>
-    <div class="dia-panel"><div class="dia-cap">결합 후 — 이온</div>${after}</div>
+    <div class="dia-panel"><div class="dia-cap">전자가 넘어가 이온이 된다</div>${svg}</div>
+    ${DIA.replayBtn()}
     <p class="dia-exp">${M.name}은 원자가 전자 ${valenceOf(M.z)}개를 내주고, ${X.name}은 ${b.take}개를 받아 둘 다 바깥 껍질이 꽉 찬다.
     반대 전하를 띤 이온이 서로 끌어당기는 것이 <b>이온 결합</b>이다.</p>
   </div>`;
@@ -130,7 +190,7 @@ function ionicDiagramHTML(b){
    비공유 전자 수 = 바깥 껍질에 실제로 든 전자 수 − 그 원자가 내놓은 전자 수(= 참여한 전자쌍 수).
    여기서는 원자가 전자가 아니라 outerShellOf를 쓴다 — 그리는 것은 "결합에 참여하는 개수"가 아니라
    "화면에 찍히는 점의 개수"라서, 두 값이 갈리는 18족에서 원자가 전자를 쓰면 점이 사라진다. */
-function covalentDiagramHTML(b){
+function covalentDiagramHTML(b, opts){
   const C = ELEMENTS.find(e => e.sym === b.center);
   const cPairs = b.ligands.reduce((s, l) => s + l.pairs, 0);
   const cLone = outerShellOf(C.z) - cPairs;
@@ -168,18 +228,32 @@ function covalentDiagramHTML(b){
     const px = -ay, py = ax;                 /* 결합축에 수직 */
     for(let p = 0; p < l.pairs; p++){
       const off = (p - (l.pairs - 1) / 2) * 11;
-      /* 한 쌍 = 전자 2개. 결합축을 따라 살짝 벌려 두 원자가 하나씩 내놓은 것을 보인다 */
+      /* 한 쌍 = 전자 2개. 결합축을 따라 살짝 벌려 두 원자가 하나씩 내놓은 것을 보인다.
+         애니메이션도 그 사실 그대로다 — 안쪽 전자는 중심 원자에서, 바깥 전자는 리간드에서
+         출발해 가운데서 만난다.
+
+         순서는 "몇 번째 전자쌍인가"(p)가 먼저다. 결합이 여러 개인 분자에서 전자쌍을
+         일렬로 늘어놓으면(CO₂를 1·2·3·4번째로) 이중결합이 두 개인지 사중결합 하나인지
+         구분이 안 된다. 결합마다 첫 쌍이 함께 들어오고 그다음 둘째 쌍이 들어와야
+         단일·이중·삼중이 눈에 들어온다. i는 결합끼리 살짝 어긋나게 하는 잔물결일 뿐이다. */
+      const delay = DIA.T0 + p * 0.42 + i * 0.09;
       [-4.2, 4.2].forEach(t => {
-        s += `<circle class="dia-e dia-e-share" cx="${(mx + px * off + ax * t).toFixed(1)}" cy="${(my + py * off + ay * t).toFixed(1)}" r="${DIA.E}"/>`;
+        const tx = mx + px * off + ax * t, ty = my + py * off + ay * t;
+        /* 출발점: 안쪽(t<0)이면 중심 원자 테두리, 바깥이면 리간드 테두리 */
+        const fx = t < 0 ? cx + R * ax + px * off * .4 : lx - lR * ax + px * off * .4;
+        const fy = t < 0 ? cy + R * ay + py * off * .4 : ly - lR * ay + py * off * .4;
+        s += DIA.dot(tx, ty, 'dia-e dia-e-share dia-anim-in',
+          ` data-pair="${p}"` + DIA.from(fx, fy, tx, ty, delay));
       });
     }
-    /* 리간드의 비공유 전자 — 중심 반대쪽 바깥에 쌍으로 찍는다 */
-    s += DIA.lonePairs(lx, ly, lR, outerShellOf(L.z) - l.pairs, angles[i]);
+    /* 리간드의 비공유 전자 — 중심 반대쪽 바깥에 쌍으로 찍는다.
+       공유하기 전부터 갖고 있던 전자라 먼저 나타난다 */
+    s += DIA.lonePairs(lx, ly, lR, outerShellOf(L.z) - l.pairs, angles[i], false, DIA.T0 * 0.5);
   });
 
   /* 중심 원자의 비공유 전자 — 결합이 없는 쪽에 몰아 찍는다 */
   const gapDir = n === 1 ? 180 : (angles[0] + angles[n - 1]) / 2 + 180;
-  s += DIA.lonePairs(cx, cy, R, cLone, gapDir, true);
+  s += DIA.lonePairs(cx, cy, R, cLone, gapDir, true, DIA.T0 * 0.5);
 
   /* 분자마다 원자 배치가 달라 고정 viewBox를 쓰면 여백만 커지고 그림이 작아진다.
      실제로 그린 원자들의 범위를 재서 딱 맞춘다(전자 점이 원 바깥 14px까지 나가는 것까지 포함). */
@@ -196,24 +270,114 @@ function covalentDiagramHTML(b){
 
   const pairWord = l => l.pairs === 1 ? '전자쌍 1개' : `전자쌍 ${l.pairs}개`;
   const uniq = [...new Set(b.ligands.map(l => `${b.center}–${l.sym} 사이에 공유 ${pairWord(l)}`))].join(', ');
+  /* 결합 차수 모드에서는 같은 그림을 쓰되 "몇 쌍인가"에 초점을 맞춘다 —
+     전자쌍이 하나씩 자리잡는 애니메이션이 그대로 답의 근거가 된다. */
+  const order = opts && opts.order;
+  const pairs0 = b.ligands[0].pairs;
+  const cap = order ? '공유 전자쌍이 몇 쌍인지 세어 보자' : '바깥 껍질 전자와 공유 전자쌍';
+  const exp = order
+    ? `${uniq} — 전자쌍 <b>${pairs0}쌍</b>을 공유하므로 <b>${BOND_ORDER_NAME[pairs0]}</b>이다.
+       공유하는 전자쌍이 늘수록 두 원자가 더 세게 붙잡혀 결합이 짧고 강해진다.`
+    : `${uniq}. 전자를 주고받는 대신 <b>함께 쓰는</b> 것이 <b>공유 결합</b>이다.
+       노란 점이 두 원자가 나눠 갖는 전자다.`;
   return `<div class="dia-wrap">
-    <div class="dia-panel"><div class="dia-cap">바깥 껍질 전자와 공유 전자쌍</div>
+    <div class="dia-panel"><div class="dia-cap">${cap}</div>
       <svg class="dia" viewBox="${vb}" role="img">${s}</svg></div>
-    <p class="dia-exp">${uniq}. 전자를 주고받는 대신 <b>함께 쓰는</b> 것이 <b>공유 결합</b>이다.
-    노란 점이 두 원자가 나눠 갖는 전자다.</p>
+    ${DIA.replayBtn()}
+    <p class="dia-exp">${exp}</p>
   </div>`;
+}
+
+/* ── 이온이 되는 과정 (MODE 9 · 중학) ──
+   그림 한 장으로는 "전자를 2개 얻는다"가 안 보인다. 전자가 정말 2개 날아 들어오고,
+   양이온이면 바깥 껍질이 통째로 빠져나가는 것을 보여야 답의 근거가 눈에 남는다.
+
+   fin(최종 껍질 배치)을 먼저 그리고, 그 위에 "사라질 것"과 "들어올 것"만 얹는다.
+   그래서 애니메이션이 끝난 화면이 곧 이온의 정확한 전자 배치다. */
+function ionFormingDiagramHTML(z, item){
+  const el = ELEMENTS.find(e => e.z === z);
+  const sh = shellsOf(z);
+  const outer = sh[sh.length - 1];
+  const gain = !!item && item.dir === 'gain', lose = !!item && item.dir === 'lose';
+  const n = item && !item.noble ? item.n : 0;
+  /* 얻으면 바깥 껍질이 차고, 잃으면 그 껍질이 통째로 사라진다.
+     1~20번에서 금속이 잃는 개수는 언제나 바깥 껍질 전자 전부다. */
+  const fin = gain ? sh.slice(0, -1).concat(outer + n) : lose ? sh.slice(0, -1) : sh;
+  const outR = DIA.R0 + (sh.length - 1) * DIA.RSTEP;
+  const rDraw = DIA.atomRadius(sh);
+  const W = 2 * (rDraw + DIA.FLY + 16), H = W, cx = W / 2, cy = H / 2;
+  const lastAt = DIA.T0 + Math.max(0, (n || outer) - 1) * DIA.STEP;
+
+  let s = `<circle class="dia-nuc" cx="${cx}" cy="${cy}" r="${DIA.NUC}"/>`;
+  s += `<text class="dia-sym" x="${cx}" y="${cy}">${el.sym}</text>`;
+
+  if(gain){
+    /* 안쪽 껍질은 그대로, 바깥 껍질은 최종 개수만큼 자리를 잡고 그중 뒤 n개가 날아 들어온다 */
+    fin.forEach((cnt, i) => {
+      const r = DIA.R0 + i * DIA.RSTEP;
+      s += `<circle class="dia-ring" cx="${cx}" cy="${cy}" r="${r}"/>`;
+      if(i < fin.length - 1){ s += DIA.dots(cx, cy, r, cnt, 'dia-e'); return; }
+      DIA.dotPos(cx, cy, r, cnt).forEach(([x, y], k) => {
+        if(k < outer){ s += DIA.dot(x, y, 'dia-e'); return; }
+        const a = Math.atan2(y - cy, x - cx);
+        const fx = cx + (r + DIA.FLY) * Math.cos(a), fy = cy + (r + DIA.FLY) * Math.sin(a);
+        s += DIA.dot(x, y, 'dia-e dia-e-move dia-anim-in', DIA.from(fx, fy, x, y, DIA.T0 + (k - outer) * DIA.STEP));
+      });
+    });
+  }else if(lose){
+    fin.forEach((cnt, i) => {
+      const r = DIA.R0 + i * DIA.RSTEP;
+      s += `<circle class="dia-ring" cx="${cx}" cy="${cy}" r="${r}"/>` + DIA.dots(cx, cy, r, cnt, 'dia-e');
+    });
+    /* 빠져나가는 껍질과 그 전자 — 끝나면 사라지므로 최종 그림에는 남지 않는다 */
+    s += `<circle class="dia-ring dia-anim-fade" cx="${cx}" cy="${cy}" r="${outR}"${DIA.at(lastAt + 0.3)}/>`;
+    DIA.dotPos(cx, cy, outR, outer).forEach(([x, y], k) => {
+      const a = Math.atan2(y - cy, x - cx);
+      const tx = cx + (outR + DIA.FLY) * Math.cos(a), ty = cy + (outR + DIA.FLY) * Math.sin(a);
+      s += DIA.dot(x, y, 'dia-e dia-e-gone dia-anim-out', DIA.from(tx, ty, x, y, DIA.T0 + k * DIA.STEP));
+    });
+  }else{
+    /* 18족 — 주고받는 게 없다. 바깥 껍질 전자를 하나씩 짚어 "이미 꽉 찼다"를 세어 보인다 */
+    fin.forEach((cnt, i) => {
+      const r = DIA.R0 + i * DIA.RSTEP;
+      s += `<circle class="dia-ring" cx="${cx}" cy="${cy}" r="${r}"/>`;
+      if(i < fin.length - 1){ s += DIA.dots(cx, cy, r, cnt, 'dia-e'); return; }
+      DIA.dotPos(cx, cy, r, cnt).forEach(([x, y], k) =>
+        { s += DIA.dot(x, y, 'dia-e dia-anim-pop', DIA.at(DIA.T0 + k * DIA.STEP)); });
+    });
+  }
+
+  if(n > 0){
+    const fr = DIA.atomRadius(fin);
+    s += `<text class="dia-charge dia-anim-pop" x="${(cx + fr + 12).toFixed(1)}" y="${(cy - fr - 4).toFixed(1)}"${DIA.at(lastAt + 0.5)}>${DIA.chargeText(n, lose ? '+' : '−')}</text>`;
+  }
+  const cap = gain ? `전자 ${n}개가 들어온다` : lose ? `바깥 껍질 전자 ${n}개가 빠져나간다` : '이미 꽉 차 있다';
+  return `<div class="dia-wrap"><div class="dia-panel"><div class="dia-cap">${cap}</div>
+    <svg class="dia" viewBox="0 0 ${W} ${H}" role="img">${s}</svg></div>${DIA.replayBtn()}</div>`;
 }
 
 function bondDiagramHTML(b){
   return b.type === 'ionic' ? ionicDiagramHTML(b) : covalentDiagramHTML(b);
 }
 
-/* 원자 하나의 껍질 그림 — 이온 만들기(MODE 8·9) 해설용 */
+/* 원자 하나의 껍질 그림 — 원자가 전자(MODE 8) 해설용.
+   바깥 껍질 전자를 하나씩 짚어 준다. 답을 외우는 게 아니라 그림에서 세도록 하는 게
+   [9과11-04]가 요구하는 접근이라, 세는 동작 자체를 보여 주는 편이 맞다. */
 function shellDiagramHTML(z, charge){
   const el = ELEMENTS.find(e => e.z === z);
   const sh = shellsOf(z);
-  const r = DIA.atomRadius(sh), W = 2 * (r + 24), H = W;
+  const r = DIA.atomRadius(sh), W = 2 * (r + 24), H = W, cx = W / 2, cy = H / 2;
+  let s = `<circle class="dia-nuc" cx="${cx}" cy="${cy}" r="${DIA.NUC}"/>`;
+  s += `<text class="dia-sym" x="${cx}" y="${cy}">${el.sym}</text>`;
+  sh.forEach((cnt, i) => {
+    const rr = DIA.R0 + i * DIA.RSTEP;
+    s += `<circle class="dia-ring" cx="${cx}" cy="${cy}" r="${rr}"/>`;
+    if(i < sh.length - 1){ s += DIA.dots(cx, cy, rr, cnt, 'dia-e'); return; }
+    DIA.dotPos(cx, cy, rr, cnt).forEach(([x, y], k) =>
+      { s += DIA.dot(x, y, 'dia-e dia-anim-pop', DIA.at(DIA.T0 + k * DIA.STEP)); });
+  });
+  if(charge) s += `<text class="dia-charge" x="${cx + r + 12}" y="${cy - r - 4}">${charge}</text>`;
   return `<div class="dia-wrap"><div class="dia-panel">
-    <svg class="dia" viewBox="0 0 ${W} ${H}" role="img">${DIA.atom(el.sym, sh, W / 2, H / 2, charge)}</svg>
-  </div></div>`;
+    <svg class="dia" viewBox="0 0 ${W} ${H}" role="img">${s}</svg>
+  </div>${DIA.replayBtn()}</div>`;
 }

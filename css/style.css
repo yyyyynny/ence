@@ -169,7 +169,8 @@
   /* 보기 주석 — "완전히 틀린 말은 아니고 나중에 다시 배운다"를 알려 주는 한 줄.
      본문보다 작지만 12px 밑으로는 내리지 않는다(폰에서 안 읽힌다). */
   .choice-note{display:block;margin-top:4px;font-size:12px;font-weight:600;opacity:.72;}
-  .dia-note{display:block;margin-top:6px;font-size:13px;opacity:.75;}
+  /* 해설 안의 「나중에 다시 배운다」 한 줄. dia-note는 SVG text 전용 클래스라 이름을 겹치면 안 된다 */
+  .later-note{display:block;margin-top:6px;font-size:13px;opacity:.75;}
   /* 보기 답은 한글 문장이라 정사각 빈칸에 안 들어간다 — 폭이 늘어나는 형태로 바꾼다 */
   .blank-box.choice{min-width:110px;font-family:var(--font-ui);font-size:1em;}
   /* 전자껍질 배치 — 답을 외우는 게 아니라 그림에서 세도록 문제에 같이 띄운다 */
@@ -183,7 +184,9 @@
   .dia-wrap{margin-top:14px;}
   .dia-panel{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;padding:10px;margin-bottom:10px;}
   .dia-cap{font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:4px;text-align:center;}
-  .dia{display:block;width:100%;height:auto;overflow:visible;}
+  /* 폭에 맞춰 늘리되 세로로는 화면을 다 잡아먹지 않게 상한을 둔다. viewBox가 정사각인 원자 한 개짜리
+     그림이 폰에서 세로 370px을 차지해 정작 해설이 화면 밖으로 밀려났다. */
+  .dia{display:block;width:100%;height:auto;max-height:min(46vh,300px);overflow:visible;}
   .dia-nuc{fill:var(--c-surface-1);stroke:var(--c-accent-1);stroke-width:2;}
   .dia-ring{fill:none;stroke:var(--c-border);stroke-width:1.5;}
   .dia-fill{fill:var(--c-surface-1);}
@@ -198,8 +201,31 @@
   .dia-exp{font-size:13px;line-height:1.6;color:var(--c-text-secondary);margin:8px 2px 0;}
   .dia-exp b{color:var(--c-text-primary);}
   @keyframes diaFlow{to{stroke-dashoffset:-18;}}
+  /* ── 그림 애니메이션 ──
+     전자의 최종 좌표는 SVG에 이미 박혀 있고, CSS는 "어디서 출발해 제자리로 오는지"만 맡는다.
+     그래서 애니메이션이 끝난 화면 = 정지 그림이고, 중간 프레임에서도 전자 개수는 변하지 않는다.
+     backwards: 지연 시간 동안 시작 상태에 머물러야 순서대로 들어오는 게 보인다. */
+  .dia-anim-in{animation:diaIn .58s cubic-bezier(.34,1.15,.42,1) backwards;}
+  @keyframes diaIn{from{transform:translate(var(--dx),var(--dy));opacity:0;}to{transform:translate(0,0);opacity:1;}}
+  .dia-anim-out{animation:diaOut .58s ease-in forwards;}
+  @keyframes diaOut{from{transform:translate(0,0);opacity:1;}to{transform:translate(var(--dx),var(--dy));opacity:0;}}
+  .dia-anim-pop{animation:diaPop .42s ease-out backwards;transform-box:fill-box;transform-origin:center;}
+  @keyframes diaPop{from{opacity:0;transform:scale(.4);}to{opacity:1;transform:scale(1);}}
+  .dia-anim-fade{animation:diaFade .5s ease forwards;}
+  @keyframes diaFade{to{opacity:0;}}
+  /* 화살표는 안내선 애니메이션(diaFlow)을 유지한 채로 마지막에 흐려진다 */
+  .dia-arrow.dia-anim-fade{animation:diaFlow 1.4s linear infinite,diaFade .5s ease forwards;}
+  /* 움직이는 전자는 살짝 크고 밝게 — 어느 점이 이동 중인지 눈으로 따라갈 수 있어야 한다 */
+  .dia-e-move{r:4.4px;fill:var(--c-accent-1);}
+  .dia-replay{display:block;margin:0 auto 10px;background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:10px;padding:9px 16px;font-family:var(--font-ui);font-size:13px;font-weight:700;cursor:pointer;min-height:44px;}
+  .dia-replay:hover{border-color:var(--c-border-active);color:var(--c-text-primary);}
   /* 움직임에 민감한 사용자를 위해 흐름 애니메이션만 끈다 — 그림 내용은 그대로 남는다 */
-  @media (prefers-reduced-motion: reduce){ .dia-arrow{animation:none;} }
+  /* 움직임을 꺼 둔 사람에게도 답은 똑같이 보여야 한다. 애니메이션만 끄면
+     "나가는 전자"와 "사라지는 껍질"이 그대로 남아 틀린 배치가 되므로 그 자리에서 감춘다. */
+  @media (prefers-reduced-motion: reduce){
+    .dia-arrow,.dia-anim-in,.dia-anim-out,.dia-anim-pop,.dia-anim-fade,.dia-arrow.dia-anim-fade{animation:none;}
+    .dia-anim-out,.dia-anim-fade{opacity:0;}
+  }
   .sub-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-ui);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
   .sub-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
   .cycle-progress-wrap{display:flex;align-items:center;gap:8px;flex:1;min-width:140px;}
