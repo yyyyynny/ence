@@ -74,10 +74,35 @@ function sectionMeta(secId){ return SECTIONS.find(s=>s.id===secId); }
 /* 플래시카드는 구역마다 하나씩 있으므로 모드 번호로 판별하면 안 된다 */
 function isCardMode(m){ const r=modeRoot(m); return !!(r && r.custom==='flashcard'); }
 
-/* 오답노트 배지는 하위 유형까지 보여야 어떤 문제였는지 알 수 있다 — "반응식 맞추기 · 생성물" */
+/* ── 플래시카드 유형 ──
+   앞면·뒷면이 각각 무엇인지 여기 한 곳에 적는다. 「먼저 보기」 버튼 라벨도 여기서 나온다.
+   전에는 유형과 무관하게 「한글 먼저 / 화학식 먼저」로 고정돼 있어서, 결합 그림 카드에서
+   「화학식 먼저」를 누르면 그림(=답)이 먼저 나왔고 앙금 카드는 앞면이 화학식인데
+   「한글 먼저」라고 떴다. 유형마다 앞뒤 이름이 다르니 라벨도 유형에서 나와야 한다.
+
+   btn* 은 버튼에 넣기엔 긴 이름을 줄여 쓸 때만 채운다. */
+const CARD_TYPES={
+  full    :{label:'전체 반응식', front:'한글 반응식',       back:'화학 반응식'},
+  reactant:{label:'반응물',      front:'반응물 이름',       back:'반응물 화학식'},
+  product :{label:'생성물',      front:'생성물 이름',       back:'생성물 화학식'},
+  formula :{label:'화학식',      front:'물질명',            back:'화학식'},
+  bond    :{label:'결합 그림',   front:'물질명',            back:'결합 그림'},
+  group   :{label:'주기·족',     front:'원소',              back:'주기 · 족'},
+  ion     :{label:'이온식',      front:'이온 이름',         back:'이온식'},
+  order   :{label:'결합 차수',   front:'물질',              back:'결합 차수'},
+  precip  :{label:'앙금',        front:'두 이온을 섞으면?', back:'앙금',        btnFront:'두 이온', btnBack:'결과'},
+  orbital :{label:'오비탈',      front:'껍질 · 오비탈',     back:'최대 전자 수'}
+};
+function cardType(t){ return CARD_TYPES[t] || CARD_TYPES.formula; }
+
+/* 오답노트 배지는 하위 유형까지 보여야 어떤 문제였는지 알 수 있다 — "반응식 맞추기 · 생성물"
+   플래시카드는 구역마다 하나씩 있어 이름이 넷 다 「플래시카드」다. 그대로 두면 오답노트
+   목록에서 어느 구역 카드인지 구분이 안 되므로 구역명을 덧붙인다 — "플래시카드 · 고2 화학" */
 const MODE_NAMES=Object.fromEntries(Object.keys(MODES).map(m=>{
   const r=modeRoot(m), sub=MODES[m].subLabel;
-  return [m, r ? r.name+(sub?' · '+sub:'') : '모드 '+m];
+  if(!r) return [m, '모드 '+m];
+  const sec=r.custom==='flashcard' ? (sectionMeta(r.section)||{}).label : null;
+  return [m, r.name+(sec?' · '+sec:'')+(sub?' · '+sub:'')];
 }));
 const MODE_ICONS=Object.fromEntries(Object.keys(MODES).map(m=>{
   const r=modeRoot(m); return [m, r ? r.icon : '📌'];

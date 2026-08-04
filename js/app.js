@@ -305,15 +305,16 @@ const App={
     document.getElementById('retryBannerText').innerHTML = `<span>⚠️ 연속 재풀이 모드 <span style="font-size:12px;opacity:0.8">(${this.state.retryPlaylist.length}문제 남음)</span></span>`;
   },
 
-  /* 오답노트 재풀이 중 플래시카드(모드6) 노트 — 채점 없이 뒤집어 확인 후 기억/다시 로 진행 */
+  /* 오답노트 재풀이 중 플래시카드 노트 — 채점 없이 뒤집어 확인 후 기억/다시 로 진행 */
   renderRetryFlashcard(note){
     clearInterval(this.state.timerInterval);
     document.getElementById('retryM6Card').style.display = '';
     const q = note.qData||{};
     const cards = this.m6BuildCards(q.m6Type||'full');
-    const idx = Math.min(q.cardIndex||0, cards.length-1);
-    const card = cards[idx];
+    const card = cards[this.m6FindCard(cards, q)];
     const isKorFirst = (q.m6Order||'korean')==='korean';
+    /* 헤더가 「MODE 6」로 박혀 있어 통합과학·고2·심화 카드도 전부 모드 6으로 보였다 */
+    document.getElementById('retryM6Label').textContent = `${MODE_NAMES[note.mode]||'플래시카드'} 복습`;
     document.getElementById('retryM6Title').textContent = note.title;
     document.getElementById('retryM6FTag').textContent = isKorFirst?card.ftag:card.btag;
     document.getElementById('retryM6FContent').innerHTML = isKorFirst?card.fhtml:card.bhtml;
@@ -1063,9 +1064,12 @@ const App={
     this.$.cycleWrap.classList.toggle('m7', mode===7);
     this.$.cycleWrap.classList.toggle('has-dia', this.hasDiagram({['isMode'+mode]:true}));
 
-    if(!preserveCycle) this.initCycleQueue();
-
+    /* 플래시카드에는 순환 출제라는 게 없다. 그런데도 initCycleQueue가 돌아 (해당 분기가 없어
+       반응식 풀로 떨어지면서) 순환 진행률이 초기화됐다 — 카드를 잠깐 보고 돌아오면
+       풀던 진도가 사라진다. 카드 모드로 빠지는 길보다 뒤에 둔다. */
     if(isCard){clearInterval(this.state.timerInterval);this.m6GenCards();this.m6Render();return;}
+
+    if(!preserveCycle) this.initCycleQueue();
     /* 원소 기호 키패드는 generateQuestion이 문제를 만든 뒤 syncElemRow로 맞춘다 (MODE 7은 출제 방향에 따라 달라짐) */
     this.generateQuestion();
   },
@@ -1659,45 +1663,44 @@ const App={
   /* 카드 유형(t)에서 카드 배열만 순수하게 만들어낸다 — 오답노트 재풀이(renderRetryFlashcard)에서도
      실제 mode6 세션 상태(state.m6Cards/m6Index)를 건드리지 않고 재사용하기 위해 분리 */
   /* 카드 유형 정의 — 구역마다 다루는 내용이 다르므로 MODES[n].cards로 어떤 유형을 쓸지 고른다 */
-  m6TypeLabel(t){
-    return {full:'전체 반응식',reactant:'반응물',product:'생성물',formula:'화학식',
-            bond:'결합 그림',group:'주기·족',ion:'이온식',order:'결합 차수',
-            precip:'앙금',orbital:'오비탈'}[t]||t;
-  },
+  m6TypeLabel(t){ return cardType(t).label; },
   m6BuildCards(t){
     let cards=[];
     if(t==='bond'){
-      cards=BONDS.map(b=>({ftag:'물질명',fhtml:`<span class="m6-korean">${b.name}</span><div class="m6-formula" style="font-size:.7em;opacity:.7">${this.fmtFormulaStr(b.f)}</div>`,
+      cards=BONDS.map(b=>({fhtml:`<span class="m6-korean">${b.name}</span><div class="m6-formula" style="font-size:.7em;opacity:.7">${this.fmtFormulaStr(b.f)}</div>`,
         btag:b.type==='ionic'?'이온 결합':'공유 결합',bhtml:bondDiagramHTML(b)}));
     }
     else if(t==='group'){
-      cards=PT_QUIZ_ELEMENTS.map(e=>({ftag:'원소',fhtml:`<span class="m6-korean">${e.name} (${e.sym})</span>`,
-        btag:'주기 · 족',bhtml:`<span class="m6-formula">${e.period}주기 ${e.group}족</span>`}));
+      cards=PT_QUIZ_ELEMENTS.map(e=>({fhtml:`<span class="m6-korean">${e.name} (${e.sym})</span>`,
+        bhtml:`<span class="m6-formula">${e.period}주기 ${e.group}족</span>`}));
     }
     else if(t==='ion'){
-      cards=IONS_WRITE.map(i=>({ftag:'이온 이름',fhtml:`<span class="m6-korean">${i.name}</span>`,
-        btag:'이온식',bhtml:`<span class="m6-formula">${this.formatInput(i.f)}</span>`}));
+      cards=IONS_WRITE.map(i=>({fhtml:`<span class="m6-korean">${i.name}</span>`,
+        bhtml:`<span class="m6-formula">${this.formatInput(i.f)}</span>`}));
     }
     else if(t==='order'){
-      cards=this.orderPool().map(b=>({ftag:'물질',fhtml:`<span class="m6-korean">${b.name}</span><div class="m6-formula" style="font-size:.7em;opacity:.7">${this.fmtFormulaStr(b.f)}</div>`,
-        btag:'결합 차수',bhtml:`<span class="m6-formula">${BOND_ORDER_NAME[b.ligands[0].pairs]}</span>`}));
+      cards=this.orderPool().map(b=>({fhtml:`<span class="m6-korean">${b.name}</span><div class="m6-formula" style="font-size:.7em;opacity:.7">${this.fmtFormulaStr(b.f)}</div>`,
+        bhtml:`<span class="m6-formula">${BOND_ORDER_NAME[b.ligands[0].pairs]}</span>`}));
     }
     else if(t==='precip'){
-      cards=PRECIPITATES.map(p=>({ftag:'두 이온을 섞으면?',fhtml:`<span class="m6-formula">${this.formatInput(p.a)} + ${this.formatInput(p.b)}</span>`,
+      /* 앙금이 생기는 카드와 안 생기는 카드는 뒷면 이름이 달라야 뒤집기 전에 답이 새지 않는다 */
+      cards=PRECIPITATES.map(p=>({fhtml:`<span class="m6-formula">${this.formatInput(p.a)} + ${this.formatInput(p.b)}</span>`,
         btag:p.none?'앙금 없음':'앙금',
         bhtml:`<span class="m6-formula">${p.none?'물에 잘 녹아 앙금이 생기지 않는다':`${this.fmtFormulaStr(p.f)}<br><span style="font-size:.7em">${p.name} · ${p.color}</span>`}</span>`}));
     }
     else if(t==='orbital'){
       cards=ORBITAL_SHELLS.map(o=>({ftag:'껍질',fhtml:`<span class="m6-korean">${o.name} 껍질 (n=${o.n})</span>`,
-        btag:'최대 전자 수',bhtml:`<span class="m6-formula">${o.max}개<br><span style="font-size:.6em">${o.make} · 2×${o.n}²</span></span>`}))
+        bhtml:`<span class="m6-formula">${o.max}개<br><span style="font-size:.6em">${o.make} · 2×${o.n}²</span></span>`}))
         .concat(ORBITAL_KINDS.map(o=>({ftag:'오비탈',fhtml:`<span class="m6-korean">${o.kind} 오비탈</span>`,
         btag:'개수 · 최대 전자',bhtml:`<span class="m6-formula">${o.count}개 · 전자 ${o.max}개</span>`})));
     }
-    else if(t==='full'){cards=REACTIONS.map(rx=>({ftag:'한글 반응식',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'화학 반응식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.reactants)} → ${this.m6Fmt(rx.products)}</span>`}));}
-    else if(t==='reactant'){cards=REACTIONS.map(rx=>({ftag:'반응물 이름',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'반응물 화학식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.reactants)}</span>`}));}
-    else if(t==='product'){cards=REACTIONS.map(rx=>({ftag:'생성물 이름',fhtml:`<span class="m6-korean">${rx.name}</span>`,btag:'생성물 화학식',bhtml:`<span class="m6-formula">${this.m6Fmt(rx.products)}</span>`}));}
-    else{cards=CHEMICALS.map(c=>({ftag:'물질명',fhtml:`<span class="m6-korean">${c.name}</span>`,btag:'화학식',bhtml:`<span class="m6-formula">${c.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')}</span>`}));}
-    return cards;
+    else if(t==='full'){cards=REACTIONS.map(rx=>({fhtml:`<span class="m6-korean">${rx.name}</span>`,bhtml:`<span class="m6-formula">${this.m6Fmt(rx.reactants)} → ${this.m6Fmt(rx.products)}</span>`}));}
+    else if(t==='reactant'){cards=REACTIONS.map(rx=>({fhtml:`<span class="m6-korean">${rx.name}</span>`,bhtml:`<span class="m6-formula">${this.m6Fmt(rx.reactants)}</span>`}));}
+    else if(t==='product'){cards=REACTIONS.map(rx=>({fhtml:`<span class="m6-korean">${rx.name}</span>`,bhtml:`<span class="m6-formula">${this.m6Fmt(rx.products)}</span>`}));}
+    else{cards=CHEMICALS.map(c=>({fhtml:`<span class="m6-korean">${c.name}</span>`,bhtml:`<span class="m6-formula">${c.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')}</span>`}));}
+    /* 앞뒤 이름은 유형에서 온다. 카드가 따로 정한 것만 그대로 둔다(앙금 유무, 오비탈 두 갈래). */
+    const d=cardType(t);
+    return cards.map(c=>({ftag:d.front,btag:d.back,...c}));
   },
   /* 구역마다 쓸 수 있는 카드 유형이 다르다. MODES[n].cards에서 버튼을 만들고,
      현재 유형이 그 구역에 없으면 첫 번째로 되돌린다(다른 구역 유형이 남아 빈 카드가 되는 걸 막는다). */
@@ -1708,6 +1711,17 @@ const App={
     document.getElementById('m6TypeBtns').innerHTML=list.map(t=>
       `<button class="m6-opt-btn${t===this.state.m6Type?' active':''}" data-val="${t}">${this.m6TypeLabel(t)}</button>`
     ).join('');
+    this.m6SyncOrder();
+  },
+  /* 「먼저 보기」 라벨은 카드 유형에서 나온다. 값(korean/formula)은 그대로 둔다 —
+     이미 저장된 오답노트가 이 값을 담고 있어서 바꾸면 복원이 깨진다.
+     korean = 앞면부터, formula = 뒷면부터라는 뜻이고, 라벨만 유형에 맞게 붙인다. */
+  m6SyncOrder(){
+    const d=cardType(this.state.m6Type);
+    const f=d.btnFront||d.front, b=d.btnBack||d.back;
+    document.getElementById('m6OrderBtns').innerHTML=
+      `<button class="m6-opt-btn${this.state.m6Order==='korean'?' active':''}" data-val="korean">${f} 먼저</button>`+
+      `<button class="m6-opt-btn${this.state.m6Order==='formula'?' active':''}" data-val="formula">${b} 먼저</button>`;
   },
   m6GenCards(){
     this.m6SyncTypes();
@@ -1739,6 +1753,15 @@ const App={
     const html=`<div class="m6-note-row">${card.fhtml}<span class="eq-arrow">→</span>${card.bhtml}</div>`;
     return {title,html};
   },
+  /* 저장된 노트가 가리키는 카드를 찾는다. 카드 앞면이 곧 그 카드의 신원이다
+     (같은 유형 안에서 앞면은 겹치지 않는다). 앞면이 없는 옛 노트만 인덱스로 되돌린다. */
+  m6FindCard(cards, q){
+    if(q && q.cardFront){
+      const i = cards.findIndex(c => c.fhtml === q.cardFront);
+      if(i >= 0) return i;
+    }
+    return Math.min(Math.max(0, (q && q.cardIndex) || 0), cards.length - 1);
+  },
   m6CurrentSaved(){
     const card=this.state.m6Cards[this.state.m6Index];if(!card)return false;
     const {html}=this.m6CardNoteData(card);
@@ -1760,7 +1783,10 @@ const App={
     const card=this.state.m6Cards[this.state.m6Index];if(!card)return;
     if(this.m6CurrentSaved()){this.playSound('tap');return;} /* 이미 저장됨 → 중복 저장 방지 */
     const {title,html}=this.m6CardNoteData(card);
-    const qData={m6Type:this.state.m6Type,m6Order:this.state.m6Order,cardIndex:this.state.m6Index,title};
+    /* cardIndex는 "섞인 배열에서 몇 번째"라 복원할 때(원래 순서로 다시 만든다) 다른 카드가 열렸다.
+       카드 앞면 자체를 저장해 그 카드를 찾는다. cardIndex는 옛 노트 복원용으로만 남긴다. */
+    const qData={m6Type:this.state.m6Type,m6Order:this.state.m6Order,
+                 cardFront:card.fhtml,cardIndex:this.state.m6Index,title};
     this.saveWrongNote(this.state.currentMode,title,html,qData,false);
     this.playSound('success'); this.playHaptic('success');
     this.m6SyncSaveBtn();
@@ -1772,11 +1798,10 @@ const App={
     this.setMode(note.mode);
     const q=note.qData||{};
     this.state.m6Type=q.m6Type||'full';
-    document.querySelectorAll('#m6TypeBtns .m6-opt-btn').forEach(b=>b.classList.toggle('active',b.dataset.val===this.state.m6Type));
     this.state.m6Order=q.m6Order||'korean';
-    document.querySelectorAll('#m6OrderBtns .m6-opt-btn').forEach(b=>b.classList.toggle('active',b.dataset.val===this.state.m6Order));
+    /* 유형·먼저보기 버튼은 m6GenCards가 상태를 보고 다시 그린다 — 여기서 따로 켤 필요가 없다 */
     this.m6GenCards();
-    this.state.m6Index=Math.min(q.cardIndex||0,this.state.m6Cards.length-1);
+    this.state.m6Index=this.m6FindCard(this.state.m6Cards,q);
     this.m6Render();
   },
 
