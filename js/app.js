@@ -199,7 +199,21 @@ const App={
     } catch(e) {}
   },
 
-  loadWrongNotes(){try{const d=localStorage.getItem('chem_wrong_notes_v4');this.state.wrongNotes=d?JSON.parse(d):[];}catch(e){this.state.wrongNotes=[];}},
+  /* 저장값은 그대로 믿으면 안 된다. JSON.parse가 성공해도 배열이 아닐 수 있고("null", 문자열, 객체),
+     그러면 목록을 그리다 f.map/f.length에서 죽는다 — 오답노트만 안 뜨는 게 아니라 렌더가 통째로
+     멈춰 앱이 흰 화면이 된다(검증에서 실제로 그렇게 됐다).
+     배열인지 확인하고, 항목도 다시 그릴 수 있는 최소한의 모양(id·모드·본문)을 갖춘 것만 남긴다.
+     못 살릴 항목은 조용히 버린다 — 모드가 없는 노트는 어차피 다시 풀 수도 없다. */
+  loadWrongNotes(){
+    let list=[];
+    try{
+      const d=localStorage.getItem('chem_wrong_notes_v4');
+      const parsed=d?JSON.parse(d):[];
+      if(Array.isArray(parsed))
+        list=parsed.filter(n=>n&&typeof n==='object'&&n.id&&n.mode&&typeof n.html==='string');
+    }catch(e){}
+    this.state.wrongNotes=list;
+  },
   saveWrongNote(m,t,h,qData,bump=true){
     let existing = this.state.wrongNotes.find(n => n.mode === m && n.html === h);
     if(existing){
