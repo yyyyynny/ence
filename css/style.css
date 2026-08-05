@@ -5,21 +5,100 @@
     --c-border:rgba(136,150,191,0.2); --c-border-active:rgba(0,229,255,0.5);
     --c-text-primary:#F0F4FF; --c-text-secondary:#8896B0;
     --c-accent-1:#00E5FF; --c-accent-2:#7C3AED; --c-accent-3:#F59E0B;
-    --c-correct:#10B981; --c-wrong:#EF4444;
+    --c-correct:#10B981; --c-wrong:#F87171;
+    /* 강조색·정답색을 배경으로 깐 버튼 위에 얹을 글자색. 흰 글자가 늘 맞는 게 아니라
+       그 테마에서 그 색이 얼마나 밝으냐에 달렸다 — 테마마다 밝기를 보고 정한다. */
+    --c-on-accent-1:#10141E; --c-on-accent-2:#FFFFFF; --c-on-accent-3:#000000;
+    --c-on-correct:#000000; --c-on-wrong:#000000;
+    /* 맞음·틀림 칸의 옅은 바탕, 입력 중인 칸의 테두리 빛, 플래시카드 뒷면 물빛.
+       여기 없이 rgba를 규칙에 직접 적으면 테마를 갈아도 다크 색이 그대로 남는다(실제로 그랬다). */
+    --c-correct-bg:rgba(16,185,129,0.15); --c-wrong-bg:rgba(248,113,113,0.15);
+    --c-focus-glow:rgba(0,229,255,0.2); --c-tint-a2:rgba(124,58,237,0.25);
+    /* 공유 전자쌍 색. 배경 밝기에 따라 노랑이 안 보일 수 있어 테마마다 다시 정한다. */
+    --c-e-share:#FDE047;
+    /* 배경 그라디언트 세기. 고대비 테마는 0으로 꺼서 대비를 지킨다. */
+    --c-glow:.2;
     --font-ui:'Noto Sans KR',sans-serif; --font-mono:'JetBrains Mono',monospace;
   }
-  .light {
+  /* ── 테마 ──
+     :root가 기본(다크)이고, 각 테마는 :root.theme-<id>로 변수만 덮어쓴다.
+     추가할 색은 전부 여기 변수로 만든다 — 값을 코드에 박아 두면 테마를 갈아도 안 따라온다.
+
+     클래스는 body가 아니라 <html>에 붙인다. 브라우저는 화면 전체의 바탕색을 <html>의
+     배경에서 가져가므로, body에만 붙이면 내용 밖(스크롤 끝까지 당겼을 때 보이는 자리)이
+     기본 다크색 그대로 남아 밝은 테마에서 검은 띠처럼 보인다.
+
+     각 블록에 .theme-pv.theme-<id>를 같이 적어 둔 것은 테마 고르기의 미리보기 때문이다.
+     미리보기 조각에 그 클래스를 주면 같은 변수가 그 조각 안에서만 살아나므로, 미리보기용
+     색을 따로 적어 둘 필요가 없다 — 따로 적으면 테마 색을 고칠 때 한쪽만 고치게 된다.
+
+     지킬 것: --c-correct는 초록, --c-wrong은 빨강 계열을 벗어나지 않는다. 채점 결과라서
+     테마 취향으로 바꾸면 학생이 맞았는지 틀렸는지를 색으로 못 읽는다. */
+  :root.theme-light, .theme-pv.theme-light {
     --c-bg:#F0F4FF; --c-surface-1:rgba(255,255,255,0.6); --c-surface-2:rgba(255,255,255,0.8);
     --c-surface-solid:#FFFFFF;
     --c-border:rgba(45,60,100,0.15); --c-border-active:rgba(2,132,199,0.5);
     --c-text-primary:#0F172A; --c-text-secondary:#4A5568;
-    --c-accent-1:#0284C7; --c-accent-2:#7C3AED; --c-accent-3:#D97706;
-    --c-correct:#059669; --c-wrong:#DC2626;
+    /* 흰 배경 위에서는 같은 색도 훨씬 흐리게 보인다 — 파랑·주황·초록·빨강 모두 한 단계 짙게 */
+    --c-accent-1:#0369A1; --c-accent-2:#7C3AED; --c-accent-3:#B45309;
+    --c-correct:#065F46; --c-wrong:#B91C1C;
+    --c-on-accent-1:#FFFFFF; --c-on-accent-2:#FFFFFF; --c-on-accent-3:#FFFFFF;
+    --c-on-correct:#FFFFFF; --c-on-wrong:#FFFFFF;
+    --c-correct-bg:rgba(6,95,70,0.15); --c-wrong-bg:rgba(185,28,28,0.15);
+    --c-focus-glow:rgba(3,105,161,0.2); --c-tint-a2:rgba(124,58,237,0.25);
+    --c-e-share:#B45309;          /* 밝은 배경에서 노랑은 안 보인다 — 진한 호박색으로 */
+    --c-glow:.12;
+  }
+  /* 종이 — 세피아. 흰 배경의 눈부심을 줄여 오래 봐도 덜 피로하다. */
+  :root.theme-paper, .theme-pv.theme-paper {
+    --c-bg:#F5EFE1; --c-surface-1:rgba(255,251,243,0.72); --c-surface-2:rgba(255,251,243,0.92);
+    --c-surface-solid:#FFFBF3;
+    --c-border:rgba(120,96,64,0.24); --c-border-active:rgba(146,64,14,0.55);
+    --c-text-primary:#2B2117; --c-text-secondary:#6B5B45;
+    --c-accent-1:#9A3412; --c-accent-2:#6D28D9; --c-accent-3:#A16207;
+    --c-correct:#166534; --c-wrong:#B91C1C;
+    --c-on-accent-1:#FFFFFF; --c-on-accent-2:#FFFFFF; --c-on-accent-3:#FFFFFF;
+    --c-on-correct:#FFFFFF; --c-on-wrong:#FFFFFF;
+    --c-correct-bg:rgba(22,101,52,0.15); --c-wrong-bg:rgba(185,28,28,0.15);
+    --c-focus-glow:rgba(154,52,18,0.2); --c-tint-a2:rgba(109,40,217,0.25);
+    --c-e-share:#92400E;
+    --c-glow:.08;
+  }
+  /* 야간 — 불 끄고 볼 때. 배경을 더 낮추고 채도를 죽여 눈이 덜 부시게 한다. */
+  :root.theme-night, .theme-pv.theme-night {
+    --c-bg:#0A0C10; --c-surface-1:rgba(22,26,34,0.72); --c-surface-2:rgba(22,26,34,0.92);
+    --c-surface-solid:#12161D;
+    --c-border:rgba(120,134,160,0.22); --c-border-active:rgba(125,178,168,0.5);
+    --c-text-primary:#D3DAE3; --c-text-secondary:#7C8798;
+    --c-accent-1:#7DB2A8; --c-accent-2:#8A7CC8; --c-accent-3:#C79A5B;
+    --c-correct:#4E9E77; --c-wrong:#D98A8A;
+    /* 야간 테마의 강조색은 밝은 편이라 그 위 글자는 검정이어야 읽힌다 */
+    --c-on-accent-1:#000000; --c-on-accent-2:#000000; --c-on-accent-3:#000000;
+    --c-on-correct:#000000; --c-on-wrong:#000000;
+    --c-correct-bg:rgba(78,158,119,0.15); --c-wrong-bg:rgba(217,138,138,0.15);
+    --c-focus-glow:rgba(125,178,168,0.2); --c-tint-a2:rgba(138,124,200,0.25);
+    --c-e-share:#C9A227;
+    --c-glow:.06;
+  }
+  /* 고대비 — 잘 안 보일 때. 배경을 완전한 검정으로 내리고 글자를 흰색으로 올린다. */
+  :root.theme-contrast, .theme-pv.theme-contrast {
+    --c-bg:#000000; --c-surface-1:rgba(255,255,255,0.06); --c-surface-2:rgba(255,255,255,0.12);
+    --c-surface-solid:#0B0B0B;
+    --c-border:rgba(255,255,255,0.55); --c-border-active:#FFFFFF;
+    --c-text-primary:#FFFFFF; --c-text-secondary:#D6D6D6;
+    --c-accent-1:#39E0FF; --c-accent-2:#C08BFF; --c-accent-3:#FFC53D;
+    --c-correct:#3DFF9E; --c-wrong:#FF6B6B;
+    --c-on-accent-1:#000000; --c-on-accent-2:#000000; --c-on-accent-3:#000000;
+    --c-on-correct:#000000; --c-on-wrong:#000000;
+    --c-correct-bg:rgba(61,255,158,0.15); --c-wrong-bg:rgba(255,107,107,0.15);
+    --c-focus-glow:rgba(57,224,255,0.2); --c-tint-a2:rgba(192,139,255,0.25);
+    --c-e-share:#FFE95C;
+    --c-glow:0;                   /* 배경 그라디언트를 끈다 — 대비를 깎는다 */
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   /* 스크롤바는 항상 숨긴다(플랫폼/브라우저 구분 없이). 문서 자체가 스크롤러라야 브라우저 기본
      핀치줌(특히 모바일 크로미움 계열)과 가장 잘 맞으므로 body를 별도 내부 스크롤러로 만들지 않는다. */
-  html{background:var(--c-bg);overscroll-behavior:none;scrollbar-width:none;}
+  html{background:var(--c-bg);overscroll-behavior:none;scrollbar-width:none;transition:background .3s;}
   html::-webkit-scrollbar{width:0;height:0;display:none;}
   /* 진짜 입력창(#authInput)이 아닌 곳에서 텍스트를 드래그/더블탭 선택하면 브라우저가 그 자리에
      깜빡이는 선택 커서를 띄운다 — 커스텀 키보드는 그 위치를 모르므로 "입력했는데 안 먹힘"처럼 보임.
@@ -32,7 +111,7 @@
   /* filter:blur(100px)를 전체화면 고정 요소에 걸어두면 확대/축소 제스처마다 매 프레임
      다시 블러 연산을 해야 해서 모든 브라우저에서 렉의 주범이 된다 → 별도 필터 없이
      그라디언트 자체의 색상 정지점을 넓게 퍼뜨려 비슷한 은은한 느낌만 남긴다 */
-  body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 25% 25%,var(--c-accent-1),transparent 55%),radial-gradient(circle at 75% 75%,var(--c-accent-2),transparent 55%);opacity:.2;pointer-events:none;z-index:0;}
+  body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 25% 25%,var(--c-accent-1),transparent 55%),radial-gradient(circle at 75% 75%,var(--c-accent-2),transparent 55%);opacity:var(--c-glow);pointer-events:none;z-index:0;}
   #app{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:16px;display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;transition:max-width 0.3s;}
   header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
   .logo-egg{font-size:16px;font-weight:900;color:var(--c-wrong);letter-spacing:1px;cursor:pointer;user-select:none;transition:transform .2s;white-space:nowrap;flex-shrink:0;}
@@ -58,14 +137,14 @@
   .timer-select-label{font-size:12px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
   .timer-btns{display:flex;gap:6px;flex-wrap:wrap;}
   .timer-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-mono);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
-  .timer-btn.active{background:var(--c-accent-3);border-color:var(--c-accent-3);color:#000;}
+  .timer-btn.active{background:var(--c-accent-3);border-color:var(--c-accent-3);color:var(--c-on-accent-3);}
   #modeNav{margin-bottom:16px;}
   /* 구역 줄. 색으로 구분하지 않는다 — 구역 색과 "시험 범위" 색이 겹치면 무슨 뜻인지 알 수 없게 된다.
      좁은 화면에서 4개가 한 줄에 안 들어가면 헤더와 같은 가로 스크롤(.scroll-fade-x)로 넘긴다. */
   .section-tabs{display:flex;gap:6px;margin-bottom:10px;overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
   .section-tabs::-webkit-scrollbar{display:none;}
   .section-tab{flex:0 0 auto;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);padding:8px 14px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;line-height:1.3;white-space:nowrap;}
-  .section-tab.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
+  .section-tab.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:var(--c-on-accent-2);}
   .section-tab .section-sub{display:block;font-size:10px;font-weight:400;opacity:.75;margin-top:1px;}
   /* 뺀 자리에 남기는 이정표 — 학교에서 옛 교육과정 내용을 곁들여 배운 학생이
      "여기 있어야 할 게 없다"고 당황하지 않도록 어디로 갔는지 알려준다 */
@@ -76,7 +155,7 @@
   .scroll-fade-x{-webkit-mask-image:linear-gradient(to right,black calc(100% - 28px),transparent 100%);mask-image:linear-gradient(to right,black calc(100% - 28px),transparent 100%);}
   .scroll-fade-x.fade-end{-webkit-mask-image:none;mask-image:none;}
   .mode-tab{flex:0 0 auto;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:12px;color:var(--c-text-secondary);padding:14px 16px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;line-height:1.4;}
-  .mode-tab.active{background:var(--c-accent-1);border-color:var(--c-accent-1);color:var(--c-bg);}
+  .mode-tab.active{background:var(--c-accent-1);border-color:var(--c-accent-1);color:var(--c-on-accent-1);}
   .mode-tab .tab-icon{font-size:20px;display:block;margin-bottom:2px;}
   .mode-tab .tab-desc{font-size:11px;display:block;font-weight:400;opacity:0.75;margin-top:2px;}
   .question-card{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;padding:24px;margin-bottom:16px;min-height:180px;display:flex;flex-direction:column;gap:16px;flex-grow:1;position:relative;overflow:hidden;}
@@ -87,9 +166,9 @@
   .q-sublabel{font-size:20px;color:var(--c-text-primary);font-weight:700;}
   .equation-display{font-family:var(--font-mono);font-size:clamp(16px,4.5vw,24px);display:flex;flex-wrap:wrap;align-items:center;gap:8px;line-height:2;margin:auto 0;}
   .blank-box{display:inline-block;min-width:54px;height:54px;border:2px solid var(--c-border);border-radius:10px;background:var(--c-surface-2);text-align:center;line-height:50px;cursor:pointer;transition:all .2s;font-size:1.2em;font-weight:700;color:var(--c-text-primary);padding:0 10px;font-family:var(--font-mono);}
-  .blank-box.active{border-color:var(--c-border-active);box-shadow:0 0 0 4px rgba(0,229,255,.2);}
-  .blank-box.correct{border-color:var(--c-correct);background:rgba(16,185,129,.15);color:var(--c-correct);}
-  .blank-box.wrong{border-color:var(--c-wrong);background:rgba(239,68,68,.15);color:var(--c-wrong);animation:shake .4s;}
+  .blank-box.active{border-color:var(--c-border-active);box-shadow:0 0 0 4px var(--c-focus-glow);}
+  .blank-box.correct{border-color:var(--c-correct);background:var(--c-correct-bg);color:var(--c-correct);}
+  .blank-box.wrong{border-color:var(--c-wrong);background:var(--c-wrong-bg);color:var(--c-wrong);animation:shake .4s;}
   .blank-box.placeholder::before{content:'?';color:var(--c-text-secondary);opacity:.5;}
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
   @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
@@ -101,8 +180,8 @@
   sub{font-size:.65em;line-height:0;vertical-align:sub;}
   .result-banner{border-radius:12px;padding:14px 18px;font-size:15px;font-weight:700;display:none;align-items:center;gap:10px;margin-top:auto;}
   .result-banner.show{display:flex;flex-direction:column;align-items:flex-start;}
-  .result-banner.correct-banner{background:rgba(16,185,129,.2);color:var(--c-correct);border:1px solid var(--c-correct);flex-direction:row;}
-  .result-banner.wrong-banner{background:rgba(239,68,68,.2);color:var(--c-wrong);border:1px solid var(--c-wrong);}
+  .result-banner.correct-banner{background:var(--c-correct-bg);color:var(--c-correct);border:1px solid var(--c-correct);flex-direction:row;}
+  .result-banner.wrong-banner{background:var(--c-wrong-bg);color:var(--c-wrong);border:1px solid var(--c-wrong);}
   .show-answer-btn{background:var(--c-wrong);color:var(--c-bg);border:none;border-radius:8px;padding:8px 14px;font-weight:700;cursor:pointer;transition:opacity .2s;align-self:flex-end;margin-top:8px;white-space:nowrap;flex-shrink:0;}
   .keyboard-wrap{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;padding:16px;}
   .kb-section-label{font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;margin-bottom:10px;margin-top:6px;}
@@ -115,10 +194,12 @@
      (body에 overflow-x:hidden이 걸려 있어 스크롤로 볼 수도 없었다).
      auto-fit + minmax로 두면 좁을수록 열이 줄고 줄 수가 늘어난다. 44px 터치 타깃은 그대로 지킨다. */
   #elemRow{display:grid;grid-template-columns:repeat(auto-fit,minmax(44px,1fr));gap:6px;}
-  .kb-key{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;font-family:var(--font-mono);font-size:18px;font-weight:700;min-height:54px;min-width:44px;flex:1 1 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .1s;}
+  /* color를 반드시 적어 둘 것 — 빼면 브라우저 기본 버튼색(검정)이 나와서 ◀ ▶ 같은
+     별도 색이 없는 키가 어두운 테마에서 배경에 묻힌다(실제로 그랬다) */
+  .kb-key{background:var(--c-surface-2);color:var(--c-text-primary);border:1px solid var(--c-border);border-radius:10px;font-family:var(--font-mono);font-size:18px;font-weight:700;min-height:54px;min-width:44px;flex:1 1 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .1s;}
   .kb-key:active{transform:scale(.95);}
   .kb-key.num{color:var(--c-accent-3);}.kb-key.elem{color:var(--c-text-primary);font-weight:500;}
-  .kb-key.del{color:var(--c-wrong);flex-grow:2;}.kb-key.confirm{background:var(--c-correct);color:#000;flex-grow:3;}.kb-key.next-q{background:var(--c-accent-2);color:#fff;flex-grow:3;}
+  .kb-key.del{color:var(--c-wrong);flex-grow:2;}.kb-key.confirm{background:var(--c-correct);color:var(--c-on-correct);flex-grow:3;}.kb-key.next-q{background:var(--c-accent-2);color:var(--c-on-accent-2);flex-grow:3;}
   /* manipulation: 더블탭 확대만 끄고 핀치·팬은 그대로 — 확대는 이제 막지 않고 견디는 전략
      (setupViewportVars의 동결 가드가 확대 중 재계산을 차단해 레이아웃이 안 깨진다) */
   .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center;padding:16px;touch-action:manipulation;}
@@ -133,6 +214,21 @@
   .filter-chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
   .filter-chip{flex:0 0 auto;background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:20px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;white-space:nowrap;}
   .filter-chip.active{background:var(--c-accent-1);color:var(--c-bg);border-color:var(--c-accent-1);}
+  /* 테마 고르기 — 이름·설명과 함께 실제 색을 미리 보여 준다.
+     색 이름만 있으면 골라 보기 전에는 어떤 화면인지 알 수 없다. */
+  .theme-opt{display:flex;align-items:center;gap:12px;width:100%;background:var(--c-surface-2);
+             border:1px solid var(--c-border);border-radius:14px;padding:12px 14px;cursor:pointer;
+             transition:all .2s;text-align:left;font-family:var(--font-ui);color:var(--c-text-primary);min-height:64px;}
+  .theme-opt.active{border-color:var(--c-accent-1);border-width:2px;background:var(--c-surface-1);}
+  .theme-opt-name{font-size:15px;font-weight:700;display:flex;align-items:center;gap:7px;}
+  .theme-opt-hint{font-size:12px;color:var(--c-text-secondary);margin-top:2px;}
+  .theme-opt-check{margin-left:auto;color:var(--c-accent-1);font-weight:900;font-size:18px;}
+  /* 미리보기 — 그 테마의 배경 위에 글자·강조·맞음·틀림 색을 얹어 실제 대비를 보인다.
+     색은 .theme-pv가 살려 놓은 그 테마의 변수에서 그대로 읽는다(위 테마 블록 참고). */
+  .theme-swatch{flex-shrink:0;width:52px;height:44px;border-radius:10px;border:1px solid var(--c-border);
+                display:grid;grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:4px;padding:5px;
+                background:var(--c-bg);}
+  .theme-swatch span{display:block;border-radius:3px;}
   .reaction-item{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;padding:14px 16px;font-family:var(--font-mono);font-size:15px;display:flex;flex-direction:column;gap:10px;transition:border-color .15s,background .15s;}
   .reaction-header{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;}
   .reaction-name{color:var(--c-text-primary);font-size:14px;font-family:var(--font-ui);font-weight:700;display:flex;align-items:center;gap:7px;flex-wrap:wrap;line-height:1.3;}
@@ -144,14 +240,14 @@
   .m6-note-row{display:flex;align-items:center;justify-content:center;gap:8px;flex-wrap:wrap;}
   .reaction-eq .m6-korean,.reaction-eq .m6-formula{font-size:13px;line-height:1.35;}
   /* 오답노트 버튼은 손가락으로 누른다 — 28px이던 것을 다른 키들과 같은 44px로 맞춘다 */
-  .delete-note-btn{background:rgba(239,68,68,.1);border:1px solid var(--c-wrong);color:var(--c-wrong);border-radius:8px;padding:6px 14px;min-height:44px;cursor:pointer;font-size:13px;font-weight:bold;}
-  .retry-note-btn{background:var(--c-accent-1);border:none;color:#000;border-radius:8px;padding:6px 14px;min-height:44px;cursor:pointer;font-size:13px;font-weight:bold;}
-  .clear-all-btn{background:var(--c-wrong);color:#fff;border:none;border-radius:8px;padding:10px 18px;font-weight:bold;cursor:pointer;margin-bottom:0;align-self:flex-end;}
+  .delete-note-btn{background:var(--c-wrong-bg);border:1px solid var(--c-wrong);color:var(--c-wrong);border-radius:8px;padding:6px 14px;min-height:44px;cursor:pointer;font-size:13px;font-weight:bold;}
+  .retry-note-btn{background:var(--c-accent-1);border:none;color:var(--c-on-accent-1);border-radius:8px;padding:6px 14px;min-height:44px;cursor:pointer;font-size:13px;font-weight:bold;}
+  .clear-all-btn{background:var(--c-wrong);color:var(--c-on-wrong);border:none;border-radius:8px;padding:10px 18px;font-weight:bold;cursor:pointer;margin-bottom:0;align-self:flex-end;}
   .cycle-wrap{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:12px 18px;margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
   .cycle-label{font-size:12px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
   .cycle-btns{display:flex;gap:6px;}
   .cycle-btn,.dir-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-ui);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
-  .cycle-btn.active,.dir-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
+  .cycle-btn.active,.dir-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:var(--c-on-accent-2);}
   /* 출제 방향은 MODE 7 전용 — 별도 카드로 빼면 와이드 모드 그리드(.cycle-wrap은 2열/4행 고정)와
      충돌하므로 기존 출제 방식 카드 안에 접어 넣고 여기서만 보이게 한다 */
   #cycleWrap:not(.m7) .m7-only{display:none;}
@@ -161,7 +257,7 @@
   #cycleWrap .cycle-label.dia-only,
   #cycleWrap .cycle-label.sub-only{flex-basis:100%;}
   .dia-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-ui);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
-  .dia-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
+  .dia-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:var(--c-on-accent-2);}
   /* 보기 버튼 — 한 줄에 하나씩 두어 긴 한글 보기가 잘리지 않게 한다 */
   #chargeRow{display:grid;grid-template-columns:repeat(auto-fit,minmax(44px,1fr));gap:6px;}
   #choiceRow{display:grid;grid-template-columns:1fr;gap:8px;}
@@ -212,7 +308,7 @@
   .dia-sym{fill:var(--c-text-primary);font-family:var(--font-mono);font-size:15px;font-weight:700;text-anchor:middle;dominant-baseline:central;}
   .dia-sym-lg{font-size:20px;}
   .dia-e{fill:var(--c-accent-3);}
-  .dia-e-share{fill:#FDE047;stroke:var(--c-bg);stroke-width:.8;}
+  .dia-e-share{fill:var(--c-e-share);stroke:var(--c-bg);stroke-width:.8;}
   .dia-arrow{fill:none;stroke:var(--c-accent-1);stroke-width:2;stroke-dasharray:5 4;animation:diaFlow 1.4s linear infinite;}
   .dia-arrowhead{fill:var(--c-accent-1);}
   .dia-charge{fill:var(--c-accent-1);font-family:var(--font-mono);font-size:17px;font-weight:700;text-anchor:middle;}
@@ -250,7 +346,7 @@
     .dia-anim-out,.dia-anim-fade{opacity:0;}
   }
   .sub-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-ui);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
-  .sub-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
+  .sub-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:var(--c-on-accent-2);}
   .cycle-progress-wrap{display:flex;align-items:center;gap:8px;flex:1;min-width:140px;}
   .cycle-progress-text{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--c-text-primary);white-space:nowrap;}
   .cycle-progress-bar{flex:1;height:8px;background:var(--c-border);border-radius:4px;overflow:hidden;}
@@ -387,7 +483,7 @@
   .m6-opt-label{font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
   .m6-opt-btns{display:flex;gap:6px;flex-wrap:wrap;}
   .m6-opt-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
-  .m6-opt-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:#fff;}
+  .m6-opt-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:var(--c-on-accent-2);}
   .m6-card-area{flex-grow:1;display:flex;flex-direction:column;gap:10px;}
   .m6-perspective{perspective:1200px;flex-grow:1;}
   /* 결합 그림 카드는 그림 패널 + 다시 보기 + 해설이 들어가 240px으로는 어림도 없었다.
@@ -406,17 +502,17 @@
   .m6-face .later-note{font-size:11px;}
   .m6-face .dia-replay{margin:0 auto 4px;padding:7px 14px;font-size:12px;min-height:40px;}
   .m6-front{background:var(--c-surface-1);border:2px solid var(--c-border);}
-  .m6-back{background:linear-gradient(135deg,rgba(124,58,237,.25),rgba(30,35,50,.85));border:2px solid var(--c-accent-2);transform:rotateY(180deg);}
+  .m6-back{background:linear-gradient(135deg,var(--c-tint-a2),var(--c-surface-2));border:2px solid var(--c-accent-2);transform:rotateY(180deg);}
   .m6-tag{font-size:11px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1.5px;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:20px;padding:4px 14px;color:var(--c-text-secondary);}
-  .m6-back .m6-tag{color:var(--c-accent-2);border-color:var(--c-accent-2);}
+  .m6-back .m6-tag{color:var(--c-text-primary);border-color:var(--c-accent-2);}
   .m6-korean{font-size:clamp(18px,5vw,26px);font-family:var(--font-ui);font-weight:700;color:var(--c-text-primary);line-height:1.5;}
   .m6-formula{font-size:clamp(16px,4.5vw,24px);font-family:var(--font-mono);font-weight:700;color:var(--c-text-primary);line-height:1.8;}
   .m6-hint{text-align:center;font-size:12px;color:var(--c-text-secondary);font-family:var(--font-mono);}
   .m6-save-wrong-btn{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
   .m6-save-wrong-btn:hover{border-color:var(--c-wrong);color:var(--c-wrong);}
-  .m6-save-wrong-btn.saved{background:var(--c-wrong);border-color:var(--c-wrong);color:#fff;}
+  .m6-save-wrong-btn.saved{background:var(--c-wrong);border-color:var(--c-wrong);color:var(--c-on-wrong);}
   .m6-save-wrong-btn:disabled{cursor:default;}
-  .m6-save-wrong-btn:disabled:hover{border-color:var(--c-wrong);color:#fff;}
+  .m6-save-wrong-btn:disabled:hover{border-color:var(--c-wrong);color:var(--c-on-wrong);}
   .m6-nav{display:flex;align-items:center;gap:14px;}
   .m6-nav-btn{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:14px;color:var(--c-text-primary);font-size:32px;font-weight:900;width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0;line-height:1;}
   .m6-nav-btn:hover{border-color:var(--c-accent-1);color:var(--c-accent-1);}
@@ -433,7 +529,7 @@
 
   /* 재풀이 배너 */
   #retryBanner {
-    display:none; background:var(--c-wrong); color:#fff; padding:14px 18px; border-radius:16px; margin-bottom:16px; font-weight:bold; align-items:center; justify-content:space-between; box-shadow:0 4px 12px rgba(239,68,68,0.2); font-size:15px;
+    display:none; background:var(--c-wrong); color:var(--c-on-wrong); padding:14px 18px; border-radius:16px; margin-bottom:16px; font-weight:bold; align-items:center; justify-content:space-between; box-shadow:0 4px 12px var(--c-wrong-bg); font-size:15px;
   }
 
   /* 와이드(화면 분할) 모드 CSS Grid 재배치 */

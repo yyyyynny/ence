@@ -2,7 +2,7 @@
 const App={
   state:{
     currentMode:null,score:{streak:0,correct:0,wrong:0},
-    currentQuestion:null,isAnswerChecked:false,isAnswerRevealed:false,isDarkMode:true,
+    currentQuestion:null,isAnswerChecked:false,isAnswerRevealed:false,theme:THEME_DEFAULT,
     isLastWrongAttempt:false,wrongBlanks:{},wrongAlreadyPenalized:false,
     timerDuration:DEFAULT_TIMER,currentMaxTime:DEFAULT_TIMER,timerLeft:DEFAULT_TIMER,timerInterval:null,
     wrongNotes:[],noteFilter:'all',retryNoteId:null,
@@ -31,6 +31,7 @@ const App={
     soundBtn:document.getElementById('soundBtn'),hapticBtn:document.getElementById('hapticBtn'),
     layoutBtn:document.getElementById('layoutBtn'),
     periodicModalOverlay:document.getElementById('periodicModalOverlay'),periodicContent:document.getElementById('periodicContent'),
+    themeModalOverlay:document.getElementById('themeModalOverlay'),themeList:document.getElementById('themeList'),
     simplePeriodicToggle:document.getElementById('simplePeriodicToggle'),
     ptDetailPanel:document.getElementById('ptDetailPanel'),ptFsDetailPanel:document.getElementById('ptFsDetailPanel')
   },
@@ -131,7 +132,11 @@ const App={
       const savedSec = localStorage.getItem('chem_section');
       if(savedSec && sectionMeta(savedSec)) this.state.section = savedSec;
       this.state.showDiagram = localStorage.getItem('chem_diagram') !== 'false';
+      /* 없어진 테마 id가 저장돼 있을 수 있으므로 실재하는지 확인하고 쓴다 */
+      const savedTheme = localStorage.getItem('chem_theme');
+      if(savedTheme && THEMES.some(t=>t.id===savedTheme)) this.state.theme = savedTheme;
     }catch(e){}
+    this.applyTheme(this.state.theme);
     this.updateFeedbackBtns();
     if(this.state.isWideMode) document.body.classList.add('wide-mode');
     this.$.layoutBtn.textContent = this.state.isWideMode ? '📱' : '↔️';
@@ -557,7 +562,7 @@ const App={
       if(mt)this.setMode(parseInt(mt.dataset.mode));
       if(bb)this.setActiveBlank(bb.dataset.key);
       if(kb)this.handleKeyPress(kb.dataset.key);
-      if(th)this.toggleTheme();
+      if(th){this.renderThemeList();this.$.themeModalOverlay.classList.add('show');this.playSound('tap');this.playHaptic('tap');}
       if(hi)this.$.hintModalOverlay.classList.add('show');
       if(wn){this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');}
       if(sa)this.revealAnswers();
@@ -613,8 +618,16 @@ const App={
     document.getElementById('hintModalClose').addEventListener('click',()=>this.$.hintModalOverlay.classList.remove('show'));
     document.getElementById('wrongNoteModalClose').addEventListener('click',()=>this.$.wrongNoteModalOverlay.classList.remove('show'));
     document.getElementById('periodicModalClose').addEventListener('click',()=>this.$.periodicModalOverlay.classList.remove('show'));
+    document.getElementById('themeModalClose').addEventListener('click',()=>this.$.themeModalOverlay.classList.remove('show'));
+    this.$.themeList.addEventListener('click',e=>{
+      const opt=e.target.closest('.theme-opt');if(!opt)return;
+      this.applyTheme(opt.dataset.theme);
+      /* 목록은 열어 둔 채로 표시만 갱신한다 — 바로 옆 테마와 비교해 보고 고를 수 있게 */
+      this.renderThemeList();
+      this.playSound('tap'); this.playHaptic('tap');
+    });
     /* 어두운 배경 탭 시 모달 닫기 (인증 모달 제외) */
-    [this.$.hintModalOverlay,this.$.wrongNoteModalOverlay,this.$.periodicModalOverlay].forEach(ov=>{
+    [this.$.hintModalOverlay,this.$.wrongNoteModalOverlay,this.$.periodicModalOverlay,this.$.themeModalOverlay].forEach(ov=>{
       ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('show');});
     });
     document.getElementById('ptRotateBtn').addEventListener('click',()=>{
@@ -735,8 +748,10 @@ const App={
         if(this.$.periodicModalOverlay.classList.contains('show')){this.$.periodicModalOverlay.classList.remove('show');return;}
         if(this.$.hintModalOverlay.classList.contains('show')){this.$.hintModalOverlay.classList.remove('show');return;}
         if(this.$.wrongNoteModalOverlay.classList.contains('show')){this.$.wrongNoteModalOverlay.classList.remove('show');return;}
+        if(this.$.themeModalOverlay.classList.contains('show')){this.$.themeModalOverlay.classList.remove('show');return;}
       }
-      if(this.$.hintModalOverlay.classList.contains('show')||this.$.wrongNoteModalOverlay.classList.contains('show'))return;
+      /* 팝업이 떠 있는 동안은 아래 문제 풀이 단축키가 먹으면 안 된다 */
+      if(this.$.hintModalOverlay.classList.contains('show')||this.$.wrongNoteModalOverlay.classList.contains('show')||this.$.themeModalOverlay.classList.contains('show'))return;
       if(document.getElementById('retryM6Card').style.display!=='none'){
         /* 오답노트 재풀이 중 플래시카드 복습 카드 — 숨겨진 실제 mode6 세션이 아니라 이 카드를 조작 */
         if(e.key===' '){e.preventDefault();document.getElementById('retryM6Flashcard').classList.toggle('flipped');}
@@ -1913,8 +1928,16 @@ const App={
   formatFormula(f){return f.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('');},
   /* BONDS의 화학식은 'CaCl2' 같은 문자열이다 — 숫자를 아래첨자로 바꾼다 */
   fmtFormulaStr(s){return String(s).replace(/(\d+)/g,'<sub>$1</sub>');},
-  toggleTheme(){
-    this.playSound('tap'); this.state.isDarkMode=!this.state.isDarkMode;document.body.classList.toggle('light',!this.state.isDarkMode);document.getElementById('themeBtn').textContent=this.state.isDarkMode?'🌙':'☀️';
+  /* ── 테마 ──
+     화면에 붙는 테마 클래스는 항상 한 개다. 새 것을 붙이기 전에 나머지를 전부 떼므로
+     테마를 여러 번 바꿔도 이전 테마의 변수가 남아 섞이지 않는다. */
+  applyTheme(id){
+    const t=themeMeta(id);
+    this.state.theme=t.id;
+    /* 클래스는 <html>에 붙인다 — 화면 전체 바탕색이 <html> 배경에서 오기 때문(css/style.css 참고) */
+    THEMES.forEach(x=>document.documentElement.classList.toggle('theme-'+x.id, x.id===t.id));
+    document.getElementById('themeBtn').textContent=t.icon;
+    try{localStorage.setItem('chem_theme',t.id);}catch(e){}
     /* 열려 있는 상세 패널의 헤더 색은 테마별 팔레트를 쓰므로, 테마 전환 시 다시 그려 새 팔레트를 즉시 반영 */
     [this.$.ptDetailPanel,this.$.ptFsDetailPanel].forEach(panel=>{
       if(panel&&panel.classList.contains('open')){
@@ -1922,6 +1945,24 @@ const App={
         if(e) panel.querySelector('.pt-detail-content').innerHTML=this.ptDetailHTML(e);
       }
     });
+  },
+  /* 지금 테마가 밝은 배경인가 — 주기율표 분류 색을 어느 쪽으로 고를지에 쓴다 */
+  isLightTheme(){ return !!themeMeta(this.state.theme).light; },
+  renderThemeList(){
+    this.$.themeList.innerHTML=THEMES.map(t=>{
+      const on=t.id===this.state.theme;
+      /* 미리보기 네 칸: 글자·강조·맞음·틀림. 배경은 조각 자체가 깔고 있다 */
+      const sw=['--c-text-primary','--c-accent-1','--c-correct','--c-wrong']
+        .map(v=>`<span style="background:var(${v})"></span>`).join('');
+      return `<button type="button" class="theme-opt${on?' active':''}" data-theme="${t.id}" aria-current="${on}">
+        <span class="theme-swatch theme-pv theme-${t.id}" aria-hidden="true">${sw}</span>
+        <span>
+          <span class="theme-opt-name">${t.icon} ${t.label}</span>
+          <span class="theme-opt-hint">${t.hint}</span>
+        </span>
+        <span class="theme-opt-check">${on?'✓':''}</span>
+      </button>`;
+    }).join('');
   },
 
   /* ── 주기율표 ── */
@@ -1995,7 +2036,7 @@ const App={
   /* 원소 상세 설명 패널: 기호·이름·원자번호 헤더 + desc 본문.
      기호·이름 글자색은 주기율표 칸의 분류 색(PT_CAT_COLORS)과 맞춰 어떤 칸을 눌렀는지 한눈에 이어지게 함 */
   ptDetailHTML(e){
-    const palette=this.state.isDarkMode?PT_CAT_COLORS:PT_CAT_COLORS_LIGHT;
+    const palette=this.isLightTheme()?PT_CAT_COLORS_LIGHT:PT_CAT_COLORS;
     const catColor=palette[e.cat]||'var(--c-accent-1)';
     return `<div class="pt-detail-head"><span class="pt-detail-z">${e.z}</span><span class="pt-detail-sym" style="color:${catColor}">${e.sym}</span><span class="pt-detail-name" style="color:${catColor}">${e.name}</span><button class="pt-detail-close" aria-label="닫기">✕</button></div><p class="pt-detail-desc">${e.desc||''}</p>`;
   },

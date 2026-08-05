@@ -18,7 +18,7 @@
       <button class="icon-btn" id="wrongNoteBtn" title="오답 노트">📓</button>
       <button class="icon-btn" id="hintBtn" title="전체 반응식 보기">📋</button>
       <button class="icon-btn" id="periodicBtn" title="주기율표 보기">⚛️</button>
-      <button class="icon-btn" id="themeBtn" title="다크/라이트 모드">🌙</button>
+      <button class="icon-btn" id="themeBtn" title="테마 고르기">🌙</button>
     </div>
   </header>
 
@@ -197,6 +197,14 @@
   </div>
 </div>
 
+<div class="modal-overlay" id="themeModalOverlay">
+  <div class="modal-box" style="max-width:440px">
+    <div class="modal-header"><div class="modal-title">🎨 테마</div><button class="modal-close" id="themeModalClose">✕</button></div>
+    <!-- 목록은 THEMES(js/theme.js)에서 만들어 넣는다 — 테마를 더해도 이 마크업은 그대로다 -->
+    <div class="modal-content" id="themeList"></div>
+  </div>
+</div>
+
 <div class="modal-overlay" id="hintModalOverlay">
   <div class="modal-box">
     <div class="modal-header"><div class="modal-title">📋 전체 반응식 목록</div><button class="modal-close" id="hintModalClose">✕</button></div>
@@ -240,6 +248,7 @@
   </div>
 </div>
 
+<script src="js/theme.js"></script>
 <script src="js/data.js"></script>
 <script src="js/curriculum.js"></script>
 <script src="js/diagram.js"></script>
