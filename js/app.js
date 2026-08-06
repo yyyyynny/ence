@@ -524,8 +524,13 @@ const App={
     }
   },
   buildModalList(){
-    const fmt=side=>side.map(r=>(r.coef>1?`<span class="eq-text">${r.coef}</span>`:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' <span class="eq-plus">+</span> ');
-    this.$.reactionList.innerHTML=REACTIONS.map((rx,i)=>`<div class="reaction-item"><div class="reaction-header"><div class="reaction-name"><span class="reaction-num">${i+1}</span>${rx.name}</div></div><div class="reaction-eq">${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}</div></div>`).join('');
+    const fmt=side=>side.map(r=>(r.coef>1?`<span class="eq-text">${r.coef}</span>`:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')+this.phaseHTML(r.phase)).join(' <span class="eq-plus">+</span> ');
+    /* ↓·↑가 한자리에 모여 보이는 곳이라 여기서 뜻을 알려 준다. 문제 화면(모드 1~4)에는
+       해설칸이 없어 설명을 붙일 자리가 없고, 여기 두면 어떤 반응에 왜 붙는지 같이 보인다. */
+    const legend=`<p class="dia-exp" style="margin:0 2px 10px">`+
+      `<b>↓</b>는 물에 안 녹고 가라앉는 <b>앙금</b>, <b>↑</b>는 용액에서 빠져나가는 <b>기체</b>를 뜻한다. `+
+      `화학식의 일부가 아니라서 답을 쓸 때는 적지 않는다.</p>`;
+    this.$.reactionList.innerHTML=legend+REACTIONS.map((rx,i)=>`<div class="reaction-item"><div class="reaction-header"><div class="reaction-name"><span class="reaction-num">${i+1}</span>${rx.name}</div></div><div class="reaction-eq">${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}</div></div>`).join('');
     this.renderWrongNotes();
   },
   renderWrongNotes(){
@@ -1429,7 +1434,7 @@ const App={
   },
 
   generateBeautifulWrongNote(q){
-    const fmt=side=>side.map(c=>(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+c.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' <span class="eq-plus">+</span> ');
+    const fmt=side=>side.map(c=>(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+c.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')+this.phaseHTML(c.phase)).join(' <span class="eq-plus">+</span> ');
     let h='';
     if(q.isMode5){h=`<span class="eq-text" style="font-size:20px;font-weight:bold;color:var(--c-correct)">${this.formatInput(q.blanks[0].answer)}</span>`;}
     else if(q.isMode7){
@@ -1440,7 +1445,7 @@ const App={
       const p=this.precipOf(q);
       h=`<span class="eq-text" style="font-size:18px;font-weight:bold;color:var(--c-correct)">`+
         `${this.formatInput(p.a)} + ${this.formatInput(p.b)} → `+
-        (p.none?'앙금 없음':`${this.fmtFormulaStr(p.f)} (${p.name}, ${p.color})`)+`</span>`;
+        (p.none?'앙금 없음':`${this.fmtFormulaStr(p.f)}${this.phaseHTML('↓')} (${p.name}, ${p.color})`)+`</span>`;
     }
     else if(q.isMode14||q.isMode15){
       h=`<span class="eq-text" style="font-size:18px;font-weight:bold;color:var(--c-correct)">${q.name} · ${q.blanks[0].answer}개</span>`;
@@ -1459,8 +1464,8 @@ const App={
       h=`<span class="eq-text" style="font-size:18px;font-weight:bold;color:var(--c-correct)">${q.sym} (${(q.shells||[]).join('-')}) · ${q.blanks[0].answer}</span>`;
     }
     else if(q.isAbstract===true){
-      const r=q.displayReactants.map((c,i)=>{const bd=q.blanks.find(b=>b.key===`R${i}`); return(bd?`<span class="eq-text">${bd.answer}</span>`:'')+this.formatFormula(c.formula);}).join(' <span class="eq-plus">+</span> ');
-      const p=q.displayProducts.map((c,i)=>{const bd=q.blanks.find(b=>b.key===`P${i}`); return(bd?`<span class="eq-text">${bd.answer}</span>`:'')+this.formatFormula(c.formula);}).join(' <span class="eq-plus">+</span> ');
+      const r=q.displayReactants.map((c,i)=>{const bd=q.blanks.find(b=>b.key===`R${i}`); return(bd?`<span class="eq-text">${bd.answer}</span>`:'')+this.formatFormula(c.formula)+this.phaseHTML(c.phase);}).join(' <span class="eq-plus">+</span> ');
+      const p=q.displayProducts.map((c,i)=>{const bd=q.blanks.find(b=>b.key===`P${i}`); return(bd?`<span class="eq-text">${bd.answer}</span>`:'')+this.formatFormula(c.formula)+this.phaseHTML(c.phase);}).join(' <span class="eq-plus">+</span> ');
       h=`${r} <span class="eq-arrow">→</span> ${p}`;
     }else{const rx=REACTIONS.find(r=>r.name===q.name);if(rx)h=`${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}`;}
     this.saveWrongNote(this.state.currentMode,q.name,h,q);
@@ -1506,8 +1511,10 @@ const App={
       box.innerHTML=`<div class="dia-wrap"><p class="dia-exp">`+(p.none
         ? `${this.formatInput(p.a)} + ${this.formatInput(p.b)} → <b>앙금이 생기지 않는다</b>. `+
           `1족 이온이나 질산 이온이 든 염은 물에 잘 녹기 때문이다.`
-        : `${this.formatInput(p.a)} + ${this.formatInput(p.b)} → <b>${this.fmtFormulaStr(p.f)}</b> `+
-          `(${p.name}) — ${this.swatch(p.color)}<b>${p.color}</b> 앙금이 가라앉는다.`)+`</p></div>`;
+        : `${this.formatInput(p.a)} + ${this.formatInput(p.b)} → <b>${this.fmtFormulaStr(p.f)}${this.phaseHTML('↓')}</b> `+
+          `(${p.name}) — ${this.swatch(p.color)}<b>${p.color}</b> 앙금이 가라앉는다.`+
+          `<span class="later-note">화학식 뒤의 <b>↓</b>는 물에 안 녹고 가라앉는 앙금이라는 표시다. `+
+          `기체가 되어 빠져나갈 때는 <b>↑</b>를 쓴다.</span>`)+`</p></div>`;
     }
     else if(q.isMode14){
       const o=q.orb;
@@ -1663,10 +1670,13 @@ const App={
     }
     const fc=(list,pre)=>list.map((c,i)=>{
       const key=`${pre}${i}`,bd=q.blanks.find(b=>b.key===key);
-      let term;
+      let term, blanked=false;
       if(this.state.currentMode===1)term=bd?this.renderBlankBox(key,bd.answer)+this.formatFormula(c.formula):this.formatFormula(c.formula);
-      else if(c.isBlank||bd)term=this.renderBlankBox(key,bd?bd.answer:'');
+      else if(c.isBlank||bd){term=this.renderBlankBox(key,bd?bd.answer:'');blanked=true;}
       else term=(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+this.formatFormula(c.formula);
+      /* 화학식이 빈칸이면 채점 전까지 ↓·↑를 붙이지 않는다. 「생성물 맞추기」에서 두 생성물 중
+         하나에만 ↓가 붙어 있으면 그게 앙금이라고 알려 주는 꼴이라 문제가 쉬워진다. */
+      if(!blanked||this.state.isAnswerChecked) term += this.phaseHTML(c.phase);
       /* equation-display가 flex라 첨자(<sub>)까지 개별 flex 아이템이 되어 가운데 정렬+간격이 생기는 걸 방지:
          한 항 전체를 inline-block으로 감싸 flex 아이템 단위를 "항"으로 고정 */
       return `<span class="eq-term">${term}</span>`;
@@ -1771,7 +1781,7 @@ const App={
   },
 
   /* ── MODE 6 ── */
-  m6Fmt(side){return side.map(r=>(r.coef>1?r.coef:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')).join(' + ');},
+  m6Fmt(side){return side.map(r=>(r.coef>1?r.coef:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')+this.phaseHTML(r.phase)).join(' + ');},
   /* 카드 유형(t)에서 카드 배열만 순수하게 만들어낸다 — 오답노트 재풀이(renderRetryFlashcard)에서도
      실제 mode6 세션 상태(state.m6Cards/m6Index)를 건드리지 않고 재사용하기 위해 분리 */
   /* 카드 유형 정의 — 구역마다 다루는 내용이 다르므로 MODES[n].cards로 어떤 유형을 쓸지 고른다 */
@@ -1798,7 +1808,7 @@ const App={
       /* 앙금이 생기는 카드와 안 생기는 카드는 뒷면 이름이 달라야 뒤집기 전에 답이 새지 않는다 */
       cards=PRECIPITATES.map(p=>({fhtml:`<span class="m6-formula">${this.formatInput(p.a)} + ${this.formatInput(p.b)}</span>`,
         btag:p.none?'앙금 없음':'앙금',
-        bhtml:`<span class="m6-formula">${p.none?'물에 잘 녹아 앙금이 생기지 않는다':`${this.fmtFormulaStr(p.f)}<br><span style="font-size:.7em">${p.name} · ${p.color}</span>`}</span>`}));
+        bhtml:`<span class="m6-formula">${p.none?'물에 잘 녹아 앙금이 생기지 않는다':`${this.fmtFormulaStr(p.f)}${this.phaseHTML('↓')}<br><span style="font-size:.7em">${p.name} · ${p.color}</span>`}</span>`}));
     }
     else if(t==='orbital'){
       cards=ORBITAL_SHELLS.map(o=>({ftag:'껍질',fhtml:`<span class="m6-korean">${o.name} 껍질 (n=${o.n})</span>`,
@@ -1926,6 +1936,9 @@ const App={
   },
 
   formatFormula(f){return f.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('');},
+  /* 앙금(↓)·기체(↑) 표기. 화학식 뒤에 별도 span으로 붙는다 —
+     학생이 입력하는 답(f2s)에는 절대 들어가지 않는다. 채점은 coef와 formula만 본다. */
+  phaseHTML(ph){ return ph?`<span class="eq-phase" aria-hidden="true">${ph}</span>`:''; },
   /* BONDS의 화학식은 'CaCl2' 같은 문자열이다 — 숫자를 아래첨자로 바꾼다 */
   fmtFormulaStr(s){return String(s).replace(/(\d+)/g,'<sub>$1</sub>');},
   /* ── 테마 ──

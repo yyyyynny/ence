@@ -14,8 +14,11 @@
        여기 없이 rgba를 규칙에 직접 적으면 테마를 갈아도 다크 색이 그대로 남는다(실제로 그랬다). */
     --c-correct-bg:rgba(16,185,129,0.15); --c-wrong-bg:rgba(248,113,113,0.15);
     --c-focus-glow:rgba(0,229,255,0.2); --c-tint-a2:rgba(124,58,237,0.25);
-    /* 공유 전자쌍 색. 배경 밝기에 따라 노랑이 안 보일 수 있어 테마마다 다시 정한다. */
-    --c-e-share:#FDE047;
+    /* 공유 전자쌍의 두 표식 색. own=중심 원자가 내놓은 전자(●), other=상대 원자가 내놓은 전자(✕).
+       두 색은 밝기가 아니라 **색상**으로 갈라야 한다 — 하나를 어둡게 만들면 배경에 묻힌다.
+       모양(● / ✕)이 뜻을 나르고 색은 거들 뿐이라 밝기 차이는 필요 없다.
+       배경 밝기에 따라 노랑이 안 보일 수 있어 테마마다 다시 정한다. */
+    --c-e-own:#FDE047; --c-e-other:#A78BFA;
     /* 배경 그라디언트 세기. 고대비 테마는 0으로 꺼서 대비를 지킨다. */
     --c-glow:.2;
     --font-ui:'Noto Sans KR',sans-serif; --font-mono:'JetBrains Mono',monospace;
@@ -46,7 +49,8 @@
     --c-on-correct:#FFFFFF; --c-on-wrong:#FFFFFF;
     --c-correct-bg:rgba(6,95,70,0.15); --c-wrong-bg:rgba(185,28,28,0.15);
     --c-focus-glow:rgba(3,105,161,0.2); --c-tint-a2:rgba(124,58,237,0.25);
-    --c-e-share:#B45309;          /* 밝은 배경에서 노랑은 안 보인다 — 진한 호박색으로 */
+    --c-e-own:#B45309;            /* 밝은 배경에서 노랑은 안 보인다 — 진한 호박색으로 */
+    --c-e-other:#6D28D9;
     --c-glow:.12;
   }
   /* 종이 — 세피아. 흰 배경의 눈부심을 줄여 오래 봐도 덜 피로하다. */
@@ -61,7 +65,7 @@
     --c-on-correct:#FFFFFF; --c-on-wrong:#FFFFFF;
     --c-correct-bg:rgba(22,101,52,0.15); --c-wrong-bg:rgba(185,28,28,0.15);
     --c-focus-glow:rgba(154,52,18,0.2); --c-tint-a2:rgba(109,40,217,0.25);
-    --c-e-share:#92400E;
+    --c-e-own:#92400E; --c-e-other:#5B21B6;
     --c-glow:.08;
   }
   /* 야간 — 불 끄고 볼 때. 배경을 더 낮추고 채도를 죽여 눈이 덜 부시게 한다. */
@@ -77,7 +81,7 @@
     --c-on-correct:#000000; --c-on-wrong:#000000;
     --c-correct-bg:rgba(78,158,119,0.15); --c-wrong-bg:rgba(217,138,138,0.15);
     --c-focus-glow:rgba(125,178,168,0.2); --c-tint-a2:rgba(138,124,200,0.25);
-    --c-e-share:#C9A227;
+    --c-e-own:#C9A227; --c-e-other:#B0A8D8;
     --c-glow:.06;
   }
   /* 고대비 — 잘 안 보일 때. 배경을 완전한 검정으로 내리고 글자를 흰색으로 올린다. */
@@ -92,7 +96,7 @@
     --c-on-correct:#000000; --c-on-wrong:#000000;
     --c-correct-bg:rgba(61,255,158,0.15); --c-wrong-bg:rgba(255,107,107,0.15);
     --c-focus-glow:rgba(57,224,255,0.2); --c-tint-a2:rgba(192,139,255,0.25);
-    --c-e-share:#FFE95C;
+    --c-e-own:#FFE95C; --c-e-other:#C08BFF;
     --c-glow:0;                   /* 배경 그라디언트를 끈다 — 대비를 깎는다 */
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -173,6 +177,10 @@
   @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
   @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
   .eq-text{color:var(--c-text-primary);}.eq-arrow{color:var(--c-accent-3);font-size:1.2em;margin:0 4px;}.eq-plus{color:var(--c-text-secondary);margin:0 4px;}
+  /* 앙금(↓)·기체(↑) 표기 — 화학식의 일부가 아니라 그 물질의 상태를 알리는 표시다.
+     학생이 입력하는 답에는 들어가지 않으므로, 화학식과 같은 크기·색으로 쓰면 답의 일부로
+     오해한다. 살짝 작고 흐리게 두어 "붙어 있는 표시"로 읽히게 한다. */
+  .eq-phase{font-size:.82em;color:var(--c-text-secondary);margin-left:1px;vertical-align:baseline;}
   /* 항(계수·블랭크·화학식) 전체를 하나의 flex 아이템으로 묶어 내부 <sub> 첨자의 정상 인라인 배치를 보존 */
   .eq-term{display:inline-block;vertical-align:middle;white-space:nowrap;}
   /* MODE 7: 빈칸 바로 뒤에 붙는 '주기'·'족' 단위 — 빈칸 테두리에 딱 붙지 않게 한 칸 띄운다 */
@@ -308,7 +316,15 @@
   .dia-sym{fill:var(--c-text-primary);font-family:var(--font-mono);font-size:15px;font-weight:700;text-anchor:middle;dominant-baseline:central;}
   .dia-sym-lg{font-size:20px;}
   .dia-e{fill:var(--c-accent-3);}
-  .dia-e-share{fill:var(--c-e-share);stroke:var(--c-bg);stroke-width:.8;}
+  /* 공유 결합에서 "이 전자가 어느 원자에서 나왔나"를 나타내는 두 표식.
+     색과 모양을 둘 다 다르게 한다 — 색만 다르면 색을 못 가리는 사람에게는 구분이 없는 것과 같고,
+     이건 답의 근거라서 안 보이면 문제를 못 푼다. */
+  .dia-e-own{fill:var(--c-e-own);}
+  .dia-e-other{stroke:var(--c-e-other);stroke-width:2.3;stroke-linecap:round;fill:none;}
+  /* 해설 문장 안의 범례 — 그림의 표식과 같은 색으로 칠해야 이어서 읽힌다.
+     `.dia-exp b`(0,1,1)가 본문색으로 덮어쓰므로 여기도 b를 붙여 우선순위를 맞춘다. */
+  .dia-exp b.dia-key-own{color:var(--c-e-own);}
+  .dia-exp b.dia-key-other{color:var(--c-e-other);}
   .dia-arrow{fill:none;stroke:var(--c-accent-1);stroke-width:2;stroke-dasharray:5 4;animation:diaFlow 1.4s linear infinite;}
   .dia-arrowhead{fill:var(--c-accent-1);}
   .dia-charge{fill:var(--c-accent-1);font-family:var(--font-mono);font-size:17px;font-weight:700;text-anchor:middle;}
@@ -324,12 +340,25 @@
      전자의 최종 좌표는 SVG에 이미 박혀 있고, CSS는 "어디서 출발해 제자리로 오는지"만 맡는다.
      그래서 애니메이션이 끝난 화면 = 정지 그림이고, 중간 프레임에서도 전자 개수는 변하지 않는다.
      backwards: 지연 시간 동안 시작 상태에 머물러야 순서대로 들어오는 게 보인다. */
+  /* 이동 — 원래 있던 전자가 자리를 옮기는 것. 투명도는 건드리지 않는다.
+     ⚠️ 여기에 opacity:0을 넣으면 안 된다. 출발점에서 안 보이는 전자는 "이동한 전자"가 아니라
+     "생겨난 전자"로 보인다 — 실제로 그렇게 되어 있었고(나트륨이 전자 10개로 그려졌다),
+     그게 이 그림에서 가장 심각한 오류였다. backwards라서 지연 시간 동안 출발점에
+     또렷하게 앉아 있고, 그게 곧 "원래 거기 있던 전자"다. */
+  .dia-anim-move{animation:diaMove .9s cubic-bezier(.45,.05,.35,1) backwards;}
+  @keyframes diaMove{from{transform:translate(var(--dx),var(--dy));}to{transform:translate(0,0);}}
+  /* 등장 — 화면 밖에서 정말로 새로 들어오는 것에만 쓴다 */
   .dia-anim-in{animation:diaIn .58s cubic-bezier(.34,1.15,.42,1) backwards;}
   @keyframes diaIn{from{transform:translate(var(--dx),var(--dy));opacity:0;}to{transform:translate(0,0);opacity:1;}}
   .dia-anim-out{animation:diaOut .58s ease-in forwards;}
   @keyframes diaOut{from{transform:translate(0,0);opacity:1;}to{transform:translate(var(--dx),var(--dy));opacity:0;}}
   .dia-anim-pop{animation:diaPop .42s ease-out backwards;transform-box:fill-box;transform-origin:center;}
   @keyframes diaPop{from{opacity:0;transform:scale(.4);}to{opacity:1;transform:scale(1);}}
+  /* 세어 보이기 — 전자를 하나씩 짚어 줄 때 쓴다. 없다가 나타나는 게 아니라 처음부터 다 보이고
+     차례로 한 번씩 커졌다 돌아온다. diaPop을 쓰면 "전자가 하나씩 생긴다"로 읽히는데,
+     원자가 이미 갖고 있는 전자를 세는 화면에서 그건 틀린 말이다. */
+  .dia-anim-count{animation:diaCount .5s ease-out backwards;transform-box:fill-box;transform-origin:center;}
+  @keyframes diaCount{0%{transform:scale(1);}45%{transform:scale(1.75);}100%{transform:scale(1);}}
   .dia-anim-fade{animation:diaFade .5s ease forwards;}
   @keyframes diaFade{to{opacity:0;}}
   /* 화살표는 안내선 애니메이션(diaFlow)을 유지한 채로 마지막에 흐려진다 */
@@ -342,7 +371,7 @@
   /* 움직임을 꺼 둔 사람에게도 답은 똑같이 보여야 한다. 애니메이션만 끄면
      "나가는 전자"와 "사라지는 껍질"이 그대로 남아 틀린 배치가 되므로 그 자리에서 감춘다. */
   @media (prefers-reduced-motion: reduce){
-    .dia-arrow,.dia-anim-in,.dia-anim-out,.dia-anim-pop,.dia-anim-fade,.dia-arrow.dia-anim-fade{animation:none;}
+    .dia-arrow,.dia-anim-move,.dia-anim-in,.dia-anim-out,.dia-anim-pop,.dia-anim-count,.dia-anim-fade,.dia-arrow.dia-anim-fade{animation:none;}
     .dia-anim-out,.dia-anim-fade{opacity:0;}
   }
   .sub-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-ui);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
