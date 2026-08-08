@@ -14,6 +14,7 @@
        여기 없이 rgba를 규칙에 직접 적으면 테마를 갈아도 다크 색이 그대로 남는다(실제로 그랬다). */
     --c-correct-bg:rgba(16,185,129,0.15); --c-wrong-bg:rgba(248,113,113,0.15);
     --c-focus-glow:rgba(0,229,255,0.2); --c-tint-a2:rgba(124,58,237,0.25);
+    --c-tint-a1:rgba(0,229,255,0.16); --c-tint-a3:rgba(245,158,11,0.18);
     /* 공유 전자쌍의 두 표식 색. own=중심 원자가 내놓은 전자(●), other=상대 원자가 내놓은 전자(✕).
        두 색은 밝기가 아니라 **색상**으로 갈라야 한다 — 하나를 어둡게 만들면 배경에 묻힌다.
        모양(● / ✕)이 뜻을 나르고 색은 거들 뿐이라 밝기 차이는 필요 없다.
@@ -43,15 +44,16 @@
     --c-border:rgba(45,60,100,0.15); --c-border-active:rgba(2,132,199,0.5);
     --c-text-primary:#0F172A; --c-text-secondary:#4A5568;
     /* 흰 배경 위에서는 같은 색도 훨씬 흐리게 보인다 — 파랑·주황·초록·빨강 모두 한 단계 짙게 */
-    --c-accent-1:#0369A1; --c-accent-2:#7C3AED; --c-accent-3:#B45309;
+    --c-accent-1:#0369A1; --c-accent-2:#4F5B93; --c-accent-3:#B45309;
     --c-correct:#065F46; --c-wrong:#B91C1C;
     --c-on-accent-1:#FFFFFF; --c-on-accent-2:#FFFFFF; --c-on-accent-3:#FFFFFF;
     --c-on-correct:#FFFFFF; --c-on-wrong:#FFFFFF;
     --c-correct-bg:rgba(6,95,70,0.15); --c-wrong-bg:rgba(185,28,28,0.15);
-    --c-focus-glow:rgba(3,105,161,0.2); --c-tint-a2:rgba(124,58,237,0.25);
+    --c-focus-glow:rgba(3,105,161,0.2); --c-tint-a2:rgba(79,91,147,0.25);
+    --c-tint-a1:rgba(3,105,161,0.14); --c-tint-a3:rgba(180,83,9,0.16);
     --c-e-own:#B45309;            /* 밝은 배경에서 노랑은 안 보인다 — 진한 호박색으로 */
     --c-e-other:#6D28D9;
-    --c-glow:.12;
+    --c-glow:0;              /* 밝은 배경에서 radial-gradient 두 개는 얼룩으로만 보인다 */
   }
   /* 종이 — 세피아. 흰 배경의 눈부심을 줄여 오래 봐도 덜 피로하다. */
   :root.theme-paper, .theme-pv.theme-paper {
@@ -59,14 +61,15 @@
     --c-surface-solid:#FFFBF3;
     --c-border:rgba(120,96,64,0.24); --c-border-active:rgba(146,64,14,0.55);
     --c-text-primary:#2B2117; --c-text-secondary:#6B5B45;
-    --c-accent-1:#9A3412; --c-accent-2:#6D28D9; --c-accent-3:#A16207;
+    --c-accent-1:#9A3412; --c-accent-2:#5B4B6A; --c-accent-3:#A16207;
     --c-correct:#166534; --c-wrong:#B91C1C;
     --c-on-accent-1:#FFFFFF; --c-on-accent-2:#FFFFFF; --c-on-accent-3:#FFFFFF;
     --c-on-correct:#FFFFFF; --c-on-wrong:#FFFFFF;
     --c-correct-bg:rgba(22,101,52,0.15); --c-wrong-bg:rgba(185,28,28,0.15);
-    --c-focus-glow:rgba(154,52,18,0.2); --c-tint-a2:rgba(109,40,217,0.25);
+    --c-focus-glow:rgba(154,52,18,0.2); --c-tint-a2:rgba(91,75,106,0.25);
+    --c-tint-a1:rgba(154,52,18,0.13); --c-tint-a3:rgba(161,98,7,0.15);
     --c-e-own:#92400E; --c-e-other:#5B21B6;
-    --c-glow:.08;
+    --c-glow:0;              /* 세피아 위의 붉은기·보랏빛 얼룩을 없앤다 — 종이는 얼룩지면 안 된다 */
   }
   /* 야간 — 불 끄고 볼 때. 배경을 더 낮추고 채도를 죽여 눈이 덜 부시게 한다. */
   :root.theme-night, .theme-pv.theme-night {
@@ -81,8 +84,9 @@
     --c-on-correct:#000000; --c-on-wrong:#000000;
     --c-correct-bg:rgba(78,158,119,0.15); --c-wrong-bg:rgba(217,138,138,0.15);
     --c-focus-glow:rgba(125,178,168,0.2); --c-tint-a2:rgba(138,124,200,0.25);
+    --c-tint-a1:rgba(125,178,168,0.16); --c-tint-a3:rgba(199,154,91,0.18);
     --c-e-own:#C9A227; --c-e-other:#B0A8D8;
-    --c-glow:.06;
+    --c-glow:0;              /* 불 끄고 볼 때는 은은한 빛도 거슬린다 */
   }
   /* 고대비 — 잘 안 보일 때. 배경을 완전한 검정으로 내리고 글자를 흰색으로 올린다. */
   :root.theme-contrast, .theme-pv.theme-contrast {
@@ -96,6 +100,7 @@
     --c-on-correct:#000000; --c-on-wrong:#000000;
     --c-correct-bg:rgba(61,255,158,0.15); --c-wrong-bg:rgba(255,107,107,0.15);
     --c-focus-glow:rgba(57,224,255,0.2); --c-tint-a2:rgba(192,139,255,0.25);
+    --c-tint-a1:rgba(57,224,255,0.22); --c-tint-a3:rgba(255,197,61,0.24);
     --c-e-own:#FFE95C; --c-e-other:#C08BFF;
     --c-glow:0;                   /* 배경 그라디언트를 끈다 — 대비를 깎는다 */
   }
@@ -141,7 +146,7 @@
   .timer-select-label{font-size:12px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
   .timer-btns{display:flex;gap:6px;flex-wrap:wrap;}
   .timer-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-mono);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:all .2s;}
-  .timer-btn.active{background:var(--c-accent-3);border-color:var(--c-accent-3);color:var(--c-on-accent-3);}
+  .timer-btn.active{background:var(--c-tint-a3);border-color:var(--c-accent-3);border-width:2px;color:var(--c-text-primary);}
   #modeNav{margin-bottom:16px;}
   /* 구역 줄. 색으로 구분하지 않는다 — 구역 색과 "시험 범위" 색이 겹치면 무슨 뜻인지 알 수 없게 된다.
      좁은 화면에서 4개가 한 줄에 안 들어가면 헤더와 같은 가로 스크롤(.scroll-fade-x)로 넘긴다. */
@@ -159,7 +164,16 @@
   .scroll-fade-x{-webkit-mask-image:linear-gradient(to right,black calc(100% - 28px),transparent 100%);mask-image:linear-gradient(to right,black calc(100% - 28px),transparent 100%);}
   .scroll-fade-x.fade-end{-webkit-mask-image:none;mask-image:none;}
   .mode-tab{flex:0 0 auto;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:12px;color:var(--c-text-secondary);padding:14px 16px;font-size:15px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;line-height:1.4;}
-  .mode-tab.active{background:var(--c-accent-1);border-color:var(--c-accent-1);color:var(--c-on-accent-1);}
+  /* 선택 표시를 원색 채움에서 「옅은 바탕 + 굵은 테두리 + 강조 글자」로 바꿨다.
+     이 카드가 화면에서 면적이 제일 큰데 원색으로 채우면 문제보다 카드가 먼저 보인다.
+     테두리와 글자색이 남아 있어 무엇을 골랐는지는 그대로 읽힌다. */
+  /* 글자까지 강조색으로 물들이면 밝은 테마에서 옅은 바탕과 대비가 4.4:1까지 떨어진다(검사가 잡았다).
+     게다가 바탕도 글자도 색이면 여전히 시끄럽다. 선택 표시는 굵은 테두리가 맡고
+     글자는 본문색으로 둔다 — 어느 테마에서든 배경 대비가 13:1 이상이라 안전하다. */
+  .mode-tab.active{background:var(--c-tint-a1);border-color:var(--c-accent-1);border-width:2px;color:var(--c-text-primary);}
+  /* 옅은 바탕이 깔리면서 보조 글자의 대비가 4.36:1로 떨어졌다(검사가 잡았다).
+     고른 카드의 설명이니 본문색으로 올린다 — 위계는 글자 크기(11px)가 이미 나르고 있다. */
+  .mode-tab.active .tab-desc{color:var(--c-text-primary);opacity:1;}
   .mode-tab .tab-icon{font-size:20px;display:block;margin-bottom:2px;}
   .mode-tab .tab-desc{font-size:11px;display:block;font-weight:400;opacity:0.75;margin-top:2px;}
   .question-card{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;padding:24px;margin-bottom:16px;min-height:180px;display:flex;flex-direction:column;gap:16px;flex-grow:1;position:relative;overflow:hidden;}
