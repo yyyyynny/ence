@@ -327,6 +327,10 @@
   .dia-exp b.dia-key-other{color:var(--c-e-other);}
   .dia-arrow{fill:none;stroke:var(--c-accent-1);stroke-width:2;stroke-dasharray:5 4;animation:diaFlow 1.4s linear infinite;}
   .dia-arrowhead{fill:var(--c-accent-1);}
+  /* 안내선은 길만 알려 주는 보조 표시다. 움직이는 전자(.dia-e-move)와 같은 색이라
+     선명하게 그리면 화살촉이 전자를 삼켜 정작 봐야 할 것이 안 보인다 — 뒤로 물린다. */
+  .dia-arrow{opacity:.55;}
+  .dia-e-move{paint-order:stroke;}
   .dia-charge{fill:var(--c-accent-1);font-family:var(--font-mono);font-size:17px;font-weight:700;text-anchor:middle;}
   /* 이온을 감싸는 대괄호 — [Na]⁺ 처럼 "여기까지가 이온 하나"라는 경계를 그어 준다 */
   .dia-bracket{fill:none;stroke:var(--c-accent-1);stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}

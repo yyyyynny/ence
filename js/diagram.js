@@ -33,8 +33,10 @@ const DIA = {
   MOVE: 0.9,
   OUT: 0.58,     /* 화면 밖으로 빠져나가는 데 걸리는 시간(css의 diaOut) */
   /* 날아 들어오는 전자의 출발 거리. 이 거리만큼 캔버스에 여백이 필요하므로 크게 잡으면
-     정작 원자가 작아진다(전자는 출발할 때 투명해서 끝까지 다 보이지도 않는다). */
-  FLY: 30,
+     정작 원자가 작아진다. 그렇다고 짧으면 "움직였다"가 안 보인다 —
+     30일 때는 원자 반지름(39)보다도 짧아 두 점이 살짝 밀려 들어오는 정도였다.
+     안내 화살표(guide)가 길을 알려 주므로 이 거리는 눈에 띌 만큼만 잡으면 된다. */
+  FLY: 46,
 
   /* from → to 이동. 요소는 to에 그려 두고 시작 오프셋만 준다. */
   from(fx, fy, tx, ty, delay){
@@ -77,6 +79,21 @@ const DIA = {
   /* 다시 보기 — 그림 HTML을 다시 렌더하면 CSS 애니메이션이 처음부터 재생된다.
      별도 재생 제어가 필요 없어서 버튼 하나로 끝난다. */
   replayBtn(){ return `<button type="button" class="dia-replay">↻ 다시 보기</button>`; },
+
+  /* 화살촉 정의. 이온 결합 그림과 이온 되기 그림이 같은 표기를 써야 두 화면에서
+     "전자가 이 길로 간다"가 같은 뜻으로 읽힌다. 두 곳이 같은 마크업을 쓰도록 여기 모아 둔다. */
+  arrowDefs(){
+    return `<defs><marker id="diaHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">`+
+           `<path d="M 0 0 L 10 5 L 0 10 z" class="dia-arrowhead"/></marker></defs>`;
+  },
+  /* 전자가 지나갈 길을 미리 보여 주는 안내선. 각도 deg 방향으로 반지름 r1 → r2.
+     이게 없으면 원자 밖에 떠 있는 전자가 "어디서 온 것"인지 화면이 말해 주지 않아,
+     이동이 아니라 그냥 생겨난 점으로 읽힌다(실제로 그렇게 보였다). */
+  guide(cx, cy, deg, r1, r2, delay){
+    const [x1, y1] = this.onCircle(cx, cy, r1, deg), [x2, y2] = this.onCircle(cx, cy, r2, deg);
+    return `<path class="dia-arrow dia-anim-fade" d="M ${x1.toFixed(1)} ${y1.toFixed(1)} L ${x2.toFixed(1)} ${y2.toFixed(1)}"`+
+           ` marker-end="url(#diaHead)"${this.at(delay)}/>`;
+  },
 
   /* 전체 껍질을 그린 원자 하나. shells를 그대로 받으므로 이온(전자를 잃은 뒤)도 같은 함수로 그린다. */
   atom(sym, shells, cx, cy, charge){
@@ -221,10 +238,7 @@ function ionicDiagramHTML(b){
   const per = b.nM >= b.nX ? b.give : b.take;
   s += `<text class="dia-note dia-anim-fade" x="${W/2}" y="${TOP - 9}"${DIA.at(lastAt + 0.35)}>${rows === 1 ? `전자 ${b.give}개` : `각각 전자 ${per}개씩`}</text>`;
 
-  const svg = `<svg class="dia" viewBox="0 0 ${W} ${H}" role="img"><defs>
-       <marker id="diaHead" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-         <path d="M 0 0 L 10 5 L 0 10 z" class="dia-arrowhead"/>
-       </marker></defs>${s}</svg>`;
+  const svg = `<svg class="dia" viewBox="0 0 ${W} ${H}" role="img">${DIA.arrowDefs()}${s}</svg>`;
 
   return `<div class="dia-wrap">
     <div class="dia-panel"><div class="dia-cap">전자가 넘어가 이온이 된다</div>${svg}</div>
@@ -446,11 +460,20 @@ function ionFormingDiagramHTML(z, item){
       const r = DIA.R0 + i * DIA.RSTEP;
       s += `<circle class="dia-ring" cx="${cx}" cy="${cy}" r="${r}"/>`;
       if(i < fin.length - 1){ s += DIA.dots(cx, cy, r, cnt, 'dia-e'); return; }
+      /* 들어올 자리를 껍질에 고르게 흩는다. 뒤쪽 n개를 몰아 쓰면(예전 방식) 산소처럼
+         2개를 받는 원소에서 전자가 둘 다 왼쪽으로만 들어와 그림이 한쪽으로 쏠렸다.
+         고르게 흩으면 "여기저기서 받는다"도 자연스럽고 좌우 균형도 맞는다. */
+      const inSlot = new Set();
+      for(let j = 0; j < cnt - outer; j++) inSlot.add(Math.round(j * cnt / (cnt - outer)));
+      let got = 0;
       DIA.dotPos(cx, cy, r, cnt).forEach(([x, y], k) => {
-        if(k < outer){ s += DIA.dot(x, y, 'dia-e'); return; }
-        const a = Math.atan2(y - cy, x - cx);
-        const fx = cx + (r + DIA.FLY) * Math.cos(a), fy = cy + (r + DIA.FLY) * Math.sin(a);
-        s += DIA.dot(x, y, 'dia-e dia-e-move dia-anim-move', DIA.from(fx, fy, x, y, DIA.T0 + (k - outer) * DIA.STEP));
+        if(!inSlot.has(k)){ s += DIA.dot(x, y, 'dia-e'); return; }
+        const deg = Math.atan2(y - cy, x - cx) * 180 / Math.PI;
+        const [fx, fy] = DIA.onCircle(cx, cy, r + DIA.FLY, deg);
+        /* 길을 먼저 보이고 그 길로 전자를 보낸다. 화살표가 없으면 바깥에 서 있는 전자가
+           "어디서 온 것"인지 알 수 없어 그냥 생겨난 점으로 읽힌다. */
+        s += DIA.guide(cx, cy, deg, r + DIA.FLY - 9, r + 11, lastAt + 0.3);
+        s += DIA.dot(x, y, 'dia-e dia-e-move dia-anim-move', DIA.from(fx, fy, x, y, DIA.T0 + got++ * DIA.STEP));
       });
     });
   }else if(lose){
@@ -461,8 +484,9 @@ function ionFormingDiagramHTML(z, item){
     /* 빠져나가는 껍질과 그 전자 — 끝나면 사라지므로 최종 그림에는 남지 않는다 */
     s += `<circle class="dia-ring dia-anim-fade" cx="${cx}" cy="${cy}" r="${outR}"${DIA.at(lastAt + 0.3)}/>`;
     DIA.dotPos(cx, cy, outR, outer).forEach(([x, y], k) => {
-      const a = Math.atan2(y - cy, x - cx);
-      const tx = cx + (outR + DIA.FLY) * Math.cos(a), ty = cy + (outR + DIA.FLY) * Math.sin(a);
+      const deg = Math.atan2(y - cy, x - cx) * 180 / Math.PI;
+      const [tx, ty] = DIA.onCircle(cx, cy, outR + DIA.FLY, deg);
+      s += DIA.guide(cx, cy, deg, outR + 9, outR + DIA.FLY - 6, lastAt + 0.3);
       s += DIA.dot(x, y, 'dia-e dia-e-gone dia-anim-out', DIA.from(tx, ty, x, y, DIA.T0 + k * DIA.STEP));
     });
   }else{
@@ -479,9 +503,11 @@ function ionFormingDiagramHTML(z, item){
   /* 이온이 되고 나면 이온 결합 그림과 똑같이 대괄호로 감싼다 — 두 화면에서 같은 표기를
      써야 「이게 이온이다」가 같은 뜻으로 읽힌다. 18족은 이온이 되지 않으므로 씌우지 않는다. */
   if(n > 0) s += DIA.ionBracket(cx, cy, finR, DIA.chargeText(n, lose ? '+' : '−'), lastAt + 0.5);
-  const cap = gain ? `전자 ${n}개가 들어온다` : lose ? `바깥 껍질 전자 ${n}개가 빠져나간다` : '이미 꽉 차 있다';
+  const cap = gain ? `다른 원자에서 전자 ${n}개를 받는다`
+            : lose ? `바깥 껍질 전자 ${n}개를 다른 원자에게 준다`
+            : '이미 꽉 차 있다';
   return `<div class="dia-wrap"><div class="dia-panel"><div class="dia-cap">${cap}</div>
-    <svg class="dia" viewBox="0 0 ${W} ${H}" role="img">${s}</svg></div>${DIA.replayBtn()}</div>`;
+    <svg class="dia" viewBox="0 0 ${W} ${H}" role="img">${DIA.arrowDefs()}${s}</svg></div>${DIA.replayBtn()}</div>`;
 }
 
 function bondDiagramHTML(b){
