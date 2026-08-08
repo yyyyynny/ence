@@ -10,7 +10,7 @@ const App={
     m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,lastBondOrder:null,
     m7Dir:'toPG',
     section:'ms', showDiagram:true,
-    isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:false,
+    isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:true,
     savedCycleState:null,
     isRetryPlaylistMode:false, retryPlaylist:[]
   },
@@ -127,7 +127,9 @@ const App={
       this.state.isSoundOn = localStorage.getItem('chem_sound') !== 'false';
       this.state.isHapticOn = localStorage.getItem('chem_haptic') !== 'false';
       this.state.isWideMode = localStorage.getItem('chem_wide') === 'true';
-      this.state.isSimplePeriodic = localStorage.getItem('chem_pt_simple') === 'true';
+      /* 기본은 「간략히 보기」다 — 중학교 필수 원소 위주로 보여야 좁은 화면에서 표가 안 잘린다.
+         118종을 다 펼치는 건 골라서 켜는 쪽으로 둔다. */
+      this.state.isSimplePeriodic = localStorage.getItem('chem_pt_simple') !== 'false';
       /* 저장된 구역이 개정으로 사라졌을 수 있으므로 실재하는지 확인하고 쓴다 */
       const savedSec = localStorage.getItem('chem_section');
       if(savedSec && sectionMeta(savedSec)) this.state.section = savedSec;
@@ -2051,7 +2053,31 @@ const App={
   ptDetailHTML(e){
     const palette=this.isLightTheme()?PT_CAT_COLORS_LIGHT:PT_CAT_COLORS;
     const catColor=palette[e.cat]||'var(--c-accent-1)';
-    return `<div class="pt-detail-head"><span class="pt-detail-z">${e.z}</span><span class="pt-detail-sym" style="color:${catColor}">${e.sym}</span><span class="pt-detail-name" style="color:${catColor}">${e.name}</span><button class="pt-detail-close" aria-label="닫기">✕</button></div><p class="pt-detail-desc">${e.desc||''}</p>`;
+    /* 이 앱이 문제로 묻는 값들 — 주기·족(모드 7), 원자가 전자(모드 8), 이온(모드 9·11) —
+       을 설명 문단보다 먼저 보여 준다. 예전에는 원자번호·기호·이름과 줄글뿐이라,
+       정작 학생이 확인하고 싶은 숫자가 화면에 없었다.
+       값은 전부 문제의 정답을 만드는 함수에서 그대로 가져온다(shellsOf·valenceOf·ELEMENTS).
+       따로 적어 두면 언젠가 정답과 어긋나는데, 교육용에서 그건 허용할 수 없다. */
+    const cat=(PT_CATEGORIES.find(([c])=>c===e.cat)||[,''])[1];
+    const rows=[['주기',`${e.period}주기`],['족',`${e.group}족`],['분류',cat]];
+    /* 껍질 배치는 1~20번에서만 교과서와 일치한다(shellsOf 주석 참고) — 그 밖에는 적지 않는다.
+       모르는 값을 그럴듯하게 채우는 것보다 비워 두는 편이 낫다. */
+    if(e.z<=20){
+      const sh=shellsOf(e.z);
+      rows.push(['전자 배치', sh.map((n,i)=>`<b>${'KLMN'[i]}</b> ${n}`).join(' · ')]);
+      rows.push(['원자가 전자', `${valenceOf(e.z)}개`]);
+      /* 이온 설명은 모드 9의 정답 문구를 그대로 쓴다(ionAnswerText) — 여기서 따로 쓰면
+         언젠가 문제의 정답과 말이 달라진다. 이온식은 앱의 위첨자 렌더러에 맡긴다. */
+      const ion=ION_FORMING.find(x=>x.z===e.z);
+      if(ion){
+        const sym=ion.noble ? '' :
+          this.formatInput(`${e.sym}^${ion.n>1?ion.n:''}${ion.dir==='lose'?'+':'-'}`)+' — ';
+        rows.push(['이온', sym + this.ionAnswerText(ion)]);
+      }
+    }
+    const facts=`<dl class="pt-facts">${rows.map(([k,v])=>
+      `<div class="pt-fact"><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
+    return `<div class="pt-detail-head"><span class="pt-detail-z">${e.z}</span><span class="pt-detail-sym" style="color:${catColor}">${e.sym}</span><span class="pt-detail-name" style="color:${catColor}">${e.name}</span><button class="pt-detail-close" aria-label="닫기">✕</button></div>${facts}<p class="pt-detail-desc">${e.desc||''}</p>`;
   },
   /* 같은 칸을 다시 클릭하면 닫히고, 다른 칸을 클릭하면 내용을 교체 — 패널 하나당 항상 하나만 열림 */
   ptToggleDetail(panel,z){
