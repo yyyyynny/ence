@@ -4,9 +4,10 @@
    그린 내용이 화학적으로 틀리면 안 되므로 전자 개수는 전부 shellsOf/outerShellOf에서 계산하고
    좌표만 여기서 정한다.
 
-   이온 결합은 껍질 전체를 그린다 — 어느 껍질에 있던 전자가 어디로 가는지가 핵심이라서다.
-   공유 결합은 바깥 껍질만 그린다 — CH₄처럼 원자가 다섯 개인 분자에서 모든 껍질을 그리면
-   겹쳐서 오히려 안 보인다. 교과서 공유결합 그림도 바깥 껍질만 그린다. */
+   어느 그림이든 껍질을 전부 그린다 — 어느 껍질에 있던 전자가 어디로 가는지가 핵심이고,
+   한쪽만 껍질을 생략하면 같은 앱 안에서 "얘는 왜 껍질이 없지?"가 된다.
+   대신 안쪽 껍질 전자는 채도를 낮춰(dia-e-inner) 뒤로 물린다. 문제에서 세어야 하는 것은
+   언제나 바깥 껍질 전자라, 안쪽이 같은 세기로 보이면 셀 것이 두 배로 늘어난다. */
 
 const DIA = {
   NUC: 15,      /* 원자핵 원 반지름 */
@@ -460,7 +461,7 @@ function ionFormingDiagramHTML(z, item){
     fin.forEach((cnt, i) => {
       const r = DIA.R0 + i * DIA.RSTEP;
       s += `<circle class="dia-ring" cx="${cx}" cy="${cy}" r="${r}"/>`;
-      if(i < fin.length - 1){ s += DIA.dots(cx, cy, r, cnt, 'dia-e'); return; }
+      if(i < fin.length - 1){ s += DIA.dots(cx, cy, r, cnt, 'dia-e dia-e-inner'); return; }
       /* 들어올 자리를 껍질에 고르게 흩는다. 뒤쪽 n개를 몰아 쓰면(예전 방식) 산소처럼
          2개를 받는 원소에서 전자가 둘 다 왼쪽으로만 들어와 그림이 한쪽으로 쏠렸다.
          고르게 흩으면 "여기저기서 받는다"도 자연스럽고 좌우 균형도 맞는다. */
@@ -480,7 +481,8 @@ function ionFormingDiagramHTML(z, item){
   }else if(lose){
     fin.forEach((cnt, i) => {
       const r = DIA.R0 + i * DIA.RSTEP;
-      s += `<circle class="dia-ring" cx="${cx}" cy="${cy}" r="${r}"/>` + DIA.dots(cx, cy, r, cnt, 'dia-e');
+      /* 잃고 남는 껍질은 전부 안쪽 껍질이다 — 바깥 껍질은 아래에서 따로 그려 사라지게 한다 */
+      s += `<circle class="dia-ring" cx="${cx}" cy="${cy}" r="${r}"/>` + DIA.dots(cx, cy, r, cnt, 'dia-e dia-e-inner');
     });
     /* 빠져나가는 껍질과 그 전자 — 끝나면 사라지므로 최종 그림에는 남지 않는다 */
     s += `<circle class="dia-ring dia-anim-fade" cx="${cx}" cy="${cy}" r="${outR}"${DIA.at(lastAt + 0.3)}/>`;
@@ -495,7 +497,7 @@ function ionFormingDiagramHTML(z, item){
     fin.forEach((cnt, i) => {
       const r = DIA.R0 + i * DIA.RSTEP;
       s += `<circle class="dia-ring" cx="${cx}" cy="${cy}" r="${r}"/>`;
-      if(i < fin.length - 1){ s += DIA.dots(cx, cy, r, cnt, 'dia-e'); return; }
+      if(i < fin.length - 1){ s += DIA.dots(cx, cy, r, cnt, 'dia-e dia-e-inner'); return; }
       DIA.dotPos(cx, cy, r, cnt).forEach(([x, y], k) =>
         { s += DIA.dot(x, y, 'dia-e dia-anim-count', DIA.at(DIA.T0 + k * DIA.STEP)); });
     });
@@ -527,7 +529,7 @@ function shellDiagramHTML(z, charge){
   sh.forEach((cnt, i) => {
     const rr = DIA.R0 + i * DIA.RSTEP;
     s += `<circle class="dia-ring" cx="${cx}" cy="${cy}" r="${rr}"/>`;
-    if(i < sh.length - 1){ s += DIA.dots(cx, cy, rr, cnt, 'dia-e'); return; }
+    if(i < sh.length - 1){ s += DIA.dots(cx, cy, rr, cnt, 'dia-e dia-e-inner'); return; }
     DIA.dotPos(cx, cy, rr, cnt).forEach(([x, y], k) =>
       { s += DIA.dot(x, y, 'dia-e dia-anim-count', DIA.at(DIA.T0 + k * DIA.STEP)); });
   });

@@ -162,7 +162,10 @@
   .section-tabs::-webkit-scrollbar{display:none;}
   .section-tab{flex:0 0 auto;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);padding:8px 14px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;text-align:center;line-height:1.3;white-space:nowrap;}
   .section-tab.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:var(--c-on-accent-2);}
-  .section-tab .section-sub{display:block;font-size:10px;font-weight:400;opacity:.75;margin-top:1px;}
+  /* 「고1」·「시험 범위 아님」 같은 한 줄. opacity로 흐리게 하던 것을 걷어냈다 —
+     물려받은 색에 곱해져 대비가 3.88:1까지 떨어져 있었다. 위계는 글자 크기가 나른다.
+     10px은 안내문으로 쓰기엔 너무 작아 11px로 올린다. */
+  .section-tab .section-sub{display:block;font-size:11px;font-weight:400;margin-top:1px;}
   /* 뺀 자리에 남기는 이정표 — 학교에서 옛 교육과정 내용을 곁들여 배운 학생이
      "여기 있어야 할 게 없다"고 당황하지 않도록 어디로 갔는지 알려준다 */
   .section-note{font-size:12px;line-height:1.5;color:var(--c-text-secondary);margin:10px 2px 0;}
@@ -181,9 +184,10 @@
   .mode-tab.active{background:var(--c-tint-a1);border-color:var(--c-accent-1);border-width:2px;color:var(--c-text-primary);}
   /* 옅은 바탕이 깔리면서 보조 글자의 대비가 4.36:1로 떨어졌다(검사가 잡았다).
      고른 카드의 설명이니 본문색으로 올린다 — 위계는 글자 크기(11px)가 이미 나르고 있다. */
-  .mode-tab.active .tab-desc{color:var(--c-text-primary);opacity:1;}
+  .mode-tab.active .tab-desc{color:var(--c-text-primary);}
   .mode-tab .tab-icon{font-size:20px;display:block;margin-bottom:2px;}
-  .mode-tab .tab-desc{font-size:11px;display:block;font-weight:400;opacity:0.75;margin-top:2px;}
+  /* 여기도 opacity:0.75를 걷어냈다 — 3.77:1이었다. 11px 크기가 이미 위계를 나른다 */
+  .mode-tab .tab-desc{font-size:11px;display:block;font-weight:400;margin-top:2px;}
   .question-card{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;padding:24px;margin-bottom:16px;min-height:180px;display:flex;flex-direction:column;gap:16px;flex-grow:1;position:relative;overflow:hidden;}
   .timer-container{position:absolute;top:0;left:0;right:0;height:5px;background:rgba(0,0,0,.2);}
   .timer-bar{height:100%;background:var(--c-accent-1);width:100%;transition:background .3s;}
@@ -299,14 +303,22 @@
   .choice-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:12px;color:var(--c-text-primary);font-family:var(--font-ui);font-size:16px;font-weight:700;padding:15px 16px;cursor:pointer;transition:all .2s;text-align:center;}
   .choice-btn.picked{background:var(--c-accent-1);border-color:var(--c-accent-1);color:var(--c-bg);}
   /* 보기 주석 — "완전히 틀린 말은 아니고 나중에 다시 배운다"를 알려 주는 한 줄.
-     본문보다 작지만 12px 밑으로는 내리지 않는다(폰에서 안 읽힌다). */
-  .choice-note{display:block;margin-top:4px;font-size:12px;font-weight:600;opacity:.72;}
+     본문보다 작지만 12px 밑으로는 내리지 않는다(폰에서 안 읽힌다).
+     opacity:.72를 걷어냈다. 버튼 글자색을 그대로 물려받아야 하는 자리라(고른 버튼은
+     배경이 강조색으로 바뀌고 글자색도 같이 바뀐다) 색을 박을 수는 없고,
+     대신 투명도를 없애 물려받은 색을 온전히 쓴다. 크기 차이만으로도 곁가지로 읽힌다. */
+  .choice-note{display:block;margin-top:4px;font-size:12px;font-weight:600;}
   /* 앙금 색 동그라미 — 검은색 앙금은 다크 배경에 묻히므로 테두리로 가장자리를 살린다.
      글자에 이미 색 이름이 있으니 이건 거드는 표시다(색만으로 뜻을 전하지 않는다). */
   .ppt-sw{display:inline-block;width:14px;height:14px;border-radius:50%;background:var(--sw);
           border:1.5px solid var(--c-text-secondary);vertical-align:-2px;margin-right:7px;flex-shrink:0;}
-  /* 해설 안의 「나중에 다시 배운다」 한 줄. dia-note는 SVG text 전용 클래스라 이름을 겹치면 안 된다 */
-  .later-note{display:block;margin-top:6px;font-size:13px;opacity:.75;}
+  /* 해설 안의 곁가지 한 줄(「나중에 다시 배운다」, 점 색 안내 등).
+     dia-note는 SVG text 전용 클래스라 이름을 겹치면 안 된다.
+
+     전에는 색 선언 없이 opacity:.75만 걸어 두었다. 투명도는 상속색에 곱해지는 값이라
+     대비를 미리 계산할 수 없고, 실제로 4.07:1까지 떨어져 4.5:1에 미달했다.
+     색을 명시하고 투명도는 없앤다 — 흐리게 보이고 싶으면 흐린 색을 고르면 된다. */
+  .later-note{display:block;margin-top:7px;font-size:13px;color:var(--c-text-secondary);}
   /* 보기 답은 한글 문장이라 정사각 빈칸에 안 들어간다 — 폭이 늘어나는 형태로 바꾼다 */
   .blank-box.choice{min-width:110px;font-family:var(--font-ui);font-size:1em;}
   /* 전자껍질 배치 — 답을 외우는 게 아니라 그림에서 세도록 문제에 같이 띄운다 */
@@ -333,7 +345,9 @@
   }
   .dia-wrap{margin-top:14px;}
   .dia-panel{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:14px;padding:10px;margin-bottom:10px;}
-  .dia-cap{font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);letter-spacing:1px;margin-bottom:4px;text-align:center;}
+  /* 그림 위 한 줄 설명. 11px + 자간 1px이라 화면에서 가장 작고 성긴 글이었다 —
+     한 급 올리고 자간을 줄인다(한글은 자간을 벌리면 낱말이 흩어져 더 안 읽힌다). */
+  .dia-cap{font-size:12px;color:var(--c-text-secondary);font-family:var(--font-mono);letter-spacing:.3px;margin-bottom:5px;text-align:center;}
   /* 폭에 맞춰 늘리되 세로로는 화면을 다 잡아먹지 않게 상한을 둔다. viewBox가 정사각인 원자 한 개짜리
      그림이 폰에서 세로 370px을 차지해 정작 해설이 화면 밖으로 밀려났다. */
   .dia{display:block;width:100%;height:auto;max-height:min(46vh,300px);overflow:visible;}
@@ -368,7 +382,9 @@
   /* 대괄호 옆 전하는 괄호 바깥에서 오른쪽으로 자란다 — 가운데 정렬이면 괄호를 덮는다 */
   .dia-charge-br{text-anchor:start;}
   .dia-note{fill:var(--c-text-secondary);font-family:var(--font-ui);font-size:12px;text-anchor:middle;}
-  .dia-exp{font-size:13px;line-height:1.6;color:var(--c-text-secondary);margin:8px 2px 0;}
+  /* 해설은 "왜 그 답인지"를 말하는 본문이다. 보조 글자색(--c-text-secondary)으로 두었더니
+     정작 답의 근거가 화면에서 가장 흐린 글이 됐다 — 본문색으로 올리고 한 급 키운다. */
+  .dia-exp{font-size:14px;line-height:1.65;color:var(--c-text-primary);margin:9px 2px 0;}
   .dia-exp b{color:var(--c-text-primary);}
   @keyframes diaFlow{to{stroke-dashoffset:-18;}}
   /* ── 그림 애니메이션 ──
@@ -467,7 +483,9 @@
   /* 칸 내부는 3행 그리드(번호 / 기호 / 이름)로 고정 → 어떤 크기에서도 겹치지 않음 */
   .pt-cell{position:relative;aspect-ratio:1/1;border-radius:6px;display:grid;grid-template-rows:auto 1fr auto;align-items:center;justify-items:center;color:#0B0F19;padding:3px 2px;cursor:default;transition:transform .15s;overflow:hidden;min-width:0;}
   .pt-cell:active{transform:scale(.9);}
-  .pt-z{font-size:clamp(7px,1.2vw,10px);font-family:var(--font-mono);font-weight:700;opacity:.8;justify-self:start;padding-left:2px;line-height:1;}
+  /* 원자번호. 칸이 118개라 크기는 어쩔 수 없이 작다 — 그러니 대비까지 깎지는 않는다
+     (opacity:.8을 걷어냈다). */
+  .pt-z{font-size:clamp(7px,1.2vw,10px);font-family:var(--font-mono);font-weight:700;justify-self:start;padding-left:2px;line-height:1;}
   .pt-sym{font-size:clamp(13px,2.6vw,21px);font-family:var(--font-mono);font-weight:900;line-height:1;align-self:center;}
   /* 이름은 한 줄 강제(nowrap)+말줄임 대신 최대 2줄로 자연 줄바꿈 → 4자 이상 긴 한국어 이름도
      '...' 없이 전부 보인다. line-clamp:2로 박스 높이 자체를 정확히 2줄로 상한(overflow:hidden
@@ -566,12 +584,14 @@
      overflow:hidden이면 뒷부분이 그냥 잘려 나가 답을 못 읽는다. 탭으로 뒤집는 동작과
      부딪히지 않도록 스크롤은 최후 수단이고, 아래 규칙들로 웬만하면 안 넘치게 줄여 둔다. */
   .m6-face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 18px;gap:12px;text-align:center;overflow-y:auto;overflow-x:hidden;overscroll-behavior:contain;}
-  /* 카드 안에서는 그림·해설을 한 단계 줄인다 — 카드는 해설 상자보다 훨씬 좁다 */
+  /* 카드 안에서는 그림·해설을 한 단계 줄인다 — 카드는 해설 상자보다 훨씬 좁다.
+     다만 12px 아래로는 안 내린다. 전에는 곁가지 줄이 11px까지 내려가 카드에서
+     같은 문장이 해설 상자에서보다 더 안 보였다 — 좁다고 안 읽히게 만들 이유는 없다. */
   .m6-face .dia{max-height:clamp(140px,26vh,220px);}
   .m6-face .dia-wrap{margin-top:0;width:100%;}
   .m6-face .dia-panel{padding:6px;margin-bottom:6px;}
-  .m6-face .dia-exp{font-size:12px;line-height:1.5;margin:4px 0 0;}
-  .m6-face .later-note{font-size:11px;}
+  .m6-face .dia-exp{font-size:13px;line-height:1.55;margin:5px 0 0;}
+  .m6-face .later-note{font-size:12px;margin-top:5px;}
   .m6-face .dia-replay{margin:0 auto 4px;padding:7px 14px;font-size:12px;min-height:40px;}
   .m6-front{background:var(--c-surface-1);border:2px solid var(--c-border);}
   .m6-back{background:linear-gradient(135deg,var(--c-tint-a2),var(--c-surface-2));border:2px solid var(--c-accent-2);transform:rotateY(180deg);}
