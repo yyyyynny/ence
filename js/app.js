@@ -54,6 +54,41 @@ const App={
     /* 저장된 구역의 첫 모드로 시작한다 */
     const first=modesInSection(this.state.section)[0];
     if(first!==undefined) this.setMode(first); else this.setSection(this.state.section);
+    this.renderUpdateBanner();
+  },
+
+  /* ── 새 판 알림 ──
+     저장해 둔 판 번호와 지금 판을 견주어, 다르면 그 사이에 바뀐 내용을 배너로 알린다.
+     서버도 네트워크 요청도 없다 — service worker는 file://에서 등록이 안 되고
+     이 앱은 파일로 열어도 돌아가야 한다(js/version.js 머리말 참고).
+
+     화면을 저절로 새로고침하지 않는다. 문제를 풀던 중에 화면이 갈아엎히면 답이 날아간다 —
+     언제 받을지는 학생이 정한다.
+
+     판 번호는 배너를 **닫거나 새로고침을 누를 때** 저장한다. 뜨자마자 저장하면,
+     스쳐 지나가듯 본 사람은 무엇이 바뀌었는지 영영 못 보게 된다. */
+  renderUpdateBanner(){
+    const el=document.getElementById('updateBanner');
+    if(!el || typeof APP_VERSION==='undefined') return;
+    let seen=null;
+    try{ seen=localStorage.getItem('chem_seen_version'); }catch(e){}
+    /* 처음 온 사람에게는 알릴 변화가 없다 — 지금 판을 조용히 적어 두고 끝낸다.
+       빈 문자열처럼 쓸 수 없는 값도 같이 여기서 처리한다. 그냥 두면 그 값이 계속 남아
+       다음 판이 나와도 영영 알림이 안 뜬다(첫 방문과 달리 저절로 고쳐지지 않는다). */
+    if(!seen){ this.markVersionSeen(); return; }
+    const lines=changesSince(seen);
+    if(!lines.length) return;
+    document.getElementById('updateList').innerHTML=
+      lines.map(t=>`<li>${t}</li>`).join('');
+    el.hidden=false;
+  },
+  markVersionSeen(){
+    try{ localStorage.setItem('chem_seen_version', APP_VERSION); }catch(e){}
+  },
+  dismissUpdateBanner(){
+    this.markVersionSeen();
+    const el=document.getElementById('updateBanner');
+    if(el) el.hidden=true;
   },
 
   /* 실제 가시 영역(px)을 CSS 변수로 유지 — iOS Safari/삼성 인터넷의 동적 주소창 때문에
@@ -571,6 +606,15 @@ const App={
       const mt=e.target.closest('.mode-tab'),bb=e.target.closest('.blank-box'),kb=e.target.closest('.kb-key');
       const st=e.target.closest('.section-tab');
       if(st){this.setSection(st.dataset.section);this.playSound('tap');this.playHaptic('tap');return;}
+      /* 새 판 알림 — 닫아도, 새로고침을 눌러도 "봤다"로 친다. 어느 쪽이든 내용을 본 뒤다. */
+      if(e.target.closest('#updateCloseBtn')){this.dismissUpdateBanner();return;}
+      if(e.target.closest('#updateReloadBtn')){
+        this.markVersionSeen();
+        /* 캐시를 건너뛰도록 판 번호를 주소에 달아 다시 부른다 — ?v=만으로는 index.html 자신이
+           캐시에 남아 옛 ?v=를 가리킨 채로 돌아올 수 있다. */
+        location.replace(location.pathname+'?v='+encodeURIComponent(APP_VERSION));
+        return;
+      }
       const ch=e.target.closest('.choice-btn');
       if(ch){this.pickChoice(ch.dataset.choice);return;}
       /* 그림은 매번 다시 그려지므로 버튼에 직접 리스너를 달 수 없다 — 위임으로 받는다 */

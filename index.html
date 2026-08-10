@@ -4,11 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" id="viewportMeta" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>반응물이 반응하면 생성물</title>
-<link rel="stylesheet" href="css/style.css">
+<!-- ?v= 는 캐시 무효화용이다. js/version.js의 APP_VERSION과 같은 값이어야 하고,
+     판을 올릴 때 손으로 같이 바꾼다(빌드 도구가 없다). verifyUpdate가 어긋남을 잡는다. -->
+<link rel="stylesheet" href="css/style.css?v=2026.08.10">
 </head>
 <body>
 
 <div id="app">
+  <!-- 새 판이 올라왔을 때만 뜬다(App.renderUpdateBanner). 공부하다 화면이 저절로 바뀌면 안 되므로
+       새로고침은 학생이 누를 때만 한다. 내용은 js/version.js의 CHANGELOG에서 온다. -->
+  <div class="update-banner" id="updateBanner" role="status" hidden>
+    <div class="update-head">
+      <span class="update-title">🎉 새 내용이 있어요</span>
+      <button class="update-close" id="updateCloseBtn" aria-label="알림 닫기">✕</button>
+    </div>
+    <ul class="update-list" id="updateList"></ul>
+    <button class="update-reload" id="updateReloadBtn">🔄 새로고침해서 받기</button>
+  </div>
   <header>
     <div class="logo-egg" id="easterEggBtn">누루ズl ㅁトパㅔ요</div>
     <div class="header-right scroll-fade-x">
@@ -249,10 +261,11 @@
   </div>
 </div>
 
-<script src="js/theme.js"></script>
-<script src="js/data.js"></script>
-<script src="js/curriculum.js"></script>
-<script src="js/diagram.js"></script>
-<script src="js/app.js"></script>
+<script src="js/version.js?v=2026.08.10"></script>
+<script src="js/theme.js?v=2026.08.10"></script>
+<script src="js/data.js?v=2026.08.10"></script>
+<script src="js/curriculum.js?v=2026.08.10"></script>
+<script src="js/diagram.js?v=2026.08.10"></script>
+<script src="js/app.js?v=2026.08.10"></script>
 </body>
 </html>

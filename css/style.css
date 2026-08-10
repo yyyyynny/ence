@@ -658,6 +658,25 @@
   .m6-slide-r .m6-flashcard{animation:m6Right .28s ease-out;}
   .m6-slide-l .m6-flashcard{animation:m6Left .28s ease-out;}
 
+  /* ── 새 판 알림 ──
+     맨 위에 한 번 뜨고, 닫으면 그 판에서는 다시 안 뜬다. 채점색(정답 초록·오답 빨강)을
+     쓰지 않는다 — 이건 맞고 틀림이 아니라 알림이라서, 같은 색을 쓰면 뜻이 섞인다. */
+  .update-banner{background:var(--c-surface-2);border:2px solid var(--c-accent-1);border-radius:16px;
+    padding:14px 16px;margin-bottom:16px;}
+  .update-banner[hidden]{display:none;}
+  .update-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:8px;}
+  .update-title{font-size:15px;font-weight:900;color:var(--c-text-primary);}
+  .update-close{background:none;border:none;color:var(--c-text-secondary);font-size:18px;line-height:1;
+    cursor:pointer;padding:4px 6px;min-height:32px;}
+  /* 목록 마커는 글머리 기호 대신 「·」 — 한 줄이 길어 두 줄로 넘어가도 들여쓰기가 유지된다 */
+  .update-list{list-style:none;margin:0 0 10px;padding:0;}
+  .update-list li{position:relative;padding-left:14px;font-size:13px;line-height:1.6;
+    color:var(--c-text-primary);margin-bottom:3px;}
+  .update-list li::before{content:'·';position:absolute;left:3px;color:var(--c-accent-1);font-weight:900;}
+  .update-reload{width:100%;background:var(--c-accent-1);color:var(--c-on-accent-1);border:none;
+    border-radius:12px;padding:11px 16px;font-family:var(--font-ui);font-size:14px;font-weight:700;
+    cursor:pointer;min-height:44px;}
+
   /* 재풀이 배너 */
   #retryBanner {
     display:none; background:var(--c-wrong); color:var(--c-on-wrong); padding:14px 18px; border-radius:16px; margin-bottom:16px; font-weight:bold; align-items:center; justify-content:space-between; box-shadow:0 4px 12px var(--c-wrong-bg); font-size:15px;
