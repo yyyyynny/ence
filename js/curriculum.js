@@ -29,7 +29,9 @@ const SECTIONS=[
    입력하면 '1'+'7'로 보인다) 그 경고를 끈다. */
 const MODES={
   1:{section:'ms', icon:'🔢', name:'계수 맞추기',   desc:'계수 1도 입력 필수', std:'9과16-02', noCoefWarning:true},
-  2:{section:'ms', icon:'🧪', name:'반응식 맞추기',  desc:'16개 전체', std:'9과16-02', subLabel:'반응물',
+  /* desc의 개수는 세어서 만든다 — 손으로 「16개 전체」라고 적어 두었더니 구역별로 나눈 순간
+     화면이 거짓말을 하게 됐다. 앞으로 반응식을 더하든 구역을 옮기든 이 줄은 저절로 맞는다. */
+  2:{section:'ms', icon:'🧪', name:'반응식 맞추기',  desc:reactionsInSection('ms').length+'개', std:'9과16-02', subLabel:'반응물',
      subModes:[{id:2,label:'반응물'},{id:3,label:'생성물'},{id:4,label:'전체식'}]},
   3:{parent:2, subLabel:'생성물'},
   4:{parent:2, subLabel:'전체식'},
@@ -71,6 +73,14 @@ function modesInSection(secId){
   return Object.keys(MODES).filter(m=>!MODES[m].parent && MODES[m].section===secId).map(Number);
 }
 function sectionMeta(secId){ return SECTIONS.find(s=>s.id===secId); }
+/* 그 구역에서 다루는 반응식만. data.js의 REACTIONS[].sections를 해석하는 곳은 여기 하나다.
+   전에는 어느 구역에 있든 16개 전부가 나왔다 — 중학 학생이 앙금 생성 반응의 계수를 맞췄는데,
+   정작 이 앱은 앙금을 「심화(시험 범위 아님)」로 분류해 두고 있었다. 같은 앱이 두 말을 한 셈이다.
+   구역이 없는 반응(자료를 새로 넣고 표시를 빠뜨린 경우)은 어디에도 안 나오는 게 아니라
+   전 구역에 나오게 둔다 — 문제가 통째로 사라지는 것보다 낫고, 아래 검사가 그 사실을 잡는다. */
+function reactionsInSection(secId){
+  return REACTIONS.filter(r=>!r.sections || !r.sections.length || r.sections.includes(secId));
+}
 /* 플래시카드는 구역마다 하나씩 있으므로 모드 번호로 판별하면 안 된다 */
 function isCardMode(m){ const r=modeRoot(m); return !!(r && r.custom==='flashcard'); }
 

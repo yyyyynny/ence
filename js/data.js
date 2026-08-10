@@ -1,5 +1,11 @@
 /* ── 데이터 ── */
 const DEFAULT_TIMER=20000;
+/* sections — 이 반응식을 어느 구역에서 다루는가. 한 반응이 여러 구역에 걸칠 수 있어 배열이다
+   (연소는 중학에서 계수를 맞추고 고2에서 다시 쓴다). 구역 id는 curriculum.js의 SECTIONS와 같다.
+   "언제 배우나"를 아는 곳은 curriculum.js 한 곳이라는 원칙에 맞춰, 이 배열을 실제로 해석하는
+   함수(reactionsInSection)는 그쪽에 둔다. 여기 있는 건 사실 표시뿐이다.
+   앙금 두 건이 plus에만 있는 것이 중요하다 — 앱은 앙금을 이미 「심화」로 분류해 두고도
+   중학 계수·반응식 문제에서 그 둘을 그대로 내고 있었다. */
 /* phase — 용액에서 가라앉는 앙금(↓)과 빠져나가는 기체(↑) 표기.
    화면에만 붙는 표시다. 정답 문자열을 만드는 f2s()는 coef와 formula만 읽으므로
    여기에 무엇을 적어도 학생이 입력할 답은 달라지지 않는다.
@@ -7,22 +13,22 @@ const DEFAULT_TIMER=20000;
    생성물이 기체라고 붙이면 표기의 뜻이 사라진다. 탄산수소나트륨 열분해는 고체를
    가열하는 반응이라 뺐다(교과서마다 표기가 갈리는 자리다). */
 const REACTIONS=[
-  {name:"일산화탄소 + 산소 → 이산화탄소",reactants:[{coef:2,formula:[{sym:"CO"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]}]},
-  {name:"메테인 + 산소 → 이산화탄소 + 물",reactants:[{coef:1,formula:[{sym:"CH",sub:4}]},{coef:2,formula:[{sym:"O",sub:2}]}],products:[{coef:1,formula:[{sym:"CO",sub:2}]},{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
-  {name:"구리 + 산소 → 산화구리(Ⅱ)",reactants:[{coef:2,formula:[{sym:"Cu"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Cu"},{sym:"O"}]}]},
-  {name:"과산화수소 → 물 + 산소",reactants:[{coef:2,formula:[{sym:"H",sub:2},{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"O",sub:2}],phase:"↑"}]},
-  {name:"수소 + 염소 → 염화수소",reactants:[{coef:1,formula:[{sym:"H",sub:2}]},{coef:1,formula:[{sym:"Cl",sub:2}]}],products:[{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}]},
-  {name:"마그네슘 + 산소 → 산화마그네슘",reactants:[{coef:2,formula:[{sym:"Mg"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Mg"},{sym:"O"}]}]},
-  {name:"질소 + 산소 → 이산화질소",reactants:[{coef:1,formula:[{sym:"N",sub:2}]},{coef:2,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"N"},{sym:"O",sub:2}]}]},
-  {name:"질소 + 수소 → 암모니아",reactants:[{coef:1,formula:[{sym:"N",sub:2}]},{coef:3,formula:[{sym:"H",sub:2}]}],products:[{coef:2,formula:[{sym:"N"},{sym:"H",sub:3}]}]},
-  {name:"에탄올 + 산소 → 이산화탄소 + 물",reactants:[{coef:1,formula:[{sym:"C",sub:2},{sym:"H",sub:5},{sym:"O"},{sym:"H"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]},{coef:3,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
-  {name:"탄산나트륨 + 염화칼슘 → 염화나트륨 + 탄산칼슘",reactants:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]}],products:[{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}],phase:"↓"}]},
-  {name:"탄산수소나트륨 → 탄산나트륨 + 이산화탄소 + 물",reactants:[{coef:2,formula:[{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}]}],products:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:1,formula:[{sym:"CO",sub:2}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
-  {name:"프로페인 + 산소 → 이산화탄소 + 물",reactants:[{coef:1,formula:[{sym:"C",sub:3},{sym:"H",sub:8}]},{coef:5,formula:[{sym:"O",sub:2}]}],products:[{coef:3,formula:[{sym:"CO",sub:2}]},{coef:4,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
-  {name:"뷰테인 + 산소 → 이산화탄소 + 물",reactants:[{coef:2,formula:[{sym:"C",sub:4},{sym:"H",sub:10}]},{coef:13,formula:[{sym:"O",sub:2}]}],products:[{coef:8,formula:[{sym:"CO",sub:2}]},{coef:10,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
-  {name:"마그네슘 + 염산 → 염화마그네슘 + 수소",reactants:[{coef:1,formula:[{sym:"Mg"}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
-  {name:"탄산칼슘 + 염산 → 염화칼슘 + 물 + 이산화탄소",reactants:[{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"CO",sub:2}],phase:"↑"}]},
-  {name:"염화나트륨 + 질산은 → 질산나트륨 + 염화은",reactants:[{coef:1,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}],products:[{coef:1,formula:[{sym:"Na"},{sym:"NO",sub:3}]},{coef:1,formula:[{sym:"Ag"},{sym:"Cl"}],phase:"↓"}]}
+  {name:"일산화탄소 + 산소 → 이산화탄소",sections:["chem"],reactants:[{coef:2,formula:[{sym:"CO"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]}]},
+  {name:"메테인 + 산소 → 이산화탄소 + 물",sections:["ms"],reactants:[{coef:1,formula:[{sym:"CH",sub:4}]},{coef:2,formula:[{sym:"O",sub:2}]}],products:[{coef:1,formula:[{sym:"CO",sub:2}]},{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"구리 + 산소 → 산화구리(Ⅱ)",sections:["ms","is1"],reactants:[{coef:2,formula:[{sym:"Cu"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Cu"},{sym:"O"}]}]},
+  {name:"과산화수소 → 물 + 산소",sections:["ms"],reactants:[{coef:2,formula:[{sym:"H",sub:2},{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"O",sub:2}],phase:"↑"}]},
+  {name:"수소 + 염소 → 염화수소",sections:["is1"],reactants:[{coef:1,formula:[{sym:"H",sub:2}]},{coef:1,formula:[{sym:"Cl",sub:2}]}],products:[{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}]},
+  {name:"마그네슘 + 산소 → 산화마그네슘",sections:["ms","is1"],reactants:[{coef:2,formula:[{sym:"Mg"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Mg"},{sym:"O"}]}]},
+  {name:"질소 + 산소 → 이산화질소",sections:["chem"],reactants:[{coef:1,formula:[{sym:"N",sub:2}]},{coef:2,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"N"},{sym:"O",sub:2}]}]},
+  {name:"질소 + 수소 → 암모니아",sections:["is1","chem"],reactants:[{coef:1,formula:[{sym:"N",sub:2}]},{coef:3,formula:[{sym:"H",sub:2}]}],products:[{coef:2,formula:[{sym:"N"},{sym:"H",sub:3}]}]},
+  {name:"에탄올 + 산소 → 이산화탄소 + 물",sections:["ms"],reactants:[{coef:1,formula:[{sym:"C",sub:2},{sym:"H",sub:5},{sym:"O"},{sym:"H"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]},{coef:3,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"탄산나트륨 + 염화칼슘 → 염화나트륨 + 탄산칼슘",sections:["plus"],reactants:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]}],products:[{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}],phase:"↓"}]},
+  {name:"탄산수소나트륨 → 탄산나트륨 + 이산화탄소 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}]}],products:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:1,formula:[{sym:"CO",sub:2}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"프로페인 + 산소 → 이산화탄소 + 물",sections:["ms","chem"],reactants:[{coef:1,formula:[{sym:"C",sub:3},{sym:"H",sub:8}]},{coef:5,formula:[{sym:"O",sub:2}]}],products:[{coef:3,formula:[{sym:"CO",sub:2}]},{coef:4,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"뷰테인 + 산소 → 이산화탄소 + 물",sections:["ms","chem"],reactants:[{coef:2,formula:[{sym:"C",sub:4},{sym:"H",sub:10}]},{coef:13,formula:[{sym:"O",sub:2}]}],products:[{coef:8,formula:[{sym:"CO",sub:2}]},{coef:10,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"마그네슘 + 염산 → 염화마그네슘 + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Mg"}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
+  {name:"탄산칼슘 + 염산 → 염화칼슘 + 물 + 이산화탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"CO",sub:2}],phase:"↑"}]},
+  {name:"염화나트륨 + 질산은 → 질산나트륨 + 염화은",sections:["plus"],reactants:[{coef:1,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}],products:[{coef:1,formula:[{sym:"Na"},{sym:"NO",sub:3}]},{coef:1,formula:[{sym:"Ag"},{sym:"Cl"}],phase:"↓"}]}
 ];
 const CHEMICALS=[
   {name:"일산화탄소",formula:[{sym:"CO"}]},{name:"이산화탄소",formula:[{sym:"CO",sub:2}]},
