@@ -1791,7 +1791,7 @@ const App={
   m6BuildCards(t){
     let cards=[];
     if(t==='bond'){
-      cards=BONDS.map(b=>({fhtml:`<span class="m6-korean">${b.name}</span><div class="m6-formula" style="font-size:.7em;opacity:.7">${this.fmtFormulaStr(b.f)}</div>`,
+      cards=BONDS.map(b=>({fhtml:`<span class="m6-korean">${b.name}</span><div class="m6-formula m6-sub-formula">${this.fmtFormulaStr(b.f)}</div>`,
         btag:b.type==='ionic'?'이온 결합':'공유 결합',bhtml:bondDiagramHTML(b)}));
     }
     else if(t==='group'){
@@ -1803,14 +1803,17 @@ const App={
         bhtml:`<span class="m6-formula">${this.formatInput(i.f)}</span>`}));
     }
     else if(t==='order'){
-      cards=this.orderPool().map(b=>({fhtml:`<span class="m6-korean">${b.name}</span><div class="m6-formula" style="font-size:.7em;opacity:.7">${this.fmtFormulaStr(b.f)}</div>`,
+      cards=this.orderPool().map(b=>({fhtml:`<span class="m6-korean">${b.name}</span><div class="m6-formula m6-sub-formula">${this.fmtFormulaStr(b.f)}</div>`,
         bhtml:`<span class="m6-formula">${BOND_ORDER_NAME[b.ligands[0].pairs]}</span>`}));
     }
     else if(t==='precip'){
-      /* 앙금이 생기는 카드와 안 생기는 카드는 뒷면 이름이 달라야 뒤집기 전에 답이 새지 않는다 */
+      /* 앙금이 생기는 카드와 안 생기는 카드는 뒷면 이름이 달라야 뒤집기 전에 답이 새지 않는다.
+         색은 글자로만 쓰지 않고 동그라미를 같이 붙인다 — 「흰색 앙금」과 「노란색 앙금」은
+         실험에서 눈으로 가리는 것이라 색 이름만 외우면 정작 시험관을 보고는 못 고른다.
+         퀴즈 모드 13이 쓰는 swatch()를 그대로 쓴다. 여기서 색을 따로 적으면 언젠가 어긋난다. */
       cards=PRECIPITATES.map(p=>({fhtml:`<span class="m6-formula">${this.formatInput(p.a)} + ${this.formatInput(p.b)}</span>`,
         btag:p.none?'앙금 없음':'앙금',
-        bhtml:`<span class="m6-formula">${p.none?'물에 잘 녹아 앙금이 생기지 않는다':`${this.fmtFormulaStr(p.f)}${this.phaseHTML('↓')}<br><span style="font-size:.7em">${p.name} · ${p.color}</span>`}</span>`}));
+        bhtml:`<span class="m6-formula">${p.none?'물에 잘 녹아 앙금이 생기지 않는다':`${this.fmtFormulaStr(p.f)}${this.phaseHTML('↓')}<br><span style="font-size:.8em">${p.name} · ${this.swatch(p.color)}${p.color}</span>`}</span>`}));
     }
     else if(t==='orbital'){
       cards=ORBITAL_SHELLS.map(o=>({ftag:'껍질',fhtml:`<span class="m6-korean">${o.name} 껍질 (n=${o.n})</span>`,

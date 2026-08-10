@@ -599,6 +599,10 @@
   .m6-back .m6-tag{color:var(--c-text-primary);border-color:var(--c-accent-2);}
   .m6-korean{font-size:clamp(18px,5vw,26px);font-family:var(--font-ui);font-weight:700;color:var(--c-text-primary);line-height:1.5;}
   .m6-formula{font-size:clamp(16px,4.5vw,24px);font-family:var(--font-mono);font-weight:700;color:var(--c-text-primary);line-height:1.8;}
+  /* 카드 앞면의 이름 아래 화학식 — 이름이 주인공이라 한 급 작다.
+     인라인 style로 opacity:.7을 걸어 두었던 자리다. 투명도 대신 보조 글자색을 쓴다
+     (투명도는 상속색에 곱해져 대비를 미리 계산할 수 없다). */
+  .m6-sub-formula{font-size:clamp(13px,3vw,16px);color:var(--c-text-secondary);line-height:1.5;}
   .m6-hint{text-align:center;font-size:12px;color:var(--c-text-secondary);font-family:var(--font-mono);}
   .m6-save-wrong-btn{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;}
   .m6-save-wrong-btn:hover{border-color:var(--c-wrong);color:var(--c-wrong);}
