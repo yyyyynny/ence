@@ -2042,13 +2042,24 @@ const App={
     const t=this.ptTableHTML();
     const content=document.getElementById('ptFsContent');
     content.innerHTML=`${t.grid}${t.extra}`;
+    /* 여는 순간에는 확대 레이어에 전환을 걸지 않는다 — 여는 전환(.pt-fullscreen)과 겹쳐
+       표가 두 번 움직이는 것처럼 보인다. 확대/축소 전환은 그때그때 따로 건다. */
     content.style.transition='';
-    this.ptZoom={scale:1,tx:0,ty:0,baseFit:1,vpW:1,vpH:1,cw:1,ch:1};
+    clearTimeout(this._ptFitTimer); clearTimeout(this._ptResetTimer);
+    /* reserve: 상세 패널이 아래를 덮는 높이. 화면이 돌아가 다시 계산할 때도 이 값을 써야
+       패널을 열어 둔 채로 기기를 돌렸을 때 확보해 둔 자리가 사라지지 않는다. */
+    this.ptZoom={scale:1,tx:0,ty:0,baseFit:1,vpW:1,vpH:1,layerH:1,cw:1,ch:1,reserve:0};
     document.getElementById('ptFullscreen').classList.add('show');
-    this.layoutPtFullscreen();
+    /* 배율은 여는 이 순간에만 1로 되돌린다 — 그 밖의 재계산(상세 열기, 화면 회전)에서
+       말없이 버리면 확대해 둔 것이 툭 풀린다. */
+    this.layoutPtFullscreen(0, true);
   },
   closePtFullscreen(){
     document.getElementById('ptFullscreen').classList.remove('show');
+    clearTimeout(this._ptFitTimer); clearTimeout(this._ptResetTimer);
+    /* 상세를 연 채로 닫으면 ptSyncDetailSpace가 회전 뷰 가지를 안 타므로 여기서 직접 푼다 */
+    const rotor=document.querySelector('.pt-fs-rotor');
+    if(rotor) rotor.classList.remove('pt-detail-open');
     this.closePtDetail(this.$.ptFsDetailPanel);
   },
   /* 원소 상세 설명 패널: 기호·이름·원자번호 헤더 + desc 본문.
@@ -2110,16 +2121,31 @@ const App={
      (칸의 실측 픽셀 크기·폰트 계산에는 관여하지 않아 fullscreen 레이아웃의 기존 안정성을 해치지 않음). */
   ptSyncDetailSpace(panel){
     const isOpen=panel.classList.contains('open');
-    const h=isOpen ? panel.querySelector('.pt-detail-content').scrollHeight : 0;
+    const box=panel.querySelector('.pt-detail-content');
+    /* offsetHeight로 잰다. 이유가 둘이다.
+       · scrollHeight는 내용의 자연 높이라 max-height로 잘리는 상한을 무시한다 — 긴 설명이 붙은
+         원소에서 실제보다 훨씬 큰 값이 나와, 그만큼을 표에서 빼앗아 표가 실처럼 찌부러졌다.
+       · getBoundingClientRect는 회전 뷰에서 90° 돌아간 **화면 좌표계**의 바깥 상자를 준다.
+         돌아간 요소에서는 높이 자리에 로컬 가로가 들어와 156px짜리 패널이 844px로 읽혔다.
+       offsetHeight는 변환과 무관한 레이아웃 높이라 상한도 지키고 회전에도 흔들리지 않는다. */
+    const h=isOpen ? box.offsetHeight : 0;
     if(panel===this.$.ptDetailPanel){
       this.$.periodicContent.style.paddingBottom = h ? (h+16)+'px' : '';
     } else if(panel===this.$.ptFsDetailPanel && document.getElementById('ptFullscreen').classList.contains('show')){
       /* layoutPtFullscreen이 다시 계산하는 배율(baseFit)은 transform으로 즉시 적용되므로,
-         ptZoomReset과 같은 방식으로 잠깐 transition을 걸어 표 전체가 뚝 끊기지 않고 부드럽게 커지고/줄어들게 한다 */
+         잠깐 transition을 걸어 표 전체가 뚝 끊기지 않고 부드럽게 커지고/줄어들게 한다.
+         타이머는 ptZoomReset과 따로 둔다 — 하나를 같이 쓰면 리셋 직후 패널을 토글했을 때
+         한쪽이 다른 쪽의 타이머를 지워 transition이 켜진 채로 남고, 그 상태로 핀치를 하면
+         손가락을 늦게 따라오는 고무줄 같은 느낌이 난다. */
       const fsEl=document.getElementById('ptFsContent');
+      /* 상세를 열면 표에 남는 세로가 절반 아래로 떨어진다. 그 좁은 자리를 불꽃 반응 줄까지
+         나눠 쓰면 정작 표가 못 읽을 만큼 작아진다 — 상세를 보는 동안에는 곁다리를 접는다.
+         레이아웃을 재기 **전에** 접어야 그만큼이 표 몫으로 돌아간다. */
+      const rotor=document.querySelector('.pt-fs-rotor');
+      if(rotor) rotor.classList.toggle('pt-detail-open', isOpen);
       fsEl.style.transition='transform .3s ease';
-      clearTimeout(this._ptResetTimer);
-      this._ptResetTimer=setTimeout(()=>{fsEl.style.transition='';},320);
+      clearTimeout(this._ptFitTimer);
+      this._ptFitTimer=setTimeout(()=>{fsEl.style.transition='';},320);
       this.layoutPtFullscreen(h);
     }
   },
@@ -2127,7 +2153,7 @@ const App={
      같은 cell 값에서 열폭·행높이·폰트를 전부 파생시켜 어떤 화면에서도 서로 맞물리게 한다.
      gap(4px)까지 정산해 실제 콘텐츠가 뷰포트를 넘지 않게 하고, 넘으면 baseFit로 축소해
      기본 배율(scale=1)에서 항상 전부 보이게 만든다. */
-  layoutPtFullscreen(reserveBottom=0){
+  layoutPtFullscreen(reserveBottom=0, resetScale=false){
     const scrollEl=document.getElementById('ptFsContent');
     const grid=scrollEl.querySelector('.pt-grid');
     if(!grid) return;
@@ -2170,14 +2196,36 @@ const App={
     scrollEl.style.setProperty('--pt-cell-zh', zH+'px');
     scrollEl.style.setProperty('--pt-cell-symh', symH+'px');
     scrollEl.style.setProperty('--pt-cell-nameh', nameH+'px');
-    /* 주입·사이징 후 실제 콘텐츠(그리드+불꽃반응 행)를 실측해 baseFit 산출 */
-    const extra=scrollEl.querySelector('.pt-extra-row');
-    let cw=grid.offsetWidth, ch=grid.offsetHeight;
-    if(extra){ cw=Math.max(cw, extra.offsetWidth); ch=grid.offsetHeight+extra.offsetHeight+12; }
-    const vpW=vp.clientWidth||1, vpH=Math.max(1,(vp.clientHeight||1)-reserveBottom);
+    /* 주입·사이징 후 실제 콘텐츠를 실측해 baseFit 산출.
+       전에는 그리드와 불꽃반응 행 둘만 더하고 사이의 구분선·제목 줄은 빼먹었다 —
+       실제 콘텐츠가 계산보다 12px쯤 커서 세로 중앙이 그만큼 위로 밀리고, 딱 맞춰 놓았다는
+       배율에서도 아래가 조금 잘렸다. 자식을 전부 훑어 바깥 여백까지 더한다
+       (flex 컨테이너라 위아래 margin이 서로 상쇄되지 않고 그대로 자리를 차지한다). */
+    let cw=0, ch=0;
+    for(const el of scrollEl.children){
+      const cs=getComputedStyle(el);
+      /* 접힌 자식은 상자가 없다. 그런데 getComputedStyle은 display:none이어도 지정된 margin을
+         그대로 돌려주므로, 거르지 않으면 있지도 않은 여백을 세어 표를 그만큼 작게 만든다. */
+      if(cs.display==='none') continue;
+      ch+=el.offsetHeight+(parseFloat(cs.marginTop)||0)+(parseFloat(cs.marginBottom)||0);
+      cw=Math.max(cw, el.offsetWidth);
+    }
+    if(!ch){ cw=grid.offsetWidth; ch=grid.offsetHeight; }
     const z=this.ptZoom||(this.ptZoom={scale:1,tx:0,ty:0});
+    /* 상세 패널이 덮는 높이. 화면이 돌아 다시 계산할 때(reserveBottom 없이 불릴 때)도
+       패널이 열려 있으면 그 자리를 계속 비워 둬야 한다. */
+    if(arguments.length) z.reserve=reserveBottom; else reserveBottom=z.reserve||0;
+    const vpW=vp.clientWidth||1, layerH=vp.clientHeight||1;
+    /* 패널이 화면을 다 먹어 표가 실처럼 찌부러지는 것을 막는다 — 표 몫으로 최소 45%는 남긴다 */
+    reserveBottom=Math.min(reserveBottom, layerH*0.55);
+    const vpH=Math.max(80, layerH-reserveBottom);
     z.baseFit=Math.min(vpW/cw, vpH/ch, 1);
-    z.vpW=vpW; z.vpH=vpH; z.cw=cw; z.ch=ch; z.scale=1;
+    /* vpH는 "표를 얼마에 맞출까"이고 layerH는 "CSS가 무엇을 기준으로 가운데 두는가"다.
+       .pt-fs-scroll은 height:100%에 justify-content:center라 언제나 layerH를 기준으로 삼는다.
+       예전에는 clampPtZoom이 줄인 vpH로 중앙 오프셋을 계산해, 패널을 열면 표가 세로로만
+       (가로는 안 줄이므로) S·reserve/2만큼 미끄러졌다. 둘을 따로 들고 있어야 어긋나지 않는다. */
+    z.vpW=vpW; z.vpH=vpH; z.layerH=layerH; z.cw=cw; z.ch=ch;
+    if(resetScale) z.scale=1;
     this.clampPtZoom(); this.applyPtZoom();
   },
   /* 줌 레이어에 transform 적용. transform만 바꾸므로 리페인트/리플로우 없이 GPU 합성만.
@@ -2194,7 +2242,9 @@ const App={
     const z=this.ptZoom; if(!z) return;
     const S=z.baseFit*z.scale, vpW=z.vpW, vpH=z.vpH, cw=z.cw, ch=z.ch;
     const rw=cw*S, rh=ch*S;               /* 화면에 렌더되는 콘텐츠 크기 */
-    const ox=(vpW-cw)/2*S, oy=(vpH-ch)/2*S; /* 레이어 안 콘텐츠 중앙정렬 오프셋(스케일 반영) */
+    /* 중앙정렬 오프셋은 CSS가 실제로 가운데를 잡는 기준(레이어 전체 높이)에서 구해야 한다.
+       패널이 덮은 만큼 줄인 vpH로 구하면 그 차이의 절반만큼 표가 위로 밀린다. */
+    const ox=(vpW-cw)/2*S, oy=((z.layerH||vpH)-ch)/2*S;
     if(rw<=vpW){ z.tx=(vpW-rw)/2-ox; }
     else { let l=z.tx+ox; l=Math.min(0,Math.max(vpW-rw,l)); z.tx=l-ox; }
     if(rh<=vpH){ z.ty=(vpH-rh)/2-oy; }
@@ -2216,6 +2266,14 @@ const App={
     const rotor=document.querySelector('.pt-fs-rotor');
     if(!vp||!rotor) return;
     let mode=null, startDist=0, startScale=1, focal=null, lastMid=null, lastPan=null, lastTap=0, tapStart=null;
+    /* 손가락을 대는 순간 transform 전환을 끈다. 상세 패널 토글이나 배율 리셋이 걸어 둔
+       transition이 살아 있는 채로 핀치를 시작하면 표가 손가락을 0.3초 늦게 따라와
+       고무줄처럼 물컹거린다 — 직접 조작 중에는 전환이 있으면 안 된다. */
+    const grabNow=()=>{
+      clearTimeout(this._ptFitTimer); clearTimeout(this._ptResetTimer);
+      const el=document.getElementById('ptFsContent');
+      if(el) el.style.transition='';
+    };
     const dist=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
     const mid=(a,b)=>({x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2});
     /* 화면 좌표 → 뷰포트 로컬(가로 공간) 좌표. rotor는 화면 중앙 고정(회전 원점=바운딩 중심).
@@ -2227,6 +2285,7 @@ const App={
       return { x:(oy+r.height/2)-vp.offsetLeft, y:(-ox+r.width/2)-vp.offsetTop };
     };
     vp.addEventListener('touchstart',e=>{
+      grabNow();
       if(e.touches.length===2){
         mode='pinch'; startDist=dist(e.touches[0],e.touches[1])||1;
         startScale=this.ptZoom.scale;
