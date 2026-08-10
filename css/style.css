@@ -15,11 +15,13 @@
     --c-correct-bg:rgba(16,185,129,0.15); --c-wrong-bg:rgba(248,113,113,0.15);
     --c-focus-glow:rgba(0,229,255,0.2); --c-tint-a2:rgba(124,58,237,0.25);
     --c-tint-a1:rgba(0,229,255,0.16); --c-tint-a3:rgba(245,158,11,0.18);
-    /* 공유 전자쌍의 두 표식 색. own=중심 원자가 내놓은 전자(●), other=상대 원자가 내놓은 전자(✕).
-       두 색은 밝기가 아니라 **색상**으로 갈라야 한다 — 하나를 어둡게 만들면 배경에 묻힌다.
-       모양(● / ✕)이 뜻을 나르고 색은 거들 뿐이라 밝기 차이는 필요 없다.
-       배경 밝기에 따라 노랑이 안 보일 수 있어 테마마다 다시 정한다. */
-    --c-e-own:#FDE047; --c-e-other:#A78BFA;
+    /* 전자 색은 세 켜다. 전자는 전부 같은 동그라미이고 색과 채도만 다르다.
+       inner = 안쪽 껍질. 채도를 죽여 뒤로 물린다 — 셀 것은 바깥 껍질 전자다.
+       own  = 중심 원자가 내놓은 전자, other = 상대 원자가 내놓은 전자. 둘 다 채도가 높고
+       서로 **색상**으로 갈린다 — 하나를 어둡게 만들면 배경에 묻히기 때문이다.
+       배경 밝기에 따라 노랑이 안 보일 수 있어 테마마다 다시 정한다.
+       inner는 대비 3:1(비문자 그래픽 기준)을 넘겨야 한다 — 흐리게 한다고 안 보이면 못 센다. */
+    --c-e-inner:#8F98AC; --c-e-own:#FDE047; --c-e-other:#A78BFA;
     /* 배경 그라디언트 세기. 고대비 테마는 0으로 꺼서 대비를 지킨다. */
     --c-glow:.2;
     --font-ui:'Noto Sans KR',sans-serif; --font-mono:'JetBrains Mono',monospace;
@@ -51,8 +53,9 @@
     --c-correct-bg:rgba(6,95,70,0.15); --c-wrong-bg:rgba(185,28,28,0.15);
     --c-focus-glow:rgba(3,105,161,0.2); --c-tint-a2:rgba(79,91,147,0.25);
     --c-tint-a1:rgba(3,105,161,0.14); --c-tint-a3:rgba(180,83,9,0.16);
+    --c-e-inner:#5F6B80;          /* 밝은 배경에서는 흐린 색이 곧 밝은 회색이 아니라 어두운 회색이다 */
     --c-e-own:#B45309;            /* 밝은 배경에서 노랑은 안 보인다 — 진한 호박색으로 */
-    --c-e-other:#6D28D9;
+    --c-e-other:#4C1D95;          /* #6D28D9는 own과 밝기가 1.41:1뿐이라 더 내렸다 */
     --c-glow:0;              /* 밝은 배경에서 radial-gradient 두 개는 얼룩으로만 보인다 */
   }
   /* 종이 — 세피아. 흰 배경의 눈부심을 줄여 오래 봐도 덜 피로하다. */
@@ -68,7 +71,7 @@
     --c-correct-bg:rgba(22,101,52,0.15); --c-wrong-bg:rgba(185,28,28,0.15);
     --c-focus-glow:rgba(154,52,18,0.2); --c-tint-a2:rgba(91,75,106,0.25);
     --c-tint-a1:rgba(154,52,18,0.13); --c-tint-a3:rgba(161,98,7,0.15);
-    --c-e-own:#92400E; --c-e-other:#5B21B6;
+    --c-e-inner:#6B6152; --c-e-own:#92400E; --c-e-other:#3F1580;
     --c-glow:0;              /* 세피아 위의 붉은기·보랏빛 얼룩을 없앤다 — 종이는 얼룩지면 안 된다 */
   }
   /* 야간 — 불 끄고 볼 때. 배경을 더 낮추고 채도를 죽여 눈이 덜 부시게 한다. */
@@ -85,7 +88,11 @@
     --c-correct-bg:rgba(78,158,119,0.15); --c-wrong-bg:rgba(217,138,138,0.15);
     --c-focus-glow:rgba(125,178,168,0.2); --c-tint-a2:rgba(138,124,200,0.25);
     --c-tint-a1:rgba(125,178,168,0.16); --c-tint-a3:rgba(199,154,91,0.18);
-    --c-e-own:#C9A227; --c-e-other:#B0A8D8;
+    /* 원래 own #C9A227 / other #B0A8D8이었는데 둘의 밝기가 거의 같아(1.06:1) 흑백으로 보면
+       구분이 사라졌다. 모양이 아니라 색으로만 가르는 이상 밝기까지 벌려 놓아야 한다. */
+    /* 이 색은 점(그래픽·3:1)이자 해설 속 원자 기호(글자·4.5:1)라 둘 중 엄한 쪽을 따른다.
+       #8272C4로 내렸더니 글자 대비가 4.44:1로 4.5:1에 미달했다 — 둘 다 한 칸씩 올렸다. */
+    --c-e-inner:#7E8899; --c-e-own:#D8B23C; --c-e-other:#8A7ACB;
     --c-glow:0;              /* 불 끄고 볼 때는 은은한 빛도 거슬린다 */
   }
   /* 고대비 — 잘 안 보일 때. 배경을 완전한 검정으로 내리고 글자를 흰색으로 올린다. */
@@ -101,7 +108,8 @@
     --c-correct-bg:rgba(61,255,158,0.15); --c-wrong-bg:rgba(255,107,107,0.15);
     --c-focus-glow:rgba(57,224,255,0.2); --c-tint-a2:rgba(192,139,255,0.25);
     --c-tint-a1:rgba(57,224,255,0.22); --c-tint-a3:rgba(255,197,61,0.24);
-    --c-e-own:#FFE95C; --c-e-other:#C08BFF;
+    /* 고대비에서 "채도가 낮다"는 밝기를 낮춘다는 뜻이 아니다 — 회색으로 가되 밝기는 지킨다 */
+    --c-e-inner:#C8C8C8; --c-e-own:#FFE95C; --c-e-other:#C08BFF;
     --c-glow:0;                   /* 배경 그라디언트를 끈다 — 대비를 깎는다 */
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
@@ -335,12 +343,16 @@
   .dia-sym{fill:var(--c-text-primary);font-family:var(--font-mono);font-size:15px;font-weight:700;text-anchor:middle;dominant-baseline:central;}
   .dia-sym-lg{font-size:20px;}
   .dia-e{fill:var(--c-accent-3);}
-  /* 공유 결합에서 "이 전자가 어느 원자에서 나왔나"를 나타내는 두 표식.
-     색과 모양을 둘 다 다르게 한다 — 색만 다르면 색을 못 가리는 사람에게는 구분이 없는 것과 같고,
-     이건 답의 근거라서 안 보이면 문제를 못 푼다. */
+  /* 안쪽 껍질 — 채도를 낮춰 뒤로 물린다. 아래 두 규칙과 함께 .dia-e 뒤에 와야 덮어쓴다
+     (셋 다 명시도가 같아 순서로 갈린다). */
+  .dia-e-inner{fill:var(--c-e-inner);}
+  /* 공유 결합에서 "이 전자가 어느 원자에서 나왔나"를 나타내는 두 색.
+     모양은 둘 다 같은 동그라미다 — ×로 갈랐더니 획이 서로 붙어 삼중결합에서 덩어리가 됐다.
+     색만으로 뜻을 전하지 않기 위해 **자리**가 같은 일을 한다: 한 쌍에서 중심 원자 쪽·상대 원자 쪽이
+     기하로 정해져 있고, 해설의 원자 기호도 같은 색으로 칠해 두 개를 이어 준다. */
   .dia-e-own{fill:var(--c-e-own);}
-  .dia-e-other{stroke:var(--c-e-other);stroke-width:2.3;stroke-linecap:round;fill:none;}
-  /* 해설 문장 안의 범례 — 그림의 표식과 같은 색으로 칠해야 이어서 읽힌다.
+  .dia-e-other{fill:var(--c-e-other);}
+  /* 해설 문장 안의 범례 — 그림의 점과 같은 색으로 칠해야 이어서 읽힌다.
      `.dia-exp b`(0,1,1)가 본문색으로 덮어쓰므로 여기도 b를 붙여 우선순위를 맞춘다. */
   .dia-exp b.dia-key-own{color:var(--c-e-own);}
   .dia-exp b.dia-key-other{color:var(--c-e-other);}

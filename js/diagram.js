@@ -55,16 +55,14 @@ const DIA = {
     return out;
   },
   /* 화면의 모든 전자에는 data-e가 붙는다 — 검사가 "전자가 몇 개 보이는가"를 셀 때 쓰는 표식이다.
-     전자를 그리는 길은 dot()과 cross() 둘뿐이므로 여기 두 곳에만 붙이면 빠짐없이 세어진다. */
+     전자를 그리는 길은 dot() 하나뿐이므로 여기 한 곳에만 붙이면 빠짐없이 세어진다.
+
+     전자는 전부 같은 동그라미로 그린다. 한때 상대 원자의 전자를 ×로 그렸는데(dot-and-cross),
+     ×는 획이 점보다 넓게 퍼져 삼중결합(N₂)에서 획끼리 붙어 덩어리가 되고 안쪽 껍질 전자와도
+     엉켰다. 전자는 원래 다 같은 전자라 모양을 갈라야 할 이유가 없다 — 어느 원자 것인지는
+     색으로, 안쪽인지 바깥인지는 채도로 나타낸다. */
   dot(x, y, cls, extra, r){
     return `<circle data-e="dot" class="${cls}" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r || this.E}"${extra || ''}/>`;
-  },
-  /* 상대 원자에서 나온 전자는 ×로 그린다 — 교과서의 dot-and-cross 표기.
-     색만으로 구분하면 색을 못 가리는 사람에게는 아무 구분이 없는 것과 같다. */
-  cross(x, y, cls, extra, half){
-    const a = half || 3.9, f = v => v.toFixed(1);
-    return `<path data-e="cross" class="${cls}" d="M ${f(x-a)} ${f(y-a)} L ${f(x+a)} ${f(y+a)}`+
-           ` M ${f(x-a)} ${f(y+a)} L ${f(x+a)} ${f(y-a)}"${extra || ''}/>`;
   },
   /* 원 위의 한 점 — 각도(도)로 지정한다 */
   onCircle(cx, cy, r, deg){
@@ -95,14 +93,17 @@ const DIA = {
            ` marker-end="url(#diaHead)"${this.at(delay)}/>`;
   },
 
-  /* 전체 껍질을 그린 원자 하나. shells를 그대로 받으므로 이온(전자를 잃은 뒤)도 같은 함수로 그린다. */
-  atom(sym, shells, cx, cy, charge){
+  /* 전체 껍질을 그린 원자 하나. shells를 그대로 받으므로 이온(전자를 잃은 뒤)도 같은 함수로 그린다.
+     allInner를 주면 넘겨받은 껍질을 전부 "안쪽 껍질"로 흐리게 그린다 — 바깥 껍질을 부르는 쪽에서
+     따로 그리는 경우(이온 결합의 비금속)에 쓴다. */
+  atom(sym, shells, cx, cy, charge, allInner){
     let s = `<circle class="dia-nuc" cx="${cx}" cy="${cy}" r="${this.NUC}"/>`;
     s += `<text class="dia-sym" x="${cx}" y="${cy}">${sym}</text>`;
     shells.forEach((n, i) => {
       const r = this.R0 + i * this.RSTEP;
       s += `<circle class="dia-ring" cx="${cx}" cy="${cy}" r="${r}"/>`;
-      s += this.dots(cx, cy, r, n, 'dia-e');
+      /* 안쪽 껍질은 채도를 낮춰 뒤로 물린다 — 문제에서 세어야 하는 것은 바깥 껍질 전자다 */
+      s += this.dots(cx, cy, r, n, (allInner || i < shells.length - 1) ? 'dia-e dia-e-inner' : 'dia-e');
     });
     if(charge){
       const r = this.R0 + (shells.length - 1) * this.RSTEP;
@@ -137,7 +138,7 @@ const DIA = {
      전자가 껍질을 벗어나 있으면 그림이 스스로 모순된다.
      한 쌍의 두 점 간격은 각도가 아니라 실제 거리로 잡는다 — 반지름이 작은 원자(수소)에서
      같은 각도를 쓰면 두 점이 겹쳐 붙어 한 점처럼 보인다.
-     mark: 이 전자를 어떤 표식으로 그릴지(dot 또는 cross). 어느 원자의 전자인지가 표식이다. */
+     mark: 이 전자를 어떤 색으로 그릴지. 어느 원자의 전자인지가 색이다. */
   lonePairs(cx, cy, r, count, baseDeg, centerAtom, mark){
     if(count <= 0) return '';
     const pairs = Math.floor(count / 2), odd = count % 2;
@@ -211,7 +212,7 @@ function ionicDiagramHTML(b){
   }
   /* 비금속 — 원래 갖고 있던 전자는 그대로, 받는 전자만 금속에서 날아온다 */
   for(let j = 0; j < b.nX; j++){
-    s += DIA.atom(b.X, xIon.slice(0, -1), rx, xy(j));
+    s += DIA.atom(b.X, xIon.slice(0, -1), rx, xy(j), '', true);
     s += `<circle class="dia-ring" cx="${rx}" cy="${xy(j)}" r="${xOutR}"/>`;
     const slots = DIA.dotPos(rx, xy(j), xOutR, 8);
     slots.forEach(([x, y], k) => { if(k < 8 - b.take) s += DIA.dot(x, y, 'dia-e'); });
@@ -244,8 +245,7 @@ function ionicDiagramHTML(b){
     <div class="dia-panel"><div class="dia-cap">전자가 넘어가 이온이 된다</div>${svg}</div>
     ${DIA.replayBtn()}
     <p class="dia-exp">${josa(M.name,'은','는')} 원자가 전자 ${valenceOf(M.z)}개를 내주고, ${josa(X.name,'은','는')} ${b.take}개를 받아 둘 다 바깥 껍질이 꽉 찬다.
-    반대 전하를 띤 이온이 서로 끌어당기는 것이 <b>이온 결합</b>이다.
-    <span class="later-note">파랗고 굵은 점이 넘어가는 전자다 — 없던 전자가 생기는 게 아니라 원래 ${josa(M.name,'이','가')} 갖고 있던 전자다.</span></p>
+    <span class="later-note">굵은 점이 넘어가는 전자다 — 없던 전자가 생기는 게 아니라 원래 ${josa(M.name,'이','가')} 갖고 있던 전자다.</span></p>
   </div>`;
 }
 
@@ -260,8 +260,9 @@ function ionicDiagramHTML(b){
    떨어뜨려 놓고 사이에 찍으면 전자쌍이 어느 껍질에도 안 속한 빈 공간에 뜬다.
 
    전자는 **자기 원자의 껍질에서 출발**해 겹친 자리로 옮겨 간다. 그리고 어느 원자에서
-   나왔는지를 표식으로 남긴다 — 중심 원자는 ●, 상대 원자는 ×(교과서 dot-and-cross).
-   같은 원소끼리 결합해도(N₂) 구분한다. 원소가 아니라 "출처"를 나타내는 표기라서 그게 맞다.
+   나왔는지를 **색**으로 남긴다. 같은 원소끼리 결합해도(N₂) 구분한다 — 원소가 아니라
+   "출처"를 나타내는 표시라서 그게 맞다.
+   안쪽 껍질 전자는 채도를 낮춰 뒤로 물린다. 셋 다 똑같은 동그라미이고 채도와 색상만 다르다.
 
    비공유 전자 수 = 바깥 껍질에 실제로 든 전자 수 − 그 원자가 내놓은 전자 수(= 참여한 전자쌍 수).
    여기서는 원자가 전자가 아니라 outerShellOf를 쓴다 — 그리는 것은 "결합에 참여하는 개수"가 아니라
@@ -273,7 +274,7 @@ function covalentDiagramHTML(b, opts){
      겹친 폭은 전자쌍 수에 비례해 커지는데 반지름은 그대로라 생기는 문제라, 여기서는
      껍질을 키워 겹친 자리와 원자핵 사이에 자리를 만든다.
      viewBox가 그린 범위에 맞춰지므로 화면에 보이는 크기는 그대로다. */
-  const R0 = 36, RSTEP = 24, EDOT = 5.0, ECROSS = 5.6;
+  const R0 = 36, RSTEP = 24, EDOT = 5.0;
   const outerR = z => R0 + (shellsOf(z).length - 1) * RSTEP;
   /* 원자핵 원은 껍질 반지름의 절반을 넘지 않게 — 수소(껍질 1개)에서 핵이 껍질을 다 먹는다 */
   const nucR = R => Math.min(22, R * 0.5);
@@ -285,10 +286,10 @@ function covalentDiagramHTML(b, opts){
   const cLone = outerShellOf(C.z) - cPairs;
   const cx = 200, cy = 200;
 
-  /* 표식 — 중심 원자에서 나온 전자는 ●, 상대 원자에서 나온 전자는 ×.
+  /* 색 — 중심 원자에서 나온 전자와 상대 원자에서 나온 전자를 색상으로 가른다. 모양은 둘 다 같은 점이다.
      anim을 주면 제 껍질에서 겹친 자리로 옮겨 간다(공유 전자). 비공유 전자는 안 움직이므로 안 준다. */
   const ownMark   = (x, y, extra, anim) => DIA.dot(x, y, 'dia-e dia-e-own' + (anim ? ' dia-anim-move' : ''), extra, EDOT);
-  const otherMark = (x, y, extra, anim) => DIA.cross(x, y, 'dia-e-other' + (anim ? ' dia-anim-move' : ''), extra, ECROSS);
+  const otherMark = (x, y, extra, anim) => DIA.dot(x, y, 'dia-e dia-e-other' + (anim ? ' dia-anim-move' : ''), extra, EDOT);
 
   const n = b.ligands.length;
   /* 원자를 어디에 놓느냐가 곧 분자 모양이라, 아무 데나 두면 틀린 그림이 된다.
@@ -308,7 +309,7 @@ function covalentDiagramHTML(b, opts){
     const L = ELEMENTS.find(e => e.sym === l.sym);
     const lShells = shellsOf(L.z);
     const lR = outerR(L.z);
-    const ov = 10 * (l.pairs - 1) + 12;                /* 겹치는 폭 */
+    const ov = 13 * (l.pairs - 1) + 12;                /* 겹치는 폭 — 아래 along 간격과 같은 13이어야 쌍이 다 들어간다 */
     const d = cR + lR - ov;                            /* 두 원자 중심 사이 거리 */
     const a = angles[i] * Math.PI / 180;
     const ax = Math.cos(a), ay = Math.sin(a);
@@ -329,7 +330,7 @@ function covalentDiagramHTML(b, opts){
       const r = R0 + i * RSTEP;
       t += `<circle class="dia-ring" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}"/>`;
       /* 안쪽 껍질은 꽉 차 있고 결합에 참여하지 않는다 — 그대로 찍는다 */
-      if(i < shells.length - 1) t += DIA.dots(x, y, r, cnt, 'dia-e', EDOT);
+      if(i < shells.length - 1) t += DIA.dots(x, y, r, cnt, 'dia-e dia-e-inner', EDOT);
     });
     const nr = nucR(R0 + (shells.length - 1) * RSTEP);
     t += `<circle class="dia-nuc" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${nr.toFixed(1)}"/>`;
@@ -346,7 +347,9 @@ function covalentDiagramHTML(b, opts){
       /* 한 쌍 = 전자 2개. 쌍 안의 두 전자는 결합축에 <b>수직</b>으로 세워 찍는다 —
          교과서의 H:Cl 표기에서 가운데 콜론이 결합축과 직각인 것과 같다.
          쌍이 여럿이면 그 쌍들을 결합축을 따라 늘어놓는다 — O::O처럼. */
-      const along = (p - (g.l.pairs - 1) / 2) * 10;
+      /* 쌍끼리의 간격. 점 반지름(EDOT=5)의 두 배보다 넉넉해야 삼중결합에서 세 쌍이 붙어
+         한 덩어리로 안 보인다 — 10이면 정확히 맞닿는다. */
+      const along = (p - (g.l.pairs - 1) / 2) * 13;
       /* 등장 순서는 "몇 번째 전자쌍인가"(p)가 먼저다. 결합이 여러 개인 분자에서 전자쌍을
          일렬로 늘어놓으면(CO₂를 1·2·3·4번째로) 이중결합이 두 개인지 사중결합 하나인지
          구분이 안 된다. 결합마다 첫 쌍이 함께 들어오고 그다음 둘째 쌍이 들어와야
@@ -404,17 +407,15 @@ function covalentDiagramHTML(b, opts){
   const order = opts && opts.order;
   const pairs0 = b.ligands[0].pairs;
   const cap = order ? '공유 전자쌍이 몇 쌍인지 세어 보자' : '전자껍질과 공유 전자쌍';
-  /* ●와 ×가 무슨 뜻인지 화면이 직접 말하게 한다. 표기를 설명 없이 쓰면 학생은
-     "왜 어떤 건 동그라미고 어떤 건 엑스지?"에서 막힌다. */
-  const markNote = `<span class="later-note">`+
-    `<b class="dia-key-own">●</b> ${b.center}에서 나온 전자, `+
-    `<b class="dia-key-other">✕</b> ${[...new Set(b.ligands.map(l => l.sym))].join('·')}에서 나온 전자. `+
-    `모양이 다를 뿐 둘 다 똑같은 전자다 — 어느 원자가 내놓았는지 보이라고 갈라 그렸다.</span>`;
+  /* 점 색이 어느 원자에서 나온 전자인지를 말한다. 색 이름을 글로 적지 않고 원자 기호를 그 색으로
+     칠한다 — 테마마다 색이 달라지므로 "노란 점"이라고 적으면 테마를 바꾼 순간 거짓말이 된다. */
+  const ligSyms = [...new Set(b.ligands.map(l => l.sym))].join('·');
+  const key = ` <span class="later-note">점 색은 그 전자를 내놓은 원자다 — `+
+    `<b class="dia-key-own">${b.center}</b> / <b class="dia-key-other">${ligSyms}</b>.</span>`;
   const exp = (order
     ? `${uniq} — 전자쌍 <b>${pairs0}쌍</b>을 공유하므로 <b>${BOND_ORDER_NAME[pairs0]}</b>이다.
        공유하는 전자쌍이 늘수록 두 원자가 더 세게 붙잡혀 결합이 짧고 강해진다.`
-    : `${uniq}. 전자를 주고받는 대신 <b>함께 쓰는</b> 것이 <b>공유 결합</b>이다.
-       두 껍질이 겹친 자리에 있는 전자쌍은 두 원자가 <b>둘 다 자기 것으로</b> 센다.`) + markNote;
+    : `${uniq}. 두 껍질이 겹친 자리에 찍힌 것이 그 전자쌍이다.`) + key;
   return `<div class="dia-wrap">
     <div class="dia-panel"><div class="dia-cap">${cap}</div>
       <svg class="dia" viewBox="${vb}" role="img">${s}</svg></div>
