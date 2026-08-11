@@ -74,7 +74,7 @@
     </div>
     <div class="cycle-progress-wrap" id="cycleProgressWrap" style="display:none">
       <div class="cycle-progress-text" id="cycleProgressText">0 / 16</div>
-      <div class="cycle-progress-bar"><div class="cycle-progress-fill" id="cycleProgressFill" style="width:0%"></div></div>
+      <div class="cycle-progress-bar"><!-- 진행은 width가 아니라 scaleX로 준다(css 참고) — 인라인 width가 남아 있으면 그게 이겨서 막대가 영영 0폭이었다 --><div class="cycle-progress-fill" id="cycleProgressFill"></div></div>
     </div>
     <!-- 하위 유형: 반응물·생성물·전체식처럼 한 탭 안에서 갈리는 모드용. MODES[n].subModes에서 렌더된다 -->
     <div class="cycle-label sub-only">📚 문제 유형</div>

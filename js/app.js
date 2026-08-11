@@ -1395,6 +1395,15 @@ const App={
     this.syncElemRow(this.state.currentMode,q);
     this.renderCycleProgress();
     this.renderAll();this.startTimer();
+    this.markFresh();
+  },
+  /* 새 문제가 들어왔다는 신호. 지금까지는 글자만 소리 없이 갈렸다 — 답을 맞히고 다음으로
+     넘어갔는지, 같은 문제가 그대로인지 화면이 말해 주지 않았다.
+     자리는 그대로 두고 4px만 올라오며 나타난다. 문제를 읽는 눈높이가 흔들리면 안 된다.
+     **여기서만** 부른다. renderAll은 키를 누를 때마다 도는데 그때마다 다시 뜨면 글자가 떤다. */
+  markFresh(){
+    const el=this.$.equationDisplay; if(!el) return;
+    el.style.animationName='none'; void el.offsetWidth; el.style.animationName='';
   },
 
   checkAnswer(){
@@ -1701,7 +1710,7 @@ const App={
 
   renderScore(){
     const{streak,correct,wrong}=this.state.score;
-    const bump=el=>{el.classList.add('bump');setTimeout(()=>el.classList.remove('bump'),200);};
+    const bump=el=>{el.classList.add('bump');setTimeout(()=>el.classList.remove('bump'),this.motionMs('--dur-tap'));};
     if(this.$.streakCount.textContent!==streak.toString()){this.$.streakCount.textContent=streak;bump(this.$.streakCount);}
     if(this.$.totalCorrect.textContent!==correct.toString()){this.$.totalCorrect.textContent=correct;bump(this.$.totalCorrect);}
     if(this.$.totalWrong.textContent!==wrong.toString()){this.$.totalWrong.textContent=wrong;bump(this.$.totalWrong);}

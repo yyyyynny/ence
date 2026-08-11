@@ -271,6 +271,7 @@
   .mode-tab .tab-icon{font-size:20px;display:block;margin-bottom:2px;}
   /* 여기도 opacity:0.75를 걷어냈다 — 3.77:1이었다. 11px 크기가 이미 위계를 나른다 */
   .mode-tab .tab-desc{font-size:11px;display:block;font-weight:400;margin-top:2px;}
+  #equationDisplay{animation:qEnter var(--dur-enter) var(--ease-out);}
   .question-card{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;padding:24px;margin-bottom:16px;min-height:180px;display:flex;flex-direction:column;gap:16px;flex-grow:1;position:relative;overflow:hidden;}
   .timer-container{position:absolute;top:0;left:0;right:0;height:5px;background:rgba(0,0,0,.2);}
   /* 남은 시간은 width가 아니라 scaleX로 줄인다. width는 레이아웃 속성이라 100ms마다
@@ -287,7 +288,11 @@
   .blank-box.correct{border-color:var(--c-correct);background:var(--c-correct-bg);color:var(--c-correct);}
   .blank-box.wrong{border-color:var(--c-wrong);background:var(--c-wrong-bg);color:var(--c-wrong);animation:shake var(--dur-enter) var(--ease-out);}
   .blank-box.placeholder::before{content:'?';color:var(--c-text-secondary);opacity:.5;}
-  @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(5px)}}
+  /* 오답 흔들림 — 짧고 작게. 8px씩 네 번 흔들면 놀라게 하는 쪽에 가깝다.
+     틀렸다는 것은 색이 이미 말하고 있고, 이건 「방금 그 자리」를 가리키는 신호다. */
+  @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}55%{transform:translateX(5px)}80%{transform:translateX(-2px)}}
+  /* 새 문제가 들어옴 — 자리는 그대로, 4px만 올라오며 나타난다(js의 markFresh가 다시 튼다) */
+  @keyframes qEnter{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
   @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
   .eq-text{color:var(--c-text-primary);}.eq-arrow{color:var(--c-accent-3);font-size:1.2em;margin:0 4px;}.eq-plus{color:var(--c-text-secondary);margin:0 4px;}
   /* 앙금(↓)·기체(↑) 표기 — 화학식의 일부가 아니라 그 물질의 상태를 알리는 표시다.
