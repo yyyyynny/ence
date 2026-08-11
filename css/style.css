@@ -52,10 +52,19 @@
     --dur-enter: 260ms;   /* 내용이 들어옴 */
     --dur-exit:  180ms;   /* 내용이 나감 */
     --dur-move:  240ms;   /* 있던 것이 자리를 옮김 */
-    --dur-view:  380ms;   /* 화면 하나가 통째로 바뀜 (가로 보기, 카드 뒤집기) */
+    --dur-view:  380ms;   /* 화면 하나가 통째로 들어옴 (가로 보기, 카드 뒤집기) */
+    /* 눈금 하나 — 남은 시간처럼 **일정한 속도로** 줄어드는 것. 유일하게 linear를 쓰는 자리다.
+       제한시간에 이징을 주면 남은 시간이 빨라졌다 느려졌다 하는 것처럼 보인다. 그건 거짓말이다.
+       값은 타이머 tick(50ms)보다 약간 길어야 칸칸이 끊기지 않고 이어진다. */
+    --dur-tick:  100ms;
+    --dur-view-out:260ms; /* 그 화면이 나감 — 같은 규칙으로 들어올 때보다 짧다.
+                             화면 하나가 나가는 데 --dur-exit(작은 것 기준)를 쓰면 급해 보인다. */
 
     --ease-out:  cubic-bezier(.22,.90,.30,1);  /* 들어옴 — 빠르게 시작해 부드럽게 멈춘다 */
-    --ease-in:   cubic-bezier(.55,0,.85,.35);  /* 나감 — 천천히 시작해 빠르게 사라진다 */
+    /* 나감 — 곧바로 움직이기 시작해 점점 빨라진다.
+       처음엔 cubic-bezier(.55,0,.85,.35)를 썼는데 앞 40%가 거의 정지라, 짧은 시간에 걸면
+       "가만히 있다가 갑자기 없어진다"로 보였다. 나가는 것도 **누른 즉시** 움직여야 한다. */
+    --ease-in:   cubic-bezier(.40,0,1,1);
     --ease-move: cubic-bezier(.35,0,.25,1);    /* 이동 — 양끝이 정지 */
     --ease-press:cubic-bezier(.30,0,.20,1);    /* 눌림 */
 
@@ -264,7 +273,11 @@
   .mode-tab .tab-desc{font-size:11px;display:block;font-weight:400;margin-top:2px;}
   .question-card{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;padding:24px;margin-bottom:16px;min-height:180px;display:flex;flex-direction:column;gap:16px;flex-grow:1;position:relative;overflow:hidden;}
   .timer-container{position:absolute;top:0;left:0;right:0;height:5px;background:rgba(0,0,0,.2);}
-  .timer-bar{height:100%;background:var(--c-accent-1);width:100%;transition:background-color var(--dur-move) var(--ease-move);}
+  /* 남은 시간은 width가 아니라 scaleX로 줄인다. width는 레이아웃 속성이라 100ms마다
+     리플로우가 일어나고, 문제를 푸는 내내 그게 계속된다 — 키보드를 두드리는 동안 미세하게
+     걸리던 이유가 여기다. transform은 합성만으로 끝나 주 스레드를 건드리지 않는다. */
+  .timer-bar{height:100%;background:var(--c-accent-1);width:100%;transform-origin:left center;
+    transition:transform var(--dur-tick) linear, background-color var(--dur-move) var(--ease-move);}
   .timer-bar.danger{background:var(--c-wrong);}
   .q-label{font-size:13px;color:var(--c-accent-1);font-family:var(--font-mono);letter-spacing:1px;font-weight:700;margin-top:4px;}
   .q-sublabel{font-size:20px;color:var(--c-text-primary);font-weight:700;}
@@ -505,7 +518,11 @@
   .cycle-progress-wrap{display:flex;align-items:center;gap:8px;flex:1;min-width:140px;}
   .cycle-progress-text{font-family:var(--font-mono);font-size:13px;font-weight:700;color:var(--c-text-primary);white-space:nowrap;}
   .cycle-progress-bar{flex:1;height:8px;background:var(--c-border);border-radius:4px;overflow:hidden;}
-  .cycle-progress-fill{height:100%;background:linear-gradient(90deg,var(--c-accent-2),var(--c-accent-1));border-radius:4px;transition:width .3s ease;}
+  /* 진행바도 같은 이유로 scaleX다. 폭을 100%로 두고 가로로만 눌러 준다 —
+     그러면 그라디언트가 언제나 「전체 길이」 기준이라 진행에 따라 색이 흐르지 않고 제자리에 있다. */
+  .cycle-progress-fill{height:100%;width:100%;transform-origin:left center;transform:scaleX(0);
+    background:linear-gradient(90deg,var(--c-accent-2),var(--c-accent-1));border-radius:4px;
+    transition:transform var(--dur-move) var(--ease-move);}
   .egg-particle{position:fixed;pointer-events:none;z-index:9999999;font-size:28px;animation:egg-pop var(--dur-egg) var(--ease-egg) forwards;}
   @keyframes egg-pop{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1.5);opacity:0}}
 
@@ -520,13 +537,27 @@
      화면이 뚝 바뀌기만 했다 — 무엇이 일어난 건지 알 수 없으면 부자연스럽게 느껴진다.
      display를 껐다 켜면 전환이 걸리지 않으므로 visibility+opacity로 감춘다
      (display:none과 달리 열 때 크기를 잴 수 있어 첫 배치 계산도 정확해진다). */
+  /* 여닫는 시간이 **어긋나면 안 된다.** 전에는 오버레이가 240ms에 숨는데 회전은 300ms짜리라
+     마지막 60ms가 잘려 돌다 말고 툭 꺼졌다 — 사용자가 「부자연스럽다」고 한 그 자리다.
+     이제 둘 다 토큰 하나에서 나오므로 어긋날 수가 없다. visibility의 지연도 같은 값이다. */
   .pt-fullscreen{position:fixed;inset:0;z-index:9999990;background:var(--c-bg);overflow:hidden;
     visibility:hidden;opacity:0;pointer-events:none;
-    transition:opacity .24s ease, visibility 0s linear .24s;}
+    transition:opacity var(--dur-view-out) var(--ease-in),
+               visibility 0s linear var(--dur-view-out);}
   .pt-fullscreen.show{visibility:visible;opacity:1;pointer-events:auto;
-    transition:opacity .24s ease, visibility 0s;}
-  /* 닫힌 상태에서는 아직 안 돌아간 채로 조금 작다 → 열면 세로에서 가로로 돌아간다 */
+    transition:opacity var(--dur-enter) var(--ease-out), visibility 0s;}
+  /* 닫힌 상태 = 아직 안 돌아간 세로. 여기서 .show로 가면 세로→가로로 돌아간다(여는 동작).
+     닫을 때는 이 상태로 **되돌아가지 않는다** — 아래 .pt-closing이 가로인 채로 접는다. */
   .pt-fullscreen:not(.show) .pt-fs-rotor{transform:translate(-50%,-50%) rotate(0deg) scale(.86);}
+  /* 닫기 — 90도를 되감지 않는다. 되감기는 「취소」의 몸짓이라 닫는 데는 과하고,
+     큰 회전이 짧은 시간에 들어가면 그 자체로 급해 보인다.
+     가로인 채로 살짝 줄며 흐려지는 것이 「치운다」에 맞는 동작이다. */
+  .pt-fullscreen.pt-closing .pt-fs-rotor{transform:translate(-50%,-50%) rotate(90deg) scale(.90);
+    transition:transform var(--dur-view-out) var(--ease-in);}
+  /* 다 닫힌 뒤 「다음에 열 준비」(세로) 상태로 되돌리는 그 한 프레임만 전환을 끈다.
+     안 그러면 이미 안 보이는 화면이 0.38초 동안 혼자 세로로 돌아가고, 그 사이에 다시 열면
+     엉뚱한 각도에서 회전이 시작된다. 아무도 못 보는 것은 애니메이션하지 않는다. */
+  .pt-fullscreen.pt-instant .pt-fs-rotor{transition:none;}
   /* 회전 뷰 안에서는 칸이 개별로 눌리지 않는다 — 표를 끌어 옮기는 동안 손가락 밑 칸만
      혼자 눌렸다 펴져 표가 부글거리는 것처럼 보였다. 여기서는 표 전체를 움직이는 것이지
      칸 하나를 누르는 것이 아니다. */
@@ -546,12 +577,14 @@
   .pt-fs-rotor.pt-detail-open .pt-extra-row{display:none;}
   @media (prefers-reduced-motion: reduce){
     .pt-fullscreen,.pt-fullscreen .pt-fs-rotor{transition:none;}
-    .pt-fullscreen:not(.show) .pt-fs-rotor{transform:translate(-50%,-50%) rotate(90deg);}
+    /* 움직임을 끈 사람에게는 여닫을 때 아무것도 돌지 않는다 — 늘 가로인 채로 나타났다 사라진다 */
+    .pt-fullscreen:not(.show) .pt-fs-rotor,
+    .pt-fullscreen.pt-closing .pt-fs-rotor{transform:translate(-50%,-50%) rotate(90deg);}
   }
   /* --app-w/--app-h: JS가 visualViewport로 실측한 실제 가시 영역(px). 동적 주소창이 있는
      iOS Safari·삼성 인터넷에서도 vh/vw처럼 어긋나지 않는다. vh/vw는 로드 직후 값이 없을 때의 폴백. */
   .pt-fs-rotor{position:absolute;top:50%;left:50%;width:var(--app-h,100vh);height:var(--app-w,100vw);transform:translate(-50%,-50%) rotate(90deg);display:flex;flex-direction:column;padding:16px;overflow:hidden;
-    transition:transform .3s cubic-bezier(.22,.68,.3,1);}
+    transition:transform var(--dur-view) var(--ease-out);}
   .pt-fs-title{font-size:15px;font-weight:900;color:var(--c-accent-1);margin-bottom:10px;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;}
   .pt-fs-close{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:10px;padding:8px 16px;font-weight:700;font-size:13px;cursor:pointer;}
   /* 뷰포트: 콘텐츠를 잘라내는 창. touch-action:none으로 브라우저 네이티브 줌/스크롤을 완전히
@@ -727,7 +760,9 @@
   .m6-shuffle{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-size:14px;font-weight:700;padding:8px 16px;cursor:pointer;transition:var(--t-btn);}
   .m6-shuffle:hover{border-color:var(--c-accent-3);color:var(--c-accent-3);}
   .m6-progress-bar{height:6px;background:var(--c-border);border-radius:3px;overflow:hidden;}
-  .m6-progress-fill{height:100%;background:linear-gradient(90deg,var(--c-accent-2),var(--c-accent-1));border-radius:3px;transition:width .35s ease;}
+  .m6-progress-fill{height:100%;width:100%;transform-origin:left center;transform:scaleX(0);
+    background:linear-gradient(90deg,var(--c-accent-2),var(--c-accent-1));border-radius:3px;
+    transition:transform var(--dur-move) var(--ease-move);}
   @keyframes m6Right{from{opacity:0;transform:translateX(50px)}to{opacity:1;transform:translateX(0)}}
   @keyframes m6Left{from{opacity:0;transform:translateX(-50px)}to{opacity:1;transform:translateX(0)}}
   .m6-slide-r .m6-flashcard{animation:m6Right var(--dur-move) var(--ease-move);}

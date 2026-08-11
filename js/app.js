@@ -1018,17 +1018,17 @@ const App={
     const done=this.state.cycleTotal-this.state.cycleQueue.length;
     const total=this.state.cycleTotal;
     if(this.$.cycleProgressText) this.$.cycleProgressText.textContent=`${done} / ${total}`;
-    if(this.$.cycleProgressFill) this.$.cycleProgressFill.style.width=`${total>0?(done/total)*100:0}%`;
+    if(this.$.cycleProgressFill) this.$.cycleProgressFill.style.transform=`scaleX(${total>0?done/total:0})`;
   },
 
   startTimer(){
     clearInterval(this.state.timerInterval);
     this.state.currentMaxTime=this.state.timerDuration;this.state.timerLeft=this.state.currentMaxTime;
-    this.$.timerBar.style.transition='none';this.$.timerBar.style.width='100%';this.$.timerBar.classList.remove('danger');
+    this.$.timerBar.style.transition='none';this.$.timerBar.style.transform='scaleX(1)';this.$.timerBar.classList.remove('danger');
 
     if(this.state.timerDuration === 0) return;
 
-    void this.$.timerBar.offsetWidth;this.$.timerBar.style.transition='width 0.1s linear, background 0.3s';
+    void this.$.timerBar.offsetWidth;this.$.timerBar.style.transition='';
     let lt=Date.now();
     this.state.timerInterval=setInterval(()=>{
       /* 모달이 열려 있는 동안은 시간을 세지 않는다. 주기율표나 반응식 목록을 띄워 두면
@@ -1041,8 +1041,8 @@ const App={
       }
       if(this.state.isAnswerChecked){clearInterval(this.state.timerInterval);return;}
       const now=Date.now();this.state.timerLeft-=(now-lt);lt=now;
-      if(this.state.timerLeft<=0){this.state.timerLeft=0;clearInterval(this.state.timerInterval);this.$.timerBar.style.width='0%';this.timeOutForceWrong();}
-      else{const p=(this.state.timerLeft/this.state.currentMaxTime)*100;this.$.timerBar.style.width=`${p}%`;if(p<30)this.$.timerBar.classList.add('danger');}
+      if(this.state.timerLeft<=0){this.state.timerLeft=0;clearInterval(this.state.timerInterval);this.$.timerBar.style.transform='scaleX(0)';this.timeOutForceWrong();}
+      else{const p=(this.state.timerLeft/this.state.currentMaxTime)*100;this.$.timerBar.style.transform=`scaleX(${p/100})`;if(p<30)this.$.timerBar.classList.add('danger');}
     },50);
   },
 
@@ -1637,9 +1637,31 @@ const App={
     if(!host||host.id==='explainBox'){ this.renderExplain(); return; }
     this.restartAnim(host);
   },
-  /* 상자 안의 애니메이션을 처음부터 다시 재생한다. innerHTML을 그대로 다시 넣으면
-     요소가 새로 만들어지면서 CSS 애니메이션도 새로 시작한다. */
-  restartAnim(host){ if(host) host.innerHTML=host.innerHTML; },
+  /* 상자 안의 애니메이션을 처음부터 다시 재생한다.
+     **DOM을 다시 만들지 않는다.** 예전에는 innerHTML을 자기 자신으로 다시 넣어 요소를
+     새로 만들었는데, 그 대가가 컸다:
+       · 카드 면(.m6-face)은 overflow-y:auto인 스크롤러다. 안을 새로 만들면 스크롤이 0으로
+         돌아가, 긴 해설을 읽으려고 내려 둔 화면이 카드를 뒤집는 순간 툭 위로 올라갔다.
+       · 뒤집는 바로 그 프레임에 HTML을 통째로 새로 파싱한다(그림 카드는 SVG 전체).
+     애니메이션만 되감으면 되는 일이었다. cancel() 뒤 play()면 CSS 애니메이션이 처음부터
+     다시 돈다 — 요소는 그대로 있으므로 스크롤도, 포커스도, 진행 중인 전환도 그대로다. */
+  restartAnim(host){
+    if(!host) return;
+    /* animation-name을 잠깐 none으로 껐다 되돌리면 CSS 애니메이션이 처음부터 다시 돈다.
+       사이에 강제 리플로우가 한 번 있어야 한다 — 없으면 브라우저가 두 변경을 한 번에 묶어
+       아무 일도 일어나지 않는다.
+
+       왜 하필 animation-name인가: 그림의 전자는 인라인 style에 animation-delay를 갖고 있다
+       (전자마다 0.3초씩 밀려 들어와야 몇 개가 움직였는지 셀 수 있다). `animation` 단축 속성을
+       건드리면 그 delay까지 함께 지워져 전자가 한꺼번에 출발한다. 장축(longhand) 하나만 만진다.
+
+       왜 Animation API(cancel+play)가 아닌가: CSS가 만든 애니메이션을 cancel하면 요소에서
+       떨어져 나가 play해도 돌아오지 않았다(검사가 잡았다). 이 방법은 CSS에 그대로 맡긴다. */
+    const els = host.querySelectorAll('*');
+    els.forEach(el => { el.style.animationName = 'none'; });
+    void host.offsetHeight;
+    els.forEach(el => { el.style.animationName = ''; });
+  },
   /* 원자가 전자 해설 — 18족 답이 0인 이유를 여기서 설명하지 않으면
      껍질에 8개가 그려져 있는데 답은 0이라 학생 눈에는 오류로 보인다. */
   valenceExplain(q){
@@ -1952,13 +1974,15 @@ const App={
     document.getElementById('m6BContent').innerHTML=isKorFirst?card.bhtml:card.fhtml;
     this.state.m6Flipped=false;document.getElementById('m6Card').classList.remove('flipped');
     document.getElementById('m6Counter').textContent=`${m6Index+1} / ${m6Cards.length}`;
-    document.getElementById('m6PFill').style.width=`${((m6Index+1)/m6Cards.length)*100}%`;
+    document.getElementById('m6PFill').style.transform=`scaleX(${(m6Index+1)/m6Cards.length})`;
     this.m6SyncSaveBtn();
     if(dir){const o=document.getElementById('m6Outer'),cls=dir==='next'?'m6-slide-r':'m6-slide-l';o.classList.remove('m6-slide-r','m6-slide-l');void o.offsetWidth;o.classList.add(cls);}
   },
   /* 카드는 앞·뒷면 HTML을 한꺼번에 넣어 둔다. 그래서 그림이 든 면의 애니메이션은
      뒤집기도 전에 뒤에서 이미 다 끝나 있었다 — 뒤집으면 볼 게 없었다.
-     이제 보이게 되는 면을 그때 다시 그려 그 시점부터 재생시킨다. */
+     그래서 **이제 보이게 되는 면**의 애니메이션만 그 시점에 되감는다.
+     안 보이는 면은 건드리지 않는다. 되감기는 DOM을 새로 만들지 않으므로(restartAnim 참고)
+     읽던 스크롤 위치도 그대로 남는다. */
   m6Flip(){
     this.playSound('tap'); this.playHaptic('tap');
     this.state.m6Flipped=!this.state.m6Flipped;
@@ -2134,22 +2158,40 @@ const App={
     /* 여는 순간에는 확대 레이어에 전환을 걸지 않는다 — 여는 전환(.pt-fullscreen)과 겹쳐
        표가 두 번 움직이는 것처럼 보인다. 확대/축소 전환은 그때그때 따로 건다. */
     content.style.transition='';
-    clearTimeout(this._ptFitTimer); clearTimeout(this._ptResetTimer);
+    clearTimeout(this._ptFitTimer); clearTimeout(this._ptResetTimer); clearTimeout(this._ptCloseTimer);
     /* reserve: 상세 패널이 아래를 덮는 높이. 화면이 돌아가 다시 계산할 때도 이 값을 써야
        패널을 열어 둔 채로 기기를 돌렸을 때 확보해 둔 자리가 사라지지 않는다. */
     this.ptZoom={scale:1,tx:0,ty:0,baseFit:1,vpW:1,vpH:1,layerH:1,cw:1,ch:1,reserve:0};
-    document.getElementById('ptFullscreen').classList.add('show');
+    const fs=document.getElementById('ptFullscreen');
+    /* 닫히는 도중에 다시 열 수 있다 — 접히던 것을 도로 펴야 하므로 닫기 표시를 먼저 뗀다 */
+    fs.classList.remove('pt-closing');
+    fs.classList.add('show');
     /* 배율은 여는 이 순간에만 1로 되돌린다 — 그 밖의 재계산(상세 열기, 화면 회전)에서
        말없이 버리면 확대해 둔 것이 툭 풀린다. */
     this.layoutPtFullscreen(0, true);
   },
   closePtFullscreen(){
-    document.getElementById('ptFullscreen').classList.remove('show');
-    clearTimeout(this._ptFitTimer); clearTimeout(this._ptResetTimer);
-    /* 상세를 연 채로 닫으면 ptSyncDetailSpace가 회전 뷰 가지를 안 타므로 여기서 직접 푼다 */
-    const rotor=document.querySelector('.pt-fs-rotor');
-    if(rotor) rotor.classList.remove('pt-detail-open');
-    this.closePtDetail(this.$.ptFsDetailPanel);
+    const fs=document.getElementById('ptFullscreen');
+    if(!fs.classList.contains('show')) return;
+    clearTimeout(this._ptFitTimer); clearTimeout(this._ptResetTimer); clearTimeout(this._ptCloseTimer);
+    /* 닫는 동안만 .pt-closing을 붙인다. 이게 있어야 회전자가 「가로인 채로 접히는」 쪽으로 가고,
+       없으면 닫힘 기본 상태(세로)로 90도를 되감아 버린다.
+       .show를 떼는 것과 같은 프레임에 붙여야 한 번의 전환으로 이어진다. */
+    fs.classList.add('pt-closing');
+    fs.classList.remove('show');
+    /* 전환이 끝난 뒤에 뒷정리한다. 지금 바로 상세를 닫으면 접히는 화면 안에서
+       패널이 따로 접히는 게 보여 두 동작이 겹친다. 시간은 CSS에서 읽으므로 어긋나지 않는다. */
+    this._ptCloseTimer=setTimeout(()=>{
+      /* 전환 없이 한 번에 닫힘 기본 상태로 돌려놓는다 — 강제 리플로우가 그 사이에 있어야
+         브라우저가 두 변경을 묶지 않고 새 값을 전환 없이 확정한다. */
+      fs.classList.add('pt-instant');
+      fs.classList.remove('pt-closing');
+      void fs.offsetWidth;
+      fs.classList.remove('pt-instant');
+      const rotor=document.querySelector('.pt-fs-rotor');
+      if(rotor) rotor.classList.remove('pt-detail-open');
+      this.closePtDetail(this.$.ptFsDetailPanel);
+    }, this.motionMs('--dur-view-out')+20);
   },
   /* 원소 상세 설명 패널: 기호·이름·원자번호 헤더 + desc 본문.
      기호·이름 글자색은 주기율표 칸의 분류 색(PT_CAT_COLORS)과 맞춰 어떤 칸을 눌렀는지 한눈에 이어지게 함 */
