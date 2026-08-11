@@ -36,6 +36,20 @@ const App={
     ptDetailPanel:document.getElementById('ptDetailPanel'),ptFsDetailPanel:document.getElementById('ptFsDetailPanel')
   },
 
+  /* ── 모션 값은 CSS가 유일한 출처다 ──
+     JS가 같은 숫자를 따로 갖고 있으면 언젠가 반드시 어긋난다. 실제로 CSS는 `.3s`인데
+     정리 타이머는 `320`이었고, 그 60ms 틈에 전환이 살아 있는 채로 다음 동작이 시작됐다.
+     여기서 읽으면 css/style.css의 토큰 한 곳만 고쳐도 JS까지 따라온다.
+     값은 자주 안 바뀌고 getComputedStyle은 싸지 않으므로 한 번 읽고 기억한다.
+     (테마를 바꿔도 모션 토큰은 안 바뀐다 — 색만 바뀐다.) */
+  motionMs(token){
+    const c = this._motion || (this._motion = {});
+    if(c[token] === undefined){
+      const v = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+      c[token] = v.endsWith('ms') ? parseFloat(v) : (parseFloat(v) || 0) * 1000;
+    }
+    return c[token];
+  },
   init(){
     this.loadSettings();
     this.loadWrongNotes();
@@ -43,6 +57,10 @@ const App={
     this.buildModalList();
     this.attachEventListeners();
     document.body.addEventListener('click', () => this.initAudioContext(), {once:true});
+    /* iOS Safari는 버튼이 아닌 요소(div로 만든 칸·카드)에 :active를 안 걸어 준다 —
+       문서 어딘가에 touchstart 리스너가 하나라도 있어야 걸어 준다. 아무것도 안 하는
+       리스너를 하나 두는 것이 이 동작을 켜는 표준적인 방법이다. */
+    document.addEventListener('touchstart', () => {}, {passive:true});
     this.setupScrollFade(document.querySelector('.header-right'));
     this.setupModalScrollLock();
     this.setupViewportVars();
