@@ -1402,8 +1402,10 @@ const App={
      자리는 그대로 두고 4px만 올라오며 나타난다. 문제를 읽는 눈높이가 흔들리면 안 된다.
      **여기서만** 부른다. renderAll은 키를 누를 때마다 도는데 그때마다 다시 뜨면 글자가 떤다. */
   markFresh(){
-    const el=this.$.equationDisplay; if(!el) return;
-    el.style.animationName='none'; void el.offsetWidth; el.style.animationName='';
+    const els=[document.getElementById('questionHeader'), this.$.equationDisplay].filter(Boolean);
+    els.forEach(el=>{ el.style.animationName='none'; });
+    if(els[0]) void els[0].offsetWidth;
+    els.forEach(el=>{ el.style.animationName=''; });
   },
 
   checkAnswer(){

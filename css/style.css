@@ -271,7 +271,13 @@
   .mode-tab .tab-icon{font-size:20px;display:block;margin-bottom:2px;}
   /* 여기도 opacity:0.75를 걷어냈다 — 3.77:1이었다. 11px 크기가 이미 위계를 나른다 */
   .mode-tab .tab-desc{font-size:11px;display:block;font-weight:400;margin-top:2px;}
-  #equationDisplay{animation:qEnter var(--dur-enter) var(--ease-out);}
+  /* 새 문제가 들어왔다는 신호. **줄바꿈되는 flex 상자에는 transform을 걸지 않는다** —
+     화면을 재는 검사가 그 자리에서 실제로 4px 넘침을 잡았다. 변환이 걸린 층 위에서
+     자식들이 소수점 자리에 놓이면 넘침 영역 계산이 위로 반올림되기 때문이다.
+     그래서 「무슨 문제인가」를 말하는 머리말이 올라오고, 화학식은 색만 들어온다.
+     읽는 자리가 흔들리지 않아야 하는 것도 화학식 쪽이라 이 편이 맞다. */
+  #questionHeader{animation:qEnter var(--dur-enter) var(--ease-out);}
+  #equationDisplay{animation:qFade var(--dur-enter) var(--ease-out);}
   .question-card{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;padding:24px;margin-bottom:16px;min-height:180px;display:flex;flex-direction:column;gap:16px;flex-grow:1;position:relative;overflow:hidden;}
   .timer-container{position:absolute;top:0;left:0;right:0;height:5px;background:rgba(0,0,0,.2);}
   /* 남은 시간은 width가 아니라 scaleX로 줄인다. width는 레이아웃 속성이라 100ms마다
@@ -282,7 +288,16 @@
   .timer-bar.danger{background:var(--c-wrong);}
   .q-label{font-size:13px;color:var(--c-accent-1);font-family:var(--font-mono);letter-spacing:1px;font-weight:700;margin-top:4px;}
   .q-sublabel{font-size:20px;color:var(--c-text-primary);font-weight:700;}
-  .equation-display{font-family:var(--font-mono);font-size:clamp(16px,4.5vw,24px);display:flex;flex-wrap:wrap;align-items:center;gap:8px;line-height:2;margin:auto 0;}
+  /* 항 사이 간격도 화면 폭을 따라간다. 8px 고정이면 360px에서 긴 반응식(에탄올 연소처럼
+     항이 7개인 것)이 한 줄에 4px 모자라 넘쳤다 — 카드가 overflow:hidden이라 그만큼 잘린다.
+     글자 크기는 이미 폭을 따라가는데 간격만 고정이던 것이 어긋남의 원인이었다. */
+  .equation-display{font-family:var(--font-mono);font-size:clamp(16px,4.5vw,24px);display:flex;flex-wrap:wrap;align-items:center;gap:clamp(5px,2.2vw,8px);line-height:2;margin:auto 0;
+    /* 안전판. 줄바꿈이 먼저이고 이건 최후 수단이다 — 그래도 한 줄이 몇 px 모자라는 경우가
+       360px에서 실제로 나왔고(항이 일곱인 긴 반응식), 카드가 overflow:hidden이라 그만큼
+       **잘려서** 사라졌다. 잘려 보이지 않는 것보다 밀어서 보이는 편이 낫다.
+       들어맞을 때는 아무 일도 없고, 스크롤 막대는 앱 전체 규칙대로 숨긴다. */
+    overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain;}
+  .equation-display::-webkit-scrollbar{display:none;}
   .blank-box{display:inline-block;min-width:54px;height:54px;border:2px solid var(--c-border);border-radius:10px;background:var(--c-surface-2);text-align:center;line-height:50px;cursor:pointer;transition:var(--t-btn);font-size:1.2em;font-weight:700;color:var(--c-text-primary);padding:0 10px;font-family:var(--font-mono);}
   .blank-box.active{border-color:var(--c-border-active);box-shadow:0 0 0 4px var(--c-focus-glow);}
   .blank-box.correct{border-color:var(--c-correct);background:var(--c-correct-bg);color:var(--c-correct);}
@@ -293,6 +308,7 @@
   @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}55%{transform:translateX(5px)}80%{transform:translateX(-2px)}}
   /* 새 문제가 들어옴 — 자리는 그대로, 4px만 올라오며 나타난다(js의 markFresh가 다시 튼다) */
   @keyframes qEnter{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+  @keyframes qFade{from{opacity:0}to{opacity:1}}
   @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
   .eq-text{color:var(--c-text-primary);}.eq-arrow{color:var(--c-accent-3);font-size:1.2em;margin:0 4px;}.eq-plus{color:var(--c-text-secondary);margin:0 4px;}
   /* 앙금(↓)·기체(↑) 표기 — 화학식의 일부가 아니라 그 물질의 상태를 알리는 표시다.
