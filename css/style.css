@@ -123,6 +123,18 @@
 
      지킬 것: --c-correct는 초록, --c-wrong은 빨강 계열을 벗어나지 않는다. 채점 결과라서
      테마 취향으로 바꾸면 학생이 맞았는지 틀렸는지를 색으로 못 읽는다. */
+  /* 다크만은 :root 그 자체(기본값)라 .theme-pv.theme-dark로 살릴 블록이 없었다. 그래서
+     「다크」 미리보기 조각은 아무 변수도 덮어쓰지 못하고 **그때 켜져 있는 테마 색을 그대로**
+     물려받았다 — 라이트를 쓰는 학생에게는 다크와 라이트 미리보기가 똑같이 보였다.
+     :root 전체를 이 선택자에 얹으면 안 된다: 거기엔 모션 토큰도 함께 들어 있어서
+     움직임을 끈 사람의 1ms 설정을 이 조각 안에서만 되살려 놓게 된다.
+     그래서 미리보기가 실제로 쓰는 여섯 가지 색만 여기 적는다(위 .theme-swatch 참고).
+     ⚠️ :root의 같은 색을 바꾸면 여기도 같이 바꿀 것. */
+  .theme-pv.theme-dark {
+    --c-bg:#10141E; --c-border:rgba(136,150,191,0.2);
+    --c-text-primary:#F0F4FF; --c-accent-1:#00E5FF;
+    --c-correct:#10B981; --c-wrong:#F87171;
+  }
   :root.theme-light, .theme-pv.theme-light {
     --c-bg:#F0F4FF; --c-surface-1:rgba(255,255,255,0.6); --c-surface-2:rgba(255,255,255,0.8);
     --c-surface-solid:#FFFFFF;
