@@ -481,8 +481,13 @@ function ionFormingDiagramHTML(z, item){
   }else if(lose){
     fin.forEach((cnt, i) => {
       const r = DIA.R0 + i * DIA.RSTEP;
-      /* 잃고 남는 껍질은 전부 안쪽 껍질이다 — 바깥 껍질은 아래에서 따로 그려 사라지게 한다 */
-      s += `<circle class="dia-ring" cx="${cx}" cy="${cy}" r="${r}"/>` + DIA.dots(cx, cy, r, cnt, 'dia-e dia-e-inner');
+      /* 전자를 다 내주고 나면 여기 남은 마지막 껍질이 **그 이온의 바깥 껍질**이 된다.
+         전에는 남는 껍질을 전부 흐리게(dia-e-inner) 그렸는데, 그러면 같은 Na⁺를
+         이온 결합 그림에서는 바깥 껍질이 진하게, 이온 되기 그림에서는 전부 흐리게 그리게 되어
+         한 앱이 같은 이온을 두 가지로 보여 줬다. 세어야 할 바깥 껍질은 언제나 진하게 그린다. */
+      const inner = i < fin.length - 1;
+      s += `<circle class="dia-ring" cx="${cx}" cy="${cy}" r="${r}"/>`
+         + DIA.dots(cx, cy, r, cnt, inner ? 'dia-e dia-e-inner' : 'dia-e');
     });
     /* 빠져나가는 껍질과 그 전자 — 끝나면 사라지므로 최종 그림에는 남지 않는다 */
     s += `<circle class="dia-ring dia-anim-fade" cx="${cx}" cy="${cy}" r="${outR}"${DIA.at(lastAt + 0.3)}/>`;
