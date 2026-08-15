@@ -61,7 +61,10 @@ const App={
        문서 어딘가에 touchstart 리스너가 하나라도 있어야 걸어 준다. 아무것도 안 하는
        리스너를 하나 두는 것이 이 동작을 켜는 표준적인 방법이다. */
     document.addEventListener('touchstart', () => {}, {passive:true});
-    this.setupScrollFade(document.querySelector('.header-right'));
+    /* 헤더 아이콘 줄은 이제 가로로 스크롤하지 않고 아랫줄로 내려간다(css 참고) —
+       넘친 것을 흐림으로 알릴 일이 없으므로 여기서 부르지 않는다.
+       setupScrollFade는 구역 탭 줄이 그대로 쓴다. */
+    this.setupScrollFade(document.getElementById('sectionTabs'));
     this.setupModalScrollLock();
     this.setupViewportVars();
     this.setupPtZoom();
@@ -509,9 +512,30 @@ const App={
      탭과 오답노트 필터는 전부 curriculum.js의 SECTIONS/MODES에서 파생된다.
      모드를 추가할 때 손댈 곳이 여기 말고 없어야 한다. */
   renderSectionTabs(){
-    document.getElementById('sectionTabs').innerHTML=SECTIONS.map(s=>
+    const row=document.getElementById('sectionTabs');
+    row.innerHTML=SECTIONS.map(s=>
       `<button class="section-tab${s.id===this.state.section?' active':''}" data-section="${s.id}">${s.label}<span class="section-sub">${s.sub}</span></button>`
     ).join('');
+    this.scrollTabIntoView(row);
+  },
+  /* 구역 줄은 좁은 화면에서 가로로 넘친다. 고른 탭이 그 넘친 자리에 있으면 화면 밖에 남아,
+     화면이 「지금 어느 구역인가」에 답하지 못한다 — 심화를 보던 사람이 앱을 다시 열면
+     활성 탭이 오른쪽으로 잘린 채 시작했다.
+     scrollIntoView는 조상까지 같이 스크롤해 페이지가 통째로 튀므로 쓰지 않고,
+     그 줄의 scrollLeft만 직접 옮긴다. */
+  scrollTabIntoView(row){
+    const el=row && row.querySelector('.active');
+    if(!el || row.scrollWidth<=row.clientWidth) return;
+    const pad=12;   /* 옆 탭이 살짝 보여야 "더 있다"가 전해진다 */
+    const left=el.offsetLeft-pad, right=el.offsetLeft+el.offsetWidth+pad;
+    let to=row.scrollLeft;
+    if(left<to) to=left;
+    else if(right>to+row.clientWidth) to=right-row.clientWidth;
+    if(to===row.scrollLeft) return;
+    /* 첫 그림에서는 즉시 — 앱을 열자마자 줄이 저 혼자 움직이면 무엇이 일어난 건지 알 수 없다.
+       그 뒤 사용자가 구역을 바꿔 생기는 이동만 부드럽게 따라간다. */
+    row.scrollTo({left:to, behavior:this._tabsDrawn?'smooth':'auto'});
+    this._tabsDrawn=true;
   },
   renderModeTabs(){
     const modes=modesInSection(this.state.section);

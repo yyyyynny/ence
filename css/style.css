@@ -216,14 +216,26 @@
   header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
   .logo-egg{font-size:16px;font-weight:900;color:var(--c-wrong);letter-spacing:1px;cursor:pointer;user-select:none;transition:transform var(--dur-tap) var(--ease-out);white-space:nowrap;flex-shrink:0;}
   .logo-egg:active{transform:scale(.9);}
-  header{flex-wrap:nowrap;min-width:0;}
-  .header-right{display:flex;gap:8px;align-items:center;overflow-x:auto;scrollbar-width:none;-ms-overflow-style:none;min-width:0;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
-  .header-right::-webkit-scrollbar{display:none;}
+  /* 아이콘 7개는 폰 가로폭에 한 줄로 안 들어간다. 전에는 가로 스크롤로 넘겼는데, 그러면
+     360·390px 어디서든 「주기율표」와 「테마」가 통째로 화면 밖에 있었다 — 화학 앱에서
+     주기율표 버튼이 안 보이는 셈이고, 옆으로 밀 수 있다는 것은 흐림 표시 하나로만 알렸다.
+     다 넣으려면 버튼이 22.8px이어야 해서 줄이는 건 답이 아니다(손가락이 닿는 최소는 44px).
+     그래서 넘치면 아랫줄로 내린다 — 버튼 크기를 지키면서 일곱 개 다 손에 닿는다. */
+  header{flex-wrap:wrap;min-width:0;gap:8px;}
+  .header-right{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;
+    flex:1 1 auto;min-width:min(100%,232px);}
   .icon-btn{background:var(--c-surface-1);border:1px solid var(--c-border);color:var(--c-text-secondary);width:52px;height:52px;border-radius:12px;cursor:pointer;font-size:22px;display:flex;align-items:center;justify-content:center;transition:var(--t-btn);flex-shrink:0;}
   @media (max-width:460px){
     .logo-egg{font-size:13px;}
-    .icon-btn{width:42px;height:42px;font-size:18px;border-radius:10px;}
+    /* 44px 아래로는 안 줄인다 — 손가락이 닿는 최소 크기다. 전에는 42px이라 그 선을 넘었다. */
+    .icon-btn{width:44px;height:44px;font-size:19px;border-radius:10px;}
     .header-right{gap:6px;}
+  }
+  /* 일곱 개가 한 줄에 못 들어가는 폭(대략 376px 미만)에서는 그냥 흘려 보내면 여섯 개 뒤에
+     하나만 외따로 떨어진다. 4+3으로 못박아 두 줄이 나란해 보이게 한다 — 넘쳐서 밀려난 게
+     아니라 그렇게 놓은 것으로 읽힌다. */
+  @media (max-width:376px){
+    .header-right{display:grid;grid-template-columns:repeat(4,44px);justify-content:end;}
   }
   .icon-btn:hover{border-color:var(--c-border-active);color:var(--c-accent-1);}
   .stat-bar{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:16px;margin-bottom:16px;}
