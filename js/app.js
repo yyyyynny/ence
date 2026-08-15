@@ -2370,27 +2370,52 @@ const App={
     if(resetScale) z.scale=1;
     this.clampPtZoom(); this.applyPtZoom();
   },
-  /* 줌 레이어에 transform 적용. transform만 바꾸므로 리페인트/리플로우 없이 GPU 합성만.
-     translate3d(3D 변환)로 오버레이가 열려 있는 동안 레이어를 상시 승격시켜, will-change를
-     껐다 켤 때 생기던 승격/강등 재래스터화 플래시(=이따금 깜빡임)를 없앤다. */
-  applyPtZoom(){
-    const z=this.ptZoom; if(!z) return;
-    const S=z.baseFit*z.scale;
-    document.getElementById('ptFsContent').style.transform=`translate3d(${z.tx}px,${z.ty}px,0) scale(${S})`;
-  },
-  /* 콘텐츠가 뷰포트를 벗어나지 않게 tx/ty 클램프. 콘텐츠는 뷰포트 크기 레이어 안에 중앙정렬돼
-     있으므로 그 중앙 오프셋(ox,oy)까지 감안한다. 렌더 크기가 뷰포트보다 작으면 정확히 중앙 고정. */
-  clampPtZoom(){
-    const z=this.ptZoom; if(!z) return;
+  /* tx/ty가 허용되는 범위. clampPtZoom(하드 클램프)과 applyPtZoom의 고무줄 저항이
+     같은 경계를 써야 어긋나지 않는다 — 그래서 계산을 여기 한 곳에만 둔다. */
+  ptZoomBounds(){
+    const z=this.ptZoom; if(!z) return null;
     const S=z.baseFit*z.scale, vpW=z.vpW, vpH=z.vpH, cw=z.cw, ch=z.ch;
-    const rw=cw*S, rh=ch*S;               /* 화면에 렌더되는 콘텐츠 크기 */
+    const rw=cw*S, rh=ch*S;
     /* 중앙정렬 오프셋은 CSS가 실제로 가운데를 잡는 기준(레이어 전체 높이)에서 구해야 한다.
        패널이 덮은 만큼 줄인 vpH로 구하면 그 차이의 절반만큼 표가 위로 밀린다. */
     const ox=(vpW-cw)/2*S, oy=((z.layerH||vpH)-ch)/2*S;
-    if(rw<=vpW){ z.tx=(vpW-rw)/2-ox; }
-    else { let l=z.tx+ox; l=Math.min(0,Math.max(vpW-rw,l)); z.tx=l-ox; }
-    if(rh<=vpH){ z.ty=(vpH-rh)/2-oy; }
-    else { let t=z.ty+oy; t=Math.min(0,Math.max(vpH-rh,t)); z.ty=t-oy; }
+    const bx = rw<=vpW ? {min:(vpW-rw)/2-ox, max:(vpW-rw)/2-ox} : {min:vpW-rw-ox, max:-ox};
+    const by = rh<=vpH ? {min:(vpH-rh)/2-oy, max:(vpH-rh)/2-oy} : {min:vpH-rh-oy, max:-oy};
+    return {bx, by, vpW, vpH};
+  },
+  /* 경계를 넘은 만큼 점점 세게 눌러 되돌린다 — 손 밑에서 툭 멈추면 "죽었다"로 읽히고,
+     계속 저항하며 늘어나면 "여기까지가 끝이다"가 자연스럽게 전해진다.
+     constant가 작을수록 뻣뻣하다. overshoot의 부호를 그대로 갖고 나온다. */
+  ptRubberband(overshoot, dim, constant=0.55){
+    return (overshoot*dim*constant)/(dim+constant*Math.abs(overshoot));
+  },
+  /* 줌 레이어에 transform 적용. transform만 바꾸므로 리페인트/리플로우 없이 GPU 합성만.
+     translate3d(3D 변환)로 오버레이가 열려 있는 동안 레이어를 상시 승격시켜, will-change를
+     껐다 켤 때 생기던 승격/강등 재래스터화 플래시(=이따금 깜빡임)를 없앤다.
+
+     z.tx/z.ty는 "논리적" 위치다 — 팬 중에는 경계를 넘어도 그대로 누적된다(clampPtZoom을
+     안 부르므로). 여기서 렌더링할 때만 경계 밖이면 고무줄 저항을 입힌다. 그래서 손가락이
+     계속 미는 동안은 점점 뻣뻣해지다가, 손을 떼면(ptSettlePan) 진짜 경계 안으로 튕겨 들어간다. */
+  applyPtZoom(){
+    const z=this.ptZoom; if(!z) return;
+    const S=z.baseFit*z.scale;
+    const b=this.ptZoomBounds();
+    let tx=z.tx, ty=z.ty;
+    if(b){
+      if(tx<b.bx.min) tx=b.bx.min+this.ptRubberband(tx-b.bx.min, b.vpW);
+      else if(tx>b.bx.max) tx=b.bx.max+this.ptRubberband(tx-b.bx.max, b.vpW);
+      if(ty<b.by.min) ty=b.by.min+this.ptRubberband(ty-b.by.min, b.vpH);
+      else if(ty>b.by.max) ty=b.by.max+this.ptRubberband(ty-b.by.max, b.vpH);
+    }
+    document.getElementById('ptFsContent').style.transform=`translate3d(${tx}px,${ty}px,0) scale(${S})`;
+  },
+  /* 콘텐츠가 뷰포트를 벗어나지 않게 tx/ty를 실제로(논리값째) 경계 안으로 되돌린다.
+     핀치·리사이즈·리셋처럼 "지금 바로 결정돼야 하는" 경우에 쓴다. 팬 중에는 안 쓴다 —
+     팬은 고무줄처럼 늘어나야 하므로 논리값을 경계 밖에 그대로 둔다(applyPtZoom 참고). */
+  clampPtZoom(){
+    const z=this.ptZoom; const b=this.ptZoomBounds(); if(!z||!b) return;
+    z.tx=Math.min(b.bx.max,Math.max(b.bx.min,z.tx));
+    z.ty=Math.min(b.by.max,Math.max(b.by.min,z.ty));
   },
   ptZoomReset(){
     const z=this.ptZoom; if(!z) return;
@@ -2401,6 +2426,56 @@ const App={
     z.scale=1; this.clampPtZoom(); this.applyPtZoom();
     this.playSound('tap'); this.playHaptic('tap');
   },
+  /* 손을 뗀 뒤 경계 밖(고무줄이 늘어난 상태)이면 논리값을 경계로 되돌리고 전환으로 튕겨 들어간다.
+     관성 도중에 경계에 걸려도 결국 여기로 온다 — ptPanFling이 속도가 다 죽으면 부른다. */
+  ptSettlePan(){
+    /* 취소만으로는 부족하다 — cancelAnimationFrame은 이미 실행 중인(막 콜백에 들어온) 프레임의
+       ID는 못 무른다. 여기로 오는 한쪽 경로가 바로 그 프레임 안(step의 속도<30 분기)이라,
+       ID를 null로도 비워야 "지금 날아가는 중이냐"를 묻는 자리(재잡기 판단 등)가 계속
+       "그렇다"로 잘못 답하지 않는다. */
+    cancelAnimationFrame(this._ptFlingRAF); this._ptFlingRAF=null;
+    const z=this.ptZoom; const b=this.ptZoomBounds(); if(!z||!b) return;
+    const inBounds = z.tx>=b.bx.min-.5&&z.tx<=b.bx.max+.5&&z.ty>=b.by.min-.5&&z.ty<=b.by.max+.5;
+    if(inBounds){ this.applyPtZoom(); return; }
+    const el=document.getElementById('ptFsContent');
+    this.clampPtZoom();
+    el.style.transition='transform var(--dur-move) var(--ease-move)';
+    this.applyPtZoom();
+    clearTimeout(this._ptSettleTimer);
+    this._ptSettleTimer=setTimeout(()=>{ el.style.transition=''; }, this.motionMs('--dur-move')+20);
+  },
+  /* 던진 방향으로 속도를 갖고 더 가다가 감속해 멈춘다 — 관성. 벽에 부딪히면 그 프레임부터
+     속도를 크게 깎는다(고무줄이 이미 applyPtZoom에서 시각적으로 눌러 주므로, 여기서는
+     "계속 뚫고 나가지 않게"만 하면 된다). 거의 멈추면 ptSettlePan이 마무리한다. */
+  ptPanFling(vx, vy){
+    const z=this.ptZoom; if(!z) return;
+    cancelAnimationFrame(this._ptFlingRAF);
+    const decel=0.994;
+    let lastT=performance.now();
+    const step=(now)=>{
+      const dt=Math.min(32, now-lastT); lastT=now;
+      if(Math.hypot(vx,vy)<30){ this.ptSettlePan(); return; }
+      z.tx+=vx*dt/1000; z.ty+=vy*dt/1000;
+      const decayFrame=Math.pow(decel, dt);
+      vx*=decayFrame; vy*=decayFrame;
+      const b=this.ptZoomBounds();
+      if(b){
+        if(z.tx<b.bx.min||z.tx>b.bx.max) vx*=0.62;
+        if(z.ty<b.by.min||z.ty>b.by.max) vy*=0.62;
+      }
+      this.applyPtZoom();
+      this._ptFlingRAF=requestAnimationFrame(step);
+    };
+    this._ptFlingRAF=requestAnimationFrame(step);
+  },
+  /* 팬을 놓았을 때 — 이미 경계 밖(고무줄 상태)이면 관성 없이 바로 튕겨 들어가고
+     (늘어난 채로 또 날아가면 이상하다), 경계 안이면 마지막 속도로 관성을 준다. */
+  ptPanRelease(vx, vy){
+    const z=this.ptZoom; const b=this.ptZoomBounds(); if(!z||!b) return;
+    const outOfBounds = z.tx<b.bx.min-.5||z.tx>b.bx.max+.5||z.ty<b.by.min-.5||z.ty>b.by.max+.5;
+    if(outOfBounds || (!vx&&!vy)) this.ptSettlePan();
+    else this.ptPanFling(vx, vy);
+  },
   /* 회전 뷰 자체 핀치/팬/더블탭 줌 — 네이티브 줌(고정+회전 요소 재래스터화로 버벅/깜빡) 대신
      transform:scale만 GPU로 걸어 매끈하게. 화면 좌표를 90° 역회전해 가로(로컬) 공간으로 매핑. */
   setupPtZoom(){
@@ -2408,13 +2483,23 @@ const App={
     const rotor=document.querySelector('.pt-fs-rotor');
     if(!vp||!rotor) return;
     let mode=null, startDist=0, startScale=1, focal=null, lastMid=null, lastPan=null, lastTap=0, tapStart=null;
+    let panHist=[];
     /* 손가락을 대는 순간 transform 전환을 끈다. 상세 패널 토글이나 배율 리셋이 걸어 둔
        transition이 살아 있는 채로 핀치를 시작하면 표가 손가락을 0.3초 늦게 따라와
-       고무줄처럼 물컹거린다 — 직접 조작 중에는 전환이 있으면 안 된다. */
+       고무줄처럼 물컹거린다 — 직접 조작 중에는 전환이 있으면 안 된다.
+       관성이나 스냅백이 도는 중에 다시 잡을 수도 있다 — 그때는 **목표값이 아니라 지금 화면에
+       실제로 보이는 값**에서 이어받아야 한다. 목표값에서 시작하면 잡는 순간 화면이 튄다. */
     const grabNow=()=>{
-      clearTimeout(this._ptFitTimer); clearTimeout(this._ptResetTimer);
+      clearTimeout(this._ptFitTimer); clearTimeout(this._ptResetTimer); clearTimeout(this._ptSettleTimer);
+      cancelAnimationFrame(this._ptFlingRAF); this._ptFlingRAF=null;
       const el=document.getElementById('ptFsContent');
-      if(el) el.style.transition='';
+      if(!el) return;
+      if(el.style.transition){
+        const m=new DOMMatrixReadOnly(getComputedStyle(el).transform);
+        const z=this.ptZoom;
+        if(z){ z.tx=m.m41; z.ty=m.m42; if(z.baseFit) z.scale=m.a/z.baseFit; }
+      }
+      el.style.transition='';
     };
     const dist=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
     const mid=(a,b)=>({x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2});
@@ -2439,6 +2524,7 @@ const App={
         lastTap=now;
         if(this.ptZoom.scale>1.001){
           mode='pan'; lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY}; e.preventDefault();
+          panHist=[{tx:this.ptZoom.tx,ty:this.ptZoom.ty,t:performance.now()}];
           /* 확대 상태에서는 touchstart가 preventDefault돼 합성 click이 안 나므로, 이동이 거의 없는
              짧은 터치를 직접 "탭"으로 간주해 상세 패널을 연다(아래 touchmove/end 참고). */
           tapStart={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()};
@@ -2462,7 +2548,15 @@ const App={
       } else if(mode==='pan'&&e.touches.length===1){
         const dx=e.touches[0].clientX-lastPan.x, dy=e.touches[0].clientY-lastPan.y;
         lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY};
-        z.tx+=dy; z.ty+=-dx; this.clampPtZoom(); this.applyPtZoom(); e.preventDefault();
+        /* 팬 중에는 클램프하지 않는다 — 논리값이 경계를 넘어가야 applyPtZoom의 고무줄이
+           그만큼 저항해 보인다(경계를 넘을수록 점점 뻣뻣해진다). 손을 떼면 ptPanRelease가
+           경계 안으로 되돌리거나(늘어난 상태) 관성을 준다(경계 안이면). */
+        z.tx+=dy; z.ty+=-dx; this.applyPtZoom(); e.preventDefault();
+        /* 최근 표본만 남긴다 — 손 뗄 때 속도는 "방금 움직인 방향"이어야지 제스처 시작부터의
+           평균이면 안 된다(중간에 방향을 바꿨을 수 있다). */
+        const now=performance.now();
+        panHist.push({tx:z.tx,ty:z.ty,t:now});
+        while(panHist.length>2 && now-panHist[0].t>100) panHist.shift();
         if(tapStart && Math.hypot(e.touches[0].clientX-tapStart.x,e.touches[0].clientY-tapStart.y)>8) tapStart=null;
       }
     },{passive:false});
@@ -2474,11 +2568,21 @@ const App={
       }
       tapStart=null;
       if(e.touches.length===0){
+        const wasPan=mode==='pan';
         if(this.ptZoom.scale<=1.001){ this.ptZoom.scale=1; this.clampPtZoom(); this.applyPtZoom(); }
-        mode=null;
+        else if(wasPan){
+          let vx=0,vy=0;
+          if(panHist.length>=2){
+            const a=panHist[0], last=panHist[panHist.length-1], dt=(last.t-a.t)/1000;
+            if(dt>0){ vx=(last.tx-a.tx)/dt; vy=(last.ty-a.ty)/dt; }
+          }
+          this.ptPanRelease(vx,vy);
+        }
+        mode=null; panHist=[];
       } else if(e.touches.length===1&&mode==='pinch'){
         mode=this.ptZoom.scale>1.001?'pan':null;
         lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY};
+        panHist=[{tx:this.ptZoom.tx,ty:this.ptZoom.ty,t:performance.now()}];
       }
     };
     vp.addEventListener('touchend',end,{passive:false});
