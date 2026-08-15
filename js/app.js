@@ -190,9 +190,13 @@ const App={
       const savedSec = localStorage.getItem('chem_section');
       if(savedSec && sectionMeta(savedSec)) this.state.section = savedSec;
       this.state.showDiagram = localStorage.getItem('chem_diagram') !== 'false';
-      /* 없어진 테마 id가 저장돼 있을 수 있으므로 실재하는지 확인하고 쓴다 */
+      /* 없어진 테마 id가 저장돼 있을 수 있으므로 실재하는지 확인하고 쓴다.
+         저장된 게 없으면(첫 방문) 폰 설정을 따른다 — 폰을 밝게 쓰는 사람에게 다크로 시작해
+         눈부시게 만들 이유가 없고, 그 사람은 테마 고르기를 찾기 전까지 그냥 참고 본다.
+         한 번이라도 직접 고른 뒤에는 그 선택이 언제나 이긴다. */
       const savedTheme = localStorage.getItem('chem_theme');
       if(savedTheme && THEMES.some(t=>t.id===savedTheme)) this.state.theme = savedTheme;
+      else this.state.theme = this.systemTheme();
     }catch(e){}
     this.applyTheme(this.state.theme);
     this.updateFeedbackBtns();
@@ -727,7 +731,8 @@ const App={
     document.getElementById('themeModalClose').addEventListener('click',()=>this.$.themeModalOverlay.classList.remove('show'));
     this.$.themeList.addEventListener('click',e=>{
       const opt=e.target.closest('.theme-opt');if(!opt)return;
-      this.applyTheme(opt.dataset.theme);
+      /* 여기서 고른 것만 저장한다 — 이제부터는 폰 설정이 바뀌어도 이 선택이 이긴다 */
+      this.applyTheme(opt.dataset.theme, true);
       /* 목록은 열어 둔 채로 표시만 갱신한다 — 바로 옆 테마와 비교해 보고 고를 수 있게 */
       this.renderThemeList();
       this.playSound('tap'); this.playHaptic('tap');
@@ -2097,13 +2102,25 @@ const App={
   /* ── 테마 ──
      화면에 붙는 테마 클래스는 항상 한 개다. 새 것을 붙이기 전에 나머지를 전부 떼므로
      테마를 여러 번 바꿔도 이전 테마의 변수가 남아 섞이지 않는다. */
-  applyTheme(id){
+  /* 첫 방문에 쓸 테마를 폰 설정에서 고른다. 「잘 안 보인다」는 설정이 색보다 급하므로 먼저 본다.
+     matchMedia가 없는 낡은 환경에서는 그냥 기본값으로 떨어진다. */
+  systemTheme(){
+    try{
+      if(window.matchMedia('(prefers-contrast: more)').matches) return 'contrast';
+      if(window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
+    }catch(e){}
+    return THEME_DEFAULT;
+  },
+  /* persist: 학생이 직접 고른 것인가. 첫 화면을 그릴 때(폰 설정을 따라 고른 것)는 저장하지 않는다 —
+     저장해 버리면 그 뒤로 폰을 밝게 바꿔도 앱은 영영 어두운 채로 남고, 「내가 고른 것」과
+     「그날 폰이 그랬던 것」을 구분할 수 없게 된다. */
+  applyTheme(id, persist){
     const t=themeMeta(id);
     this.state.theme=t.id;
     /* 클래스는 <html>에 붙인다 — 화면 전체 바탕색이 <html> 배경에서 오기 때문(css/style.css 참고) */
     THEMES.forEach(x=>document.documentElement.classList.toggle('theme-'+x.id, x.id===t.id));
     document.getElementById('themeBtn').textContent=t.icon;
-    try{localStorage.setItem('chem_theme',t.id);}catch(e){}
+    if(persist){ try{localStorage.setItem('chem_theme',t.id);}catch(e){} }
     /* 열려 있는 상세 패널의 헤더 색은 테마별 팔레트를 쓰므로, 테마 전환 시 다시 그려 새 팔레트를 즉시 반영 */
     [this.$.ptDetailPanel,this.$.ptFsDetailPanel].forEach(panel=>{
       if(panel&&panel.classList.contains('open')){
