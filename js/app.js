@@ -2420,9 +2420,9 @@ const App={
   ptZoomReset(){
     const z=this.ptZoom; if(!z) return;
     const el=document.getElementById('ptFsContent');
-    el.style.transition='transform .25s ease';
+    el.style.transition='transform var(--dur-move) var(--ease-move)';
     clearTimeout(this._ptResetTimer);
-    this._ptResetTimer=setTimeout(()=>{el.style.transition='';},280);
+    this._ptResetTimer=setTimeout(()=>{el.style.transition='';}, this.motionMs('--dur-move')+20);
     z.scale=1; this.clampPtZoom(); this.applyPtZoom();
     this.playSound('tap'); this.playHaptic('tap');
   },
