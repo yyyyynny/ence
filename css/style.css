@@ -344,9 +344,28 @@
   .kb-key.del{color:var(--c-wrong);flex-grow:2;}.kb-key.confirm{background:var(--c-correct);color:var(--c-on-correct);flex-grow:3;}.kb-key.next-q{background:var(--c-accent-2);color:var(--c-on-accent-2);flex-grow:3;}
   /* manipulation: 더블탭 확대만 끄고 핀치·팬은 그대로 — 확대는 이제 막지 않고 견디는 전략
      (setupViewportVars의 동결 가드가 확대 중 재계산을 차단해 레이아웃이 안 깨진다) */
-  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center;padding:16px;touch-action:manipulation;}
-  .modal-overlay.show{display:flex;}
-  .modal-box{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;width:100%;max-width:700px;max-height:92vh;display:flex;flex-direction:column;padding:24px;position:relative;}
+  /* 여닫을 때 전환이 걸리려면 display를 껐다 켜면 안 된다 — display는 전환되지 않는 속성이라
+     .show를 붙이는 순간 모달이 그냥 나타났다 사라졌다. 앱의 다른 화면은 전부 모션 체계를 따르는데
+     정작 모달 넷만 툭 튀어나왔다. 가로 보기(.pt-fullscreen)에서 쓰던 방식 그대로,
+     visibility+opacity로 감춰 두고 전환을 건다. visibility의 지연이 나가는 시간과 같아야
+     사라지는 도중에 화면이 먼저 없어지지 않는다. */
+  .modal-overlay{display:flex;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;align-items:center;justify-content:center;padding:16px;touch-action:manipulation;
+    visibility:hidden;opacity:0;pointer-events:none;
+    transition:opacity var(--dur-view-out) var(--ease-in),
+               visibility 0s linear var(--dur-view-out);}
+  .modal-overlay.show{visibility:visible;opacity:1;pointer-events:auto;
+    transition:opacity var(--dur-enter) var(--ease-out), visibility 0s;}
+  .modal-box{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;width:100%;max-width:700px;max-height:92vh;display:flex;flex-direction:column;padding:24px;position:relative;
+    /* 창이 그냥 흐려지기만 하면 "덮개가 걷혔다"로 읽힌다. 살짝 작은 데서 제자리로 오면
+       면(面)이 다가온 것으로 읽힌다 — 나갈 때는 반대로 조금 물러난다. */
+    transform:scale(.96);
+    transition:transform var(--dur-view-out) var(--ease-in);}
+  .modal-overlay.show .modal-box{transform:none;
+    transition:transform var(--dur-enter) var(--ease-out);}
+  @media (prefers-reduced-motion: reduce){
+    /* 움직임을 끈 사람에게는 크기가 변하지 않는다 — 밝기만 바뀐다(토큰이 시간을 0으로 만든다) */
+    .modal-box,.modal-overlay.show .modal-box{transform:none;}
+  }
   .modal-header{display:flex;justify-content:space-between;margin-bottom:16px;align-items:center;}
   .modal-title{font-size:20px;font-weight:900;color:var(--c-accent-1);}
   .modal-close{background:none;border:none;color:var(--c-text-secondary);font-size:32px;cursor:pointer;}
