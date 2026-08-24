@@ -6,6 +6,16 @@
 <title>반응물이 반응하면 생성물</title>
 <!-- ?v= 는 캐시 무효화용이다. js/version.js의 APP_VERSION과 같은 값이어야 하고,
      판을 올릴 때 손으로 같이 바꾼다(빌드 도구가 없다). verifyUpdate가 어긋남을 잡는다. -->
+<!-- 글꼴을 style.css 의 @import 가 아니라 여기서 부른다 — HTML 을 읽는 즉시 출발해
+     스타일시트를 다 받을 때까지 기다리지 않는다. preconnect 는 글꼴 파일이 오는 곳과
+     미리 손을 잡아 두어 느린 망에서 왕복 한 번을 줄인다. crossorigin 이 빠지면
+     글꼴 파일(gstatic)에는 preconnect 가 듣지 않는다. -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap">
+<!-- 탭·홈 화면 아이콘. 파일을 새로 두지 않으려고 SVG 를 그대로 주소에 적는다
+     (빌드 도구가 없고 file:// 로 열어도 그대로 떠야 한다). -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2310141E'/%3E%3Ctext x='16' y='23' font-size='20' font-family='monospace' font-weight='700' text-anchor='middle' fill='%2300E5FF'%3E%E2%9A%97%3C/text%3E%3C/svg%3E">
 <link rel="stylesheet" href="css/style.css?v=2026.08.15-2">
 </head>
 <body>
@@ -24,13 +34,13 @@
   <header>
     <div class="logo-egg" id="easterEggBtn">누루ズl ㅁトパㅔ요</div>
     <div class="header-right">
-      <button class="icon-btn" id="layoutBtn" title="화면 분할 토글">↔️</button>
-      <button class="icon-btn" id="soundBtn" title="소리 토글">🔊</button>
-      <button class="icon-btn" id="hapticBtn" title="진동 토글">📳</button>
-      <button class="icon-btn" id="wrongNoteBtn" title="오답 노트">📓</button>
-      <button class="icon-btn" id="hintBtn" title="전체 반응식 보기">📋</button>
-      <button class="icon-btn" id="periodicBtn" title="주기율표 보기">⚛️</button>
-      <button class="icon-btn" id="themeBtn" title="테마 고르기">🌙</button>
+      <button class="icon-btn" id="layoutBtn" title="화면 분할 토글" aria-label="화면 분할 토글" aria-pressed="false">↔️</button>
+      <button class="icon-btn" id="soundBtn" title="소리 토글" aria-label="소리 토글" aria-pressed="true">🔊</button>
+      <button class="icon-btn" id="hapticBtn" title="진동 토글" aria-label="진동 토글" aria-pressed="true">📳</button>
+      <button class="icon-btn" id="wrongNoteBtn" title="오답 노트" aria-label="오답 노트">📓</button>
+      <button class="icon-btn" id="hintBtn" title="전체 반응식 보기" aria-label="전체 반응식 보기">📋</button>
+      <button class="icon-btn" id="periodicBtn" title="주기율표 보기" aria-label="주기율표 보기">⚛️</button>
+      <button class="icon-btn" id="themeBtn" title="테마 고르기" aria-label="테마 고르기">🌙</button>
     </div>
   </header>
 

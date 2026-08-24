@@ -1,4 +1,7 @@
-  @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+KR:wght@400;500;700;900&display=swap');
+  /* 글꼴은 index.html 의 <link> 로 부른다. 여기 @import 로 두면 브라우저가
+     style.css 를 다 받아 파싱한 뒤에야 글꼴 주소를 알게 되어 요청이 줄줄이 늦어진다
+     (느린 학교 망에서 첫 화면이 그만큼 늦게 뜬다). <link> 는 HTML 을 읽는 순간 같이 출발한다.
+     글꼴이 아예 안 와도 --font-ui/--font-mono 의 sans-serif·monospace 로 그대로 읽힌다. */
   :root {
     --c-bg:#10141E; --c-surface-1:rgba(30,35,50,0.6); --c-surface-2:rgba(30,35,50,0.8);
     --c-surface-solid:#1A2030;

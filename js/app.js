@@ -209,11 +209,16 @@ const App={
     try{ authed = localStorage.getItem('chem_auth_v4')==='pass'; }catch(e){}
     if(authed) document.getElementById('authOverlay').style.display = 'none';
   },
+  /* 켜짐/꺼짐은 이모지와 흐리기로 보여 주는데, 그건 눈으로 보는 사람에게만 닿는다.
+     읽어 주는 기계는 버튼 이름("소리 토글")만 읽고 지금 켜졌는지는 말해 주지 못하므로
+     aria-pressed 로 상태를 따로 실어 준다 — 이름은 그대로 두고 눌림 여부만 바뀐다. */
   updateFeedbackBtns(){
     this.$.soundBtn.textContent = this.state.isSoundOn ? '🔊' : '🔇';
     this.$.soundBtn.style.opacity = this.state.isSoundOn ? '1' : '0.5';
+    this.$.soundBtn.setAttribute('aria-pressed', this.state.isSoundOn);
     this.$.hapticBtn.textContent = this.state.isHapticOn ? '📳' : '📴';
     this.$.hapticBtn.style.opacity = this.state.isHapticOn ? '1' : '0.5';
+    this.$.hapticBtn.setAttribute('aria-pressed', this.state.isHapticOn);
   },
   toggleWideMode() {
     this.playSound('tap');
@@ -221,6 +226,7 @@ const App={
     document.body.classList.toggle('wide-mode', this.state.isWideMode);
     try{localStorage.setItem('chem_wide', this.state.isWideMode);}catch(e){}
     this.$.layoutBtn.textContent = this.state.isWideMode ? '📱' : '↔️';
+    this.$.layoutBtn.setAttribute('aria-pressed', this.state.isWideMode);
   },
 
   initAudioContext() {
