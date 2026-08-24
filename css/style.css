@@ -268,7 +268,8 @@
      크기다. 글자·여백은 그대로 두고 최소 높이만 올린다 — 이미 44px 이상인 곳에는 아무 영향이 없다.
      .pt-cell 은 여기 넣지 않는다: 표 전체를 한 화면에 보여 주는 격자라 칸을 키울 수 없고,
      그래서 확대·가로 보기를 따로 둔 것이다. */
-  .timer-btn,.cycle-btn,.dir-btn,.dia-btn,.m6-opt-btn,.filter-chip{min-height:44px;}
+  .timer-btn,.cycle-btn,.dir-btn,.dia-btn,.m6-opt-btn,.filter-chip,
+  .sub-btn,.m6-shuffle,.pt-rotate-btn,.clear-all-btn,.retry-playlist-btn{min-height:44px;}
   .timer-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-mono);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:var(--t-btn);}
   .timer-btn.active{background:var(--c-tint-a3);border-color:var(--c-accent-3);border-width:2px;color:var(--c-text-primary);}
   #modeNav{margin-bottom:16px;}
@@ -388,7 +389,13 @@
                visibility 0s linear var(--dur-view-out);}
   .modal-overlay.show{visibility:visible;opacity:1;pointer-events:auto;
     transition:opacity var(--dur-enter) var(--ease-out), visibility 0s;}
-  .modal-box{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:20px;width:100%;max-width:700px;max-height:92vh;display:flex;flex-direction:column;padding:24px;position:relative;
+  /* 창 판은 앱 내용 위에 뜬다 — 그래서 페이지에 깔린 카드(--c-surface-1, 비치는 색)와
+     같은 색을 쓰면 안 된다. 카드는 단색 배경 위에 있으니 비쳐도 단색이 비칠 뿐이지만,
+     창은 문제·버튼·탭 위에 떠서 그 글자가 판을 뚫고 올라온다. 재어 보니 덮개(0.8)를 지나고도
+     뒤 내용이 5.6~8% 비쳤고, 「고대비」테마에서는 판 알파가 0.06 이라 18.8%까지 올라왔다 —
+     하필 잘 안 보이는 사람이 고른 테마에서 제일 심했다.
+     주기율표 창(.pt-modal-box)은 이미 단색을 쓰고 있었으니 나머지를 거기 맞춘다. */
+  .modal-box{background:var(--c-surface-solid);border:1px solid var(--c-border);border-radius:20px;width:100%;max-width:700px;max-height:92vh;display:flex;flex-direction:column;padding:24px;position:relative;
     /* 창이 그냥 흐려지기만 하면 "덮개가 걷혔다"로 읽힌다. 살짝 작은 데서 제자리로 오면
        면(面)이 다가온 것으로 읽힌다 — 나갈 때는 반대로 조금 물러난다. */
     transform:scale(.96);
@@ -411,7 +418,12 @@
   #authOverlay .modal-box{transform:none;transition:none;}
   .modal-header{display:flex;justify-content:space-between;margin-bottom:16px;align-items:center;}
   .modal-title{font-size:20px;font-weight:900;color:var(--c-accent-1);}
-  .modal-close{background:none;border:none;color:var(--c-text-secondary);font-size:32px;cursor:pointer;}
+  /* ✕ 는 글자 하나뿐이라 상자가 26×31 밖에 안 됐다 — 창에서 나가는 유일한 문인데
+     화면에서 제일 작은 버튼이었다. 위아래 음수 여백으로 헤더 높이는 그대로 두고
+     손가락이 닿는 넓이만 44×44 로 넓힌다(배경이 없어 눈에는 달라지지 않는다). */
+  .modal-close{background:none;border:none;color:var(--c-text-secondary);font-size:32px;cursor:pointer;
+    min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;
+    margin-block:-7px;padding:0;}
   .modal-content{overflow-y:auto;display:flex;flex-direction:column;gap:10px;padding-right:4px;scrollbar-width:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
   .modal-content::-webkit-scrollbar{display:none;}
   /* 세로로 스크롤되는 flex 컨테이너의 자식은 절대 찌그러지면 안 된다.
@@ -451,6 +463,10 @@
   /* 오답노트 버튼은 손가락으로 누른다 — 28px이던 것을 다른 키들과 같은 44px로 맞춘다 */
   .delete-note-btn{background:var(--c-wrong-bg);border:1px solid var(--c-wrong);color:var(--c-wrong);border-radius:8px;padding:6px 14px;min-height:44px;cursor:pointer;font-size:13px;font-weight:bold;}
   .retry-note-btn{background:var(--c-accent-1);border:none;color:var(--c-on-accent-1);border-radius:8px;padding:6px 14px;min-height:44px;cursor:pointer;font-size:13px;font-weight:bold;}
+  /* 예전엔 index.html 에 style= 로 박혀 있어 모션 토큰도 최소 높이도 비껴 갔다. */
+  .retry-playlist-btn{background:var(--c-accent-1);color:var(--c-on-accent-1);border:none;border-radius:8px;
+    padding:10px 18px;font-size:15px;font-weight:bold;cursor:pointer;
+    transition:transform var(--dur-press) var(--ease-press);}
   .clear-all-btn{background:var(--c-wrong);color:var(--c-on-wrong);border:none;border-radius:8px;padding:10px 18px;font-weight:bold;cursor:pointer;margin-bottom:0;align-self:flex-end;}
   .cycle-wrap{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:12px 18px;margin-bottom:16px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
   .cycle-label{font-size:12px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
@@ -610,7 +626,7 @@
   @keyframes egg-pop{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1.5);opacity:0}}
 
   /* ── 주기율표 ── */
-  .pt-modal-box{max-width:1300px;width:96vw;background:var(--c-surface-solid);}
+  .pt-modal-box{max-width:1300px;width:96vw;}   /* 배경은 .modal-box 와 같다 */
   .pt-rotate-btn{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:10px;padding:8px 12px;font-size:13px;font-weight:700;cursor:pointer;transition:var(--t-btn);white-space:nowrap;}
   /* 회전 = 전체화면 가로보기 오버레이: 화면 자체를 90도 돌려 쓰는 전용 뷰.
      확대는 브라우저 네이티브 줌이 아니라 자체 transform 줌(setupPtZoom)으로 처리한다 —
@@ -697,6 +713,9 @@
   .pt-toggle-label small{display:block;font-size:11px;font-weight:400;color:var(--c-text-secondary);margin-top:2px;}
   .pt-toggle-switch{position:relative;width:52px;height:30px;border-radius:15px;background:var(--c-border);border:none;cursor:pointer;flex-shrink:0;transition:background-color var(--dur-tap) var(--ease-out);padding:0;}
   .pt-toggle-switch.on{background:var(--c-accent-1);}
+  /* 스위치는 52×30 이 제 모습이라 상자를 키우면 딴 것이 된다.
+     대신 보이지 않는 여유를 위아래로 붙여 손가락이 닿는 넓이만 44px 로 만든다. */
+  .pt-toggle-switch::after{content:'';position:absolute;inset:-8px 0;}
   .pt-toggle-knob{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform var(--dur-tap) var(--ease-out);box-shadow:0 1px 3px rgba(0,0,0,.3);}
   .pt-toggle-switch.on .pt-toggle-knob{transform:translateX(22px);}
   .pt-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin-bottom:14px;font-size:11px;color:var(--c-text-secondary);}
@@ -828,7 +847,7 @@
   .m6-face .dia-panel{padding:6px;margin-bottom:6px;}
   .m6-face .dia-exp{font-size:13px;line-height:1.55;margin:5px 0 0;}
   .m6-face .later-note{font-size:12px;margin-top:5px;}
-  .m6-face .dia-replay{margin:0 auto 4px;padding:7px 14px;font-size:12px;min-height:40px;}
+  .m6-face .dia-replay{margin:0 auto 4px;padding:7px 14px;font-size:12px;min-height:44px;}
   .m6-front{background:var(--c-surface-1);border:2px solid var(--c-border);}
   .m6-back{background:linear-gradient(135deg,var(--c-tint-a2),var(--c-surface-2));border:2px solid var(--c-accent-2);transform:rotateY(180deg);}
   .m6-tag{font-size:11px;font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1.5px;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:20px;padding:4px 14px;color:var(--c-text-secondary);}
