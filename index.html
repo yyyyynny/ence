@@ -16,7 +16,7 @@
 <!-- 탭·홈 화면 아이콘. 파일을 새로 두지 않으려고 SVG 를 그대로 주소에 적는다
      (빌드 도구가 없고 file:// 로 열어도 그대로 떠야 한다). -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%2310141E'/%3E%3Ctext x='16' y='23' font-size='20' font-family='monospace' font-weight='700' text-anchor='middle' fill='%2300E5FF'%3E%E2%9A%97%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/style.css?v=2026.08.15-2">
+<link rel="stylesheet" href="css/style.css?v=2026.08.24">
 </head>
 <body>
 
@@ -104,7 +104,7 @@
 
   <div id="retryBanner">
     <span id="retryBannerText">⚠️ 오답 노트 재풀이 모드</span>
-    <button id="exitRetryBtn" style="background:#fff;color:var(--c-wrong);border:none;padding:8px 14px;border-radius:8px;font-weight:900;cursor:pointer;">그만두기 🚪</button>
+    <button class="exit-retry-btn" id="exitRetryBtn">그만두기 🚪</button>
   </div>
 
   <div class="question-card" id="questionCard">
@@ -134,7 +134,7 @@
     <div class="m6-hint">탭하여 뒤집기 🔄</div>
     <div style="display:flex;gap:10px">
       <button class="m6-nav-btn" id="retryM6ForgotBtn" style="flex:1;width:auto;font-size:14px;font-weight:700;">➡️ 다음에 다시</button>
-      <button class="m6-nav-btn" id="retryM6KnowBtn" style="flex:1;width:auto;font-size:14px;font-weight:700;background:var(--c-correct);color:#000;border-color:var(--c-correct);">✅ 기억했어요</button>
+      <button class="m6-nav-btn retry-know-btn" id="retryM6KnowBtn" style="flex:1;width:auto;font-size:14px;font-weight:700;">✅ 기억했어요</button>
     </div>
   </div>
 
@@ -214,7 +214,7 @@
     <div class="modal-title">화학 반응식 훈련소</div>
     <div style="color:var(--c-text-secondary);font-size:15px;margin-bottom:16px">접근 권한이 필요합니다. (이용료: <span style="color:var(--c-wrong);font-weight:900">800원</span>)</div>
     <input type="password" id="authInput" placeholder="비밀번호 입력" style="background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);padding:16px;border-radius:12px;font-family:var(--font-mono);font-size:18px;text-align:center;outline:none;width:100%">
-    <button id="authBtn" style="background:var(--c-accent-1);color:#000;border:none;border-radius:12px;padding:16px;font-weight:900;font-size:18px;cursor:pointer;margin-top:8px;width:100%">결제 및 해제</button>
+    <button class="auth-btn" id="authBtn">결제 및 해제</button>
     <div id="authError" style="color:var(--c-wrong);font-size:14px;display:none;margin-top:8px;font-weight:bold">❌ 잔액이 부족하거나 비밀번호가 틀렸습니다.</div>
   </div>
 </div>
@@ -271,11 +271,11 @@
   </div>
 </div>
 
-<script src="js/version.js?v=2026.08.15-2"></script>
-<script src="js/theme.js?v=2026.08.15-2"></script>
-<script src="js/data.js?v=2026.08.15-2"></script>
-<script src="js/curriculum.js?v=2026.08.15-2"></script>
-<script src="js/diagram.js?v=2026.08.15-2"></script>
-<script src="js/app.js?v=2026.08.15-2"></script>
+<script src="js/version.js?v=2026.08.24"></script>
+<script src="js/theme.js?v=2026.08.24"></script>
+<script src="js/data.js?v=2026.08.24"></script>
+<script src="js/curriculum.js?v=2026.08.24"></script>
+<script src="js/diagram.js?v=2026.08.24"></script>
+<script src="js/app.js?v=2026.08.24"></script>
 </body>
 </html>

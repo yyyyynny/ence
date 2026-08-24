@@ -707,13 +707,17 @@ const App={
         p.style.left=x+'px';p.style.top=y+'px';
         const a=Math.random()*Math.PI*2,v=60+Math.random()*120;
         p.style.setProperty('--tx',Math.cos(a)*v+'px');p.style.setProperty('--ty',Math.sin(a)*v+'px');
-        document.body.appendChild(p);setTimeout(()=>p.remove(),800);
+        /* 800 은 --dur-egg 를 손으로 옮겨 적은 값이었다. 토큰에서 읽으면 어긋날 일이 없고,
+           「움직임 줄이기」에서 1ms 로 떨어질 때도 조각이 화면에 남지 않는다. */
+        document.body.appendChild(p);setTimeout(()=>p.remove(),this.motionMs('--dur-egg'));
       }
       const fl=document.createElement('div');
-      Object.assign(fl.style,{position:'fixed',inset:0,zIndex:9999998,background:'linear-gradient(135deg,rgba(255,182,193,.9),rgba(200,162,200,.9))',display:'flex',alignItems:'center',justifyContent:'center',opacity:0,transition:'opacity .5s ease-out',pointerEvents:'none'});
+      Object.assign(fl.style,{position:'fixed',inset:0,zIndex:9999998,background:'linear-gradient(135deg,rgba(255,182,193,.9),rgba(200,162,200,.9))',display:'flex',alignItems:'center',justifyContent:'center',opacity:0,transition:`opacity var(--dur-view) var(--ease-out)`,pointerEvents:'none'});
       fl.innerHTML='<div style="font-size:clamp(28px,9vw,80px);text-align:center;padding:0 24px;word-break:keep-all;white-space:normal">💖 깜짝이야! 💖</div>';
       document.body.appendChild(fl);
-      setTimeout(()=>fl.style.opacity=1,50);
+      /* 붙인 직후에 opacity 를 바꾸면 브라우저가 둘을 한 번에 처리해 전환이 안 걸린다.
+         50ms 를 세는 대신 다음 프레임을 기다린다 — 기기가 느려도 맞는 방법이다. */
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{fl.style.opacity=1;}));
 
       setTimeout(()=>{
         fl.style.opacity=0;
@@ -722,7 +726,7 @@ const App={
           try { localStorage.removeItem('chem_auth_v4'); } catch(e) {}
           document.getElementById('authInput').value = '';
           document.getElementById('authOverlay').style.display = 'flex';
-        },500);
+        },this.motionMs('--dur-view')+20);
       },1200);
     });
 
@@ -2332,9 +2336,12 @@ const App={
          레이아웃을 재기 **전에** 접어야 그만큼이 표 몫으로 돌아간다. */
       const rotor=document.querySelector('.pt-fs-rotor');
       if(rotor) rotor.classList.toggle('pt-detail-open', isOpen);
-      fsEl.style.transition='transform .3s ease';
+      /* 여기 .3s/ease 가 인라인으로 박혀 있었다 — CSS 밖이라 토큰 검사에도 안 걸리고,
+         「움직임 줄이기」를 켠 사람에게도 그대로 0.3초를 움직였다. 뒤따르던 320 도
+         그 숫자를 손으로 맞춘 값이라 한쪽만 바뀌면 전환이 도중에 끊긴다. 둘 다 토큰에서 읽는다. */
+      fsEl.style.transition='transform var(--dur-move) var(--ease-move)';
       clearTimeout(this._ptFitTimer);
-      this._ptFitTimer=setTimeout(()=>{fsEl.style.transition='';},320);
+      this._ptFitTimer=setTimeout(()=>{fsEl.style.transition='';},this.motionMs('--dur-move')+20);
       this.layoutPtFullscreen(h);
     }
   },
