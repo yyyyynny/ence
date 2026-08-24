@@ -75,6 +75,15 @@ const DIA = {
     return this.dotPos(cx, cy, r, n).map(([x, y]) => this.dot(x, y, cls, '', er)).join('');
   },
 
+  /* 그림을 못 보는 사람에게 그림이 말하는 것을 글로 준다.
+     role="img" 만 붙이고 이름을 주지 않으면 읽어 주는 기계는 「그래픽」이라고만 하고 지나간다 —
+     이 앱에서 그림은 곁다리 장식이 아니라 세어야 할 내용 자체라([9과11-04] 전자배치로 설명),
+     껍질마다 전자가 몇 개인지를 그대로 적는다. 캡션과 겹치지 않게, 캡션이 말하지 않는
+     「몇 개인지」를 담는 것이 이 글의 몫이다. */
+  shellText(shells){
+    const N = ['첫째','둘째','셋째','넷째','다섯째','여섯째','일곱째'];
+    return shells.map((c, i) => `${N[i] || (i + 1) + '번째'} 껍질 ${c}개`).join(', ');
+  },
   /* 다시 보기 — 그림 HTML을 다시 렌더하면 CSS 애니메이션이 처음부터 재생된다.
      별도 재생 제어가 필요 없어서 버튼 하나로 끝난다. */
   replayBtn(){ return `<button type="button" class="dia-replay">↻ 다시 보기</button>`; },
@@ -240,7 +249,9 @@ function ionicDiagramHTML(b){
   const per = b.nM >= b.nX ? b.give : b.take;
   s += `<text class="dia-note dia-anim-fade" x="${W/2}" y="${TOP - 9}"${DIA.at(lastAt + 0.35)}>${rows === 1 ? `전자 ${b.give}개` : `각각 전자 ${per}개씩`}</text>`;
 
-  const svg = `<svg class="dia" viewBox="0 0 ${W} ${H}" role="img">${DIA.arrowDefs()}${s}</svg>`;
+  const alt = `${b.name} 이온 결합 그림 — ${M.name}: ${DIA.shellText(mS)}에서 ${DIA.shellText(mIon)}로, `
+            + `${X.name}: ${DIA.shellText(xS)}에서 ${DIA.shellText(xIon)}로 바뀐다.`;
+  const svg = `<svg class="dia" viewBox="0 0 ${W} ${H}" role="img" aria-label="${alt}">${DIA.arrowDefs()}${s}</svg>`;
 
   return `<div class="dia-wrap">
     <div class="dia-panel"><div class="dia-cap">전자가 넘어가 이온이 된다</div>${svg}</div>
@@ -413,13 +424,15 @@ function covalentDiagramHTML(b, opts){
   const ligSyms = [...new Set(b.ligands.map(l => l.sym))].join('·');
   const key = ` <span class="later-note">점 색은 그 전자를 내놓은 원자다 — `+
     `<b class="dia-key-own">${b.center}</b> / <b class="dia-key-other">${ligSyms}</b>.</span>`;
+  const alt = `${b.name}(${b.f}) 공유 결합 그림 — 가운데 ${b.center}, 둘레에 `
+            + b.ligands.map(l => `${l.sym} (전자쌍 ${l.pairs}쌍)`).join(', ') + '.';
   const exp = (order
     ? `${uniq} — 전자쌍 <b>${pairs0}쌍</b>을 공유하므로 <b>${BOND_ORDER_NAME[pairs0]}</b>이다.
        공유하는 전자쌍이 늘수록 두 원자가 더 세게 붙잡혀 결합이 짧고 강해진다.`
     : `${uniq}. 두 껍질이 겹친 자리에 찍힌 것이 그 전자쌍이다.`) + key;
   return `<div class="dia-wrap">
     <div class="dia-panel"><div class="dia-cap">${cap}</div>
-      <svg class="dia" viewBox="${vb}" role="img">${s}</svg></div>
+      <svg class="dia" viewBox="${vb}" role="img" aria-label="${alt}">${s}</svg></div>
     ${DIA.replayBtn()}
     <p class="dia-exp">${exp}</p>
   </div>`;
@@ -514,8 +527,15 @@ function ionFormingDiagramHTML(z, item){
   const cap = gain ? `다른 원자에서 전자 ${n}개를 받는다`
             : lose ? `바깥 껍질 전자 ${n}개를 다른 원자에게 준다`
             : '이미 꽉 차 있다';
+  /* 조사는 앞 낱말의 받침을 봐야 한다 — 「나트륨이」와 「산소가」를 한 틀로 찍으면 하나가 반드시 틀린다.
+     기호를 괄호로 끼우므로 josa()로 낱말에 붙이지 못하고 받침만 물어 조사를 고른다. */
+  const alt = n > 0
+    ? `${el.name}(${el.sym})${hasJong(el.name) ? '이' : '가'} 이온이 되는 과정 그림 — `
+      + `처음 ${DIA.shellText(sh)}, 이온이 된 뒤 ${DIA.shellText(fin)}.`
+    : `${el.name}(${el.sym}) 전자껍질 그림 — ${DIA.shellText(sh)}. `
+      + '이미 꽉 차 있어 이온이 되지 않는다.';
   return `<div class="dia-wrap"><div class="dia-panel"><div class="dia-cap">${cap}</div>
-    <svg class="dia" viewBox="0 0 ${W} ${H}" role="img">${DIA.arrowDefs()}${s}</svg></div>${DIA.replayBtn()}</div>`;
+    <svg class="dia" viewBox="0 0 ${W} ${H}" role="img" aria-label="${alt}">${DIA.arrowDefs()}${s}</svg></div>${DIA.replayBtn()}</div>`;
 }
 
 function bondDiagramHTML(b){
@@ -539,7 +559,10 @@ function shellDiagramHTML(z, charge){
       { s += DIA.dot(x, y, 'dia-e dia-anim-count', DIA.at(DIA.T0 + k * DIA.STEP)); });
   });
   if(charge) s += `<text class="dia-charge" x="${cx + r + 12}" y="${cy - r - 4}">${charge}</text>`;
+  /* 이 그림만 캡션이 없어 글로 된 설명이 곁에 아예 없었다 — 이름이 더 중요하다. */
+  const alt = `${el.name}(${el.sym})${charge ? ' ' + charge : ''} 전자껍질 그림 — ${DIA.shellText(sh)}. `
+            + `바깥 껍질에 ${sh[sh.length - 1]}개.`;
   return `<div class="dia-wrap"><div class="dia-panel">
-    <svg class="dia" viewBox="0 0 ${W} ${H}" role="img">${s}</svg>
+    <svg class="dia" viewBox="0 0 ${W} ${H}" role="img" aria-label="${alt}">${s}</svg>
   </div>${DIA.replayBtn()}</div>`;
 }
