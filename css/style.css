@@ -252,7 +252,12 @@
   @media (max-width:376px){
     .header-right{display:grid;grid-template-columns:repeat(4,44px);justify-content:end;}
   }
-  .icon-btn:hover{border-color:var(--c-border-active);color:var(--c-accent-1);}
+  /* hover 는 마우스가 있는 화면에서만 켠다. 폰에는 hover 라는 상태가 없어서 한 번 누르면
+     손을 떼도 그 자리에 hover 가 눌어붙는다 — 오답노트를 열었다 닫아도 📓 버튼만 계속
+     강조돼 있어 「아직 그 화면인가?」로 읽힌다. 누른 느낌은 :active 가 이미 맡고 있다.
+     제자리에서 감싼다(파일 끝으로 몰면 .m6-save-wrong-btn.saved 처럼 뒤에 오는 같은 굵기의
+     규칙을 hover 가 이기게 되어, 저장된 카드의 글자가 배경색과 같아져 안 보인다). */
+  @media (hover:hover){.icon-btn:hover{border-color:var(--c-border-active);color:var(--c-accent-1);}}
   .stat-bar{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:14px 20px;display:flex;align-items:center;gap:16px;margin-bottom:16px;}
   .stat-item{display:flex;align-items:center;gap:8px;}
   .stat-label{font-size:12px;color:var(--c-text-secondary);text-transform:uppercase;letter-spacing:1px;font-family:var(--font-mono);}
@@ -604,7 +609,7 @@
   /* 움직이는 전자는 살짝 크고 밝게 — 어느 점이 이동 중인지 눈으로 따라갈 수 있어야 한다 */
   .dia-e-move{r:4.4px;fill:var(--c-accent-1);}
   .dia-replay{display:block;margin:0 auto 10px;background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:10px;padding:9px 16px;font-family:var(--font-ui);font-size:13px;font-weight:700;cursor:pointer;min-height:44px;}
-  .dia-replay:hover{border-color:var(--c-border-active);color:var(--c-text-primary);}
+  @media (hover:hover){.dia-replay:hover{border-color:var(--c-border-active);color:var(--c-text-primary);}}
   /* 움직임에 민감한 사용자를 위해 흐름 애니메이션만 끈다 — 그림 내용은 그대로 남는다 */
   /* 움직임을 꺼 둔 사람에게도 답은 똑같이 보여야 한다. 애니메이션만 끄면
      "나가는 전자"와 "사라지는 껍질"이 그대로 남아 틀린 배치가 되므로 그 자리에서 감춘다. */
@@ -817,7 +822,7 @@
   @keyframes m6Enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   #mode6Wrap.m6-active{display:flex;animation:m6Enter var(--dur-enter) var(--ease-out);}
   .m6-wrongnote-link{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:14px;padding:12px 16px;color:var(--c-text-primary);font-size:14px;font-weight:700;cursor:pointer;transition:var(--t-btn);}
-  .m6-wrongnote-link:hover{border-color:var(--c-border-active);color:var(--c-accent-1);}
+  @media (hover:hover){.m6-wrongnote-link:hover{border-color:var(--c-border-active);color:var(--c-accent-1);}}
   .m6-wrongnote-icon{font-size:15px;color:var(--c-accent-1);}
   .m6-opt-row{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:14px 18px;}
   .m6-opt-label{font-size:11px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px;}
@@ -860,17 +865,17 @@
   .m6-sub-formula{font-size:clamp(13px,3vw,16px);color:var(--c-text-secondary);line-height:1.5;}
   .m6-hint{text-align:center;font-size:12px;color:var(--c-text-secondary);font-family:var(--font-mono);}
   .m6-save-wrong-btn{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:12px;padding:12px;font-size:14px;font-weight:700;cursor:pointer;transition:var(--t-btn);}
-  .m6-save-wrong-btn:hover{border-color:var(--c-wrong);color:var(--c-wrong);}
+  @media (hover:hover){.m6-save-wrong-btn:hover{border-color:var(--c-wrong);color:var(--c-wrong);}}
   .m6-save-wrong-btn.saved{background:var(--c-wrong);border-color:var(--c-wrong);color:var(--c-on-wrong);}
   .m6-save-wrong-btn:disabled{cursor:default;}
-  .m6-save-wrong-btn:disabled:hover{border-color:var(--c-wrong);color:var(--c-on-wrong);}
+  @media (hover:hover){.m6-save-wrong-btn:disabled:hover{border-color:var(--c-wrong);color:var(--c-on-wrong);}}
   .m6-nav{display:flex;align-items:center;gap:14px;}
   .m6-nav-btn{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:14px;color:var(--c-text-primary);font-size:32px;font-weight:900;width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--t-btn);flex-shrink:0;line-height:1;}
-  .m6-nav-btn:hover{border-color:var(--c-accent-1);color:var(--c-accent-1);}
+  @media (hover:hover){.m6-nav-btn:hover{border-color:var(--c-accent-1);color:var(--c-accent-1);}}
   .m6-nav-center{display:flex;flex-direction:column;align-items:center;gap:8px;flex:1;}
   .m6-counter{font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--c-text-primary);}
   .m6-shuffle{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-size:14px;font-weight:700;padding:8px 16px;cursor:pointer;transition:var(--t-btn);}
-  .m6-shuffle:hover{border-color:var(--c-accent-3);color:var(--c-accent-3);}
+  @media (hover:hover){.m6-shuffle:hover{border-color:var(--c-accent-3);color:var(--c-accent-3);}}
   .m6-progress-bar{height:6px;background:var(--c-border);border-radius:3px;overflow:hidden;}
   .m6-progress-fill{height:100%;width:100%;transform-origin:left center;transform:scaleX(0);
     background:linear-gradient(90deg,var(--c-accent-2),var(--c-accent-1));border-radius:3px;
