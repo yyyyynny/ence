@@ -390,6 +390,16 @@
     /* 움직임을 끈 사람에게는 크기가 변하지 않는다 — 밝기만 바뀐다(토큰이 시간을 0으로 만든다) */
     .modal-box,.modal-overlay.show .modal-box{transform:none;}
   }
+  /* #authOverlay 만은 .show 를 쓰지 않는다 — 자바스크립트가 늦게 뜨거나 아예 실패해도
+     잠금이 저절로 열려서는 안 되므로, 마크업에 있는 그대로 이미 떠 있어야 한다(fail-closed).
+     여닫기는 예전부터 style.display 하나로만 한다. 그런데 위에서 .modal-overlay 의 기본을
+     "감춰 두고 .show 로 띄운다"로 바꾸면서, .show 를 받지 않는 이 창이 display:flex 인 채로
+     visibility:hidden·opacity:0·pointer-events:none 을 그대로 물려받아 통째로 사라졌다.
+     — 첫 방문자에게 잠금창이 안 보이고 눌리지도 않아, 뒤의 앱이 그냥 열렸다.
+     그래서 여기서 기본 숨김을 되돌려 놓는다. 전환도 걸지 않는다: 잠금은 스르륵 뜨는 게 아니라
+     처음부터 거기 있어야 하는 것이다. */
+  #authOverlay{visibility:visible;opacity:1;pointer-events:auto;transition:none;}
+  #authOverlay .modal-box{transform:none;transition:none;}
   .modal-header{display:flex;justify-content:space-between;margin-bottom:16px;align-items:center;}
   .modal-title{font-size:20px;font-weight:900;color:var(--c-accent-1);}
   .modal-close{background:none;border:none;color:var(--c-text-secondary);font-size:32px;cursor:pointer;}
