@@ -260,6 +260,12 @@
   .timer-select-wrap{display:flex;align-items:center;gap:8px;margin-bottom:16px;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:16px;padding:12px 18px;}
   .timer-select-label{font-size:12px;color:var(--c-text-secondary);font-family:var(--font-mono);text-transform:uppercase;letter-spacing:1px;white-space:nowrap;}
   .timer-btns{display:flex;gap:6px;flex-wrap:wrap;}
+  /* 작은 알약 버튼들의 최소 높이 — 이 무리는 padding 10px + 글자 14px 라 40px 언저리로 잡혀
+     손가락 최소 크기(애플 HIG·머티리얼 공통 44px)에 못 미쳤다. 폰에서 옆 버튼을 눌러 버리기 쉬운
+     크기다. 글자·여백은 그대로 두고 최소 높이만 올린다 — 이미 44px 이상인 곳에는 아무 영향이 없다.
+     .pt-cell 은 여기 넣지 않는다: 표 전체를 한 화면에 보여 주는 격자라 칸을 키울 수 없고,
+     그래서 확대·가로 보기를 따로 둔 것이다. */
+  .timer-btn,.cycle-btn,.dir-btn,.dia-btn,.m6-opt-btn,.filter-chip{min-height:44px;}
   .timer-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:10px;color:var(--c-text-secondary);font-family:var(--font-mono);font-size:14px;font-weight:700;padding:10px 16px;cursor:pointer;transition:var(--t-btn);}
   .timer-btn.active{background:var(--c-tint-a3);border-color:var(--c-accent-3);border-width:2px;color:var(--c-text-primary);}
   #modeNav{margin-bottom:16px;}
@@ -774,7 +780,12 @@
   .pt-cat-metalloid{background:#A3E635;}
   .pt-cat-nonmetal{background:#22D3EE;}
   .pt-cat-halogen{background:#FDE047;}
-  .pt-cat-noble{background:#818CF8;color:#fff;}
+  /* 18족만 흰 글자를 얹었었는데, 재어 보니 #818CF8 위의 흰 글자는 2.98:1 로
+     본문 기준(4.5)은커녕 큰 글자 기준(3.0)에도 못 미쳤다 — 나머지 열 분류가 6.9~14.5 인데
+     하필 원자가 전자 0, 옥텟을 설명하느라 가장 자주 보는 칸이 제일 안 보였다.
+     .pt-cell 의 짙은 글자(#0B0F19)를 그대로 쓰면 같은 배경에서 6.42:1 이 된다.
+     「고대비」테마를 고른 사람에게도 이 칸만 2.98 이었다는 게 결정적이었다. */
+  .pt-cat-noble{background:#818CF8;}
   .pt-cat-unknown{background:#94A3B8;}
 
   /* ── MODE 6 플래시카드 ── */
