@@ -205,9 +205,6 @@ const App={
     this.$.simplePeriodicToggle.classList.toggle('on', this.state.isSimplePeriodic);
     this.$.simplePeriodicToggle.setAttribute('aria-checked', this.state.isSimplePeriodic);
 
-    let authed=false;
-    try{ authed = localStorage.getItem('chem_auth_v4')==='pass'; }catch(e){}
-    if(authed) document.getElementById('authOverlay').style.display = 'none';
   },
   /* 켜짐/꺼짐은 이모지와 흐리기로 보여 주는데, 그건 눈으로 보는 사람에게만 닿는다.
      읽어 주는 기계는 버튼 이름("소리 토글")만 읽고 지금 켜졌는지는 말해 주지 못하므로
@@ -721,12 +718,7 @@ const App={
 
       setTimeout(()=>{
         fl.style.opacity=0;
-        setTimeout(()=>{
-          fl.remove();
-          try { localStorage.removeItem('chem_auth_v4'); } catch(e) {}
-          document.getElementById('authInput').value = '';
-          document.getElementById('authOverlay').style.display = 'flex';
-        },this.motionMs('--dur-view')+20);
+        setTimeout(()=>{ fl.remove(); }, this.motionMs('--dur-view')+20);
       },1200);
     });
 
@@ -788,18 +780,6 @@ const App={
     document.getElementById('clearAllNotesBtn').addEventListener('click',()=>this.clearWrongNotes());
     document.getElementById('retryPlaylistBtn').addEventListener('click',()=>this.startRetryPlaylist());
 
-    document.getElementById('authBtn').addEventListener('click',()=>{
-      if(document.getElementById('authInput').value==='yyyyynny'){
-        this.playSound('success');
-        try { localStorage.setItem('chem_auth_v4', 'pass'); } catch(e) {}
-        document.getElementById('authOverlay').style.display='none';
-      }else{
-        this.playSound('error'); this.playHaptic('error');
-        const err = document.getElementById('authError');
-        err.style.display='block';
-        setTimeout(()=>err.style.display='none',2000);
-      }
-    });
 
     document.getElementById('timerBtns').addEventListener('click',e=>{
       const b=e.target.closest('.timer-btn');if(!b)return;
@@ -857,10 +837,6 @@ const App={
     });
 
     document.addEventListener('keydown',e=>{
-      if(document.getElementById('authOverlay').style.display !== 'none') {
-        if(e.key === 'Enter') document.getElementById('authBtn').click();
-        return;
-      }
       if(document.getElementById('ptFullscreen').classList.contains('show')){
         if(e.key==='Escape')this.closePtFullscreen();
         return;
@@ -1071,10 +1047,8 @@ const App={
     let lt=Date.now();
     this.state.timerInterval=setInterval(()=>{
       /* 모달이 열려 있는 동안은 시간을 세지 않는다. 주기율표나 반응식 목록을 띄워 두면
-         뒤에서 제한시간이 만료돼 풀지도 않은 문제가 오답으로 기록됐다.
-         (인증 화면도 같은 이유로 여기서 걸린다.) */
-      if(document.getElementById('authOverlay').style.display !== 'none' ||
-         document.querySelector('.modal-overlay.show')) {
+         뒤에서 제한시간이 만료돼 풀지도 않은 문제가 오답으로 기록됐다. */
+      if(document.querySelector('.modal-overlay.show')) {
         lt = Date.now();
         return;
       }

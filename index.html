@@ -208,17 +208,6 @@
   </div>
 </div>
 
-<div class="modal-overlay" id="authOverlay" style="display:flex; z-index:9999999; background:var(--c-bg)">
-  <div class="modal-box" style="text-align:center;gap:16px">
-    <div style="font-size:48px;margin-bottom:8px">🔒</div>
-    <div class="modal-title">화학 반응식 훈련소</div>
-    <div style="color:var(--c-text-secondary);font-size:15px;margin-bottom:16px">접근 권한이 필요합니다. (이용료: <span style="color:var(--c-wrong);font-weight:900">800원</span>)</div>
-    <input type="password" id="authInput" placeholder="비밀번호 입력" style="background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);padding:16px;border-radius:12px;font-family:var(--font-mono);font-size:18px;text-align:center;outline:none;width:100%">
-    <button class="auth-btn" id="authBtn">결제 및 해제</button>
-    <div id="authError" style="color:var(--c-wrong);font-size:14px;display:none;margin-top:8px;font-weight:bold">❌ 잔액이 부족하거나 비밀번호가 틀렸습니다.</div>
-  </div>
-</div>
-
 <div class="modal-overlay" id="themeModalOverlay">
   <div class="modal-box" style="max-width:440px">
     <div class="modal-header"><div class="modal-title">🎨 테마</div><button class="modal-close" id="themeModalClose">✕</button></div>
@@ -277,5 +266,9 @@
 <script src="js/curriculum.js?v=2026.08.24"></script>
 <script src="js/diagram.js?v=2026.08.24"></script>
 <script src="js/app.js?v=2026.08.24"></script>
+<!-- 자가 검사. 앱 동작에는 관여하지 않고 window.SelfCheck 만 정의한다.
+     주소에 ?selfcheck 를 붙이면 저절로 돌고 결과가 화면에 뜬다 —
+     개발자도구를 못 여는 폰에서도 확인할 수 있어야 실제로 돌리게 된다. -->
+<script src="js/selfcheck.js?v=2026.08.24"></script>
 </body>
 </html>
