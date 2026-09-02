@@ -201,7 +201,7 @@ const App={
     this.applyTheme(this.state.theme);
     this.updateFeedbackBtns();
     if(this.state.isWideMode) document.body.classList.add('wide-mode');
-    this.$.layoutBtn.textContent = this.state.isWideMode ? '📱' : '↔️';
+    this.$.layoutBtn.innerHTML = this.icon('layout', 'lg');
     this.$.simplePeriodicToggle.classList.toggle('on', this.state.isSimplePeriodic);
     this.$.simplePeriodicToggle.setAttribute('aria-checked', this.state.isSimplePeriodic);
 
@@ -210,10 +210,10 @@ const App={
      읽어 주는 기계는 버튼 이름("소리 토글")만 읽고 지금 켜졌는지는 말해 주지 못하므로
      aria-pressed 로 상태를 따로 실어 준다 — 이름은 그대로 두고 눌림 여부만 바뀐다. */
   updateFeedbackBtns(){
-    this.$.soundBtn.textContent = this.state.isSoundOn ? '🔊' : '🔇';
+    this.$.soundBtn.innerHTML = this.icon(this.state.isSoundOn ? 'sound-on' : 'sound-off', 'lg');
     this.$.soundBtn.style.opacity = this.state.isSoundOn ? '1' : '0.5';
     this.$.soundBtn.setAttribute('aria-pressed', this.state.isSoundOn);
-    this.$.hapticBtn.textContent = this.state.isHapticOn ? '📳' : '📴';
+    this.$.hapticBtn.innerHTML = this.icon(this.state.isHapticOn ? 'vibrate-on' : 'vibrate-off', 'lg');
     this.$.hapticBtn.style.opacity = this.state.isHapticOn ? '1' : '0.5';
     this.$.hapticBtn.setAttribute('aria-pressed', this.state.isHapticOn);
   },
@@ -222,7 +222,7 @@ const App={
     this.state.isWideMode = !this.state.isWideMode;
     document.body.classList.toggle('wide-mode', this.state.isWideMode);
     try{localStorage.setItem('chem_wide', this.state.isWideMode);}catch(e){}
-    this.$.layoutBtn.textContent = this.state.isWideMode ? '📱' : '↔️';
+    this.$.layoutBtn.innerHTML = this.icon('layout', 'lg');
     this.$.layoutBtn.setAttribute('aria-pressed', this.state.isWideMode);
   },
 
@@ -311,17 +311,17 @@ const App={
     const btn=document.getElementById('clearAllNotesBtn');
     if(!btn.dataset.confirming){
       btn.dataset.confirming='1';
-      btn.textContent='⚠️ 정말 삭제? 한 번 더 클릭';
+      btn.textContent='정말 삭제? 한 번 더 누르기';
       btn.style.background='var(--c-accent-3)';btn.style.color='#000';
       btn._t=setTimeout(()=>{
         delete btn.dataset.confirming;
-        btn.textContent='🗑 전체 삭제';
+        btn.innerHTML=this.icon('trash','sm')+' 전체 삭제';
         btn.style.background='';btn.style.color='';
       },3000);
       return;
     }
     clearTimeout(btn._t);delete btn.dataset.confirming;
-    btn.textContent='🗑 전체 삭제';btn.style.background='';btn.style.color='';
+    btn.innerHTML=this.icon('trash','sm')+' 전체 삭제';btn.style.background='';btn.style.color='';
     this.state.wrongNotes=[];
     try{localStorage.removeItem('chem_wrong_notes_v4');}catch(e){}
     this.renderWrongNotes();
@@ -386,7 +386,7 @@ const App={
     }
 
     document.getElementById('retryBanner').style.display = 'flex';
-    document.getElementById('retryBannerText').innerHTML = `<span>⚠️ 연속 재풀이 모드 <span style="font-size:12px;opacity:0.8">(${this.state.retryPlaylist.length}문제 남음)</span></span>`;
+    document.getElementById('retryBannerText').innerHTML = `<span>연속 재풀이 모드 <span style="font-size:12px;opacity:0.8">(${this.state.retryPlaylist.length}문제 남음)</span></span>`;
   },
 
   /* 오답노트 재풀이 중 플래시카드 노트 — 채점 없이 뒤집어 확인 후 기억/다시 로 진행 */
@@ -455,7 +455,7 @@ const App={
     this.state.wrongAlreadyPenalized = false;
 
     document.getElementById('retryBanner').style.display = 'flex';
-    document.getElementById('retryBannerText').textContent = '⚠️ 오답 노트 단일 재풀이 모드';
+    document.getElementById('retryBannerText').textContent = '오답 노트 단일 재풀이 모드';
     this.renderAll();
     this.startTimer();
   },
@@ -550,10 +550,10 @@ const App={
       ? modes.map(m=>{
           const d=MODES[m];
           return `<button class="mode-tab${m===modeRootId(this.state.currentMode)?' active':''}" data-mode="${m}">`+
-                 `<span class="tab-icon">${d.icon}</span>${d.name}`+
+                 `<span class="tab-name">${d.name}</span>`+
                  (d.desc?`<span class="tab-desc">${d.desc}</span>`:'')+`</button>`;
         }).join('')
-      : `<div class="section-empty">아직 준비 중인 구역이에요 🚧</div>`;
+      : `<div class="section-empty">아직 준비 중인 구역이에요</div>`;
   },
   renderSectionNote(){
     const meta=sectionMeta(this.state.section);
@@ -644,9 +644,9 @@ const App={
       else if(fc >= 3) style = 'background:rgba(239,68,68,0.14);border-color:var(--c-wrong);border-width:2px;';
       const isCard = modeRoot(n.mode) && modeRoot(n.mode).custom==='flashcard';
       const retryLabel = isCard ? '카드 다시보기' : '단일 풀기';
-      const modeIcon = MODE_ICONS[n.mode]||'📌';
-      const failBadge = fc>1?`<span class="reaction-fail">${fc>=3?'⚠️ ':''}오답 ${fc}회</span>`:'';
-      return `<div class="reaction-item" style="${style}"><div class="reaction-header"><div class="reaction-name"><span class="reaction-badge">${modeIcon} ${MODE_NAMES[n.mode]||('모드 '+n.mode)}</span>${n.title}${failBadge}</div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${n.id}">${retryLabel}</button><button class="delete-note-btn" data-id="${n.id}">삭제</button></div></div><div class="reaction-eq" style="border-left-color:var(--c-wrong)">${n.html}</div></div>`;
+      /* 배지에 모드 이모지를 앞세우던 자리. 모드 이름만으로 더 잘 읽힌다. */
+      const failBadge = fc>1?`<span class="reaction-fail">오답 ${fc}회</span>`:'';
+      return `<div class="reaction-item" style="${style}"><div class="reaction-header"><div class="reaction-name"><span class="reaction-badge">${MODE_NAMES[n.mode]||('모드 '+n.mode)}</span>${n.title}${failBadge}</div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${n.id}">${retryLabel}</button><button class="delete-note-btn" data-id="${n.id}">삭제</button></div></div><div class="reaction-eq" style="border-left-color:var(--c-wrong)">${n.html}</div></div>`;
     }).join('');
   },
 
@@ -697,10 +697,12 @@ const App={
     document.getElementById('easterEggBtn').addEventListener('click',e=>{
       e.preventDefault();
       const x=e.clientX||window.innerWidth/2,y=e.clientY||50;
-      const emojis=['🎆','🌟','✨','💖','🎉','🌸','🐰'];
+      /* 이모지 일곱 개를 흩뿌리던 자리. 농담은 그대로 두되, 흩뿌리는 것은
+         이 앱이 내내 그리는 것 — 원자 — 로 바꾼다. 아이콘이 이미 있으니 그걸 쓴다. */
       for(let i=0;i<35;i++){
         const p=document.createElement('div');p.className='egg-particle';
-        p.textContent=emojis[Math.floor(Math.random()*emojis.length)];
+        p.innerHTML=this.icon('atom','lg');
+        p.style.transform='rotate('+Math.round(Math.random()*360)+'deg)';
         p.style.left=x+'px';p.style.top=y+'px';
         const a=Math.random()*Math.PI*2,v=60+Math.random()*120;
         p.style.setProperty('--tx',Math.cos(a)*v+'px');p.style.setProperty('--ty',Math.sin(a)*v+'px');
@@ -710,7 +712,7 @@ const App={
       }
       const fl=document.createElement('div');
       Object.assign(fl.style,{position:'fixed',inset:0,zIndex:9999998,background:'linear-gradient(135deg,rgba(255,182,193,.9),rgba(200,162,200,.9))',display:'flex',alignItems:'center',justifyContent:'center',opacity:0,transition:`opacity var(--dur-view) var(--ease-out)`,pointerEvents:'none'});
-      fl.innerHTML='<div style="font-size:clamp(28px,9vw,80px);text-align:center;padding:0 24px;word-break:keep-all;white-space:normal">💖 깜짝이야! 💖</div>';
+      fl.innerHTML='<div style="font-size:clamp(28px,9vw,80px);text-align:center;padding:0 24px;word-break:keep-all;white-space:normal">깜짝이야!</div>';
       document.body.appendChild(fl);
       /* 붙인 직후에 opacity 를 바꾸면 브라우저가 둘을 한 번에 처리해 전환이 안 걸린다.
          50ms 를 세는 대신 다음 프레임을 기다린다 — 기기가 느려도 맞는 방법이다. */
@@ -1077,7 +1079,7 @@ const App={
 
     this.renderAll(null);
     this.$.resultBanner.className='result-banner wrong-banner show';
-    this.$.resultBanner.innerHTML=`<div style="display:flex;align-items:center;width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px"><span><span style="color:var(--c-wrong)">⏰ 시간 초과!</span> <span style="font-weight:400;margin-left:10px">마저 답을 입력해보세요.</span></span><button class="show-answer-btn">정답 확인</button></div>`;
+    this.$.resultBanner.innerHTML=`<div style="display:flex;align-items:center;width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px"><span><span style="color:var(--c-wrong)">시간이 다 됐어요.</span> <span style="font-weight:400;margin-left:10px">마저 답을 넣어 봐요.</span></span><button class="show-answer-btn">정답 확인</button></div>`;
   },
 
   handleKeyPress(key){
@@ -1729,7 +1731,10 @@ const App={
     if(this.$.streakCount.textContent!==streak.toString()){this.$.streakCount.textContent=streak;bump(this.$.streakCount);}
     if(this.$.totalCorrect.textContent!==correct.toString()){this.$.totalCorrect.textContent=correct;bump(this.$.totalCorrect);}
     if(this.$.totalWrong.textContent!==wrong.toString()){this.$.totalWrong.textContent=wrong;bump(this.$.totalWrong);}
-    this.$.streakFlames.textContent=streak>=10?'🔥🔥🔥':streak>=5?'🔥🔥':streak>=3?'🔥':'';
+    /* 연속 3·5·10 에서 불 이모지를 하나씩 늘려 붙이던 자리.
+       판에 박힌 게임화 장치이고, 숫자가 이미 「연속 7」이라고 말하고 있다.
+       편집 체계에서 연속을 세는 방법은 숫자와 그 아래 괘선이지 불꽃이 아니다. */
+    this.$.streakFlames.textContent='';
   },
 
   /* q.sub는 q.name이 곧 정답이라 헤더에 띄울 수 없는 문제(MODE 7 역방향)를 위한 대체 문구 */
@@ -1866,18 +1871,18 @@ const App={
   },
 
   renderResultBanner(isCorrect){
-    if(isCorrect==='retry_playlist_correct_next'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 완벽합니다! 다음 오답 문제로 이동하세요.';}
-    else if(isCorrect==='retry_playlist_correct_done'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='🎉 축하합니다! 모든 오답을 정복했습니다.';}
-    else if(isCorrect==='retry_timeout_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 정답! (단, 시간 초과로 오답 노트에서 삭제되지 않음)';}
-    else if(isCorrect==='retry_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 완벽합니다! 오답 노트에서 완전히 삭제되었습니다.';}
-    else if(isCorrect==='timeout_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML='✅ 늦었지만 정답입니다! (다음 문제로 넘어가세요)';}
-    else if(isCorrect===true){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=`✅ 정답입니다! 연속 ${this.state.score.streak}회 성공!`;}
+    if(isCorrect==='retry_playlist_correct_next'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=this.icon('check','sm')+' 맞았어요. 다음 오답 문제로 넘어가요.';}
+    else if(isCorrect==='retry_playlist_correct_done'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=this.icon('check','sm')+' 오답 노트를 다 풀었어요.';}
+    else if(isCorrect==='retry_timeout_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=this.icon('check','sm')+' 맞았어요. 시간이 지나서 오답 노트에는 남겨 둬요.';}
+    else if(isCorrect==='retry_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=this.icon('check','sm')+' 맞았어요. 오답 노트에서 지웠어요.';}
+    else if(isCorrect==='timeout_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=this.icon('check','sm')+' 시간은 지났지만 맞았어요.';}
+    else if(isCorrect===true){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=this.icon('check','sm')+` 맞았어요. 연속 ${this.state.score.streak}번째예요.`;}
     else{
       this.$.resultBanner.className='result-banner wrong-banner show';
-      let w='';if(this.state.currentQuestion.coefOneErrorFlag)w=`<div style="color:var(--c-wrong);font-size:13px;margin-bottom:8px;width:100%">⚠️ 주의: 화학에서 계수 '1'은 생략해야 합니다.</div>`;
-      if(this.state.isAnswerRevealed)this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%">❌ 오답입니다. 정답이 표시되었습니다.</div>`;
-      else if(this.state.isRetryPlaylistMode) this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px"><span>❌ 오답입니다. (계속 풀거나 건너뛰기 가능)</span><button class="show-answer-btn">정답 확인</button></div>`;
-      else this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px"><span>❌ 오답입니다.</span><button class="show-answer-btn">정답 확인</button></div>`;
+      let w='';if(this.state.currentQuestion.coefOneErrorFlag)w=`<div style="color:var(--c-wrong);font-size:13px;margin-bottom:8px;width:100%">화학에서 계수 1은 적지 않아요.</div>`;
+      if(this.state.isAnswerRevealed)this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%">틀렸어요. 답을 보여 줄게요.</div>`;
+      else if(this.state.isRetryPlaylistMode) this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px"><span>틀렸어요. 계속 풀거나 건너뛸 수 있어요.</span><button class="show-answer-btn">정답 확인</button></div>`;
+      else this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px"><span>틀렸어요.</span><button class="show-answer-btn">정답 확인</button></div>`;
     }
   },
 
@@ -1914,6 +1919,14 @@ const App={
   },
 
   /* ── MODE 6 ── */
+  /* 아이콘 한 줄. 정의는 index.html 의 <symbol> 에 한 번만 있고 여기서는 가리키기만 한다.
+     크기·굵기·색은 CSS(.ic)가 정하므로 여기에 숫자가 없다. aria-hidden 인 이유:
+     아이콘 옆에는 늘 글자가 있거나 버튼에 aria-label 이 있어서, 읽어 주는 기계에는
+     같은 말이 두 번 들리면 안 된다. */
+  icon(name, size){
+    return '<svg class="ic' + (size ? ' ic-' + size : '') + '" aria-hidden="true" focusable="false">' +
+           '<use href="#i-' + name + '"></use></svg>';
+  },
   m6Fmt(side){return side.map(r=>(r.coef>1?r.coef:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')+this.phaseHTML(r.phase)).join(' + ');},
   /* 카드 유형(t)에서 카드 배열만 순수하게 만들어낸다 — 오답노트 재풀이(renderRetryFlashcard)에서도
      실제 mode6 세션 상태(state.m6Cards/m6Index)를 건드리지 않고 재사용하기 위해 분리 */
@@ -2017,7 +2030,7 @@ const App={
   m6Prev(){this.playSound('tap'); this.state.m6Index=(this.state.m6Index-1+this.state.m6Cards.length)%this.state.m6Cards.length;this.m6Render('prev');},
   m6Shuffle(){this.playSound('tap'); const c=[...this.state.m6Cards];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}this.state.m6Cards=c;this.state.m6Index=0;this.m6Render();},
 
-  M6_SAVE_LABEL:'🔖 이 카드 오답노트에 저장',
+  M6_SAVE_LABEL:'이 카드 오답노트에 저장',
   /* 카드 → 오답노트 저장용 {title, html} (저장·저장여부 판정 공용) */
   m6CardNoteData(card){
     const title=card.fhtml.replace(/<[^>]+>/g,'').trim()||card.ftag;
@@ -2042,11 +2055,11 @@ const App={
   m6SyncSaveBtn(){
     const btn=document.getElementById('m6SaveWrongBtn');if(!btn)return;
     if(this.m6CurrentSaved()){
-      btn.textContent='✅ 오답노트에 저장됨';
+      btn.innerHTML=this.icon('check','sm')+' 오답노트에 저장됨';
       btn.classList.add('saved');
       btn.disabled=true;
     }else{
-      btn.textContent=this.M6_SAVE_LABEL;
+      btn.innerHTML=this.icon('bookmark','sm')+' '+this.M6_SAVE_LABEL;
       btn.classList.remove('saved');
       btn.disabled=false;
     }
@@ -2103,7 +2116,6 @@ const App={
     this.state.theme=t.id;
     /* 클래스는 <html>에 붙인다 — 화면 전체 바탕색이 <html> 배경에서 오기 때문(css/style.css 참고) */
     THEMES.forEach(x=>document.documentElement.classList.toggle('theme-'+x.id, x.id===t.id));
-    document.getElementById('themeBtn').textContent=t.icon;
     if(persist){ try{localStorage.setItem('chem_theme',t.id);}catch(e){} }
     /* 열려 있는 상세 패널의 헤더 색은 테마별 팔레트를 쓰므로, 테마 전환 시 다시 그려 새 팔레트를 즉시 반영 */
     [this.$.ptDetailPanel,this.$.ptFsDetailPanel].forEach(panel=>{
@@ -2124,10 +2136,10 @@ const App={
       return `<button type="button" class="theme-opt${on?' active':''}" data-theme="${t.id}" aria-current="${on}">
         <span class="theme-swatch theme-pv theme-${t.id}" aria-hidden="true">${sw}</span>
         <span>
-          <span class="theme-opt-name">${t.icon} ${t.label}</span>
+          <span class="theme-opt-name">${t.label}</span>
           <span class="theme-opt-hint">${t.hint}</span>
         </span>
-        <span class="theme-opt-check">${on?'✓':''}</span>
+        <span class="theme-opt-check">${on?this.icon('check','sm'):''}</span>
       </button>`;
     }).join('');
   },
@@ -2164,7 +2176,7 @@ const App={
       });
       return {
         grid:`<div class="pt-grid pt-simple" style="grid-template-columns:40px repeat(8,1fr);grid-template-rows:repeat(7,1fr)">${cells}</div>`,
-        extra:`<hr class="pt-extra-divider"><div class="pt-extra-label">🔥 불꽃 반응 색</div><div class="pt-extra-row">${extraHTML}</div>`
+        extra:`<hr class="pt-extra-divider"><div class="pt-extra-label">불꽃 반응 색</div><div class="pt-extra-row">${extraHTML}</div>`
       };
     }
     cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:9px;line-height:1.1;text-align:center">족<br>주기</div>`;
@@ -2262,7 +2274,7 @@ const App={
     }
     const facts=`<dl class="pt-facts">${rows.map(([k,v])=>
       `<div class="pt-fact"><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
-    return `<div class="pt-detail-head"><span class="pt-detail-z">${e.z}</span><span class="pt-detail-sym" style="color:${catColor}">${e.sym}</span><span class="pt-detail-name" style="color:${catColor}">${e.name}</span><button class="pt-detail-close" aria-label="닫기">✕</button></div>${facts}<p class="pt-detail-desc">${e.desc||''}</p>`;
+    return `<div class="pt-detail-head"><span class="pt-detail-z">${e.z}</span><span class="pt-detail-sym" style="color:${catColor}">${e.sym}</span><span class="pt-detail-name" style="color:${catColor}">${e.name}</span><button class="pt-detail-close" aria-label="닫기">${this.icon('close')}</button></div>${facts}<p class="pt-detail-desc">${e.desc||''}</p>`;
   },
   /* 같은 칸을 다시 클릭하면 닫히고, 다른 칸을 클릭하면 내용을 교체 — 패널 하나당 항상 하나만 열림 */
   ptToggleDetail(panel,z){

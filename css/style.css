@@ -136,6 +136,11 @@
     --t-body-lg: 16px;   --lh-body-lg: 1.6;   /* 선택지, 상세 이름 */
     --t-title:   20px;   --lh-title:   1.35;  /* 창 제목 */
     --t-display: 26px;   --lh-display: 1.2;   /* 점수, 원소 기호 */
+
+    /* 아이콘 크기 — 글자 크기가 아니라 따로 둔다.
+       예전엔 .icon-btn 이 font-size:22px 으로 이모지를 키우고 있었는데,
+       그건 글자 크기로 그림 크기를 정하는 것이라 굵기가 같이 흔들렸다. */
+    --ic-sm: 16px;  --ic-md: 20px;  --ic-lg: 24px;
   }
   /* 움직임을 꺼 둔 사람에게는 지속시간만 0으로 만든다. 규칙마다 따로 끄면 언젠가 빠뜨린다 —
      토큰 한 곳을 바꾸면 이 토큰을 쓰는 모든 전환이 한꺼번에 멎는다.
@@ -352,7 +357,7 @@
   /* 옅은 바탕이 깔리면서 보조 글자의 대비가 4.36:1로 떨어졌다(검사가 잡았다).
      고른 카드의 설명이니 본문색으로 올린다 — 위계는 글자 크기(11px)가 이미 나르고 있다. */
   .mode-tab.active .tab-desc{color:var(--c-text-primary);}
-  .mode-tab .tab-icon{font-size:var(--t-title);display:block;margin-bottom:var(--s-0);}
+  .mode-tab .tab-name{display:block;}
   /* 여기도 opacity:0.75를 걷어냈다 — 3.77:1이었다. 11px 크기가 이미 위계를 나른다 */
   .mode-tab .tab-desc{font-size:var(--t-caption);display:block;font-weight:400;margin-top:var(--s-0);}
   /* 새 문제가 들어왔다는 신호. **줄바꿈되는 flex 상자에는 transform을 걸지 않는다** —
@@ -1019,6 +1024,18 @@
        500  버튼·탭·칩·라벨            ← 예전의 무차별 700 자리
        600  고른 것, 강조, mono 숫자
        700  수식, 창 제목, 점수. 그 밖에는 쓰지 않는다.  */
+
+  /* ── 아이콘 ──
+     획 굵기를 여기 한 곳에서 정한다. 이모지를 쓰던 시절엔 기기가 정하는 대로였고,
+     그래서 같은 줄에 굵기가 제각각인 그림 일곱 개가 나란히 있었다.
+     fill:none + stroke:currentColor 라 색은 글자색을 따라오고, 테마는 저절로 맞는다. */
+  .ic{width:var(--ic-md);height:var(--ic-md);flex-shrink:0;
+      fill:none;stroke:currentColor;stroke-width:1.75;stroke-linecap:round;stroke-linejoin:round;
+      vertical-align:-0.18em;}
+  .ic-sm{width:var(--ic-sm);height:var(--ic-sm);}
+  .ic-lg{width:var(--ic-lg);height:var(--ic-lg);}
+  /* 글자와 나란히 놓일 때의 사이 — 아이콘은 단어에 붙은 것이지 따로 선 것이 아니다 */
+  .has-ic{display:inline-flex;align-items:center;gap:var(--s-2);}
 
   /* ── 눌린다 ──
      터치에는 :hover가 없다. 그래서 :active가 없으면 폰에서는 무엇을 눌러도 손가락 아래에서

@@ -28,40 +28,40 @@ const SECTIONS=[
    noCoefWarning: 정답이 애초에 숫자인 모드. "계수 1은 생략" 경고가 오작동하므로(7족 답에 17을
    입력하면 '1'+'7'로 보인다) 그 경고를 끈다. */
 const MODES={
-  1:{section:'ms', icon:'🔢', name:'계수 맞추기',   desc:'계수 1도 입력 필수', std:'9과16-02', noCoefWarning:true},
+  1:{section:'ms', name:'계수 맞추기',   desc:'계수 1도 입력 필수', std:'9과16-02', noCoefWarning:true},
   /* desc의 개수는 세어서 만든다 — 손으로 「16개 전체」라고 적어 두었더니 구역별로 나눈 순간
      화면이 거짓말을 하게 됐다. 앞으로 반응식을 더하든 구역을 옮기든 이 줄은 저절로 맞는다. */
-  2:{section:'ms', icon:'🧪', name:'반응식 맞추기',  desc:reactionsInSection('ms').length+'개', std:'9과16-02', subLabel:'반응물',
+  2:{section:'ms', name:'반응식 맞추기',  desc:reactionsInSection('ms').length+'개', std:'9과16-02', subLabel:'반응물',
      subModes:[{id:2,label:'반응물'},{id:3,label:'생성물'},{id:4,label:'전체식'}]},
   3:{parent:2, subLabel:'생성물'},
   4:{parent:2, subLabel:'전체식'},
-  5:{section:'ms', icon:'🧠', name:'화학식 암기',   desc:'30종 전체', std:'9과11-01'},
-  6:{section:'ms', icon:'🃏', name:'플래시카드',    custom:'flashcard', cards:['full','reactant','product','formula']},
-  7:{section:'is1',icon:'🧭', name:'주기·족 맞추기', desc:'1~20번 + 할로젠·알칼리', std:'10통과1-02-03', noCoefWarning:true},
+  5:{section:'ms', name:'화학식 암기',   desc:'30종 전체', std:'9과11-01'},
+  6:{section:'ms', name:'플래시카드',    custom:'flashcard', cards:['full','reactant','product','formula']},
+  7:{section:'is1',name:'주기·족 맞추기', desc:'1~20번 + 할로젠·알칼리', std:'10통과1-02-03', noCoefWarning:true},
   /* 이온식을 외우는 모드가 아니다. 2022 개정 [9과11-04] 해설이 "전자를 잃으면 양이온이 되고
      전자를 얻으면 음이온이 된다는 수준에서 다룬다"로 상한선을 그었으므로 전자껍질로 접근한다. */
-  8:{section:'ms', icon:'⚡', name:'이온 만들기', desc:'1~20번 전자껍질', std:'9과11-04', noCoefWarning:true,
+  8:{section:'ms', name:'이온 만들기', desc:'1~20번 전자껍질', std:'9과11-04', noCoefWarning:true,
      subLabel:'원자가 전자', subModes:[{id:8,label:'원자가 전자'},{id:9,label:'이온 되기'}]},
   9:{parent:8, subLabel:'이온 되기'},
   /* 통합과학1 내용 요소는 이온 결합·공유 결합 둘뿐이다. 금속결합은 없고,
      결합 차수(단일·이중·삼중)라는 용어도 고2 「화학」 소관이라 여기서는 쓰지 않는다. */
-  10:{section:'is1',icon:'🔗', name:'결합 맞추기', desc:'이온결합·공유결합', std:'10통과1-02-04'},
+  10:{section:'is1',name:'결합 맞추기', desc:'이온결합·공유결합', std:'10통과1-02-04'},
   /* 2022 개정에서 중학교의 이온식이 빠졌지만 없어진 게 아니라 고2로 미뤄졌다.
      [12화학04-03] 중화 반응의 양적 관계를 쓰려면 이온식이 필요하다. */
-  11:{section:'chem',icon:'🧂', name:'이온식 쓰기', desc:'중화 반응에 필요', std:'12화학04-03'},
+  11:{section:'chem',name:'이온식 쓰기', desc:'중화 반응에 필요', std:'12화학04-03'},
   /* 결합 차수라는 용어 자체가 루이스 전자점식과 함께 고2 소관이라 통합과학이 아니라 여기 둔다 */
-  12:{section:'chem',icon:'⛓️', name:'결합 차수', desc:'단일·이중·삼중', std:'12화학02-03'},
+  12:{section:'chem',name:'결합 차수', desc:'단일·이중·삼중', std:'12화학02-03'},
   /* 심화 — 2022 개정 고시에 없는 내용. 구역 자체가 "시험 범위 아님"이라고 알려 준다. */
-  13:{section:'plus',icon:'💧', name:'앙금 생성', desc:'옛 교육과정', std:'(15개정 9과08-04)'},
+  13:{section:'plus',name:'앙금 생성', desc:'옛 교육과정', std:'(15개정 9과08-04)'},
   /* 2022 개정 학생은 전자껍질에 2·8·18이 들어간다고 쓰기만 하고 왜인지는 안 배운다. 그 "왜"를 채운다. */
-  14:{section:'plus',icon:'☁️', name:'오비탈', desc:'2·8·18의 이유', std:'(15개정 화학Ⅰ)', noCoefWarning:true,
+  14:{section:'plus',name:'오비탈', desc:'2·8·18의 이유', std:'(15개정 화학Ⅰ)', noCoefWarning:true,
       subLabel:'오비탈 개수', subModes:[{id:14,label:'오비탈 개수'},{id:15,label:'껍질 최대 전자'}]},
   15:{parent:14, subLabel:'껍질 최대 전자'},
   /* 플래시카드는 구역마다 하나씩 — 각자 그 구역 내용만 카드로 만든다.
      중학 것은 모드 6번 그대로라 이미 저장된 오답노트가 안 깨진다. */
-  16:{section:'is1', icon:'🃏', name:'플래시카드', custom:'flashcard', cards:['bond','group']},
-  17:{section:'chem',icon:'🃏', name:'플래시카드', custom:'flashcard', cards:['ion','order']},
-  18:{section:'plus',icon:'🃏', name:'플래시카드', custom:'flashcard', cards:['precip','orbital']}
+  16:{section:'is1', name:'플래시카드', custom:'flashcard', cards:['bond','group']},
+  17:{section:'chem',name:'플래시카드', custom:'flashcard', cards:['ion','order']},
+  18:{section:'plus',name:'플래시카드', custom:'flashcard', cards:['precip','orbital']}
 };
 
 /* 하위 유형(parent)이면 부모 모드의 이름·아이콘·구역을 따른다 */
@@ -114,6 +114,6 @@ const MODE_NAMES=Object.fromEntries(Object.keys(MODES).map(m=>{
   const sec=r.custom==='flashcard' ? (sectionMeta(r.section)||{}).label : null;
   return [m, r.name+(sec?' · '+sec:'')+(sub?' · '+sub:'')];
 }));
-const MODE_ICONS=Object.fromEntries(Object.keys(MODES).map(m=>{
-  const r=modeRoot(m); return [m, r ? r.icon : '📌'];
-}));
+/* 모드마다 이모지를 하나씩 달아 두었었다(🔢 계수, 🧪 반응식, 🧂 이온식 …).
+   「이온식이니까 소금」 같은 연결은 그림이 아니라 말장난이고, 스무 개를 늘어놓으면
+   그 자체가 「생성된 목록」으로 읽힌다. 탭에는 이미 이름과 설명 줄이 있다 — 그걸로 충분하다. */

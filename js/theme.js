@@ -7,6 +7,10 @@
    나뉘어 있어(PT_CAT_COLORS / PT_CAT_COLORS_LIGHT) 그걸 고르는 데 쓴다.
    테마가 둘뿐일 때는 "다크냐 아니냐"로 갈렸지만, 테마가 늘면 그 판단이 테마마다 필요하다.
 
+   테마마다 이모지를 하나씩(🌙 ☀️ 📜 🌑 🔳) 달아 두었었다. 목록은 이미 그 테마의
+   실제 색을 네 칸 견본으로 보여 준다 — 이모지보다 그쪽이 훨씬 정확하고, 헤더 버튼은
+   테마와 상관없이 같은 아이콘 하나면 된다("테마를 고른다"는 뜻은 하나뿐이므로).
+
    ⚠️ 어떤 테마를 넣든 지켜야 하는 것:
    · --c-correct(맞음)와 --c-wrong(틀림)은 초록·빨강 계열을 유지한다. 채점 결과라서
      테마 취향으로 바꾸면 안 된다.
@@ -14,11 +18,11 @@
    · 색만으로 뜻을 전하지 않는다는 원칙은 그대로다 — 테마는 보기 편하라고 있는 것이지
      의미를 나르라고 있는 게 아니다. */
 const THEMES = [
-  { id:'dark',     label:'다크',    icon:'🌙', hint:'기본',              light:false },
-  { id:'light',    label:'라이트',  icon:'☀️', hint:'밝은 곳에서',      light:true  },
-  { id:'paper',    label:'종이',    icon:'📜', hint:'오래 봐도 덜 피로', light:true  },
-  { id:'night',    label:'야간',    icon:'🌑', hint:'불 끄고 볼 때',     light:false },
-  { id:'contrast', label:'고대비',  icon:'🔳', hint:'잘 안 보일 때',     light:false }
+  { id:'dark',     label:'다크',    hint:'기본',              light:false },
+  { id:'light',    label:'라이트',  hint:'밝은 곳에서',      light:true  },
+  { id:'paper',    label:'종이',    hint:'오래 봐도 덜 피로', light:true  },
+  { id:'night',    label:'야간',    hint:'불 끄고 볼 때',     light:false },
+  { id:'contrast', label:'고대비',  hint:'잘 안 보일 때',     light:false }
 ];
 const THEME_DEFAULT = 'dark';
 function themeMeta(id){ return THEMES.find(t => t.id === id) || THEMES.find(t => t.id === THEME_DEFAULT); }

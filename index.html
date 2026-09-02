@@ -20,27 +20,70 @@
 </head>
 <body>
 
+<!-- ── 아이콘 ──
+     이모지를 아이콘으로 쓰고 있었다(63종·121곳). 이모지는 기기마다 다르게 그려지고,
+     굵기도 크기도 맞출 수 없고, 무엇보다 "골라 붙인 것"으로 읽힌다.
+     기성 아이콘 묶음을 가져오는 것도 답이 아니다 — 그건 또 다른 기본값일 뿐이다.
+
+     그래서 직접 그린다. 전부 24×24 격자에 같은 획 굵기 하나로,
+     채움 없이 선으로만. 굵기·색·크기는 .ic 규칙 한 곳에서 정한다.
+
+     왜 <symbol>+<use> 인가: 정의는 여기 한 번, 쓰는 곳에서는 <use> 한 줄이다.
+     정적 HTML 에도 JS 템플릿 문자열에도 똑같이 들어가고, 같은 문서 안의 #id 를
+     가리키므로 file:// 로 열어도 동작한다. currentColor 를 물려받아 테마가 저절로 따라온다.
+     결정적으로 헤더 버튼과 닫기 버튼이 **자바스크립트 없이** 그려진다 —
+     app.js 가 죽어도 화면에서 아이콘이 통째로 사라지지 않는다. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <symbol id="i-layout" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2"/><path d="M12 4.5v15"/></symbol>
+    <symbol id="i-sound-on" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z"/><path d="M16 9.2a4 4 0 0 1 0 5.6M18.6 6.6a7.6 7.6 0 0 1 0 10.8"/></symbol>
+    <symbol id="i-sound-off" viewBox="0 0 24 24"><path d="M4 9.5h3.5L12 5.5v13L7.5 14.5H4z"/><path d="m16.5 9.5 5 5m0-5-5 5"/></symbol>
+    <symbol id="i-vibrate-on" viewBox="0 0 24 24"><rect x="8" y="3.5" width="8" height="17" rx="1.5"/><path d="M4.5 9v6M19.5 9v6"/></symbol>
+    <symbol id="i-vibrate-off" viewBox="0 0 24 24"><rect x="8" y="3.5" width="8" height="17" rx="1.5"/><path d="m4 20 16-16"/></symbol>
+    <symbol id="i-notebook" viewBox="0 0 24 24"><rect x="6.5" y="3.5" width="13" height="17" rx="1.5"/><path d="M6.5 8h-3M6.5 12h-3M6.5 16h-3"/><path d="M10 9h6M10 13h6"/></symbol>
+    <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6.5h11M9 12h11M9 17.5h11M4.5 6.5h.01M4.5 12h.01M4.5 17.5h.01"/></symbol>
+    <symbol id="i-atom" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><ellipse cx="12" cy="12" rx="9.5" ry="4" /><ellipse cx="12" cy="12" rx="9.5" ry="4" transform="rotate(60 12 12)"/><ellipse cx="12" cy="12" rx="9.5" ry="4" transform="rotate(120 12 12)"/></symbol>
+    <symbol id="i-theme" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17"/><path d="M12 3.5a8.5 8.5 0 0 1 0 17" fill="currentColor" stroke="none"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m4.5 12.5 5 5 10-11"/></symbol>
+    <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m14.5 5-7 7 7 7"/></symbol>
+    <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9.5 5 7 7-7 7"/></symbol>
+    <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M4 12h15m-6-6 6 6-6 6"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.6-5.9"/><path d="M20 4v4.5h-4.5"/></symbol>
+    <symbol id="i-backspace" viewBox="0 0 24 24"><path d="M9 5h10.5A1.5 1.5 0 0 1 21 6.5v11a1.5 1.5 0 0 1-1.5 1.5H9l-6-7z"/><path d="m11.5 9.5 5 5m0-5-5 5"/></symbol>
+    <symbol id="i-shuffle" viewBox="0 0 24 24"><path d="M3.5 6.5h3.2l10.6 11h3.2M3.5 17.5h3.2l3.3-3.4M14 9.9l3.3-3.4h3.2"/><path d="M18 3.5l2.5 3-2.5 3M18 14.5l2.5 3-2.5 3"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M4.5 6.5h15M9.5 6.5V4.2h5v2.3M6.5 6.5l1 13h9l1-13M10.5 10v6M13.5 10v6"/></symbol>
+    <symbol id="i-bookmark" viewBox="0 0 24 24"><path d="M6.5 3.5h11v17l-5.5-4-5.5 4z"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M1.8 12S5.8 5.5 12 5.5 22.2 12 22.2 12 18.2 18.5 12 18.5 1.8 12 1.8 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7v5.3l3.4 2"/></symbol>
+    <symbol id="i-flame" viewBox="0 0 24 24"><path d="M12 3.2c3.4 3.5 5.6 6 5.6 9.1a5.6 5.6 0 1 1-11.2 0c0-1.6.6-3 1.7-4.4.5 1.1 1.2 1.8 2 2 .2-2.6.8-4.8 1.9-6.7Z"/></symbol>
+    <symbol id="i-door" viewBox="0 0 24 24"><path d="M14.5 3.5h4v17h-4"/><path d="M3.5 12h9m-3.2-3.4L12.7 12l-3.4 3.4"/></symbol>
+    <symbol id="i-infinity" viewBox="0 0 24 24"><path d="M8.6 12c-1.3 1.9-2.4 2.8-3.6 2.8a2.8 2.8 0 0 1 0-5.6c2.6 0 4.2 5.6 6.8 5.6h1.6c1.2 0 2.3-.9 3.6-2.8"/><path d="M15.4 12c1.3-1.9 2.4-2.8 3.6-2.8a2.8 2.8 0 0 1 0 5.6c-1.2 0-2.3-.9-3.6-2.8"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 4.2 21 19.8H3z"/><path d="M12 10v4M12 17h.01"/></symbol>
+  </defs>
+</svg>
+
 <div id="app">
   <!-- 새 판이 올라왔을 때만 뜬다(App.renderUpdateBanner). 공부하다 화면이 저절로 바뀌면 안 되므로
        새로고침은 학생이 누를 때만 한다. 내용은 js/version.js의 CHANGELOG에서 온다. -->
   <div class="update-banner" id="updateBanner" role="status" hidden>
     <div class="update-head">
-      <span class="update-title">🎉 새 내용이 있어요</span>
-      <button class="update-close" id="updateCloseBtn" aria-label="알림 닫기">✕</button>
+      <span class="update-title">새 내용이 있어요</span>
+      <button class="update-close" id="updateCloseBtn" aria-label="알림 닫기"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button>
     </div>
     <ul class="update-list" id="updateList"></ul>
-    <button class="update-reload" id="updateReloadBtn">🔄 새로고침해서 받기</button>
+    <button class="update-reload" id="updateReloadBtn"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg> 새로고침해서 받기</button>
   </div>
   <header>
     <div class="logo-egg" id="easterEggBtn">누루ズl ㅁトパㅔ요</div>
     <div class="header-right">
-      <button class="icon-btn" id="layoutBtn" title="화면 분할 토글" aria-label="화면 분할 토글" aria-pressed="false">↔️</button>
-      <button class="icon-btn" id="soundBtn" title="소리 토글" aria-label="소리 토글" aria-pressed="true">🔊</button>
-      <button class="icon-btn" id="hapticBtn" title="진동 토글" aria-label="진동 토글" aria-pressed="true">📳</button>
-      <button class="icon-btn" id="wrongNoteBtn" title="오답 노트" aria-label="오답 노트">📓</button>
-      <button class="icon-btn" id="hintBtn" title="전체 반응식 보기" aria-label="전체 반응식 보기">📋</button>
-      <button class="icon-btn" id="periodicBtn" title="주기율표 보기" aria-label="주기율표 보기">⚛️</button>
-      <button class="icon-btn" id="themeBtn" title="테마 고르기" aria-label="테마 고르기">🌙</button>
+      <button class="icon-btn" id="layoutBtn" title="화면 분할 토글" aria-label="화면 분할 토글" aria-pressed="false"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-layout"></use></svg></button>
+      <button class="icon-btn" id="soundBtn" title="소리 토글" aria-label="소리 토글" aria-pressed="true"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-sound-on"></use></svg></button>
+      <button class="icon-btn" id="hapticBtn" title="진동 토글" aria-label="진동 토글" aria-pressed="true"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-vibrate-on"></use></svg></button>
+      <button class="icon-btn" id="wrongNoteBtn" title="오답 노트" aria-label="오답 노트"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-notebook"></use></svg></button>
+      <button class="icon-btn" id="hintBtn" title="전체 반응식 보기" aria-label="전체 반응식 보기"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-list"></use></svg></button>
+      <button class="icon-btn" id="periodicBtn" title="주기율표 보기" aria-label="주기율표 보기"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-atom"></use></svg></button>
+      <button class="icon-btn" id="themeBtn" title="테마 고르기" aria-label="테마 고르기"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-theme"></use></svg></button>
     </div>
   </header>
 
@@ -56,7 +99,7 @@
   </div>
 
   <div class="timer-select-wrap" id="timerSelectWrap">
-    <div class="timer-select-label">⏱ 제한시간</div>
+    <div class="timer-select-label">제한시간</div>
     <div class="timer-btns" id="timerBtns">
       <button class="timer-btn" data-sec="0">무제한</button>
       <button class="timer-btn" data-sec="15">15초</button>
@@ -77,7 +120,7 @@
   </div>
 
   <div class="cycle-wrap" id="cycleWrap" style="display:none">
-    <div class="cycle-label">🔄 출제 방식</div>
+    <div class="cycle-label">출제 방식</div>
     <div class="cycle-btns">
       <button class="cycle-btn active" data-cycle="random">랜덤</button>
       <button class="cycle-btn" data-cycle="cycle">순환 (전체 1회씩)</button>
@@ -87,15 +130,15 @@
       <div class="cycle-progress-bar"><!-- 진행은 width가 아니라 scaleX로 준다(css 참고) — 인라인 width가 남아 있으면 그게 이겨서 막대가 영영 0폭이었다 --><div class="cycle-progress-fill" id="cycleProgressFill"></div></div>
     </div>
     <!-- 하위 유형: 반응물·생성물·전체식처럼 한 탭 안에서 갈리는 모드용. MODES[n].subModes에서 렌더된다 -->
-    <div class="cycle-label sub-only">📚 문제 유형</div>
+    <div class="cycle-label sub-only">문제 유형</div>
     <div class="cycle-btns sub-only" id="subModeBtns"></div>
     <!-- 그림이 있는 모드에서만 나온다. 문제를 그림 없이 풀고 싶은 경우를 위해 끌 수 있게 한다. -->
-    <div class="cycle-label dia-only">🔬 해설 그림</div>
+    <div class="cycle-label dia-only">해설 그림</div>
     <div class="cycle-btns dia-only">
       <button class="dia-btn active" data-dia="on">보기</button>
       <button class="dia-btn" data-dia="off">끄기</button>
     </div>
-    <div class="cycle-label m7-only">🧭 출제 방향</div>
+    <div class="cycle-label m7-only">출제 방향</div>
     <div class="cycle-btns m7-only">
       <button class="dir-btn active" data-dir="toPG">원소 → 주기·족</button>
       <button class="dir-btn" data-dir="toElem">주기·족 → 원소</button>
@@ -103,8 +146,8 @@
   </div>
 
   <div id="retryBanner">
-    <span id="retryBannerText">⚠️ 오답 노트 재풀이 모드</span>
-    <button class="exit-retry-btn" id="exitRetryBtn">그만두기 🚪</button>
+    <span id="retryBannerText">오답 노트 재풀이 모드</span>
+    <button class="exit-retry-btn" id="exitRetryBtn">그만두기 <svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-door"></use></svg></button>
   </div>
 
   <div class="question-card" id="questionCard">
@@ -131,17 +174,17 @@
         <div class="m6-face m6-back"><div class="m6-tag" id="retryM6BTag"></div><div id="retryM6BContent"></div></div>
       </div>
     </div>
-    <div class="m6-hint">탭하여 뒤집기 🔄</div>
+    <div class="m6-hint"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg> 탭하여 뒤집기</div>
     <div style="display:flex;gap:10px">
-      <button class="m6-nav-btn" id="retryM6ForgotBtn" style="flex:1;width:auto;font-size:14px;font-weight:700;">➡️ 다음에 다시</button>
-      <button class="m6-nav-btn retry-know-btn" id="retryM6KnowBtn" style="flex:1;width:auto;font-size:14px;font-weight:700;">✅ 기억했어요</button>
+      <button class="m6-nav-btn" id="retryM6ForgotBtn" style="flex:1;width:auto;font-size:14px;font-weight:700;"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-arrow-right"></use></svg> 다음에 다시</button>
+      <button class="m6-nav-btn retry-know-btn" id="retryM6KnowBtn" style="flex:1;width:auto;font-size:14px;font-weight:700;"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-check"></use></svg> 기억했어요</button>
     </div>
   </div>
 
   <div id="mode6Wrap">
-    <button class="m6-wrongnote-link" id="m6WrongNoteBtn"><span class="m6-wrongnote-icon">ⓘ</span> 오답노트 확인하기</button>
+    <button class="m6-wrongnote-link" id="m6WrongNoteBtn">오답노트 확인하기</button>
     <div class="m6-opt-row">
-      <div class="m6-opt-label">📚 카드 유형</div>
+      <div class="m6-opt-label">카드 유형</div>
       <div class="m6-opt-btns" id="m6TypeBtns">
         <button class="m6-opt-btn active" data-val="full">전체 반응식</button>
         <button class="m6-opt-btn" data-val="reactant">반응물</button>
@@ -150,7 +193,7 @@
       </div>
     </div>
     <div class="m6-opt-row">
-      <div class="m6-opt-label">👁 먼저 보기</div>
+      <div class="m6-opt-label">먼저 보기</div>
       <div class="m6-opt-btns" id="m6OrderBtns">
         <button class="m6-opt-btn active" data-val="korean">한글 먼저</button>
         <button class="m6-opt-btn" data-val="formula">화학식 먼저</button>
@@ -169,16 +212,16 @@
           </div>
         </div>
       </div>
-      <div class="m6-hint">탭하여 뒤집기 🔄 &nbsp;|&nbsp; 스와이프로 이동 &nbsp;|&nbsp; ← → Space</div>
-      <button class="m6-save-wrong-btn" id="m6SaveWrongBtn">🔖 이 카드 오답노트에 저장</button>
+      <div class="m6-hint"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg> 탭하여 뒤집기 · 스와이프로 이동 · 방향키와 스페이스</div>
+      <button class="m6-save-wrong-btn" id="m6SaveWrongBtn"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-bookmark"></use></svg> 이 카드 오답노트에 저장</button>
     </div>
     <div class="m6-nav">
-      <button class="m6-nav-btn" id="m6PrevBtn">‹</button>
+      <button class="m6-nav-btn" id="m6PrevBtn" aria-label="이전 카드"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-chevron-left"></use></svg></button>
       <div class="m6-nav-center">
         <span class="m6-counter" id="m6Counter">1 / 16</span>
-        <button class="m6-shuffle" id="m6ShuffleBtn">🔀 섞기</button>
+        <button class="m6-shuffle" id="m6ShuffleBtn">섞기</button>
       </div>
-      <button class="m6-nav-btn" id="m6NextBtn">›</button>
+      <button class="m6-nav-btn" id="m6NextBtn" aria-label="다음 카드"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-chevron-right"></use></svg></button>
     </div>
     <div class="m6-progress-bar"><div class="m6-progress-fill" id="m6PFill"></div></div>
   </div>
@@ -199,18 +242,18 @@
     <!-- kb-edit: 글자 단위 편집키. 보기에서 고르는 문제에서는 답이 통째로 들어오므로
          이 키들이 눌리면 답이 깨진다(「이온결합」→⌫→「이온결」). 그때는 통째로 숨긴다. -->
     <div class="kb-row" style="margin-top:14px">
-      <button class="kb-key kb-edit" data-key="LEFT" style="flex-grow:1; max-width: 60px;">◀</button>
-      <button class="kb-key kb-edit" data-key="RIGHT" style="flex-grow:1; max-width: 60px;">▶</button>
-      <button class="kb-key del kb-edit" data-key="DEL" style="flex-grow:2">⌫ 지우기</button>
-      <button class="kb-key confirm" data-key="CONFIRM" style="flex-grow:3">✓ 확인</button>
-      <button class="kb-key next-q" data-key="NEXT" style="display:none; flex-grow:3">▶ 다음 문제</button>
+      <button class="kb-key kb-edit" data-key="LEFT" style="flex-grow:1; max-width: 60px;" aria-label="왼쪽으로"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-left"></use></svg></button>
+      <button class="kb-key kb-edit" data-key="RIGHT" style="flex-grow:1; max-width: 60px;" aria-label="오른쪽으로"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"></use></svg></button>
+      <button class="kb-key del kb-edit" data-key="DEL" style="flex-grow:2"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-backspace"></use></svg> 지우기</button>
+      <button class="kb-key confirm" data-key="CONFIRM" style="flex-grow:3"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-check"></use></svg> 확인</button>
+      <button class="kb-key next-q" data-key="NEXT" style="display:none; flex-grow:3"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-arrow-right"></use></svg> 다음 문제</button>
     </div>
   </div>
 </div>
 
 <div class="modal-overlay" id="themeModalOverlay">
   <div class="modal-box" style="max-width:440px">
-    <div class="modal-header"><div class="modal-title">🎨 테마</div><button class="modal-close" id="themeModalClose">✕</button></div>
+    <div class="modal-header"><div class="modal-title">테마</div><button class="modal-close" id="themeModalClose"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div>
     <!-- 목록은 THEMES(js/theme.js)에서 만들어 넣는다 — 테마를 더해도 이 마크업은 그대로다 -->
     <div class="modal-content" id="themeList"></div>
   </div>
@@ -219,16 +262,16 @@
 <div class="modal-overlay" id="hintModalOverlay">
   <div class="modal-box">
     <!-- 「전체」가 아니다 — 지금 고른 구역의 반응식만 나온다(buildModalList). 목록 첫 줄이 어느 구역인지 말한다. -->
-    <div class="modal-header"><div class="modal-title">📋 반응식 목록</div><button class="modal-close" id="hintModalClose">✕</button></div>
+    <div class="modal-header"><div class="modal-title">반응식 목록</div><button class="modal-close" id="hintModalClose"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div>
     <div class="modal-content" id="reactionList"></div>
   </div>
 </div>
 
 <div class="modal-overlay" id="periodicModalOverlay">
   <div class="modal-box pt-modal-box">
-    <div class="modal-header"><div class="modal-title">⚛️ 주기율표</div><div style="display:flex;gap:10px;align-items:center"><button class="pt-rotate-btn" id="ptRotateBtn" title="회전해서 보기">🔄 회전</button><button class="modal-close" id="periodicModalClose">✕</button></div></div>
+    <div class="modal-header"><div class="modal-title">주기율표</div><div style="display:flex;gap:10px;align-items:center"><button class="pt-rotate-btn" id="ptRotateBtn" title="회전해서 보기"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg> 회전</button><button class="modal-close" id="periodicModalClose"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div></div>
     <div class="pt-toggle-row">
-      <div class="pt-toggle-label">👁 간략히 보기<small>중학교 필수 원소 (1~20번) + 불꽃반응·자주 나오는 원소만 표시</small></div>
+      <div class="pt-toggle-label">간략히 보기<small>중학교 필수 원소 (1~20번) + 불꽃반응·자주 나오는 원소만 표시</small></div>
       <button class="pt-toggle-switch" id="simplePeriodicToggle" role="switch" aria-checked="false"><span class="pt-toggle-knob"></span></button>
     </div>
     <div class="modal-content" id="periodicContent"></div>
@@ -238,7 +281,7 @@
 
 <div class="pt-fullscreen" id="ptFullscreen">
   <div class="pt-fs-rotor">
-    <div class="pt-fs-title"><span>⚛️ 주기율표 — 가로 보기</span><button class="pt-fs-close" id="ptFsClose">✕ 닫기</button></div>
+    <div class="pt-fs-title"><span>주기율표 — 가로 보기</span><button class="pt-fs-close" id="ptFsClose">닫기</button></div>
     <div class="pt-fs-viewport" id="ptFsViewport">
       <div class="pt-fs-scroll" id="ptFsContent"></div>
     </div>
@@ -248,10 +291,10 @@
 
 <div class="modal-overlay" id="wrongNoteModalOverlay">
   <div class="modal-box" style="height:90vh">
-    <div class="modal-header"><div class="modal-title">📓 오답 노트</div><button class="modal-close" id="wrongNoteModalClose">✕</button></div>
+    <div class="modal-header"><div class="modal-title">오답 노트</div><button class="modal-close" id="wrongNoteModalClose"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div>
     <div style="display:flex; justify-content:space-between; margin-bottom:16px;">
-        <button class="retry-playlist-btn" id="retryPlaylistBtn">♾️ 랜덤 연속 풀기</button>
-        <button class="clear-all-btn" id="clearAllNotesBtn" style="margin-bottom:0">🗑 전체 삭제</button>
+        <button class="retry-playlist-btn" id="retryPlaylistBtn"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-infinity"></use></svg> 랜덤 연속 풀기</button>
+        <button class="clear-all-btn" id="clearAllNotesBtn" style="margin-bottom:0"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-trash"></use></svg> 전체 삭제</button>
     </div>
     <!-- 모드 단위로 칩을 두면 모드 수만큼 늘어나 못 쓰게 된다. 구역 단위로 거르고,
          어떤 모드였는지는 각 노트의 배지에 이미 보인다. -->
