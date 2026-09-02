@@ -35,7 +35,10 @@
     '.theme-swatch'    /* 부모 .theme-opt 가 실제 버튼이다 */
   ];
   /* 가로로 넘치는 것이 의도인 곳 */
-  const SCROLLER_OK = ['.section-tabs', '.equation-display', '.pt-scroll', '.pt-fs-scroll', '.modal-content'];
+  const SCROLLER_OK = ['.section-tabs', '.equation-display', '.pt-scroll', '.pt-fs-scroll', '.modal-content',
+    /* .sr-only 는 내용이 넘치는 게 곧 목적이다 — 눈에는 안 보이되 읽어 주는 기계에는
+       남기려고 1px 로 잘라 둔 것이라, 여기서 「넘친다」고 신고하면 옳은 코드를 나무라게 된다. */
+    '.sr-only'];
   /* 12px 하한 예외
      · 주기율표 칸: 118칸을 한 화면에 넣는 밀도 문제라 코드에 근거가 적혀 있다
      · sub/sup: 아래·위 첨자는 **작은 것이 맞다**. H₂O 의 2 가 본문과 같은 크기면

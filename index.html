@@ -4,6 +4,14 @@
 <meta charset="UTF-8">
 <meta name="viewport" id="viewportMeta" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>반응물이 반응하면 생성물</title>
+<meta name="description" content="중학 · 통합과학 · 고2 화학 · 심화 구역별로 화학 반응식, 이온, 화학 결합, 주기율표를 연습하는 웹앱. 2022 개정 교육과정 기준.">
+<!-- 두 개인 이유: 폰이 주소창 색을 테마에 맞춰 칠하는데, 밝은 테마와 어두운 테마의
+     바탕색이 다르다. 하나만 적으면 한쪽에서 주소창만 딴 색으로 남는다. -->
+<meta name="theme-color" content="#F2EFE7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#191817" media="(prefers-color-scheme: dark)">
+<meta property="og:title" content="반응물이 반응하면 생성물">
+<meta property="og:description" content="화학 반응식·이온·화학 결합·주기율표 연습. 2022 개정 교육과정 기준.">
+<meta property="og:type" content="website">
 <!-- ?v= 는 캐시 무효화용이다. js/version.js의 APP_VERSION과 같은 값이어야 하고,
      판을 올릴 때 손으로 같이 바꾼다(빌드 도구가 없다). verifyUpdate가 어긋남을 잡는다. -->
 <!-- 글꼴을 style.css 의 @import 가 아니라 여기서 부른다 — HTML 을 읽는 즉시 출발해
@@ -63,7 +71,7 @@
   </defs>
 </svg>
 
-<div id="app">
+<main id="app">
   <!-- 새 판이 올라왔을 때만 뜬다(App.renderUpdateBanner). 공부하다 화면이 저절로 바뀌면 안 되므로
        새로고침은 학생이 누를 때만 한다. 내용은 js/version.js의 CHANGELOG에서 온다. -->
   <div class="update-banner" id="updateBanner" role="status" hidden>
@@ -75,6 +83,9 @@
     <button class="update-reload" id="updateReloadBtn"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg> 새로고침해서 받기</button>
   </div>
   <header>
+    <!-- 화면에는 안 보이는 제목. 로고가 야민정음 말장난이라 읽어 주는 기계에는
+         아무 뜻이 안 되므로, 이 화면이 무엇인지를 따로 적어 둔다. -->
+    <h1 class="sr-only">화학 반응식 연습</h1>
     <div class="logo-egg" id="easterEggBtn">누루ズl ㅁトパㅔ요</div>
     <div class="header-right">
       <button class="icon-btn" id="layoutBtn" title="화면 분할 토글" aria-label="화면 분할 토글" aria-pressed="false"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-layout"></use></svg></button>
@@ -89,13 +100,13 @@
 
   <div class="stat-bar">
     <div class="stat-item">
-      <div class="stat-label">Streak</div>
+      <div class="stat-label">연속</div>
       <div class="stat-value" id="streakCount">0</div>
       <div class="streak-flames" id="streakFlames"></div>
     </div>
     <div style="flex:1"></div>
-    <div class="stat-item"><div class="stat-label">Correct</div><div class="stat-value" id="totalCorrect">0</div></div>
-    <div class="stat-item"><div class="stat-label">Wrong</div><div class="stat-value" id="totalWrong">0</div></div>
+    <div class="stat-item"><div class="stat-label">맞음</div><div class="stat-value" id="totalCorrect">0</div></div>
+    <div class="stat-item"><div class="stat-label">틀림</div><div class="stat-value" id="totalWrong">0</div></div>
   </div>
 
   <div class="timer-select-wrap" id="timerSelectWrap">
@@ -126,7 +137,7 @@
       <button class="cycle-btn" data-cycle="cycle">순환 (전체 1회씩)</button>
     </div>
     <div class="cycle-progress-wrap" id="cycleProgressWrap" style="display:none">
-      <div class="cycle-progress-text" id="cycleProgressText">0 / 16</div>
+      <div class="cycle-progress-text" id="cycleProgressText">—</div>
       <div class="cycle-progress-bar"><!-- 진행은 width가 아니라 scaleX로 준다(css 참고) — 인라인 width가 남아 있으면 그게 이겨서 막대가 영영 0폭이었다 --><div class="cycle-progress-fill" id="cycleProgressFill"></div></div>
     </div>
     <!-- 하위 유형: 반응물·생성물·전체식처럼 한 탭 안에서 갈리는 모드용. MODES[n].subModes에서 렌더된다 -->
@@ -218,7 +229,7 @@
     <div class="m6-nav">
       <button class="m6-nav-btn" id="m6PrevBtn" aria-label="이전 카드"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-chevron-left"></use></svg></button>
       <div class="m6-nav-center">
-        <span class="m6-counter" id="m6Counter">1 / 16</span>
+        <span class="m6-counter" id="m6Counter">—</span>
         <button class="m6-shuffle" id="m6ShuffleBtn">섞기</button>
       </div>
       <button class="m6-nav-btn" id="m6NextBtn" aria-label="다음 카드"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-chevron-right"></use></svg></button>
@@ -227,9 +238,9 @@
   </div>
 
   <div class="keyboard-wrap" id="keyboardWrap">
-    <div class="kb-section-label" id="numRowLabel">Numbers</div>
+    <div class="kb-section-label" id="numRowLabel">숫자</div>
     <div class="kb-row" id="numRow"></div>
-    <div class="kb-section-label" id="elemRowLabel">Elements</div>
+    <div class="kb-section-label" id="elemRowLabel">원소 기호</div>
     <div class="kb-row" id="elemRow"></div>
     <!-- 보기 버튼: 답이 숫자도 원소 기호도 아닌 문제용. q.choices가 있으면 숫자·원소 줄 대신 나온다.
          고르면 q.inputs에 값이 들어가므로 채점 엔진은 지금 그대로 문자열 비교만 한다. -->
@@ -301,7 +312,7 @@
     <div class="filter-chips" id="wrongNoteFilters"></div>
     <div class="modal-content" id="wrongNoteList"></div>
   </div>
-</div>
+</main>
 
 <script src="js/version.js?v=2026.08.24"></script>
 <script src="js/theme.js?v=2026.08.24"></script>

@@ -273,6 +273,11 @@
   /* 화면 전체에 강조색 두 개를 은은하게 깔던 겹이 있었다.
      새 테마는 셋 다 0 이라 아무것도 그리지 않으면서 고정 레이어만 남는다 — 걷어낸다.
      바탕은 바탕색 하나로 충분하고, 그게 인쇄물의 방식이다. */
+  /* 눈에는 안 보이지만 읽어 주는 기계에는 있는 글자.
+     display:none 이나 visibility:hidden 으로 감추면 기계도 같이 못 읽는다 —
+     화면 밖으로 밀어내되 레이아웃에서 사라지지 않게 1px 로 잘라 둔다. */
+  .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;
+    overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0;}
   #app{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:var(--s-4);display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;transition:max-width var(--dur-move) var(--ease-move);}
   header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s-4);}
   .logo-egg{font-size:var(--t-body-lg);font-weight:700;color:var(--c-wrong);letter-spacing:0.08em;cursor:pointer;user-select:none;transition:transform var(--dur-tap) var(--ease-out);white-space:nowrap;flex-shrink:0;}
