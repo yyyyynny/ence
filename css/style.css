@@ -285,7 +285,9 @@
   header{flex-wrap:wrap;min-width:0;gap:var(--s-2);}
   .header-right{display:flex;gap:var(--s-2);align-items:center;flex-wrap:wrap;justify-content:flex-end;
     flex:1 1 auto;min-width:min(100%,232px);}
-  .icon-btn{background:var(--c-surface-1);border:1px solid var(--c-border);color:var(--c-text-secondary);width:52px;height:52px;border-radius:var(--r-2);cursor:pointer;font-size:var(--t-title);display:flex;align-items:center;justify-content:center;transition:var(--t-btn);flex-shrink:0;}
+  /* 아이콘 일곱 개가 각자 상자를 두르고 있었다. 아이콘은 그 자체로 모양이 있어서
+     테두리가 하는 일이 없다 — 지켜야 하는 건 손가락 크기뿐이다. */
+  .icon-btn{background:transparent;border:1px solid transparent;color:var(--c-text-secondary);width:52px;height:52px;border-radius:var(--r-2);cursor:pointer;font-size:var(--t-title);display:flex;align-items:center;justify-content:center;transition:var(--t-btn);flex-shrink:0;}
   @media (max-width:460px){
     .logo-egg{font-size:var(--t-body);}
     /* 44px 아래로는 안 줄인다 — 손가락이 닿는 최소 크기다. 전에는 42px이라 그 선을 넘었다. */
@@ -303,8 +305,11 @@
      강조돼 있어 「아직 그 화면인가?」로 읽힌다. 누른 느낌은 :active 가 이미 맡고 있다.
      제자리에서 감싼다(파일 끝으로 몰면 .m6-save-wrong-btn.saved 처럼 뒤에 오는 같은 굵기의
      규칙을 hover 가 이기게 되어, 저장된 카드의 글자가 배경색과 같아져 안 보인다). */
-  @media (hover:hover){.icon-btn:hover{border-color:var(--c-border-active);color:var(--c-accent-1);}}
-  .stat-bar{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:var(--r-3);padding:var(--s-4) var(--s-5);display:flex;align-items:center;gap:var(--s-4);margin-bottom:var(--s-4);}
+  @media (hover:hover){.icon-btn:hover{color:var(--c-accent-1);}}
+  /* 점수는 카드가 아니라 지면의 머리글이다 — 숫자 한 줄과 그 아래 괘선.
+     상자를 없애면 화면 맨 위가 조용해지고, 눈이 문제로 바로 간다. */
+  .stat-bar{display:flex;align-items:center;gap:var(--s-4);padding:0 var(--s-1) var(--s-3);
+    margin-bottom:var(--s-4);border-bottom:1px solid var(--c-border);}
   .stat-item{display:flex;align-items:center;gap:var(--s-2);}
   /* ── 작은 라벨 ──
      여기는 전부 mono + 대문자 + 자간 1px 이었다. 그 조판은 영문 소형 캡션용이고,
@@ -318,7 +323,12 @@
   .stat-value.bump{transform:scale(1.4);}
   #streakCount{color:var(--c-text-primary);}#totalCorrect{color:var(--c-correct);}#totalWrong{color:var(--c-wrong);}
   .streak-flames{font-size:var(--t-title);}
-  .timer-select-wrap{display:flex;align-items:center;gap:var(--s-2);margin-bottom:var(--s-4);background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:var(--r-3);padding:var(--s-3) var(--s-4);}
+  /* ══ 설정 줄 ══
+     제한시간·출제 방식·카드 유형·간략히 보기가 각각 테두리 상자였다. 카드 네 개가
+     세로로 쌓이면 그게 곧 「생성된 화면」이다. 상자를 걷고 **위쪽 괘선 하나**로 나눈다 —
+     인쇄물이 항목을 나누는 방법이고, 선 하나가 상자 넷보다 조용하다. */
+  .timer-select-wrap{display:flex;align-items:center;gap:var(--s-2);margin-bottom:var(--s-4);
+    padding:var(--s-3) var(--s-1) 0;border-top:1px solid var(--c-border);}
   .timer-select-label{font-size:var(--t-caption);color:var(--c-text-secondary);font-weight:500;white-space:nowrap;}
   .timer-btns{display:flex;gap:var(--s-2);flex-wrap:wrap;}
   /* 작은 알약 버튼들의 최소 높이 — 이 무리는 padding 10px + 글자 14px 라 40px 언저리로 잡혀
@@ -326,16 +336,23 @@
      크기다. 글자·여백은 그대로 두고 최소 높이만 올린다 — 이미 44px 이상인 곳에는 아무 영향이 없다.
      .pt-cell 은 여기 넣지 않는다: 표 전체를 한 화면에 보여 주는 격자라 칸을 키울 수 없고,
      그래서 확대·가로 보기를 따로 둔 것이다. */
+  /* ══ 고른 것만 채운다 ══
+     칩 열 종이 전부 「테두리 + 둥근 모서리 + 반투명 바닥」이었다. 여섯 개가 나란히 있으면
+     상자 여섯이 서로 경쟁하고, 그중 하나가 옅게 물들어 있는 것이 「고름」이었다 —
+     제일 중요한 정보가 제일 약한 신호였던 셈이다.
+     이제 안 고른 것은 장식이 0인 글자이고, **고른 하나만** 재질을 받는다.
+     어두운 테마에서는 종이색 블록, 종이 테마에서는 잉크색 블록. 줄에서 채워진 것은 하나뿐이다.
+     터치 영역 44px 은 안쪽 여백이 지킨다(위 min-height 규칙). */
   .timer-btn,.cycle-btn,.dir-btn,.dia-btn,.m6-opt-btn,.filter-chip,
   .sub-btn,.m6-shuffle,.pt-rotate-btn,.clear-all-btn,.retry-playlist-btn{min-height:44px;}
-  .timer-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--r-2);color:var(--c-text-secondary);font-family:var(--font-mono);font-size:var(--t-body);font-weight:500;padding:var(--s-3) var(--s-4);cursor:pointer;transition:var(--t-btn);}
+  .timer-btn{background:transparent;border:1px solid transparent;border-radius:var(--r-2);color:var(--c-text-secondary);font-family:var(--font-mono);font-size:var(--t-body);font-weight:500;padding:var(--s-3) var(--s-4);cursor:pointer;transition:var(--t-btn);}
   .timer-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:var(--c-on-accent-2);}
   #modeNav{margin-bottom:var(--s-4);}
   /* 구역 줄. 색으로 구분하지 않는다 — 구역 색과 "시험 범위" 색이 겹치면 무슨 뜻인지 알 수 없게 된다.
      좁은 화면에서 4개가 한 줄에 안 들어가면 헤더와 같은 가로 스크롤(.scroll-fade-x)로 넘긴다. */
   .section-tabs{display:flex;gap:var(--s-2);margin-bottom:var(--s-3);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;}
   .section-tabs::-webkit-scrollbar{display:none;}
-  .section-tab{flex:0 0 auto;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--r-2);color:var(--c-text-secondary);padding:var(--s-2) var(--s-4);font-size:var(--t-body);font-weight:500;cursor:pointer;transition:var(--t-btn);text-align:center;line-height:1.3;white-space:nowrap;}
+  .section-tab{flex:0 0 auto;background:transparent;border:1px solid transparent;border-radius:var(--r-2);color:var(--c-text-secondary);padding:var(--s-2) var(--s-4);font-size:var(--t-body);font-weight:500;cursor:pointer;transition:var(--t-btn);text-align:center;line-height:1.3;white-space:nowrap;}
   .section-tab.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:var(--c-on-accent-2);}
   /* 「고1」·「시험 범위 아님」 같은 한 줄. opacity로 흐리게 하던 것을 걷어냈다 —
      물려받은 색에 곱해져 대비가 3.88:1까지 떨어져 있었다. 위계는 글자 크기가 나른다.
@@ -346,20 +363,23 @@
   .section-note{font-size:var(--t-caption);line-height:1.5;color:var(--c-text-secondary);margin:var(--s-3) var(--s-0) 0;}
   /* .mode-tabs가 flex라서 폭을 지정하지 않으면 내용 너비만큼만 잡힌다 */
   .section-empty{flex:1 1 100%;background:var(--c-surface-1);border:1px dashed var(--c-border);border-radius:var(--r-2);color:var(--c-text-secondary);padding:var(--s-4);font-size:var(--t-body);text-align:center;}
+  /* 설명 줄이 있는 카드와 없는 카드가 섞여 있다. 상자가 있을 땐 상자가 높이를 맞춰 줬지만
+     이제는 글자가 직접 줄을 맞춰야 한다 — 위쪽에 붙인다. */
+  .mode-tab{align-self:start;}
   .mode-tabs{display:flex;flex-wrap:wrap;gap:var(--s-2);}
   .scroll-fade-x{-webkit-mask-image:linear-gradient(to right,black calc(100% - 28px),transparent 100%);mask-image:linear-gradient(to right,black calc(100% - 28px),transparent 100%);}
   .scroll-fade-x.fade-end{-webkit-mask-image:none;mask-image:none;}
-  .mode-tab{flex:0 0 auto;background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:var(--r-2);color:var(--c-text-secondary);padding:var(--s-4) var(--s-4);font-size:var(--t-body);font-weight:600;cursor:pointer;transition:var(--t-btn);text-align:center;line-height:1.4;}
-  /* 선택 표시를 원색 채움에서 「옅은 바탕 + 굵은 테두리 + 강조 글자」로 바꿨다.
-     이 카드가 화면에서 면적이 제일 큰데 원색으로 채우면 문제보다 카드가 먼저 보인다.
-     테두리와 글자색이 남아 있어 무엇을 골랐는지는 그대로 읽힌다. */
-  /* 글자까지 강조색으로 물들이면 밝은 테마에서 옅은 바탕과 대비가 4.4:1까지 떨어진다(검사가 잡았다).
-     게다가 바탕도 글자도 색이면 여전히 시끄럽다. 선택 표시는 굵은 테두리가 맡고
-     글자는 본문색으로 둔다 — 어느 테마에서든 배경 대비가 13:1 이상이라 안전하다. */
-  .mode-tab.active{background:var(--c-tint-a1);border-color:var(--c-accent-1);border-width:2px;color:var(--c-text-primary);}
-  /* 옅은 바탕이 깔리면서 보조 글자의 대비가 4.36:1로 떨어졌다(검사가 잡았다).
-     고른 카드의 설명이니 본문색으로 올린다 — 위계는 글자 크기(11px)가 이미 나르고 있다. */
-  .mode-tab.active .tab-desc{color:var(--c-text-primary);}
+  /* 모드 다섯 개도 같은 규칙을 따른다: 안 고른 것은 장식 0, 고른 하나만 채운다.
+     다섯 상자가 나란히 있으면 「무엇을 고를까」보다 「상자가 다섯 개」가 먼저 읽힌다. */
+  .mode-tab{flex:0 0 auto;background:transparent;border:1px solid transparent;border-radius:var(--r-2);color:var(--c-text-secondary);padding:var(--s-4) var(--s-4);font-size:var(--t-body);font-weight:600;cursor:pointer;transition:var(--t-btn);text-align:center;line-height:1.4;}
+  /* 선택 표시의 내력: 처음엔 강조색 원색 채움 → 카드 면적이 제일 커서 문제보다 카드가
+     먼저 보였다. 그다음 「옅은 바탕 + 굵은 테두리」 → 이번엔 밝은 테마에서 글자 대비가
+     4.4:1, 설명 줄은 4.36:1 까지 떨어지는 걸 검사가 잡았다.
+     지금은 **반전 블록**이다. 바탕과 글자가 통째로 뒤집히므로 대비는 구조적으로
+     보장되고(--c-accent-2 와 --c-on-accent-2 는 테마마다 짝으로 정해 둔 값이다),
+     안 고른 카드에는 아무 장식이 없어 채워진 것이 화면에 하나뿐이다. */
+  .mode-tab.active{background:var(--c-accent-2);color:var(--c-on-accent-2);}
+  .mode-tab.active .tab-desc{color:var(--c-on-accent-2);opacity:.78;}
   .mode-tab .tab-name{display:block;}
   /* 여기도 opacity:0.75를 걷어냈다 — 3.77:1이었다. 11px 크기가 이미 위계를 나른다 */
   .mode-tab .tab-desc{font-size:var(--t-caption);display:block;font-weight:400;margin-top:var(--s-0);}
@@ -390,10 +410,25 @@
        들어맞을 때는 아무 일도 없고, 스크롤 막대는 앱 전체 규칙대로 숨긴다. */
     overflow-x:auto;scrollbar-width:none;overscroll-behavior-x:contain;}
   .equation-display::-webkit-scrollbar{display:none;}
-  .blank-box{display:inline-block;min-width:54px;height:54px;border:2px solid var(--c-border);border-radius:var(--r-2);background:var(--c-surface-2);text-align:center;line-height:50px;cursor:pointer;transition:var(--t-btn);font-size:1.2em;font-weight:700;color:var(--c-text-primary);padding:0 var(--s-3);font-family:var(--font-mono);}
-  .blank-box.active{border-color:var(--c-border-active);box-shadow:0 0 0 4px var(--c-focus-glow);}
-  .blank-box.correct{border-color:var(--c-correct);background:var(--c-correct-bg);color:var(--c-correct);}
-  .blank-box.wrong{border-color:var(--c-wrong);background:var(--c-wrong-bg);color:var(--c-wrong);animation:shake var(--dur-enter) var(--ease-out);}
+  /* ══ 빈칸 ══
+     상자가 아니라 **밑줄**이다. 종이에 빈칸을 만드는 방법은 네모를 그리는 게 아니라
+     선을 긋는 것이고, 그러면 수식 줄이 「상자 안에 든 상자들」에서
+     「빈칸이 있는 화학식」으로 읽힌다 — 실제로 학생이 하는 일 그대로.
+
+     ⚠️ 높이 54px 은 손가락 최소 크기라 지켜야 하는데, 예전엔 그걸 **보이는 상자**가
+     떠받치고 있었다. 상자를 없앴으니 이제 안쪽 여백이 그 일을 한다.
+     line-height 로 세로 가운데를 맞추던 것도 flex 로 바꾼다 — 밑줄까지의 거리가
+     글자 크기에 따라 흔들리면 안 된다. */
+  .blank-box{display:inline-flex;align-items:center;justify-content:center;
+    min-width:54px;height:54px;padding:0 var(--s-2);
+    background:transparent;border:none;border-bottom:2px solid var(--c-border);border-radius:0;
+    cursor:pointer;transition:var(--t-btn);
+    font-size:1.2em;font-weight:700;color:var(--c-text-primary);font-family:var(--font-mono);}
+  .blank-box.active{border-bottom-color:var(--c-border-active);
+    box-shadow:0 3px 0 -1px var(--c-focus-glow);}
+  /* 채점 결과는 밑줄이 물들고 칸이 옅게 깔린다 — 색만으로 말하지 않도록 선까지 같이 바뀐다 */
+  .blank-box.correct{border-bottom-color:var(--c-correct);background:var(--c-correct-bg);color:var(--c-correct);}
+  .blank-box.wrong{border-bottom-color:var(--c-wrong);background:var(--c-wrong-bg);color:var(--c-wrong);animation:shake var(--dur-enter) var(--ease-out);}
   .blank-box.placeholder::before{content:'?';color:var(--c-text-secondary);opacity:.5;}
   /* 오답 흔들림 — 짧고 작게. 8px씩 네 번 흔들면 놀라게 하는 쪽에 가깝다.
      틀렸다는 것은 색이 이미 말하고 있고, 이건 「방금 그 자리」를 가리키는 신호다. */
@@ -423,7 +458,7 @@
   .show-answer-btn{background:var(--c-wrong);color:var(--c-bg);border:none;border-radius:var(--r-2);padding:var(--s-2) var(--s-4);font-weight:500;cursor:pointer;transition:opacity var(--dur-tap) var(--ease-out);align-self:flex-end;margin-top:var(--s-2);white-space:nowrap;flex-shrink:0;}
   .keyboard-wrap{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:var(--r-3);padding:var(--s-4);}
   .kb-section-label{font-size:var(--t-caption);color:var(--c-text-secondary);font-weight:500;margin-bottom:var(--s-3);margin-top:var(--s-2);}
-  .kb-row{display:flex;flex-wrap:wrap;gap:var(--s-2);margin-bottom:var(--s-3);}
+  .kb-row{display:flex;flex-wrap:wrap;gap:1px;margin-bottom:1px;background:var(--c-border);}
   /* 숫자패드는 줄바꿈되는 flex 대신 5열 그리드로 고정 → 마지막 줄(8·9·0)만 늘어나던 문제 방지, 항상 균일 */
   #numRow{display:grid;grid-template-columns:repeat(5,1fr);gap:var(--s-2);}
   /* 원소패드(14개)도 동일한 문제: flex-wrap 마지막 줄에 하나만 남으면(B) 그 키가 flex-grow로 줄 전체를 채워 거대해짐.
@@ -434,7 +469,11 @@
   #elemRow{display:grid;grid-template-columns:repeat(auto-fit,minmax(44px,1fr));gap:var(--s-2);}
   /* color를 반드시 적어 둘 것 — 빼면 브라우저 기본 버튼색(검정)이 나와서 ◀ ▶ 같은
      별도 색이 없는 키가 어두운 테마에서 배경에 묻힌다(실제로 그랬다) */
-  .kb-key{background:var(--c-surface-2);color:var(--c-text-primary);border:1px solid var(--c-border);border-radius:var(--r-2);font-family:var(--font-mono);font-size:var(--t-body-lg);font-weight:500;min-height:54px;min-width:44px;flex:1 1 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--t-btn);}
+  /* 키패드는 「이건 누르는 물건이다」가 맞는 유일한 자리다. 다만 키 24개가 각자
+     테두리를 두르면 물건 24개로 읽힌다. 줄 바탕에 괘선색을 깔고 키 사이를 1px 만 벌려
+     **자료표**로 만든다 — 테두리 24개가 한 번에 사라지고 격자만 남는다.
+     키 바닥이 반투명이면 아래 괘선색이 비쳐 회색이 되므로 여기만 단색 판을 쓴다. */
+  .kb-key{background:var(--c-surface-solid);color:var(--c-text-primary);border:none;border-radius:0;font-family:var(--font-mono);font-size:var(--t-body-lg);font-weight:500;min-height:54px;min-width:44px;flex:1 1 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--t-btn);}
   .kb-key:active{transform:scale(.95);}
   .kb-key.num{color:var(--c-text-primary);}.kb-key.elem{color:var(--c-text-primary);font-weight:500;}
   .kb-key.del{color:var(--c-wrong);flex-grow:2;}.kb-key.confirm{background:var(--c-correct);color:var(--c-on-correct);flex-grow:3;}.kb-key.next-q{background:var(--c-accent-2);color:var(--c-on-accent-2);flex-grow:3;}
@@ -487,7 +526,7 @@
   .modal-content > *{flex-shrink:0;}
   /* 가로 스크롤(+ 숨김 스크롤바) 대신 줄바꿈 — 스크롤바 잔상/끝 잘림 문제를 애초에 없앤다 */
   .filter-chips{display:flex;flex-wrap:wrap;gap:var(--s-2);margin-bottom:var(--s-4);}
-  .filter-chip{flex:0 0 auto;background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:var(--r-3);padding:var(--s-2) var(--s-4);font-size:var(--t-body);font-weight:500;cursor:pointer;transition:var(--t-btn);white-space:nowrap;}
+  .filter-chip{flex:0 0 auto;background:transparent;border:1px solid transparent;color:var(--c-text-secondary);border-radius:var(--r-3);padding:var(--s-2) var(--s-4);font-size:var(--t-body);font-weight:500;cursor:pointer;transition:var(--t-btn);white-space:nowrap;}
   .filter-chip.active{background:var(--c-accent-1);color:var(--c-bg);border-color:var(--c-accent-1);}
   /* 테마 고르기 — 이름·설명과 함께 실제 색을 미리 보여 준다.
      색 이름만 있으면 골라 보기 전에는 어떤 화면인지 알 수 없다. */
@@ -529,10 +568,10 @@
   .retry-playlist-btn{background:var(--c-accent-1);color:var(--c-on-accent-1);border:none;border-radius:var(--r-2);
     padding:var(--s-3) var(--s-4);font-size:var(--t-body);font-weight:600;cursor:pointer;}
   .clear-all-btn{background:var(--c-wrong);color:var(--c-on-wrong);border:none;border-radius:var(--r-2);padding:var(--s-3) var(--s-4);font-weight:600;cursor:pointer;margin-bottom:0;align-self:flex-end;}
-  .cycle-wrap{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:var(--r-3);padding:var(--s-3) var(--s-4);margin-bottom:var(--s-4);display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-3);}
+  .cycle-wrap{padding:var(--s-3) var(--s-1) 0;border-top:1px solid var(--c-border);margin-bottom:var(--s-4);display:flex;flex-wrap:wrap;align-items:center;gap:var(--s-3);}
   .cycle-label{font-size:var(--t-caption);color:var(--c-text-secondary);font-weight:500;white-space:nowrap;}
   .cycle-btns{display:flex;gap:var(--s-2);}
-  .cycle-btn,.dir-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--r-2);color:var(--c-text-secondary);font-family:var(--font-ui);font-size:var(--t-body);font-weight:500;padding:var(--s-3) var(--s-4);cursor:pointer;transition:var(--t-btn);}
+  .cycle-btn,.dir-btn{background:transparent;border:1px solid transparent;border-radius:var(--r-2);color:var(--c-text-secondary);font-family:var(--font-ui);font-size:var(--t-body);font-weight:500;padding:var(--s-3) var(--s-4);cursor:pointer;transition:var(--t-btn);}
   .cycle-btn.active,.dir-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:var(--c-on-accent-2);}
   /* 출제 방향은 MODE 7 전용 — 별도 카드로 빼면 와이드 모드 그리드(.cycle-wrap은 2열/4행 고정)와
      충돌하므로 기존 출제 방식 카드 안에 접어 넣고 여기서만 보이게 한다 */
@@ -542,7 +581,7 @@
   #cycleWrap .cycle-label.m7-only,
   #cycleWrap .cycle-label.dia-only,
   #cycleWrap .cycle-label.sub-only{flex-basis:100%;}
-  .dia-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--r-2);color:var(--c-text-secondary);font-family:var(--font-ui);font-size:var(--t-body);font-weight:500;padding:var(--s-3) var(--s-4);cursor:pointer;transition:var(--t-btn);}
+  .dia-btn{background:transparent;border:1px solid transparent;border-radius:var(--r-2);color:var(--c-text-secondary);font-family:var(--font-ui);font-size:var(--t-body);font-weight:500;padding:var(--s-3) var(--s-4);cursor:pointer;transition:var(--t-btn);}
   .dia-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:var(--c-on-accent-2);}
   /* 보기 버튼 — 한 줄에 하나씩 두어 긴 한글 보기가 잘리지 않게 한다 */
   #chargeRow{display:grid;grid-template-columns:repeat(auto-fit,minmax(44px,1fr));gap:var(--s-2);}
@@ -567,10 +606,15 @@
      색을 명시하고 투명도는 없앤다 — 흐리게 보이고 싶으면 흐린 색을 고르면 된다. */
   .later-note{display:block;margin-top:var(--s-2);font-size:var(--t-body);color:var(--c-text-secondary);}
   /* 보기 답은 한글 문장이라 정사각 빈칸에 안 들어간다 — 폭이 늘어나는 형태로 바꾼다 */
-  .blank-box.choice{min-width:110px;font-family:var(--font-ui);font-size:1em;}
+  /* 선택지형 빈칸에는 한글 문장이 들어간다 — 「이온결합」에 밑줄만 그으면
+     누를 수 있다는 게 안 보인다. 여기만 테두리를 남긴다. */
+  .blank-box.choice{min-width:110px;font-family:var(--font-ui);font-size:1em;
+    border:1px solid var(--c-border);border-radius:var(--r-2);padding:0 var(--s-3);}
   /* 전자껍질 배치 — 답을 외우는 게 아니라 그림에서 세도록 문제에 같이 띄운다 */
   .shell-line{display:inline-flex;gap:var(--s-1);vertical-align:middle;margin:0 var(--s-3);}
-  .shell-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:32px;padding:var(--s-1) var(--s-2);border:1px solid var(--c-border);border-radius:var(--r-2);background:var(--c-surface-2);font-family:var(--font-mono);font-size:var(--t-body);font-weight:600;color:var(--c-text-primary);line-height:1.1;}
+  /* 전자껍질 개수는 누르는 것이 아니라 읽는 것이다 — 표의 칸이지 버튼이 아니다.
+     테두리 넷 대신 위쪽 괘선 하나. */
+  .shell-cell{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:32px;padding:var(--s-2) var(--s-2) var(--s-1);border-top:2px solid var(--c-border);background:transparent;font-family:var(--font-mono);font-size:var(--t-body);font-weight:600;color:var(--c-text-primary);line-height:1.1;}
   .shell-n{font-size:var(--t-caption);font-weight:400;color:var(--c-text-secondary);letter-spacing:1px;}
 
   /* ── 전자껍질·결합 그림 ──
@@ -664,7 +708,7 @@
   .dia-arrow.dia-anim-fade{animation:diaFlow var(--dur-dia-flow) linear infinite,diaFade var(--dur-dia-fade) var(--ease-move) forwards;}
   /* 움직이는 전자는 살짝 크고 밝게 — 어느 점이 이동 중인지 눈으로 따라갈 수 있어야 한다 */
   .dia-e-move{r:4.4px;fill:var(--c-accent-1);}
-  .dia-replay{display:block;margin:0 auto var(--s-3);background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:var(--r-2);padding:var(--s-2) var(--s-4);font-family:var(--font-ui);font-size:var(--t-body);font-weight:500;cursor:pointer;min-height:44px;}
+  .dia-replay{display:block;margin:0 auto var(--s-3);background:transparent;border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:var(--r-2);padding:var(--s-2) var(--s-4);font-family:var(--font-ui);font-size:var(--t-body);font-weight:500;cursor:pointer;min-height:44px;}
   @media (hover:hover){.dia-replay:hover{border-color:var(--c-border-active);color:var(--c-text-primary);}}
   /* 움직임에 민감한 사용자를 위해 흐름 애니메이션만 끈다 — 그림 내용은 그대로 남는다 */
   /* 움직임을 꺼 둔 사람에게도 답은 똑같이 보여야 한다. 애니메이션만 끄면
@@ -673,7 +717,7 @@
     .dia-arrow,.dia-anim-move,.dia-anim-in,.dia-anim-out,.dia-anim-pop,.dia-anim-count,.dia-anim-fade,.dia-arrow.dia-anim-fade{animation:none;}
     .dia-anim-out,.dia-anim-fade{opacity:0;}
   }
-  .sub-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--r-2);color:var(--c-text-secondary);font-family:var(--font-ui);font-size:var(--t-body);font-weight:500;padding:var(--s-3) var(--s-4);cursor:pointer;transition:var(--t-btn);}
+  .sub-btn{background:transparent;border:1px solid transparent;border-radius:var(--r-2);color:var(--c-text-secondary);font-family:var(--font-ui);font-size:var(--t-body);font-weight:500;padding:var(--s-3) var(--s-4);cursor:pointer;transition:var(--t-btn);}
   .sub-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:var(--c-on-accent-2);}
   .cycle-progress-wrap{display:flex;align-items:center;gap:var(--s-2);flex:1;min-width:140px;}
   .cycle-progress-text{font-family:var(--font-mono);font-size:var(--t-body);font-weight:600;color:var(--c-text-primary);white-space:nowrap;}
@@ -688,7 +732,7 @@
 
   /* ── 주기율표 ── */
   .pt-modal-box{max-width:1300px;width:96vw;}   /* 배경은 .modal-box 와 같다 */
-  .pt-rotate-btn{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-secondary);border-radius:var(--r-2);padding:var(--s-2) var(--s-3);font-size:var(--t-body);font-weight:500;cursor:pointer;transition:var(--t-btn);white-space:nowrap;}
+  .pt-rotate-btn{background:transparent;border:1px solid transparent;color:var(--c-text-secondary);border-radius:var(--r-2);padding:var(--s-2) var(--s-3);font-size:var(--t-body);font-weight:500;cursor:pointer;transition:var(--t-btn);white-space:nowrap;}
   /* 회전 = 전체화면 가로보기 오버레이: 화면 자체를 90도 돌려 쓰는 전용 뷰.
      확대는 브라우저 네이티브 줌이 아니라 자체 transform 줌(setupPtZoom)으로 처리한다 —
      position:fixed + rotate 요소는 네이티브 핀치줌 중 매 프레임 재래스터화돼 버벅/깜빡이므로,
@@ -746,7 +790,7 @@
   .pt-fs-rotor{position:absolute;top:50%;left:50%;width:var(--app-h,100vh);height:var(--app-w,100vw);transform:translate(-50%,-50%) rotate(90deg);display:flex;flex-direction:column;padding:var(--s-4);overflow:hidden;
     transition:transform var(--dur-view) var(--ease-out);}
   .pt-fs-title{font-size:var(--t-body);font-weight:700;letter-spacing:-0.01em;color:var(--c-text-primary);margin-bottom:var(--s-3);flex-shrink:0;display:flex;justify-content:space-between;align-items:center;}
-  .pt-fs-close{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:var(--r-2);padding:var(--s-2) var(--s-4);font-weight:500;font-size:var(--t-body);cursor:pointer;}
+  .pt-fs-close{background:transparent;border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:var(--r-2);padding:var(--s-2) var(--s-4);font-weight:500;font-size:var(--t-body);cursor:pointer;}
   /* 뷰포트: 콘텐츠를 잘라내는 창. touch-action:none으로 브라우저 네이티브 줌/스크롤을 완전히
      막아, 두 손가락 제스처가 우리 핸들러에만 온전히 들어오게 한다(닫기 버튼은 이 밖이라 정상 탭). */
   .pt-fs-viewport{flex:1;min-height:0;overflow:hidden;position:relative;touch-action:none;}
@@ -769,7 +813,7 @@
   /* 회전 뷰 전용: 번호/기호/이름 세 행을 layoutPtFullscreen이 예산 배분한 고정 px로 못박아,
      콘텐츠 크기(auto/1fr)에 따라 가운데 행이 짜부러지며 겹치는 일을 원천 차단한다. */
   .pt-fs-scroll .pt-cell{grid-template-rows:var(--pt-cell-zh,auto) var(--pt-cell-symh,1fr) var(--pt-cell-nameh,auto);padding:var(--s-0) var(--s-0);}
-  .pt-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);flex-wrap:wrap;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--r-3);padding:var(--s-3) var(--s-4);margin-bottom:var(--s-4);}
+  .pt-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:var(--s-3);flex-wrap:wrap;padding:0 0 var(--s-3);margin-bottom:var(--s-4);border-bottom:1px solid var(--c-border);}
   .pt-toggle-label{font-size:var(--t-body);font-weight:500;color:var(--c-text-primary);}
   .pt-toggle-label small{display:block;font-size:var(--t-caption);font-weight:400;color:var(--c-text-secondary);margin-top:var(--s-0);}
   .pt-toggle-switch{position:relative;width:52px;height:30px;border-radius:var(--r-pill);background:var(--c-border);border:none;cursor:pointer;flex-shrink:0;transition:background-color var(--dur-tap) var(--ease-out);padding:0;}
@@ -838,7 +882,7 @@
     .modal-title{font-size:var(--t-body-lg);}
     .modal-close{font-size:var(--t-display);}
     .pt-modal-box{width:100%;}
-    .pt-toggle-row{padding:var(--s-3) var(--s-3);margin-bottom:var(--s-3);}
+    .pt-toggle-row{padding:0 0 var(--s-3);margin-bottom:var(--s-3);}
     .pt-toggle-label{font-size:var(--t-caption);}
     .pt-toggle-label small{font-size:var(--t-caption);}
     .pt-legend{gap:var(--s-1) var(--s-3);font-size:var(--t-caption);margin-bottom:var(--s-3);}
@@ -877,13 +921,13 @@
      확 튀는 대신 부드럽게 나타나는 것처럼 보이도록 진입 애니메이션을 준다 */
   @keyframes m6Enter{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
   #mode6Wrap.m6-active{display:flex;animation:m6Enter var(--dur-enter) var(--ease-out);}
-  .m6-wrongnote-link{display:flex;align-items:center;justify-content:center;gap:var(--s-2);background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:var(--r-3);padding:var(--s-3) var(--s-4);color:var(--c-text-primary);font-size:var(--t-body);font-weight:500;cursor:pointer;transition:var(--t-btn);}
+  .m6-wrongnote-link{display:flex;align-items:center;justify-content:center;gap:var(--s-2);background:transparent;border:1px solid var(--c-border);border-radius:var(--r-3);padding:var(--s-3) var(--s-4);color:var(--c-text-primary);font-size:var(--t-body);font-weight:500;cursor:pointer;transition:var(--t-btn);}
   @media (hover:hover){.m6-wrongnote-link:hover{border-color:var(--c-border-active);color:var(--c-accent-1);}}
   .m6-wrongnote-icon{font-size:var(--t-body);color:var(--c-accent-1);}
-  .m6-opt-row{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:var(--r-3);padding:var(--s-4) var(--s-4);}
+  .m6-opt-row{padding:var(--s-3) var(--s-1) 0;border-top:1px solid var(--c-border);}
   .m6-opt-label{font-size:var(--t-caption);color:var(--c-text-secondary);font-weight:500;margin-bottom:var(--s-3);}
   .m6-opt-btns{display:flex;gap:var(--s-2);flex-wrap:wrap;}
-  .m6-opt-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--r-2);color:var(--c-text-secondary);font-size:var(--t-body);font-weight:500;padding:var(--s-3) var(--s-4);cursor:pointer;transition:var(--t-btn);}
+  .m6-opt-btn{background:transparent;border:1px solid transparent;border-radius:var(--r-2);color:var(--c-text-secondary);font-size:var(--t-body);font-weight:500;padding:var(--s-3) var(--s-4);cursor:pointer;transition:var(--t-btn);}
   .m6-opt-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:var(--c-on-accent-2);}
   .m6-card-area{flex-grow:1;display:flex;flex-direction:column;gap:var(--s-3);}
   .m6-perspective{perspective:1200px;flex-grow:1;}
@@ -924,17 +968,17 @@
      (투명도는 상속색에 곱해져 대비를 미리 계산할 수 없다). */
   .m6-sub-formula{font-size:clamp(13px,3vw,16px);color:var(--c-text-secondary);line-height:1.5;}
   .m6-hint{text-align:center;font-size:var(--t-caption);color:var(--c-text-secondary);font-family:var(--font-mono);}
-  .m6-save-wrong-btn{background:var(--c-surface-2);border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:var(--r-2);padding:var(--s-3);font-size:var(--t-body);font-weight:500;cursor:pointer;transition:var(--t-btn);}
+  .m6-save-wrong-btn{background:transparent;border:1px solid var(--c-border);color:var(--c-text-primary);border-radius:var(--r-2);padding:var(--s-3);font-size:var(--t-body);font-weight:500;cursor:pointer;transition:var(--t-btn);}
   @media (hover:hover){.m6-save-wrong-btn:hover{border-color:var(--c-wrong);color:var(--c-wrong);}}
   .m6-save-wrong-btn.saved{background:var(--c-wrong);border-color:var(--c-wrong);color:var(--c-on-wrong);}
   .m6-save-wrong-btn:disabled{cursor:default;}
   @media (hover:hover){.m6-save-wrong-btn:disabled:hover{border-color:var(--c-wrong);color:var(--c-on-wrong);}}
   .m6-nav{display:flex;align-items:center;gap:var(--s-4);}
-  .m6-nav-btn{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:var(--r-3);color:var(--c-text-primary);font-size:var(--t-display);font-weight:600;width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--t-btn);flex-shrink:0;line-height:1;}
+  .m6-nav-btn{background:transparent;border:1px solid transparent;border-radius:var(--r-2);color:var(--c-text-primary);font-size:var(--t-display);font-weight:600;width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--t-btn);flex-shrink:0;line-height:1;}
   @media (hover:hover){.m6-nav-btn:hover{border-color:var(--c-accent-1);color:var(--c-accent-1);}}
   .m6-nav-center{display:flex;flex-direction:column;align-items:center;gap:var(--s-2);flex:1;}
   .m6-counter{font-family:var(--font-mono);font-size:var(--t-body-lg);font-weight:600;color:var(--c-text-primary);}
-  .m6-shuffle{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--r-2);color:var(--c-text-secondary);font-size:var(--t-body);font-weight:500;padding:var(--s-2) var(--s-4);cursor:pointer;transition:var(--t-btn);}
+  .m6-shuffle{background:transparent;border:1px solid transparent;border-radius:var(--r-2);color:var(--c-text-secondary);font-size:var(--t-body);font-weight:500;padding:var(--s-2) var(--s-4);cursor:pointer;transition:var(--t-btn);}
   @media (hover:hover){.m6-shuffle:hover{color:var(--c-accent-1);}}
   .m6-progress-bar{height:6px;background:var(--c-border);border-radius:var(--r-1);overflow:hidden;}
   .m6-progress-fill{height:100%;width:100%;transform-origin:left center;transform:scaleX(0);
