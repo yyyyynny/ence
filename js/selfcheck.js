@@ -284,19 +284,35 @@
     }
   }
 
-  /* ── ⑥ 글꼴 굵기 ── */
+  /* ── ⑥ 글꼴 굵기 ──
+     쓰는 굵기가 실제로 받아 오는 굵기 안에 있는지 본다. 없는 굵기를 쓰면
+     브라우저가 가짜로 굵게 만들어 글자가 뭉개진다 — 실제로 그 버그가 있었다
+     (600을 쓰는데 링크에는 400·500·700·900만 적혀 있었다).
+
+     ⚠️ document.fonts.check() 를 쓰면 안 된다. 그건 "그 글자를 그릴 수 있나"를 묻는 것이라
+     대체 글꼴로 그릴 수 있으면 참을 준다 — 없는 글꼴 이름에도 참이 나온다(직접 확인).
+     그래서 절대 실패하지 않는 검사가 된다. 대신 <link> 주소에 적힌 wght 목록과
+     화면에서 실제로 쓰인 굵기를 견준다. 망이 끊겨 있어도 판정이 성립한다. */
   function checkFonts(rep) {
-    if (!document.fonts || !document.fonts.check) { rep.warn.push('document.fonts 없음 — 굵기 검사 건너뜀'); return; }
-    const fam = getComputedStyle(document.body).fontFamily.split(',')[0].replace(/['"]/g, '').trim();
+    const links = Array.from(document.querySelectorAll('link[href*="fonts.googleapis.com"]'));
+    if (!links.length) { rep.warn.push('웹폰트 링크가 없어 굵기 검사를 건너뜀'); return; }
+    const asked = new Set();
+    for (const l of links) {
+      for (const m of l.getAttribute('href').matchAll(/wght@([\d;.]+)/g)) {
+        m[1].split(';').forEach((w) => asked.add(parseInt(w, 10)));
+      }
+    }
     const used = new Set();
     for (const el of T('#app *').filter(visible)) {
       const w = parseInt(getComputedStyle(el).fontWeight, 10);
       if (w) used.add(w);
     }
-    for (const w of Array.from(used).sort((a, b) => a - b)) {
-      /* 굵기를 쓰는데 그 굵기를 안 받아 왔으면 브라우저가 가짜로 굵게 만든다 */
-      rep.soft('굵기 ' + w + ' 이 실제로 로드됨', document.fonts.check(w + ' 16px "' + fam + '"'), fam);
-    }
+    const missing = Array.from(used).filter((w) => !asked.has(w)).sort((a, b) => a - b);
+    rep.ok('쓰는 굵기를 전부 받아 온다', missing.length === 0,
+      '안 받아 온 굵기 ' + missing.join(',') + ' (받는 것: ' + Array.from(asked).sort((a, b) => a - b).join(',') + ')');
+    /* 반대쪽 — 받아 놓고 안 쓰는 굵기는 그냥 낭비다(느린 망에서 그만큼 늦어진다) */
+    const unused = Array.from(asked).filter((w) => !used.has(w)).sort((a, b) => a - b);
+    rep.soft('받아 온 굵기를 다 쓴다', unused.length === 0, '안 쓰는 굵기 ' + unused.join(','));
   }
 
   /* ── ⑦ 이모지 ── */

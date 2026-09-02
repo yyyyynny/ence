@@ -1547,32 +1547,32 @@ const App={
   generateBeautifulWrongNote(q){
     const fmt=side=>side.map(c=>(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+c.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')+this.phaseHTML(c.phase)).join(' <span class="eq-plus">+</span> ');
     let h='';
-    if(q.isMode5){h=`<span class="eq-text" style="font-size:20px;font-weight:bold;color:var(--c-correct)">${this.formatInput(q.blanks[0].answer)}</span>`;}
+    if(q.isMode5){h=`<span class="eq-text eq-answer">${this.formatInput(q.blanks[0].answer)}</span>`;}
     else if(q.isMode7){
       const el=PT_QUIZ_ELEMENTS.find(e=>e.z===q.z);
-      h=`<span class="eq-text" style="font-size:20px;font-weight:bold;color:var(--c-correct)">${q.sym} · ${el?`${el.period}주기 ${el.group}족`:''}</span>`;
+      h=`<span class="eq-text eq-answer">${q.sym} · ${el?`${el.period}주기 ${el.group}족`:''}</span>`;
     }
     else if(q.isMode13){
       const p=this.precipOf(q);
-      h=`<span class="eq-text" style="font-size:18px;font-weight:bold;color:var(--c-correct)">`+
+      h=`<span class="eq-text eq-answer eq-answer-sm">`+
         `${this.formatInput(p.a)} + ${this.formatInput(p.b)} → `+
         (p.none?'앙금 없음':`${this.fmtFormulaStr(p.f)}${this.phaseHTML('↓')} (${p.name}, ${p.color})`)+`</span>`;
     }
     else if(q.isMode14||q.isMode15){
-      h=`<span class="eq-text" style="font-size:18px;font-weight:bold;color:var(--c-correct)">${q.name} · ${q.blanks[0].answer}개</span>`;
+      h=`<span class="eq-text eq-answer eq-answer-sm">${q.name} · ${q.blanks[0].answer}개</span>`;
     }
     else if(q.isMode11||q.isMode12){
-      h=`<span class="eq-text" style="font-size:20px;font-weight:bold;color:var(--c-correct)">`+
+      h=`<span class="eq-text eq-answer">`+
         (q.isMode12?`${this.fmtFormulaStr(q.f)} · `:'')+
         `${this.formatInput(q.blanks[0].answer)}</span>`;
     }
     else if(q.isMode10){
       const bd=BONDS[q.bondIdx];
-      h=`<span class="eq-text" style="font-size:18px;font-weight:bold;color:var(--c-correct)">${this.fmtFormulaStr(bd.f)} · ${q.blanks[0].answer}</span>`;
+      h=`<span class="eq-text eq-answer eq-answer-sm">${this.fmtFormulaStr(bd.f)} · ${q.blanks[0].answer}</span>`;
     }
     else if(q.isMode8||q.isMode9){
       /* 껍질 배치를 같이 남겨야 나중에 노트만 봐도 왜 그 답인지 알 수 있다 */
-      h=`<span class="eq-text" style="font-size:18px;font-weight:bold;color:var(--c-correct)">${q.sym} (${(q.shells||[]).join('-')}) · ${q.blanks[0].answer}</span>`;
+      h=`<span class="eq-text eq-answer eq-answer-sm">${q.sym} (${(q.shells||[]).join('-')}) · ${q.blanks[0].answer}</span>`;
     }
     else if(q.isAbstract===true){
       const r=q.displayReactants.map((c,i)=>{const bd=q.blanks.find(b=>b.key===`R${i}`); return(bd?`<span class="eq-text">${bd.answer}</span>`:'')+this.formatFormula(c.formula)+this.phaseHTML(c.phase);}).join(' <span class="eq-plus">+</span> ');
