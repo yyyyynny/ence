@@ -18,11 +18,23 @@
    · 색만으로 뜻을 전하지 않는다는 원칙은 그대로다 — 테마는 보기 편하라고 있는 것이지
      의미를 나르라고 있는 게 아니다. */
 const THEMES = [
-  { id:'dark',     label:'다크',    hint:'기본',              light:false },
-  { id:'light',    label:'라이트',  hint:'밝은 곳에서',      light:true  },
-  { id:'paper',    label:'종이',    hint:'오래 봐도 덜 피로', light:true  },
-  { id:'night',    label:'야간',    hint:'불 끄고 볼 때',     light:false },
-  { id:'contrast', label:'고대비',  hint:'잘 안 보일 때',     light:false }
+  { id:'note',     label:'실험노트', hint:'종이 위의 잉크',   light:true  },
+  { id:'edit',     label:'편집',    hint:'어두운 곳에서',    light:false },
+  { id:'contrast', label:'고대비',  hint:'잘 안 보일 때',    light:false }
 ];
-const THEME_DEFAULT = 'dark';
-function themeMeta(id){ return THEMES.find(t => t.id === id) || THEMES.find(t => t.id === THEME_DEFAULT); }
+const THEME_DEFAULT = 'edit';
+
+/* ── 옛 이름 옮기기 ──
+   테마가 다섯이던 시절의 id가 학생 기기의 localStorage에 남아 있다. 그냥 지우면
+   「내가 고른 테마」가 말없이 기본값으로 돌아간다 — 고른 사람은 이유를 알 수 없다.
+   그래서 뜻이 가장 가까운 새 테마로 옮긴다.
+     다크·야간  → edit   (어두운 바탕)
+     라이트·종이 → note   (밝은 바탕. 실험노트가 곧 제대로 만든 종이 테마다)
+     고대비     → 그대로  (id를 안 바꿨다. 가장 필요한 사람에게 이관 비용이 0이다)
+   여기 두는 이유: 「어떤 테마가 있나」를 아는 곳이 이 파일 하나라는 원칙 그대로다. */
+const THEME_ALIASES = { dark:'edit', night:'edit', light:'note', paper:'note' };
+function resolveThemeId(id){ return THEME_ALIASES[id] || id; }
+function themeMeta(id){
+  const r = resolveThemeId(id);
+  return THEMES.find(t => t.id === r) || THEMES.find(t => t.id === THEME_DEFAULT);
+}

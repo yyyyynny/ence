@@ -195,7 +195,14 @@ const App={
          눈부시게 만들 이유가 없고, 그 사람은 테마 고르기를 찾기 전까지 그냥 참고 본다.
          한 번이라도 직접 고른 뒤에는 그 선택이 언제나 이긴다. */
       const savedTheme = localStorage.getItem('chem_theme');
-      if(savedTheme && THEMES.some(t=>t.id===savedTheme)) this.state.theme = savedTheme;
+      const moved = resolveThemeId(savedTheme);
+      if(savedTheme && THEMES.some(t=>t.id===moved)){
+        this.state.theme = moved;
+        /* 옛 이름이었으면 저장값도 지금 바로 새 이름으로 고쳐 둔다. 안 그러면 저장값이
+           계속 거짓말을 하고, 별칭표를 영영 못 지운다. 단 **아는 옛 이름일 때만** —
+           모르는 값은 아래로 떨어져 폰 설정을 따르되 저장하지 않는다(추론한 건 저장 안 한다). */
+        if(moved !== savedTheme){ try{localStorage.setItem('chem_theme', moved);}catch(e){} }
+      }
       else this.state.theme = this.systemTheme();
     }catch(e){}
     this.applyTheme(this.state.theme);
@@ -2104,7 +2111,7 @@ const App={
   systemTheme(){
     try{
       if(window.matchMedia('(prefers-contrast: more)').matches) return 'contrast';
-      if(window.matchMedia('(prefers-color-scheme: light)').matches) return 'light';
+      if(window.matchMedia('(prefers-color-scheme: light)').matches) return 'note';
     }catch(e){}
     return THEME_DEFAULT;
   },
@@ -2115,7 +2122,12 @@ const App={
     const t=themeMeta(id);
     this.state.theme=t.id;
     /* 클래스는 <html>에 붙인다 — 화면 전체 바탕색이 <html> 배경에서 오기 때문(css/style.css 참고) */
-    THEMES.forEach(x=>document.documentElement.classList.toggle('theme-'+x.id, x.id===t.id));
+    /* 등록처에서 빠진 테마(옛 theme-dark 같은 것)가 <html>에 남아 있으면
+       THEMES 를 도는 것만으로는 절대 안 지워진다 — 목록에 없으니 순회가 닿지 않는다.
+       theme- 로 시작하는 것을 먼저 싹 걷고 하나만 붙인다. */
+    const de=document.documentElement;
+    Array.from(de.classList).filter(c=>c.indexOf('theme-')===0).forEach(c=>de.classList.remove(c));
+    de.classList.add('theme-'+t.id);
     if(persist){ try{localStorage.setItem('chem_theme',t.id);}catch(e){} }
     /* 열려 있는 상세 패널의 헤더 색은 테마별 팔레트를 쓰므로, 테마 전환 시 다시 그려 새 팔레트를 즉시 반영 */
     [this.$.ptDetailPanel,this.$.ptFsDetailPanel].forEach(panel=>{

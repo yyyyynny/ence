@@ -196,14 +196,14 @@ const PT_CATEGORIES=[
    라이트 모드(흰 배경)에서는 같은 원색을 글자색으로 쓰면 대비가 너무 약해(특히 노랑·라임·연회색)
    거의 안 보이므로, 같은 색상 계열의 더 짙은 톤을 별도로 둔다. */
 const PT_CAT_COLORS={
-  alkali:'#F87171', alkaline:'#FB923C', transition:'#60A5FA', lanth:'#C084FC',
-  actin:'#F472B6', post:'#D6D3D1', metalloid:'#A3E635', nonmetal:'#22D3EE',
-  halogen:'#FDE047', noble:'#818CF8', unknown:'#94A3B8'
+  alkali:'#FF6666', alkaline:'#FFD9A0', transition:'#FFC0C0', lanth:'#F0B6FF',
+  actin:'#FF99CC', post:'#C4C4C4', metalloid:'#B9C982', nonmetal:'#A0FFA0',
+  halogen:'#FFFF99', noble:'#C0FFFF', unknown:'#E4E4E4'
 };
 const PT_CAT_COLORS_LIGHT={
-  alkali:'#DC2626', alkaline:'#C2410C', transition:'#2563EB', lanth:'#9333EA',
-  actin:'#DB2777', post:'#57534E', metalloid:'#4D7C0F', nonmetal:'#0E7490',
-  halogen:'#A16207', noble:'#4F46E5', unknown:'#475569'
+  alkali:'#B33A3A', alkaline:'#8A5A15', transition:'#A85454', lanth:'#8B3FA0',
+  actin:'#A83A70', post:'#5A5A5A', metalloid:'#5B6B25', nonmetal:'#1F7A3D',
+  halogen:'#7A6B00', noble:'#1F6B7A', unknown:'#585858'
 };
 /* 간략히 보기: 1~20번 외에 불꽃반응 예시로 다루는 원소 + 1족·17족 세로줄이 2족처럼 6주기까지
    끊기지 않고 이어지도록 채워 넣는 알칼리 금속·할로젠 (Fr은 7주기라 간략히 보기 격자에 자리가 없음) */

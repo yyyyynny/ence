@@ -3,30 +3,34 @@
      (느린 학교 망에서 첫 화면이 그만큼 늦게 뜬다). <link> 는 HTML 을 읽는 순간 같이 출발한다.
      글꼴이 아예 안 와도 --font-ui/--font-mono 의 sans-serif·monospace 로 그대로 읽힌다. */
   :root {
-    --c-bg:#10141E; --c-surface-1:rgba(30,35,50,0.6); --c-surface-2:rgba(30,35,50,0.8);
-    --c-surface-solid:#1A2030;
-    --c-border:rgba(136,150,191,0.2); --c-border-active:rgba(0,229,255,0.5);
-    --c-text-primary:#F0F4FF; --c-text-secondary:#8896B0;
-    --c-accent-1:#00E5FF; --c-accent-2:#7C3AED; --c-accent-3:#F59E0B;
-    --c-correct:#10B981; --c-wrong:#F87171;
+    /* ⚠️ 여기 있는 색은 **테마가 아니다.** 자바스크립트가 안 돌아 <html> 에 테마 클래스가
+       안 붙었을 때도 글자가 읽히도록 둔 edit 테마의 사본이다.
+       테마를 고르는 곳은 아래 :root.theme-<id> 세 블록이고, 그게 전부다.
+       (예전엔 다크 테마가 여기 암묵적으로 살았다. 그래서 미리보기 조각이 덮어쓸 블록이
+        없었고, 다섯 테마 미리보기가 전부 같은 색으로 보이는 버그가 났다.) */
+    --c-bg:#191817; --c-surface-1:rgba(255,252,246,0.045); --c-surface-2:rgba(255,252,246,0.085);
+    --c-surface-solid:#201F1D;
+    --c-border:rgba(237,234,227,0.16); --c-border-active:rgba(143,176,182,0.55);
+    --c-text-primary:#EDEAE3; --c-text-secondary:#9A958C;
+    --c-accent-1:#8FB0B6; --c-accent-2:#D8D2C6;
+    --c-correct:#6FB489; --c-wrong:#D9807A;
     /* 강조색·정답색을 배경으로 깐 버튼 위에 얹을 글자색. 흰 글자가 늘 맞는 게 아니라
        그 테마에서 그 색이 얼마나 밝으냐에 달렸다 — 테마마다 밝기를 보고 정한다. */
-    --c-on-accent-1:#10141E; --c-on-accent-2:#FFFFFF; --c-on-accent-3:#000000;
-    --c-on-correct:#000000; --c-on-wrong:#000000;
+    --c-on-accent-1:#191817; --c-on-accent-2:#191817;
+    --c-on-correct:#191817; --c-on-wrong:#191817;
     /* 맞음·틀림 칸의 옅은 바탕, 입력 중인 칸의 테두리 빛, 플래시카드 뒷면 물빛.
        여기 없이 rgba를 규칙에 직접 적으면 테마를 갈아도 다크 색이 그대로 남는다(실제로 그랬다). */
-    --c-correct-bg:rgba(16,185,129,0.15); --c-wrong-bg:rgba(248,113,113,0.15);
-    --c-focus-glow:rgba(0,229,255,0.2); --c-tint-a2:rgba(124,58,237,0.25);
-    --c-tint-a1:rgba(0,229,255,0.16); --c-tint-a3:rgba(245,158,11,0.18);
+    --c-correct-bg:rgba(111,180,137,0.15); --c-wrong-bg:rgba(217,128,122,0.15);
+    --c-focus-glow:rgba(143,176,182,0.2); --c-tint-a2:rgba(216,210,198,0.16);
+    --c-tint-a1:rgba(143,176,182,0.14);
     /* 전자 색은 세 켜다. 전자는 전부 같은 동그라미이고 색과 채도만 다르다.
        inner = 안쪽 껍질. 채도를 죽여 뒤로 물린다 — 셀 것은 바깥 껍질 전자다.
        own  = 중심 원자가 내놓은 전자, other = 상대 원자가 내놓은 전자. 둘 다 채도가 높고
        서로 **색상**으로 갈린다 — 하나를 어둡게 만들면 배경에 묻히기 때문이다.
        배경 밝기에 따라 노랑이 안 보일 수 있어 테마마다 다시 정한다.
        inner는 대비 3:1(비문자 그래픽 기준)을 넘겨야 한다 — 흐리게 한다고 안 보이면 못 센다. */
-    --c-e-inner:#8F98AC; --c-e-own:#FDE047; --c-e-other:#A78BFA;
-    /* 배경 그라디언트 세기. 고대비 테마는 0으로 꺼서 대비를 지킨다. */
-    --c-glow:.2;
+    --c-e-inner:#7C7873; --c-e-own:#E3B85E; --c-e-other:#8B7ABE;
+
     /* Noto Sans KR 은 "한글 웹폰트를 골라야 할 때 고르는 것"이라 그 자체가 기본값이다.
        Plex 는 IBM 이 기술 문서용으로 만든 서체다 — 숫자와 기호가 또렷하고,
        한글판(Plex Sans KR)이 같은 뼈대로 그려져 있어 화학식과 설명이 한 목소리로 읽힌다.
@@ -169,89 +173,86 @@
 
      지킬 것: --c-correct는 초록, --c-wrong은 빨강 계열을 벗어나지 않는다. 채점 결과라서
      테마 취향으로 바꾸면 학생이 맞았는지 틀렸는지를 색으로 못 읽는다. */
-  /* 다크만은 :root 그 자체(기본값)라 .theme-pv.theme-dark로 살릴 블록이 없었다. 그래서
-     「다크」 미리보기 조각은 아무 변수도 덮어쓰지 못하고 **그때 켜져 있는 테마 색을 그대로**
-     물려받았다 — 라이트를 쓰는 학생에게는 다크와 라이트 미리보기가 똑같이 보였다.
-     :root 전체를 이 선택자에 얹으면 안 된다: 거기엔 모션 토큰도 함께 들어 있어서
-     움직임을 끈 사람의 1ms 설정을 이 조각 안에서만 되살려 놓게 된다.
-     그래서 미리보기가 실제로 쓰는 여섯 가지 색만 여기 적는다(위 .theme-swatch 참고).
-     ⚠️ :root의 같은 색을 바꾸면 여기도 같이 바꿀 것. */
-  .theme-pv.theme-dark {
-    --c-bg:#10141E; --c-border:rgba(136,150,191,0.2);
-    --c-text-primary:#F0F4FF; --c-accent-1:#00E5FF;
-    --c-correct:#10B981; --c-wrong:#F87171;
+  /* 예전엔 다크 테마만 :root 그 자체였다. 그래서 「다크」 미리보기 조각은 덮어쓸 블록이
+     없어 **그때 켜져 있는 테마 색을 그대로** 물려받았고, 라이트를 쓰는 학생에게는 다크와
+     라이트 미리보기가 똑같이 보였다. 여기에 특례 블록을 하나 더 붙여 막았었는데,
+     그건 같은 사고를 다시 부르는 방식이다.
+
+     이번엔 구조로 없앤다: **어떤 테마도 :root 에 암묵적으로 살지 않는다.**
+     기본 테마를 포함해 셋 다 자기 :root.theme-<id> / .theme-pv.theme-<id> 짝을 갖는다.
+     아래 :root 에 남은 색은 테마가 아니라 **자바스크립트가 아예 안 돌았을 때를 위한 사본**이다
+     (클래스가 안 붙어도 글자가 읽혀야 한다). js/selfcheck.js 의 「테마 짝」 검사가
+     이 짝을 기능으로 확인하므로, 하나를 빠뜨리면 검사가 잡는다. */
+  /* ══ note — 실험노트 ══
+     화학은 원래 인쇄물의 언어를 갖고 있다. 종이, 잉크, 표, 여백.
+     그 언어를 쓰면 「테크 앱」이 되려고 애쓸 일이 없고, 화학식과 전자 세기라는
+     이 앱이 실제로 하는 일에도 종이 쪽이 맞다.
+     바탕은 따뜻한 미색, 글자는 푸른빛 도는 먹, 강조는 만년필 잉크 파랑 하나.
+     아래 비율은 전부 실측값이다. */
+  :root.theme-note, .theme-pv.theme-note {
+    --c-bg:#F2EFE7; --c-surface-1:rgba(255,253,247,0.62); --c-surface-2:rgba(255,253,247,0.90);
+    --c-surface-solid:#FBF9F4;
+    --c-border:rgba(40,58,74,0.18); --c-border-active:rgba(23,85,122,0.55);
+    --c-text-primary:#1B2430;     /* 13.62:1 */
+    --c-text-secondary:#5A6472;   /*  5.22:1 */
+    --c-accent-1:#17557A;         /*  6.98:1 — 잉크 파랑. 누를 수 있는 것에만 쓴다 */
+    --c-accent-2:#3E4650;         /*  8.32:1 — 흑연. 「고른 것」을 채우는 블록 */
+    --c-correct:#1F6B45;          /*  6.15:1 — 비리디언 */
+    --c-wrong:#A32020;            /*  7.17:1 — 산화철 빨강 */
+    --c-on-accent-1:#FBF9F4; --c-on-accent-2:#FBF9F4;
+    --c-on-correct:#FBF9F4;  --c-on-wrong:#FBF9F4;
+    --c-correct-bg:rgba(31,107,69,0.15); --c-wrong-bg:rgba(163,32,32,0.15);
+    --c-focus-glow:rgba(23,85,122,0.2);
+    --c-tint-a1:rgba(23,85,122,0.10); --c-tint-a2:rgba(62,70,80,0.14);
+    --c-e-inner:#6E7480;
+    --c-e-own:#8A5710;            /* 남의 전자와 밝기 1.88:1 — 흑백으로 봐도 갈린다 */
+    --c-e-other:#4A2A6B;
   }
-  :root.theme-light, .theme-pv.theme-light {
-    --c-bg:#F0F4FF; --c-surface-1:rgba(255,255,255,0.6); --c-surface-2:rgba(255,255,255,0.8);
-    --c-surface-solid:#FFFFFF;
-    --c-border:rgba(45,60,100,0.15); --c-border-active:rgba(2,132,199,0.5);
-    --c-text-primary:#0F172A; --c-text-secondary:#4A5568;
-    /* 흰 배경 위에서는 같은 색도 훨씬 흐리게 보인다 — 파랑·주황·초록·빨강 모두 한 단계 짙게 */
-    --c-accent-1:#0369A1; --c-accent-2:#4F5B93; --c-accent-3:#B45309;
-    --c-correct:#065F46; --c-wrong:#B91C1C;
-    --c-on-accent-1:#FFFFFF; --c-on-accent-2:#FFFFFF; --c-on-accent-3:#FFFFFF;
-    --c-on-correct:#FFFFFF; --c-on-wrong:#FFFFFF;
-    --c-correct-bg:rgba(6,95,70,0.15); --c-wrong-bg:rgba(185,28,28,0.15);
-    --c-focus-glow:rgba(3,105,161,0.2); --c-tint-a2:rgba(79,91,147,0.25);
-    --c-tint-a1:rgba(3,105,161,0.14); --c-tint-a3:rgba(180,83,9,0.16);
-    --c-e-inner:#5F6B80;          /* 밝은 배경에서는 흐린 색이 곧 밝은 회색이 아니라 어두운 회색이다 */
-    --c-e-own:#B45309;            /* 밝은 배경에서 노랑은 안 보인다 — 진한 호박색으로 */
-    --c-e-other:#4C1D95;          /* #6D28D9는 own과 밝기가 1.41:1뿐이라 더 내렸다 */
-    --c-glow:0;              /* 밝은 배경에서 radial-gradient 두 개는 얼룩으로만 보인다 */
+
+  /* ══ edit — 편집 미니멀 ══
+     거의 무채색에 신호색 하나. 위계는 크기·여백·괘선이 만들고 색은 거들지 않는다.
+     바탕이 #10141E(푸른 남색)이 아니라 따뜻한 목탄색인 것이 요점이다 —
+     푸른 기 도는 어두운 배경 자체가 「테크 제품」의 표시다.
+     핵심 수: 「고른 것」을 보라색 채움이 아니라 **종이색 반전 블록**으로 만든다.
+     보라를 다른 보라로 바꾸는 게 아니라 없애는 방법이다. */
+  :root.theme-edit, .theme-pv.theme-edit {
+    --c-bg:#191817; --c-surface-1:rgba(255,252,246,0.045); --c-surface-2:rgba(255,252,246,0.085);
+    --c-surface-solid:#201F1D;
+    --c-border:rgba(237,234,227,0.16); --c-border-active:rgba(143,176,182,0.55);
+    --c-text-primary:#EDEAE3;     /* 14.76:1 */
+    --c-text-secondary:#9A958C;   /*  5.95:1 */
+    --c-accent-1:#8FB0B6;         /*  7.64:1 — 유일한 신호색 */
+    --c-accent-2:#D8D2C6;         /* 11.78:1 — 반전 블록(종이) */
+    --c-correct:#6FB489;          /*  6.72:1 */
+    --c-wrong:#D9807A;            /*  5.74:1 */
+    --c-on-accent-1:#191817; --c-on-accent-2:#191817;
+    --c-on-correct:#191817;  --c-on-wrong:#191817;
+    --c-correct-bg:rgba(111,180,137,0.15); --c-wrong-bg:rgba(217,128,122,0.15);
+    --c-focus-glow:rgba(143,176,182,0.2);
+    --c-tint-a1:rgba(143,176,182,0.14); --c-tint-a2:rgba(216,210,198,0.16);
+    --c-e-inner:#7C7873;          /* 바탕과 4.05:1 — 도형 기준 3:1 을 넘긴다 */
+    --c-e-own:#E3B85E;
+    --c-e-other:#8B7ABE;          /* own 과 밝기 2.01:1 */
   }
-  /* 종이 — 세피아. 흰 배경의 눈부심을 줄여 오래 봐도 덜 피로하다. */
-  :root.theme-paper, .theme-pv.theme-paper {
-    --c-bg:#F5EFE1; --c-surface-1:rgba(255,251,243,0.72); --c-surface-2:rgba(255,251,243,0.92);
-    --c-surface-solid:#FFFBF3;
-    --c-border:rgba(120,96,64,0.24); --c-border-active:rgba(146,64,14,0.55);
-    --c-text-primary:#2B2117; --c-text-secondary:#6B5B45;
-    --c-accent-1:#9A3412; --c-accent-2:#5B4B6A; --c-accent-3:#A16207;
-    --c-correct:#166534; --c-wrong:#B91C1C;
-    --c-on-accent-1:#FFFFFF; --c-on-accent-2:#FFFFFF; --c-on-accent-3:#FFFFFF;
-    --c-on-correct:#FFFFFF; --c-on-wrong:#FFFFFF;
-    --c-correct-bg:rgba(22,101,52,0.15); --c-wrong-bg:rgba(185,28,28,0.15);
-    --c-focus-glow:rgba(154,52,18,0.2); --c-tint-a2:rgba(91,75,106,0.25);
-    --c-tint-a1:rgba(154,52,18,0.13); --c-tint-a3:rgba(161,98,7,0.15);
-    --c-e-inner:#6B6152; --c-e-own:#92400E; --c-e-other:#3F1580;
-    --c-glow:0;              /* 세피아 위의 붉은기·보랏빛 얼룩을 없앤다 — 종이는 얼룩지면 안 된다 */
-  }
-  /* 야간 — 불 끄고 볼 때. 배경을 더 낮추고 채도를 죽여 눈이 덜 부시게 한다. */
-  :root.theme-night, .theme-pv.theme-night {
-    --c-bg:#0A0C10; --c-surface-1:rgba(22,26,34,0.72); --c-surface-2:rgba(22,26,34,0.92);
-    --c-surface-solid:#12161D;
-    --c-border:rgba(120,134,160,0.22); --c-border-active:rgba(125,178,168,0.5);
-    --c-text-primary:#D3DAE3; --c-text-secondary:#7C8798;
-    --c-accent-1:#7DB2A8; --c-accent-2:#8A7CC8; --c-accent-3:#C79A5B;
-    --c-correct:#4E9E77; --c-wrong:#D98A8A;
-    /* 야간 테마의 강조색은 밝은 편이라 그 위 글자는 검정이어야 읽힌다 */
-    --c-on-accent-1:#000000; --c-on-accent-2:#000000; --c-on-accent-3:#000000;
-    --c-on-correct:#000000; --c-on-wrong:#000000;
-    --c-correct-bg:rgba(78,158,119,0.15); --c-wrong-bg:rgba(217,138,138,0.15);
-    --c-focus-glow:rgba(125,178,168,0.2); --c-tint-a2:rgba(138,124,200,0.25);
-    --c-tint-a1:rgba(125,178,168,0.16); --c-tint-a3:rgba(199,154,91,0.18);
-    /* 원래 own #C9A227 / other #B0A8D8이었는데 둘의 밝기가 거의 같아(1.06:1) 흑백으로 보면
-       구분이 사라졌다. 모양이 아니라 색으로만 가르는 이상 밝기까지 벌려 놓아야 한다. */
-    /* 이 색은 점(그래픽·3:1)이자 해설 속 원자 기호(글자·4.5:1)라 둘 중 엄한 쪽을 따른다.
-       #8272C4로 내렸더니 글자 대비가 4.44:1로 4.5:1에 미달했다 — 둘 다 한 칸씩 올렸다. */
-    --c-e-inner:#7E8899; --c-e-own:#D8B23C; --c-e-other:#8A7ACB;
-    --c-glow:0;              /* 불 끄고 볼 때는 은은한 빛도 거슬린다 */
-  }
+
   /* 고대비 — 잘 안 보일 때. 배경을 완전한 검정으로 내리고 글자를 흰색으로 올린다. */
   :root.theme-contrast, .theme-pv.theme-contrast {
     --c-bg:#000000; --c-surface-1:rgba(255,255,255,0.06); --c-surface-2:rgba(255,255,255,0.12);
     --c-surface-solid:#0B0B0B;
     --c-border:rgba(255,255,255,0.55); --c-border-active:#FFFFFF;
     --c-text-primary:#FFFFFF; --c-text-secondary:#D6D6D6;
-    --c-accent-1:#39E0FF; --c-accent-2:#C08BFF; --c-accent-3:#FFC53D;
-    --c-correct:#3DFF9E; --c-wrong:#FF6B6B;
-    --c-on-accent-1:#000000; --c-on-accent-2:#000000; --c-on-accent-3:#000000;
+    /* edit 과 **같은 시각 언어**를 쓴다(반전 블록, 채움 없음) — 대비만 끝까지 올린 판이다.
+       접근성 테마를 딴 디자인으로 만들면 아무도 그쪽을 손보지 않게 된다. */
+    --c-accent-1:#7FE3F0; --c-accent-2:#FFFFFF;
+    --c-correct:#4CE39A; --c-wrong:#FF8B8B;
+    --c-on-accent-1:#000000; --c-on-accent-2:#000000;
     --c-on-correct:#000000; --c-on-wrong:#000000;
-    --c-correct-bg:rgba(61,255,158,0.15); --c-wrong-bg:rgba(255,107,107,0.15);
-    --c-focus-glow:rgba(57,224,255,0.2); --c-tint-a2:rgba(192,139,255,0.25);
-    --c-tint-a1:rgba(57,224,255,0.22); --c-tint-a3:rgba(255,197,61,0.24);
+    --c-correct-bg:rgba(76,227,154,0.15); --c-wrong-bg:rgba(255,139,139,0.15);
+    --c-focus-glow:rgba(127,227,240,0.2); --c-tint-a2:rgba(255,255,255,0.16);
+    --c-tint-a1:rgba(127,227,240,0.22);
     /* 고대비에서 "채도가 낮다"는 밝기를 낮춘다는 뜻이 아니다 — 회색으로 가되 밝기는 지킨다 */
-    --c-e-inner:#C8C8C8; --c-e-own:#FFE95C; --c-e-other:#C08BFF;
-    --c-glow:0;                   /* 배경 그라디언트를 끈다 — 대비를 깎는다 */
+    --c-e-inner:#C8C8C8; --c-e-own:#FFE95C; --c-e-other:#C4A6FF;
+
   }
   *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   /* 스크롤바는 항상 숨긴다(플랫폼/브라우저 구분 없이). 문서 자체가 스크롤러라야 브라우저 기본
@@ -269,7 +270,9 @@
   /* filter:blur(100px)를 전체화면 고정 요소에 걸어두면 확대/축소 제스처마다 매 프레임
      다시 블러 연산을 해야 해서 모든 브라우저에서 렉의 주범이 된다 → 별도 필터 없이
      그라디언트 자체의 색상 정지점을 넓게 퍼뜨려 비슷한 은은한 느낌만 남긴다 */
-  body::before{content:'';position:fixed;inset:0;background-image:radial-gradient(circle at 25% 25%,var(--c-accent-1),transparent 55%),radial-gradient(circle at 75% 75%,var(--c-accent-2),transparent 55%);opacity:var(--c-glow);pointer-events:none;z-index:0;}
+  /* 화면 전체에 강조색 두 개를 은은하게 깔던 겹이 있었다.
+     새 테마는 셋 다 0 이라 아무것도 그리지 않으면서 고정 레이어만 남는다 — 걷어낸다.
+     바탕은 바탕색 하나로 충분하고, 그게 인쇄물의 방식이다. */
   #app{position:relative;z-index:1;max-width:720px;margin:0 auto;padding:var(--s-4);display:flex;flex-direction:column;min-height:100vh;min-height:100dvh;transition:max-width var(--dur-move) var(--ease-move);}
   header{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--s-4);}
   .logo-egg{font-size:var(--t-body-lg);font-weight:700;color:var(--c-wrong);letter-spacing:0.08em;cursor:pointer;user-select:none;transition:transform var(--dur-tap) var(--ease-out);white-space:nowrap;flex-shrink:0;}
@@ -313,7 +316,7 @@
   .stat-label{font-size:var(--t-caption);color:var(--c-text-secondary);font-weight:500;}
   .stat-value{font-family:var(--font-mono);font-size:var(--t-display);font-weight:700;line-height:1;transition:transform var(--dur-tap) var(--ease-out);}
   .stat-value.bump{transform:scale(1.4);}
-  #streakCount{color:var(--c-accent-3);}#totalCorrect{color:var(--c-correct);}#totalWrong{color:var(--c-wrong);}
+  #streakCount{color:var(--c-text-primary);}#totalCorrect{color:var(--c-correct);}#totalWrong{color:var(--c-wrong);}
   .streak-flames{font-size:var(--t-title);}
   .timer-select-wrap{display:flex;align-items:center;gap:var(--s-2);margin-bottom:var(--s-4);background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:var(--r-3);padding:var(--s-3) var(--s-4);}
   .timer-select-label{font-size:var(--t-caption);color:var(--c-text-secondary);font-weight:500;white-space:nowrap;}
@@ -326,7 +329,7 @@
   .timer-btn,.cycle-btn,.dir-btn,.dia-btn,.m6-opt-btn,.filter-chip,
   .sub-btn,.m6-shuffle,.pt-rotate-btn,.clear-all-btn,.retry-playlist-btn{min-height:44px;}
   .timer-btn{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--r-2);color:var(--c-text-secondary);font-family:var(--font-mono);font-size:var(--t-body);font-weight:500;padding:var(--s-3) var(--s-4);cursor:pointer;transition:var(--t-btn);}
-  .timer-btn.active{background:var(--c-tint-a3);border-color:var(--c-accent-3);border-width:2px;color:var(--c-text-primary);}
+  .timer-btn.active{background:var(--c-accent-2);border-color:var(--c-accent-2);color:var(--c-on-accent-2);}
   #modeNav{margin-bottom:var(--s-4);}
   /* 구역 줄. 색으로 구분하지 않는다 — 구역 색과 "시험 범위" 색이 겹치면 무슨 뜻인지 알 수 없게 된다.
      좁은 화면에서 4개가 한 줄에 안 들어가면 헤더와 같은 가로 스크롤(.scroll-fade-x)로 넘긴다. */
@@ -399,7 +402,7 @@
   @keyframes qEnter{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
   @keyframes qFade{from{opacity:0}to{opacity:1}}
   @keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
-  .eq-text{color:var(--c-text-primary);}.eq-arrow{color:var(--c-accent-3);font-size:1.2em;margin:0 var(--s-1);}.eq-plus{color:var(--c-text-secondary);margin:0 var(--s-1);}
+  .eq-text{color:var(--c-text-primary);}.eq-arrow{color:var(--c-text-secondary);font-size:1.2em;margin:0 var(--s-1);}.eq-plus{color:var(--c-text-secondary);margin:0 var(--s-1);}
   /* 앙금(↓)·기체(↑) 표기 — 화학식의 일부가 아니라 그 물질의 상태를 알리는 표시다.
      학생이 입력하는 답에는 들어가지 않으므로, 화학식과 같은 크기·색으로 쓰면 답의 일부로
      오해한다. 살짝 작고 흐리게 두어 "붙어 있는 표시"로 읽히게 한다. */
@@ -433,7 +436,7 @@
      별도 색이 없는 키가 어두운 테마에서 배경에 묻힌다(실제로 그랬다) */
   .kb-key{background:var(--c-surface-2);color:var(--c-text-primary);border:1px solid var(--c-border);border-radius:var(--r-2);font-family:var(--font-mono);font-size:var(--t-body-lg);font-weight:500;min-height:54px;min-width:44px;flex:1 1 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--t-btn);}
   .kb-key:active{transform:scale(.95);}
-  .kb-key.num{color:var(--c-accent-3);}.kb-key.elem{color:var(--c-text-primary);font-weight:500;}
+  .kb-key.num{color:var(--c-text-primary);}.kb-key.elem{color:var(--c-text-primary);font-weight:500;}
   .kb-key.del{color:var(--c-wrong);flex-grow:2;}.kb-key.confirm{background:var(--c-correct);color:var(--c-on-correct);flex-grow:3;}.kb-key.next-q{background:var(--c-accent-2);color:var(--c-on-accent-2);flex-grow:3;}
   /* manipulation: 더블탭 확대만 끄고 핀치·팬은 그대로 — 확대는 이제 막지 않고 견디는 전략
      (setupViewportVars의 동결 가드가 확대 중 재계산을 차단해 레이아웃이 안 깨진다) */
@@ -511,7 +514,7 @@
   .reaction-num{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 var(--s-1);border-radius:var(--r-2);background:var(--c-surface-1);color:var(--c-accent-1);font-size:var(--t-caption);font-family:var(--font-mono);font-weight:600;flex-shrink:0;}
   .reaction-badge{display:inline-flex;align-items:center;gap:var(--s-1);background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:var(--r-3);padding:var(--s-0) var(--s-3) var(--s-0) var(--s-2);font-size:var(--t-caption);font-family:var(--font-ui);font-weight:500;color:var(--c-text-secondary);white-space:nowrap;flex-shrink:0;}
   .reaction-fail{color:var(--c-wrong);font-size:var(--t-caption);font-family:var(--font-ui);font-weight:500;white-space:nowrap;}
-  .reaction-eq{color:var(--c-text-primary);font-size:var(--t-body-lg);line-height:1.6;background:rgba(0,0,0,.22);padding:var(--s-3) var(--s-4);border-radius:var(--r-2);border-left:3px solid var(--c-border-active);text-align:center;}
+  .reaction-eq{color:var(--c-text-primary);font-size:var(--t-body-lg);line-height:1.6;background:var(--c-surface-2);padding:var(--s-3) var(--s-4);border-radius:var(--r-2);border-left:3px solid var(--c-border-active);text-align:center;}
   /* 오답노트 리스트 안에서는 플래시카드 앞/뒷면을 한 줄로, 폰트도 축소(카드 원본은 그대로) */
   .m6-note-row{display:flex;align-items:center;justify-content:center;gap:var(--s-2);flex-wrap:wrap;}
   .reaction-eq .m6-korean,.reaction-eq .m6-formula{font-size:var(--t-body);line-height:1.35;}
@@ -584,7 +587,7 @@
   .filter-chip:focus-visible,.retry-note-btn:focus-visible,.delete-note-btn:focus-visible,
   .show-answer-btn:focus-visible,.clear-all-btn:focus-visible,.modal-close:focus-visible,
   .m6-shuffle:focus-visible,.blank-box:focus-visible,button:focus-visible{
-    outline:3px solid var(--c-accent-3);outline-offset:2px;
+    outline:3px solid var(--c-accent-1);outline-offset:2px;
     box-shadow:0 0 0 1px var(--c-bg);
   }
 
@@ -601,7 +604,7 @@
   .dia-fill{fill:var(--c-surface-1);}
   .dia-sym{fill:var(--c-text-primary);font-family:var(--font-mono);font-size:var(--t-body);font-weight:700;text-anchor:middle;dominant-baseline:central;}
   .dia-sym-lg{font-size:var(--t-title);}
-  .dia-e{fill:var(--c-accent-3);}
+  .dia-e{fill:var(--c-e-own);}
   /* 안쪽 껍질 — 채도를 낮춰 뒤로 물린다. 아래 두 규칙과 함께 .dia-e 뒤에 와야 덮어쓴다
      (셋 다 명시도가 같아 순서로 갈린다). */
   .dia-e-inner{fill:var(--c-e-inner);}
@@ -678,7 +681,7 @@
   /* 진행바도 같은 이유로 scaleX다. 폭을 100%로 두고 가로로만 눌러 준다 —
      그러면 그라디언트가 언제나 「전체 길이」 기준이라 진행에 따라 색이 흐르지 않고 제자리에 있다. */
   .cycle-progress-fill{height:100%;width:100%;transform-origin:left center;transform:scaleX(0);
-    background:linear-gradient(90deg,var(--c-accent-2),var(--c-accent-1));border-radius:var(--r-1);
+    background:var(--c-accent-1);border-radius:var(--r-1);
     transition:transform var(--dur-move) var(--ease-move);}
   .egg-particle{position:fixed;pointer-events:none;z-index:9999999;font-size:var(--t-display);animation:egg-pop var(--dur-egg) var(--ease-egg) forwards;}
   @keyframes egg-pop{0%{transform:translate(-50%,-50%) scale(.5);opacity:1}100%{transform:translate(calc(-50% + var(--tx)),calc(-50% + var(--ty))) scale(1.5);opacity:0}}
@@ -851,22 +854,22 @@
   @media (min-width:768px){ #ptRotateBtn{display:none;} }
   .pt-axis-group{align-self:end;padding-bottom:var(--s-0);}
   .pt-axis-period{justify-self:end;padding-right:var(--s-1);}
-  .pt-cat-alkali{background:#F87171;}
-  .pt-cat-alkaline{background:#FB923C;}
-  .pt-cat-transition{background:#60A5FA;}
-  .pt-cat-lanth{background:#C084FC;}
-  .pt-cat-actin{background:#F472B6;}
-  .pt-cat-post{background:#D6D3D1;}
-  .pt-cat-metalloid{background:#A3E635;}
-  .pt-cat-nonmetal{background:#22D3EE;}
-  .pt-cat-halogen{background:#FDE047;}
+  .pt-cat-alkali{background:#FF6666;}
+  .pt-cat-alkaline{background:#FFD9A0;}
+  .pt-cat-transition{background:#FFC0C0;}
+  .pt-cat-lanth{background:#F0B6FF;}
+  .pt-cat-actin{background:#FF99CC;}
+  .pt-cat-post{background:#C4C4C4;}
+  .pt-cat-metalloid{background:#B9C982;}
+  .pt-cat-nonmetal{background:#A0FFA0;}
+  .pt-cat-halogen{background:#FFFF99;}
   /* 18족만 흰 글자를 얹었었는데, 재어 보니 #818CF8 위의 흰 글자는 2.98:1 로
      본문 기준(4.5)은커녕 큰 글자 기준(3.0)에도 못 미쳤다 — 나머지 열 분류가 6.9~14.5 인데
      하필 원자가 전자 0, 옥텟을 설명하느라 가장 자주 보는 칸이 제일 안 보였다.
      .pt-cell 의 짙은 글자(#0B0F19)를 그대로 쓰면 같은 배경에서 6.42:1 이 된다.
      「고대비」테마를 고른 사람에게도 이 칸만 2.98 이었다는 게 결정적이었다. */
-  .pt-cat-noble{background:#818CF8;}
-  .pt-cat-unknown{background:#94A3B8;}
+  .pt-cat-noble{background:#C0FFFF;}
+  .pt-cat-unknown{background:#E4E4E4;}
 
   /* ── MODE 6 플래시카드 ── */
   #mode6Wrap{display:none;flex-direction:column;gap:var(--s-4);flex-grow:1;}
@@ -909,9 +912,11 @@
   .m6-face .later-note{font-size:var(--t-caption);margin-top:var(--s-1);}
   .m6-face .dia-replay{margin:0 auto var(--s-1);padding:var(--s-2) var(--s-4);font-size:var(--t-caption);min-height:44px;}
   .m6-front{background:var(--c-surface-1);border:2px solid var(--c-border);}
-  .m6-back{background:linear-gradient(135deg,var(--c-tint-a2),var(--c-surface-2));border:2px solid var(--c-accent-2);transform:rotateY(180deg);}
+  /* 앞면과 뒷면은 같은 종이의 앞뒷장이다 — 뒷면에만 그라디언트를 깔면 딴 물건이 된다.
+     구분은 색이 아니라 테두리 한 겹으로 한다. */
+  .m6-back{background:var(--c-surface-solid);border:2px solid var(--c-accent-1);transform:rotateY(180deg);}
   .m6-tag{font-size:var(--t-caption);font-weight:500;background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--r-1);padding:var(--s-1) var(--s-3);color:var(--c-text-secondary);}
-  .m6-back .m6-tag{color:var(--c-text-primary);border-color:var(--c-accent-2);}
+  .m6-back .m6-tag{color:var(--c-text-primary);border-color:var(--c-accent-1);}
   .m6-korean{font-size:clamp(18px,5vw,26px);font-family:var(--font-ui);font-weight:700;color:var(--c-text-primary);line-height:1.5;}
   .m6-formula{font-size:clamp(16px,4.5vw,24px);font-family:var(--font-mono);font-weight:700;color:var(--c-text-primary);line-height:1.8;}
   /* 카드 앞면의 이름 아래 화학식 — 이름이 주인공이라 한 급 작다.
@@ -930,10 +935,10 @@
   .m6-nav-center{display:flex;flex-direction:column;align-items:center;gap:var(--s-2);flex:1;}
   .m6-counter{font-family:var(--font-mono);font-size:var(--t-body-lg);font-weight:600;color:var(--c-text-primary);}
   .m6-shuffle{background:var(--c-surface-2);border:1px solid var(--c-border);border-radius:var(--r-2);color:var(--c-text-secondary);font-size:var(--t-body);font-weight:500;padding:var(--s-2) var(--s-4);cursor:pointer;transition:var(--t-btn);}
-  @media (hover:hover){.m6-shuffle:hover{border-color:var(--c-accent-3);color:var(--c-accent-3);}}
+  @media (hover:hover){.m6-shuffle:hover{color:var(--c-accent-1);}}
   .m6-progress-bar{height:6px;background:var(--c-border);border-radius:var(--r-1);overflow:hidden;}
   .m6-progress-fill{height:100%;width:100%;transform-origin:left center;transform:scaleX(0);
-    background:linear-gradient(90deg,var(--c-accent-2),var(--c-accent-1));border-radius:var(--r-1);
+    background:var(--c-accent-1);border-radius:var(--r-1);
     transition:transform var(--dur-move) var(--ease-move);}
   @keyframes m6Right{from{opacity:0;transform:translateX(50px)}to{opacity:1;transform:translateX(0)}}
   @keyframes m6Left{from{opacity:0;transform:translateX(-50px)}to{opacity:1;transform:translateX(0)}}
@@ -971,7 +976,7 @@
     padding:var(--s-2) var(--s-4);border-radius:var(--r-2);font-weight:600;cursor:pointer;min-height:44px;}
   /* 재풀이 배너 */
   #retryBanner {
-    display:none; background:var(--c-wrong); color:var(--c-on-wrong); padding:var(--s-4) var(--s-4); border-radius:var(--r-3); margin-bottom:var(--s-4); font-weight:600; align-items:center; justify-content:space-between; box-shadow:0 4px 12px var(--c-wrong-bg); font-size:var(--t-body);
+    display:none; background:var(--c-wrong); color:var(--c-on-wrong); padding:var(--s-4) var(--s-4); border-radius:var(--r-3); margin-bottom:var(--s-4); font-weight:600; align-items:center; justify-content:space-between; font-size:var(--t-body);
   }
 
   /* 와이드(화면 분할) 모드 CSS Grid 재배치 */
