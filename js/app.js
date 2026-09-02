@@ -727,8 +727,11 @@ const App={
         document.body.appendChild(p);setTimeout(()=>p.remove(),this.motionMs('--dur-egg'));
       }
       const fl=document.createElement('div');
-      Object.assign(fl.style,{position:'fixed',inset:0,zIndex:9999998,background:'linear-gradient(135deg,rgba(255,182,193,.9),rgba(200,162,200,.9))',display:'flex',alignItems:'center',justifyContent:'center',opacity:0,transition:`opacity var(--dur-view) var(--ease-out)`,pointerEvents:'none'});
-      fl.innerHTML='<div style="font-size:clamp(28px,9vw,80px);text-align:center;padding:0 24px;word-break:keep-all;white-space:normal">깜짝이야!</div>';
+      Object.assign(fl.style,{position:'fixed',inset:0,zIndex:9999998,/* 자바스크립트에 마지막으로 남아 있던 하드코딩 색(분홍 그라디언트)이었다.
+           농담은 그대로 두되 색은 테마를 따라가게 한다 — 테마를 바꿔도 여기만 분홍인 건
+           「이 조각만 딴 앱에서 왔다」로 읽힌다. */
+        background:'var(--c-accent-2)',display:'flex',alignItems:'center',justifyContent:'center',opacity:0,transition:`opacity var(--dur-view) var(--ease-out)`,pointerEvents:'none'});
+      fl.innerHTML='<div style="color:var(--c-on-accent-2);font-size:clamp(28px,9vw,80px);text-align:center;padding:0 24px;word-break:keep-all;white-space:normal">깜짝이야!</div>';
       document.body.appendChild(fl);
       /* 붙인 직후에 opacity 를 바꾸면 브라우저가 둘을 한 번에 처리해 전환이 안 걸린다.
          50ms 를 세는 대신 다음 프레임을 기다린다 — 기기가 느려도 맞는 방법이다. */
