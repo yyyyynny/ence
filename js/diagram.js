@@ -45,12 +45,14 @@ const DIA = {
   },
   at(delay){ return ` style="animation-delay:${delay.toFixed(2)}s"`; },
 
-  /* 껍질 위 전자 자리 — 12시부터 시계 방향. 개수만 바꿔 부르면 같은 규칙으로 자리가 정해지므로
-     "원래 있던 전자"와 "새로 들어온 전자"가 한 원 위에서 자연스럽게 이어진다. */
-  dotPos(cx, cy, r, n){
-    const out = [];
+  /* 껍질 위 전자 자리 — 기본은 12시부터 시계 방향. 개수만 바꿔 부르면 같은 규칙으로 자리가 정해지므로
+     "원래 있던 전자"와 "새로 들어온 전자"가 한 원 위에서 자연스럽게 이어진다.
+     deg0로 시작 각을 옮길 수 있다 — 공유 결합에서 안쪽 껍질 전자가 결합축 위에 앉아
+     공유 전자쌍과 맞닿는 것을 피하는 데 쓴다(아래 atomShells 참고). */
+  dotPos(cx, cy, r, n, deg0){
+    const out = [], start = deg0 === undefined ? -90 : deg0;
     for(let i = 0; i < n; i++){
-      const a = (-90 + i * 360 / n) * Math.PI / 180;
+      const a = (start + i * 360 / n) * Math.PI / 180;
       out.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
     }
     return out;
@@ -71,8 +73,8 @@ const DIA = {
     return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
   },
   /* 껍질 배치대로 전자를 원 위에 고르게 찍는다. */
-  dots(cx, cy, r, n, cls, er){
-    return this.dotPos(cx, cy, r, n).map(([x, y]) => this.dot(x, y, cls, '', er)).join('');
+  dots(cx, cy, r, n, cls, er, deg0){
+    return this.dotPos(cx, cy, r, n, deg0).map(([x, y]) => this.dot(x, y, cls, '', er)).join('');
   },
 
   /* 그림을 못 보는 사람에게 그림이 말하는 것을 글로 준다.
@@ -187,7 +189,12 @@ function ionicDiagramHTML(b){
   const xOutR = DIA.R0 + (xS.length - 1) * DIA.RSTEP;   /* 비금속이 받을 껍질 */
 
   const rows = Math.max(b.nM, b.nX);
-  const TOP = 26;                                   /* 「전자 N개」 라벨 자리 — 전하 표기와 겹치지 않게 따로 뗀다 */
+  /* 위쪽 여백. 전에는 여기 「전자 N개」를 SVG 글자로 찍었는데, SVG 글자는 viewBox 배율만큼
+     같이 줄어든다 — 320px 폰에서 12px로 선언한 글자가 실제로는 6px로 그려졌다.
+     (getComputedStyle은 줄기 전 값을 돌려주므로 selfcheck의 글자 크기 검사도 이걸 못 본다.)
+     세어야 할 숫자가 화면에서 가장 작은 글이면 안 되므로 판 밖 HTML로 옮겼다.
+     이 여백은 이제 대괄호 옆 전하 표기가 위로 나갈 자리다. */
+  const TOP = 26;
   const rowH = 2 * Math.max(mR, xR) + 30;
   const H = TOP + rows * rowH;
   const lx = 90, rx = 310, W = 420;   /* 대괄호와 전하가 오른쪽으로 더 나가므로 폭을 넓힌다 */
@@ -247,16 +254,23 @@ function ionicDiagramHTML(b){
   /* 화살표가 여러 개면 "전자 2개"가 화살표마다 2개인지 통틀어 2개인지 헷갈린다.
      여러 개일 때는 화살표 하나가 나르는 양을 쓴다. */
   const per = b.nM >= b.nX ? b.give : b.take;
-  s += `<text class="dia-note dia-anim-fade" x="${W/2}" y="${TOP - 9}"${DIA.at(lastAt + 0.35)}>${rows === 1 ? `전자 ${b.give}개` : `각각 전자 ${per}개씩`}</text>`;
+  const moveNote = rows === 1 ? `전자 ${b.give}개` : `화살표마다 전자 ${per}개씩`;
 
   const alt = `${b.name} 이온 결합 그림 — ${M.name}: ${DIA.shellText(mS)}에서 ${DIA.shellText(mIon)}로, `
             + `${X.name}: ${DIA.shellText(xS)}에서 ${DIA.shellText(xIon)}로 바뀐다.`;
   const svg = `<svg class="dia" viewBox="0 0 ${W} ${H}" role="img" aria-label="${alt}">${DIA.arrowDefs()}${s}</svg>`;
 
+  /* 이온이 된 뒤의 이름과 전하를 글로도 적는다. 그림 속 전하 표기(+·2−)는 SVG 글자라
+     폰에서 8px 안팎으로 줄어드는데, 이건 답의 근거라 읽히는 크기로도 있어야 한다.
+     이름은 ionNameKo()에 맡긴다 — 음이온은 「염소 이온」이 아니라 「염화 이온」이다. */
+  const ionName = (sym, dir, n, sign) =>
+    `${ionNameKo(sym, dir)}(${sym}<sup>${DIA.chargeText(n, sign)}</sup>)`;
+
   return `<div class="dia-wrap">
-    <div class="dia-panel"><div class="dia-cap">전자가 넘어가 이온이 된다</div>${svg}</div>
+    <div class="dia-panel"><div class="dia-cap">전자가 넘어가 이온이 된다 — ${moveNote}</div>${svg}</div>
     ${DIA.replayBtn()}
     <p class="dia-exp">${josa(M.name,'은','는')} 원자가 전자 ${valenceOf(M.z)}개를 내주고, ${josa(X.name,'은','는')} ${b.take}개를 받아 둘 다 바깥 껍질이 꽉 찬다.
+    그래서 ${ionName(b.M, 'lose', b.give, '+')}과 ${ionName(b.X, 'gain', b.take, '−')}이 된다.
     <span class="later-note">굵은 점이 넘어가는 전자다 — 없던 전자가 생기는 게 아니라 원래 ${josa(M.name,'이','가')} 갖고 있던 전자다.</span></p>
   </div>`;
 }
@@ -336,21 +350,32 @@ function covalentDiagramHTML(b, opts){
   let s = '';
   /* 원자 — 껍질을 전부 그리되 바깥 껍질 전자는 여기서 찍지 않는다.
      바깥 껍질 전자는 결합에 참여하는 것과 아닌 것으로 갈려 아래에서 따로 배치한다. */
-  const atomShells = (sym, shells, x, y, big) => {
+  /* axisDeg = 그 원자에서 결합 상대를 바라보는 방향. 안쪽 껍질 전자를 그 방향에서
+     반 칸(180/개수) 비틀어 찍는다 — 12시 고정으로 찍으면 전자 수가 짝수인 껍질에서
+     결합축 위에 정확히 한 개가 앉아, 겹친 자리에 놓이는 공유 전자쌍과 맞닿는다.
+     실제로 CS₂에서 황의 L 껍질 전자(8개 → 45°마다, 그중 하나가 결합축 위)와
+     둘째 공유 전자쌍이 9.86px 떨어져 두 점 반지름 합(10px)보다 가까웠다.
+     반 칸 비틀면 짝수·홀수 어느 개수에서도 결합축 위에 자리가 생기지 않는다. */
+  const atomShells = (sym, shells, x, y, big, axisDeg) => {
     let t = '';
     shells.forEach((cnt, i) => {
       const r = R0 + i * RSTEP;
       t += `<circle class="dia-ring" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}"/>`;
       /* 안쪽 껍질은 꽉 차 있고 결합에 참여하지 않는다 — 그대로 찍는다 */
-      if(i < shells.length - 1) t += DIA.dots(x, y, r, cnt, 'dia-e dia-e-inner', EDOT);
+      if(i < shells.length - 1)
+        t += DIA.dots(x, y, r, cnt, 'dia-e dia-e-inner', EDOT,
+                      axisDeg === undefined ? undefined : axisDeg + 180 / cnt);
     });
     const nr = nucR(R0 + (shells.length - 1) * RSTEP);
     t += `<circle class="dia-nuc" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${nr.toFixed(1)}"/>`;
     t += `<text class="dia-sym${big ? ' dia-sym-lg' : ''}" x="${x.toFixed(1)}" y="${y.toFixed(1)}">${sym}</text>`;
     return t;
   };
+  /* 중심 원자는 결합이 여럿이라 피할 축이 하나로 정해지지 않는다 — 대신 안쪽 껍질이
+     겹친 자리에서 한 칸(RSTEP) 이상 안쪽이라 애초에 닿지 않는다. 기본 배치를 쓴다.
+     리간드는 결합이 하나뿐이므로 그 축(중심을 바라보는 방향)에서 비틀어 준다. */
   s += atomShells(b.center, cShells, cx, cy, true);
-  geo.forEach(g => { s += atomShells(g.l.sym, g.lShells, g.lx, g.ly, g.l.sym !== 'H'); });
+  geo.forEach(g => { s += atomShells(g.l.sym, g.lShells, g.lx, g.ly, g.l.sym !== 'H', g.deg + 180); });
 
   /* 공유 전자쌍 — 겹친 자리에 놓고, 각 전자는 자기 원자의 껍질에서 출발한다 */
   geo.forEach((g, i) => {
@@ -422,8 +447,16 @@ function covalentDiagramHTML(b, opts){
   /* 점 색이 어느 원자에서 나온 전자인지를 말한다. 색 이름을 글로 적지 않고 원자 기호를 그 색으로
      칠한다 — 테마마다 색이 달라지므로 "노란 점"이라고 적으면 테마를 바꾼 순간 거짓말이 된다. */
   const ligSyms = [...new Set(b.ligands.map(l => l.sym))].join('·');
+  /* 같은 원소끼리 결합한 분자(H₂·O₂·N₂·Cl₂)에서는 이 범례가 「Cl / Cl」이 되어 아무것도
+     가르지 못했다. 두 원자가 정말 같은 원소라 기호로 가를 수 없는 게 맞으므로, 화면에서의
+     자리로 부른다 — 이런 분자는 전부 리간드가 하나(이원자 분자)라 중심이 왼쪽,
+     상대가 오른쪽으로 고정이다(angles = [0], 상대 원자를 +x 쪽에 놓는다). */
+  const homo = b.ligands.every(l => l.sym === b.center);
+  const [ownName, otherName] = homo && n === 1
+    ? [`왼쪽 ${b.center}`, `오른쪽 ${b.center}`]
+    : [b.center, ligSyms];
   const key = ` <span class="later-note">점 색은 그 전자를 내놓은 원자다 — `+
-    `<b class="dia-key-own">${b.center}</b> / <b class="dia-key-other">${ligSyms}</b>.</span>`;
+    `<b class="dia-key-own">${ownName}</b> / <b class="dia-key-other">${otherName}</b>.</span>`;
   const alt = `${b.name}(${b.f}) 공유 결합 그림 — 가운데 ${b.center}, 둘레에 `
             + b.ligands.map(l => `${l.sym} (전자쌍 ${l.pairs}쌍)`).join(', ') + '.';
   const exp = (order

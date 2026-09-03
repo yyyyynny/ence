@@ -450,11 +450,45 @@
     }
   }
 
+  /* ── ⑬ 그림(SVG) 안의 글자 크기 ──
+     ⑫는 이걸 못 본다. SVG 안 <text>의 font-size는 viewBox 배율만큼 같이 줄어드는데
+     getComputedStyle은 줄기 **전** 값을 돌려주기 때문이다 — 12px로 선언한 글자가
+     화면에서 6px로 그려지고 있어도 ⑫는 12px라고 읽고 통과시킨다.
+     실제로 그랬다: 이온 결합 그림의 「전자 N개」가 320px 폰에서 6.1px였다(HTML로 옮겨 고침).
+     그래서 여기서는 선언값이 아니라 **화면에 그려지는 크기**를 배율로 직접 계산한다. */
+  function checkSvgText(rep) {
+    let worst = null, n = 0;
+    for (const svg of T('svg[viewBox]')) {
+      const box = svg.getBoundingClientRect();
+      const vb = svg.viewBox && svg.viewBox.baseVal;
+      if (!vb || !vb.width || !box.width) continue;
+      /* 가로·세로 중 실제로 적용된 배율(둘 중 작은 쪽이 그림을 가둔다) */
+      const scale = Math.min(box.width / vb.width, box.height / vb.height);
+      for (const t of svg.querySelectorAll('text')) {
+        if (!t.textContent.trim()) continue;
+        n++;
+        const px = parseFloat(getComputedStyle(t).fontSize) * scale;
+        if (!worst || px < worst.px) worst = { px: px, txt: t.textContent.trim().slice(0, 10) };
+      }
+    }
+    if (!n) { rep.ok('화면에 SVG 글자 없음 — 볼 것 없음', true); return; }
+    /* 그림 안 글자는 그림의 일부라 본문 하한(12px)을 그대로 들이대면 어떤 배치로도 못 맞춘다.
+       원자 두 개를 나란히 놓은 이온 결합 그림이 폰 폭에 들어가려면 배율이 0.5까지 내려간다.
+       그래서 하한을 7px로 두되, 이 아래로 떨어지면 그건 배치를 고쳐야 한다는 뜻이다.
+       ⚠️ 이 하한이 「7px면 읽힌다」는 뜻은 아니다. 그림 안 글자로 전달되는 내용은
+       반드시 해설 문장에도 같이 적어 두는 것이 이 앱의 규칙이고, 이 검사는 그 규칙이
+       지켜지고 있는지가 아니라 "여기서 더 작아지지는 않았는지"만 지킨다. */
+    const FLOOR = 7;
+    rep.ok('그림 안 글자가 화면에서 ' + FLOOR + 'px 이상 (' + n + '개, 가장 작은 것 ' +
+      worst.px.toFixed(1) + 'px "' + worst.txt + '")', worst.px >= FLOOR);
+  }
+
   const SUITES = {
     contrast: checkContrast, touch: checkTouch, overflow: checkOverflow,
     themePairs: checkThemePairs, tokens: checkTokens, fonts: checkFonts,
     emoji: checkEmoji, motion: checkMotion, modes: checkModes,
-    modals: checkModals, version: checkVersion, fontSize: checkFontSize
+    modals: checkModals, version: checkVersion, fontSize: checkFontSize,
+    svgText: checkSvgText
   };
 
   /* 창 검사가 전환이 끝나기를 기다려야 해서 전체가 비동기다.
