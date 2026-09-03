@@ -24,7 +24,7 @@ const App={
     isRetryPlaylistMode:false, retryPlaylist:[]
   },
   $:{
-    app:document.getElementById('app'),streakCount:document.getElementById('streakCount'),streakFlames:document.getElementById('streakFlames'),
+    app:document.getElementById('app'),statBar:document.getElementById('statBar'),streakCount:document.getElementById('streakCount'),streakFlames:document.getElementById('streakFlames'),
     totalCorrect:document.getElementById('totalCorrect'),totalWrong:document.getElementById('totalWrong'),modeTabs:document.querySelector('.mode-tabs'),
     qLabel:document.getElementById('qLabel'),qSubLabel:document.getElementById('qSubLabel'),equationDisplay:document.getElementById('equationDisplay'),
     resultBanner:document.getElementById('resultBanner'),numRow:document.getElementById('numRow'),
@@ -731,7 +731,11 @@ const App={
            농담은 그대로 두되 색은 테마를 따라가게 한다 — 테마를 바꿔도 여기만 분홍인 건
            「이 조각만 딴 앱에서 왔다」로 읽힌다. */
         background:'var(--c-accent-2)',display:'flex',alignItems:'center',justifyContent:'center',opacity:0,transition:`opacity var(--dur-view) var(--ease-out)`,pointerEvents:'none'});
-      fl.innerHTML='<div style="color:var(--c-on-accent-2);font-size:clamp(28px,9vw,80px);text-align:center;padding:0 24px;word-break:keep-all;white-space:normal">깜짝이야!</div>';
+      /* 이모지를 전부 지우던 라운드에서 이 하트도 예외 없이 같이 빠졌었다.
+         정작 이 이스터에그 자체는 그 라운드에서 "지켜야 할 자리"로 따로 남겨 뒀던 곳이라
+         하트도 함께 되돌린다 — 화면에 이모지가 있으면 안 된다는 기준은 평상시 UI 얘기지,
+         한 번씩 튀어나오는 장난에는 적용할 이유가 없다. */
+      fl.innerHTML='<div style="color:var(--c-on-accent-2);font-size:clamp(28px,9vw,80px);text-align:center;padding:0 24px;word-break:keep-all;white-space:normal">💖 깜짝이야! 💖</div>';
       document.body.appendChild(fl);
       /* 붙인 직후에 opacity 를 바꾸면 브라우저가 둘을 한 번에 처리해 전환이 안 걸린다.
          50ms 를 세는 대신 다음 프레임을 기다린다 — 기기가 느려도 맞는 방법이다. */
@@ -852,6 +856,7 @@ const App={
       btn.classList.add('active');
       this.state.isCycleMode=btn.dataset.cycle==='cycle';
       this.$.cycleProgressWrap.style.display=this.state.isCycleMode?'flex':'none';
+      this.updateStatBarVisibility();
       this.initCycleQueue();
       this.generateQuestion();
       this.playSound('tap'); this.playHaptic('tap');
@@ -1241,6 +1246,7 @@ const App={
     this.$.cycleWrap.style.display=(!isCard)?'flex':'none';
     this.$.cycleWrap.classList.toggle('m7', mode===7);
     this.$.cycleWrap.classList.toggle('has-dia', this.hasDiagram({['isMode'+mode]:true}));
+    this.updateStatBarVisibility();
 
     /* 플래시카드에는 순환 출제라는 게 없다. 그런데도 initCycleQueue가 돌아 (해당 분기가 없어
        반응식 풀로 떨어지면서) 순환 진행률이 초기화됐다 — 카드를 잠깐 보고 돌아오면
@@ -1754,6 +1760,16 @@ const App={
        판에 박힌 게임화 장치이고, 숫자가 이미 「연속 7」이라고 말하고 있다.
        편집 체계에서 연속을 세는 방법은 숫자와 그 아래 괘선이지 불꽃이 아니다. */
     this.$.streakFlames.textContent='';
+  },
+
+  /* 연속·맞음·틀림은 저장도 안 되는 세션 카운터라 늘 칸을 차지하고 있을 필요가 없다 —
+     맞혔을 때 결과 배너가 "연속 N번째예요"로 이미 한 번 더 알려 준다(renderResultBanner).
+     그래서 순환 모드(정해진 문제 수를 한 바퀴 도는 것)일 때만 띄운다 — 진행률 표시와
+     같은 조건(isCycleMode && 카드 모드 아님, :1271의 useCycle 참고)을 그대로 쓴다.
+     카드 모드는 채점을 안 하므로 직전 퀴즈 점수가 그대로 남아 있어도 의미가 없다. */
+  updateStatBarVisibility(){
+    const show=this.state.isCycleMode&&!isCardMode(this.state.currentMode);
+    this.$.statBar.style.display=show?'flex':'none';
   },
 
   /* q.sub는 q.name이 곧 정답이라 헤더에 띄울 수 없는 문제(MODE 7 역방향)를 위한 대체 문구 */
