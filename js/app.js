@@ -284,6 +284,16 @@ const App={
       else if(type === 'error') navigator.vibrate([70]);
     } catch(e) {}
   },
+  /* 소리와 진동을 같이 울릴 땐 반드시 진동을 먼저 부른다 — 순서가 반대였을 때
+     안드로이드 크롬에서 진동이 전혀 느껴지지 않는 문제가 있었다.
+     navigator.vibrate()는 "이 프레임에서 한 번이라도 사용자가 조작한 적 있는가"만
+     본다는 사양(sticky activation)과 달리, 실제 크롬 구현은 같은 클릭 처리 안에서
+     AudioContext.resume()이 먼저 실행되면 그 시점의 활성 상태를 vibrate()가 못
+     받는 경우가 보고돼 있다 — playSound()가 매번 initAudioContext()를 거쳐
+     resume()을 호출하므로, 소리를 먼저 내면 뒤따르는 진동이 조용히 실패한다.
+     진동을 먼저 부르면 이 문제를 피한다. 두 함수 자체는 그대로 두고 부르는
+     순서만 여기 한 곳에 모아 둔다 — 호출부에서 순서를 매번 맞출 필요가 없다. */
+  feedback(type){ this.playHaptic(type); this.playSound(type); },
 
   /* 저장값은 그대로 믿으면 안 된다. JSON.parse가 성공해도 배열이 아닐 수 있고("null", 문자열, 객체),
      그러면 목록을 그리다 f.map/f.length에서 죽는다 — 오답노트만 안 뜨는 게 아니라 렌더가 통째로
@@ -423,13 +433,13 @@ const App={
     document.getElementById('retryM6Flashcard').classList.remove('flipped');
   },
   retryFlashcardKnow(){
-    this.playSound('success'); this.playHaptic('success');
+    this.feedback('success');
     this.deleteWrongNote(this.state.retryNoteId);
     this.state.retryPlaylist.shift();
     this.loadNextRetryPlaylistItem();
   },
   retryFlashcardNext(){
-    this.playSound('tap'); this.playHaptic('tap');
+    this.feedback('tap');
     const skipped=this.state.retryPlaylist.shift();
     this.state.retryPlaylist.push(skipped);
     this.loadNextRetryPlaylistItem();
@@ -670,7 +680,7 @@ const App={
     this.$.app.addEventListener('click',e=>{
       const mt=e.target.closest('.mode-tab'),bb=e.target.closest('.blank-box'),kb=e.target.closest('.kb-key');
       const st=e.target.closest('.section-tab');
-      if(st){this.setSection(st.dataset.section);this.playSound('tap');this.playHaptic('tap');return;}
+      if(st){this.setSection(st.dataset.section);this.feedback('tap');return;}
       /* 새 판 알림 — 닫아도, 새로고침을 눌러도 "봤다"로 친다. 어느 쪽이든 내용을 본 뒤다. */
       if(e.target.closest('#updateCloseBtn')){this.dismissUpdateBanner();return;}
       if(e.target.closest('#updateReloadBtn')){
@@ -691,12 +701,12 @@ const App={
       if(mt)this.setMode(parseInt(mt.dataset.mode));
       if(bb)this.setActiveBlank(bb.dataset.key);
       if(kb)this.handleKeyPress(kb.dataset.key);
-      if(th){this.renderThemeList();this.$.themeModalOverlay.classList.add('show');this.playSound('tap');this.playHaptic('tap');}
+      if(th){this.renderThemeList();this.$.themeModalOverlay.classList.add('show');this.feedback('tap');}
       if(hi)this.$.hintModalOverlay.classList.add('show');
       if(wn){this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');}
       if(sa)this.revealAnswers();
       if(lyt) this.toggleWideMode();
-      if(pt){this.renderPeriodicTable();this.$.periodicModalOverlay.classList.add('show');this.playSound('tap');this.playHaptic('tap');}
+      if(pt){this.renderPeriodicTable();this.$.periodicModalOverlay.classList.add('show');this.feedback('tap');}
       if(snd){
         this.state.isSoundOn = !this.state.isSoundOn;
         try{localStorage.setItem('chem_sound', this.state.isSoundOn);}catch(e){}
@@ -762,7 +772,7 @@ const App={
       this.applyTheme(opt.dataset.theme, true);
       /* 목록은 열어 둔 채로 표시만 갱신한다 — 바로 옆 테마와 비교해 보고 고를 수 있게 */
       this.renderThemeList();
-      this.playSound('tap'); this.playHaptic('tap');
+      this.feedback('tap');
     });
     /* 어두운 배경 탭 시 모달 닫기 (인증 모달 제외) */
     [this.$.hintModalOverlay,this.$.wrongNoteModalOverlay,this.$.periodicModalOverlay,this.$.themeModalOverlay].forEach(ov=>{
@@ -770,28 +780,28 @@ const App={
     });
     document.getElementById('ptRotateBtn').addEventListener('click',()=>{
       this.openPtFullscreen();
-      this.playSound('tap'); this.playHaptic('tap');
+      this.feedback('tap');
     });
     document.getElementById('ptFsClose').addEventListener('click',()=>{
       this.closePtFullscreen();
-      this.playSound('tap'); this.playHaptic('tap');
+      this.feedback('tap');
     });
     /* 원소 칸 클릭 → 상세 설명 패널. 모달용/전체화면용 각각 델리게이션(콘텐츠가 매번 innerHTML로 새로 그려지므로) */
     this.$.periodicContent.addEventListener('click',e=>{
       const cell=e.target.closest('.pt-cell[data-z]'); if(!cell) return;
       this.ptToggleDetail(this.$.ptDetailPanel, parseInt(cell.dataset.z));
-      this.playSound('tap'); this.playHaptic('tap');
+      this.feedback('tap');
     });
     document.getElementById('ptFsContent').addEventListener('click',e=>{
       const cell=e.target.closest('.pt-cell[data-z]'); if(!cell) return;
       this.ptToggleDetail(this.$.ptFsDetailPanel, parseInt(cell.dataset.z));
-      this.playSound('tap'); this.playHaptic('tap');
+      this.feedback('tap');
     });
     [this.$.ptDetailPanel,this.$.ptFsDetailPanel].forEach(panel=>{
       panel.addEventListener('click',e=>{
         if(!e.target.closest('.pt-detail-close')) return;
         this.closePtDetail(panel);
-        this.playSound('tap'); this.playHaptic('tap');
+        this.feedback('tap');
       });
     });
     this.$.simplePeriodicToggle.addEventListener('click',()=>{
@@ -799,7 +809,7 @@ const App={
       try{localStorage.setItem('chem_pt_simple', this.state.isSimplePeriodic);}catch(e){}
       this.$.simplePeriodicToggle.classList.toggle('on', this.state.isSimplePeriodic);
       this.$.simplePeriodicToggle.setAttribute('aria-checked', this.state.isSimplePeriodic);
-      this.playSound('tap'); this.playHaptic('tap');
+      this.feedback('tap');
       this.renderPeriodicTable();
     });
     document.getElementById('clearAllNotesBtn').addEventListener('click',()=>this.clearWrongNotes());
@@ -810,7 +820,7 @@ const App={
       const b=e.target.closest('.timer-btn');if(!b)return;
       this.state.timerDuration=parseInt(b.dataset.sec)*1000;
       document.querySelectorAll('.timer-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
-      this.playSound('tap'); this.playHaptic('tap');
+      this.feedback('tap');
     });
     this.$.wrongNoteList.addEventListener('click',e=>{
       if(e.target.classList.contains('delete-note-btn'))this.deleteWrongNote(e.target.dataset.id);
@@ -830,14 +840,14 @@ const App={
         try{localStorage.setItem('chem_diagram', this.state.showDiagram);}catch(e){}
         document.querySelectorAll('.dia-btn').forEach(x=>x.classList.toggle('active', x===diaBtn));
         this.renderExplain();
-        this.playSound('tap'); this.playHaptic('tap');
+        this.feedback('tap');
         return;
       }
       /* 하위 유형 버튼이 고르는 값은 모드 번호 그 자체다 — setMode가 그대로 처리한다 */
       const subBtn=e.target.closest('.sub-btn');
       if(subBtn){
         this.setMode(parseInt(subBtn.dataset.sub));
-        this.playSound('tap'); this.playHaptic('tap');
+        this.feedback('tap');
         return;
       }
       const dirBtn=e.target.closest('.dir-btn');
@@ -848,7 +858,7 @@ const App={
         /* 방향이 바뀌면 남은 순환 큐도 새 방향으로 다시 돌아야 하므로 큐부터 초기화 */
         this.initCycleQueue();
         this.generateQuestion();
-        this.playSound('tap'); this.playHaptic('tap');
+        this.feedback('tap');
         return;
       }
       const btn=e.target.closest('.cycle-btn');if(!btn)return;
@@ -859,7 +869,7 @@ const App={
       this.updateStatBarVisibility();
       this.initCycleQueue();
       this.generateQuestion();
-      this.playSound('tap'); this.playHaptic('tap');
+      this.feedback('tap');
     });
 
     document.addEventListener('keydown',e=>{
@@ -912,13 +922,13 @@ const App={
     m6o.addEventListener('click',e=>{if(!th2&&!onReplay(e))this.m6Flip();th2=false;});
 
     document.getElementById('m6WrongNoteBtn').addEventListener('click',()=>{
-      this.playSound('tap'); this.playHaptic('tap');
+      this.feedback('tap');
       this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');
     });
     document.getElementById('retryM6Flashcard').addEventListener('click',e=>{
       /* 카드 안의 「다시 보기」를 누른 것이면 뒤집지 않는다 — 위임 처리 쪽에 맡긴다 */
       if(e.target.closest('.dia-replay')) return;
-      this.playSound('tap'); this.playHaptic('tap');
+      this.feedback('tap');
       const card=document.getElementById('retryM6Flashcard');
       card.classList.toggle('flipped');
       this.restartAnim(document.getElementById(card.classList.contains('flipped')?'retryM6BContent':'retryM6FContent'));
@@ -951,7 +961,7 @@ const App={
     if(this.state.isAnswerChecked&&!q.isTimedOut) return;
     if(this.state.isLastWrongAttempt){this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};}
     q.inputs[q.blanks[0].key]=val;
-    this.playSound('tap'); this.playHaptic('tap');
+    this.feedback('tap');
     this.renderAll();
   },
   /* 결합 차수 문제는 공유 결합만 대상이고, 분자 안의 결합이 전부 같은 차수여야 답이 하나로 정해진다.
@@ -1086,7 +1096,7 @@ const App={
   },
 
   timeOutForceWrong(){
-    this.playSound('error'); this.playHaptic('error');
+    this.feedback('error');
     this.state.isAnswerRevealed=false;this.state.score.streak=0;this.state.score.wrong++;
     const q=this.state.currentQuestion;q.isTimedOut=true;
 
@@ -1122,7 +1132,7 @@ const App={
         this.state.wrongBlanks={};
       }
 
-      this.playSound('tap'); this.playHaptic('tap');
+      this.feedback('tap');
       q.cursor = q.cursor || {};
       let val = q.inputs[q.activeKey] || '';
       let pos = q.cursor[q.activeKey] !== undefined ? q.cursor[q.activeKey] : val.length;
@@ -1187,7 +1197,7 @@ const App={
             q.activeKey = emptyB.key;
             q.cursor = q.cursor || {};
             if(q.cursor[emptyB.key] === undefined) q.cursor[emptyB.key] = (q.inputs[emptyB.key]||'').length;
-            this.playSound('tap'); this.playHaptic('tap');
+            this.feedback('tap');
             this.renderEquation();
             return;
           }
@@ -1195,7 +1205,7 @@ const App={
         this.checkAnswer();
       }
     } else if(key==='NEXT'){
-      this.playSound('tap'); this.playHaptic('tap');
+      this.feedback('tap');
       if((this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)||this.state.isLastWrongAttempt) {
         if(this.state.isRetryPlaylistMode) {
           if (this.state.isAnswerRevealed || this.state.isLastWrongAttempt) {
@@ -1264,7 +1274,7 @@ const App={
       q.activeKey=key;
       q.cursor = q.cursor || {};
       if(q.cursor[key] === undefined) q.cursor[key] = (q.inputs[key]||'').length;
-      this.playSound('tap'); this.playHaptic('tap'); this.renderEquation();
+      this.feedback('tap'); this.renderEquation();
     }
   },
 
@@ -1460,7 +1470,7 @@ const App={
     if(this.state.isRetryPlaylistMode) {
       if(ok) {
         if(q.isTimedOut) {
-          this.playSound('success'); this.playHaptic('success');
+          this.feedback('success');
           /* ── [BUG FIX HIGH] 타임아웃 후 정답 시 플레이리스트에서 제거 ── */
           this.state.retryPlaylist.shift();
           this.state.isAnswerChecked=true;
@@ -1468,7 +1478,7 @@ const App={
           clearInterval(this.state.timerInterval);
           this.renderAll('retry_timeout_correct');
         } else {
-          this.playSound('success'); this.playHaptic('success');
+          this.feedback('success');
           this.deleteWrongNote(this.state.retryNoteId);
           this.state.retryPlaylist.shift();
           this.state.isAnswerChecked=true;
@@ -1480,7 +1490,7 @@ const App={
           }
         }
       } else {
-        this.playSound('error'); this.playHaptic('error');
+        this.feedback('error');
         if(!q.isTimedOut) {
           const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
           if(note) {
@@ -1505,13 +1515,13 @@ const App={
     if(this.state.retryNoteId) {
       if(ok) {
         if(q.isTimedOut) {
-          this.playSound('success'); this.playHaptic('success');
+          this.feedback('success');
           this.state.isAnswerChecked=true;
           q.isTimedOut=false;
           clearInterval(this.state.timerInterval);
           this.renderAll('retry_timeout_correct');
         } else {
-          this.playSound('success'); this.playHaptic('success');
+          this.feedback('success');
           this.deleteWrongNote(this.state.retryNoteId);
           this.state.retryNoteId = null;
           document.getElementById('retryBanner').style.display='none';
@@ -1521,7 +1531,7 @@ const App={
           this.renderAll('retry_correct');
         }
       } else {
-        this.playSound('error'); this.playHaptic('error');
+        this.feedback('error');
         if(!q.isTimedOut) {
           const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
           if(note) {
@@ -1544,18 +1554,18 @@ const App={
     }
 
     if(q.isTimedOut){
-      if(!ok){this.playSound('error'); this.playHaptic('error'); q.coefOneErrorFlag=ce;this.state.isAnswerChecked=false;this.renderAll(false);}
-      else{this.playSound('success'); this.playHaptic('success'); this.state.isAnswerChecked=true;q.isTimedOut=false;this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};clearInterval(this.state.timerInterval);this.renderAll('timeout_correct');}
+      if(!ok){this.feedback('error'); q.coefOneErrorFlag=ce;this.state.isAnswerChecked=false;this.renderAll(false);}
+      else{this.feedback('success'); this.state.isAnswerChecked=true;q.isTimedOut=false;this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};clearInterval(this.state.timerInterval);this.renderAll('timeout_correct');}
     }else{
       clearInterval(this.state.timerInterval);
       if(ok){
-        this.playSound('success'); this.playHaptic('success');
+        this.feedback('success');
         if(!this.state.isLastWrongAttempt){this.state.score.streak++;this.state.score.correct++;}
         this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};
         this.state.isAnswerChecked=true;
         this.renderAll(true);
       }else{
-        this.playSound('error'); this.playHaptic('error');
+        this.feedback('error');
         if(!this.state.wrongAlreadyPenalized){
           this.state.score.streak=0;this.state.score.wrong++;
           this.generateBeautifulWrongNote(q);
@@ -1683,7 +1693,7 @@ const App={
      같은 버튼이 플래시카드 안에도 들어가므로 카드에서는 눌러도 아무 일이 없었다.
      버튼이 들어 있는 상자를 찾아 그 상자만 다시 그린다. */
   replayDiagram(btn){
-    this.playSound('tap'); this.playHaptic('tap');
+    this.feedback('tap');
     const host=btn&&btn.closest('#explainBox, .m6-face, #retryM6FContent, #retryM6BContent');
     if(!host||host.id==='explainBox'){ this.renderExplain(); return; }
     this.restartAnim(host);
@@ -2056,7 +2066,7 @@ const App={
      안 보이는 면은 건드리지 않는다. 되감기는 DOM을 새로 만들지 않으므로(restartAnim 참고)
      읽던 스크롤 위치도 그대로 남는다. */
   m6Flip(){
-    this.playSound('tap'); this.playHaptic('tap');
+    this.feedback('tap');
     this.state.m6Flipped=!this.state.m6Flipped;
     document.getElementById('m6Card').classList.toggle('flipped',this.state.m6Flipped);
     this.restartAnim(document.getElementById(this.state.m6Flipped?'m6BContent':'m6FContent'));
@@ -2108,7 +2118,7 @@ const App={
     const qData={m6Type:this.state.m6Type,m6Order:this.state.m6Order,
                  cardFront:card.fhtml,cardIndex:this.state.m6Index,title};
     this.saveWrongNote(this.state.currentMode,title,html,qData,false);
-    this.playSound('success'); this.playHaptic('success');
+    this.feedback('success');
     this.m6SyncSaveBtn();
   },
   viewFlashcardNote(note){
@@ -2504,7 +2514,7 @@ const App={
     clearTimeout(this._ptResetTimer);
     this._ptResetTimer=setTimeout(()=>{el.style.transition='';}, this.motionMs('--dur-move')+20);
     z.scale=1; this.clampPtZoom(); this.applyPtZoom();
-    this.playSound('tap'); this.playHaptic('tap');
+    this.feedback('tap');
   },
   /* 손을 뗀 뒤 경계 밖(고무줄이 늘어난 상태)이면 논리값을 경계로 되돌리고 전환으로 튕겨 들어간다.
      관성 도중에 경계에 걸려도 결국 여기로 온다 — ptPanFling이 속도가 다 죽으면 부른다. */
