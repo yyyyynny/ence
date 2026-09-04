@@ -116,6 +116,7 @@ const App={
     try{ localStorage.setItem('chem_seen_version', APP_VERSION); }catch(e){}
   },
   dismissUpdateBanner(){
+    this.feedback('tap');
     this.markVersionSeen();
     const el=document.getElementById('updateBanner');
     if(el) el.hidden=true;
@@ -234,7 +235,7 @@ const App={
     this.$.hapticBtn.setAttribute('aria-pressed', this.state.isHapticOn);
   },
   toggleWideMode() {
-    this.playSound('tap');
+    this.feedback('tap');
     this.state.isWideMode = !this.state.isWideMode;
     document.body.classList.toggle('wide-mode', this.state.isWideMode);
     try{localStorage.setItem('chem_wide', this.state.isWideMode);}catch(e){}
@@ -334,6 +335,7 @@ const App={
   },
 
   clearWrongNotes(){
+    this.feedback('tap');
     const btn=document.getElementById('clearAllNotesBtn');
     if(!btn.dataset.confirming){
       btn.dataset.confirming='1';
@@ -355,6 +357,7 @@ const App={
 
   startRetryPlaylist() {
     if (this.state.wrongNotes.length === 0) return;
+    this.feedback('tap');
     this.$.wrongNoteModalOverlay.classList.remove('show');
 
     if (!this.state.retryNoteId && !this.state.isRetryPlaylistMode) {
@@ -684,6 +687,7 @@ const App={
       /* 새 판 알림 — 닫아도, 새로고침을 눌러도 "봤다"로 친다. 어느 쪽이든 내용을 본 뒤다. */
       if(e.target.closest('#updateCloseBtn')){this.dismissUpdateBanner();return;}
       if(e.target.closest('#updateReloadBtn')){
+        this.feedback('tap');
         this.markVersionSeen();
         /* 캐시를 건너뛰도록 판 번호를 주소에 달아 다시 부른다 — ?v=만으로는 index.html 자신이
            캐시에 남아 옛 ?v=를 가리킨 채로 돌아올 수 있다. */
@@ -698,12 +702,15 @@ const App={
       const th=e.target.closest('#themeBtn'),hi=e.target.closest('#hintBtn'),wn=e.target.closest('#wrongNoteBtn'),sa=e.target.closest('.show-answer-btn');
       const snd=e.target.closest('#soundBtn'),hpt=e.target.closest('#hapticBtn'),lyt=e.target.closest('#layoutBtn');
       const extR=e.target.closest('#exitRetryBtn'),pt=e.target.closest('#periodicBtn');
-      if(mt)this.setMode(parseInt(mt.dataset.mode));
+      /* 아래 버튼들은 눌러도 진동이 없었다 — 여기서 값을 바꾸고 화면을 새로 그리기만 하고
+         소리·진동은 안 부르는 자리가 많았다. 탭·모드 전환처럼 흔한 동작일수록 안 울리는 게
+         바로 티가 난다("특정 버튼만 무시된다"). 화면을 바꾸는 모든 버튼에 tap을 맞춘다. */
+      if(mt){this.setMode(parseInt(mt.dataset.mode));this.feedback('tap');}
       if(bb)this.setActiveBlank(bb.dataset.key);
       if(kb)this.handleKeyPress(kb.dataset.key);
       if(th){this.renderThemeList();this.$.themeModalOverlay.classList.add('show');this.feedback('tap');}
-      if(hi)this.$.hintModalOverlay.classList.add('show');
-      if(wn){this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');}
+      if(hi){this.$.hintModalOverlay.classList.add('show');this.feedback('tap');}
+      if(wn){this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');this.feedback('tap');}
       if(sa)this.revealAnswers();
       if(lyt) this.toggleWideMode();
       if(pt){this.renderPeriodicTable();this.$.periodicModalOverlay.classList.add('show');this.feedback('tap');}
@@ -717,7 +724,7 @@ const App={
         try{localStorage.setItem('chem_haptic', this.state.isHapticOn);}catch(e){}
         this.updateFeedbackBtns(); this.playHaptic('tap');
       }
-      if(extR) this.exitRetry();
+      if(extR){this.exitRetry();this.feedback('tap');}
     });
 
     document.getElementById('easterEggBtn').addEventListener('click',e=>{
@@ -761,11 +768,14 @@ const App={
       const c=e.target.closest('.filter-chip');if(!c)return;
       this.$.wrongNoteFilters.querySelectorAll('.filter-chip').forEach(x=>x.classList.remove('active'));
       c.classList.add('active');this.state.noteFilter=c.dataset.filter;this.renderWrongNotes();
+      this.feedback('tap');
     });
-    document.getElementById('hintModalClose').addEventListener('click',()=>this.$.hintModalOverlay.classList.remove('show'));
-    document.getElementById('wrongNoteModalClose').addEventListener('click',()=>this.$.wrongNoteModalOverlay.classList.remove('show'));
-    document.getElementById('periodicModalClose').addEventListener('click',()=>this.$.periodicModalOverlay.classList.remove('show'));
-    document.getElementById('themeModalClose').addEventListener('click',()=>this.$.themeModalOverlay.classList.remove('show'));
+    /* 창을 여는 버튼(themeBtn·hintBtn 등)은 전부 tap을 주면서, 닫는 X 버튼 넷은 하나도
+       안 울리고 있었다 — 여는 동작과 닫는 동작이 같은 무게의 탭인데 한쪽만 무음이었다. */
+    document.getElementById('hintModalClose').addEventListener('click',()=>{this.feedback('tap');this.$.hintModalOverlay.classList.remove('show');});
+    document.getElementById('wrongNoteModalClose').addEventListener('click',()=>{this.feedback('tap');this.$.wrongNoteModalOverlay.classList.remove('show');});
+    document.getElementById('periodicModalClose').addEventListener('click',()=>{this.feedback('tap');this.$.periodicModalOverlay.classList.remove('show');});
+    document.getElementById('themeModalClose').addEventListener('click',()=>{this.feedback('tap');this.$.themeModalOverlay.classList.remove('show');});
     this.$.themeList.addEventListener('click',e=>{
       const opt=e.target.closest('.theme-opt');if(!opt)return;
       /* 여기서 고른 것만 저장한다 — 이제부터는 폰 설정이 바뀌어도 이 선택이 이긴다 */
@@ -823,8 +833,9 @@ const App={
       this.feedback('tap');
     });
     this.$.wrongNoteList.addEventListener('click',e=>{
-      if(e.target.classList.contains('delete-note-btn'))this.deleteWrongNote(e.target.dataset.id);
+      if(e.target.classList.contains('delete-note-btn')){this.feedback('tap');this.deleteWrongNote(e.target.dataset.id);}
       if(e.target.classList.contains('retry-note-btn')){
+        this.feedback('tap');
         const id=e.target.dataset.id;
         const note=this.state.wrongNotes.find(n=>n.id===id);
         if(note && isCardMode(note.mode)) this.viewFlashcardNote(note);
@@ -942,11 +953,13 @@ const App={
       const b=e.target.closest('.m6-opt-btn');if(!b)return;
       document.querySelectorAll('#m6TypeBtns .m6-opt-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
       this.state.m6Type=b.dataset.val;this.m6GenCards();this.m6Render();
+      this.feedback('tap');
     });
     document.getElementById('m6OrderBtns').addEventListener('click',e=>{
       const b=e.target.closest('.m6-opt-btn');if(!b)return;
       document.querySelectorAll('#m6OrderBtns .m6-opt-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
       this.state.m6Order=b.dataset.val;this.m6Render();
+      this.feedback('tap');
     });
   },
 
@@ -1620,6 +1633,7 @@ const App={
   },
 
   revealAnswers(){
+    this.feedback('tap');
     this.state.isAnswerRevealed=true;this.state.isAnswerChecked=true;
     this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};
     if(this.state.currentQuestion)this.state.currentQuestion.isTimedOut=false;
@@ -2071,9 +2085,9 @@ const App={
     document.getElementById('m6Card').classList.toggle('flipped',this.state.m6Flipped);
     this.restartAnim(document.getElementById(this.state.m6Flipped?'m6BContent':'m6FContent'));
   },
-  m6Next(){this.playSound('tap'); this.state.m6Index=(this.state.m6Index+1)%this.state.m6Cards.length;this.m6Render('next');},
-  m6Prev(){this.playSound('tap'); this.state.m6Index=(this.state.m6Index-1+this.state.m6Cards.length)%this.state.m6Cards.length;this.m6Render('prev');},
-  m6Shuffle(){this.playSound('tap'); const c=[...this.state.m6Cards];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}this.state.m6Cards=c;this.state.m6Index=0;this.m6Render();},
+  m6Next(){this.feedback('tap'); this.state.m6Index=(this.state.m6Index+1)%this.state.m6Cards.length;this.m6Render('next');},
+  m6Prev(){this.feedback('tap'); this.state.m6Index=(this.state.m6Index-1+this.state.m6Cards.length)%this.state.m6Cards.length;this.m6Render('prev');},
+  m6Shuffle(){this.feedback('tap'); const c=[...this.state.m6Cards];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}this.state.m6Cards=c;this.state.m6Index=0;this.m6Render();},
 
   M6_SAVE_LABEL:'이 카드 오답노트에 저장',
   /* 카드 → 오답노트 저장용 {title, html} (저장·저장여부 판정 공용) */
@@ -2111,7 +2125,7 @@ const App={
   },
   m6SaveCurrentAsWrong(){
     const card=this.state.m6Cards[this.state.m6Index];if(!card)return;
-    if(this.m6CurrentSaved()){this.playSound('tap');return;} /* 이미 저장됨 → 중복 저장 방지 */
+    if(this.m6CurrentSaved()){this.feedback('tap');return;} /* 이미 저장됨 → 중복 저장 방지 */
     const {title,html}=this.m6CardNoteData(card);
     /* cardIndex는 "섞인 배열에서 몇 번째"라 복원할 때(원래 순서로 다시 만든다) 다른 카드가 열렸다.
        카드 앞면 자체를 저장해 그 카드를 찾는다. cardIndex는 옛 노트 복원용으로만 남긴다. */
