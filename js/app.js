@@ -159,13 +159,13 @@ const App={
     if(!navigator.vibrate){
       if(localStorage.getItem('chem_haptic_hint_unsupported')) return;
       try{localStorage.setItem('chem_haptic_hint_unsupported','1');}catch(e){}
-      this.showToast('이 브라우저는 진동을 지원하지 않아요. 소리로는 계속 알려드릴게요.');
+      this.showToast('이 브라우저는 진동을 지원 안 해요');
       return;
     }
     if(!this.state.isHapticOn) return;
     if(localStorage.getItem('chem_haptic_hint_silent')) return;
     try{localStorage.setItem('chem_haptic_hint_silent','1');}catch(e){}
-    this.showToast('무음 모드에서는 진동이 안 울릴 수 있어요. 기기 설정에서 무음을 해제해 보세요.');
+    this.showToast('무음 모드에선 진동이 안 울릴 수 있어요');
   },
 
   /* 실제 가시 영역(px)을 CSS 변수로 유지 — iOS Safari/삼성 인터넷의 동적 주소창 때문에

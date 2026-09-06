@@ -1030,10 +1030,15 @@
      짧게 알려주고 스스로 사라진다. 확인 버튼이 없다 — 손대지 않아도 넘어가는 정보이지
      막고 답을 받아야 하는 질문이 아니다(그래서 모달이 아니라 토스트). App.showToast()가
      매번 새로 만들고 지운다 — 동시에 여러 개 뜰 일이 없는 자리라 재사용할 이유가 없다. */
-  .toast{position:fixed;left:50%;bottom:calc(var(--s-5) + env(safe-area-inset-bottom));
-    transform:translate(-50%,0);max-width:min(92vw,420px);
+  /* 처음엔 카드처럼 두꺼운 패딩(--s-3 --s-4)에 본문 크기 글자를 써서 세 줄까지
+     늘어졌다 — 잠깐 스쳐 가는 안내치고 너무 두툼했다. 토스트는 카드가 아니라
+     띠에 가까워야 한다: 패딩을 절반 가까이 줄이고, 모서리도 --r-3(판)이 아니라
+     --r-2(누르는 것들과 같은 급)로 낮추고, 글자도 캡션 크기로 내렸다
+     (--t-caption=12px, 이 앱이 정한 하한 그대로라 더는 못 줄인다). */
+  .toast{position:fixed;left:50%;bottom:calc(var(--s-4) + env(safe-area-inset-bottom));
+    transform:translate(-50%,0);max-width:min(86vw,340px);
     background:var(--c-surface-solid);color:var(--c-text-primary);border:1px solid var(--c-border);
-    border-radius:var(--r-3);padding:var(--s-3) var(--s-4);font-size:var(--t-body);line-height:1.5;
+    border-radius:var(--r-2);padding:var(--s-2) var(--s-3);font-size:var(--t-caption);line-height:var(--lh-caption);
     box-shadow:0 6px 20px rgba(0,0,0,.28);z-index:500;opacity:0;pointer-events:none;
     transition:opacity var(--dur-exit) var(--ease-in),transform var(--dur-exit) var(--ease-in);}
   .toast.show{opacity:1;transform:translate(-50%,-4px);pointer-events:auto;
