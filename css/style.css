@@ -1025,6 +1025,20 @@
     border-radius:var(--r-2);padding:var(--s-3) var(--s-4);font-family:var(--font-ui);font-size:var(--t-body);font-weight:700;
     cursor:pointer;min-height:44px;}
 
+  /* ── 잠깐 뜨는 안내(토스트) ──
+     진동 토글처럼 "눌렀는데 왜 아무 느낌이 없지?"가 생길 수 있는 자리에서, 이유를
+     짧게 알려주고 스스로 사라진다. 확인 버튼이 없다 — 손대지 않아도 넘어가는 정보이지
+     막고 답을 받아야 하는 질문이 아니다(그래서 모달이 아니라 토스트). App.showToast()가
+     매번 새로 만들고 지운다 — 동시에 여러 개 뜰 일이 없는 자리라 재사용할 이유가 없다. */
+  .toast{position:fixed;left:50%;bottom:calc(var(--s-5) + env(safe-area-inset-bottom));
+    transform:translate(-50%,0);max-width:min(92vw,420px);
+    background:var(--c-surface-solid);color:var(--c-text-primary);border:1px solid var(--c-border);
+    border-radius:var(--r-3);padding:var(--s-3) var(--s-4);font-size:var(--t-body);line-height:1.5;
+    box-shadow:0 6px 20px rgba(0,0,0,.28);z-index:500;opacity:0;pointer-events:none;
+    transition:opacity var(--dur-exit) var(--ease-in),transform var(--dur-exit) var(--ease-in);}
+  .toast.show{opacity:1;transform:translate(-50%,-4px);pointer-events:auto;
+    transition:opacity var(--dur-enter) var(--ease-out),transform var(--dur-enter) var(--ease-out);}
+
   /* 배너 안의 「그만두기」 — 흰 바탕에 --c-wrong 글자를 인라인으로 박아 두었었다.
      --c-wrong 은 어두운 테마에서 밝은 빨강(#F87171·#D98A8A·#FF6B6B)이라 흰 바탕에 얹으면
      2.6~2.8:1 로 본문 기준(4.5)에 한참 못 미쳤다 — 다크·야간·고대비 셋 다 실패였고,

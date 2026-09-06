@@ -122,6 +122,52 @@ const App={
     if(el) el.hidden=true;
   },
 
+  /* ── 잠깐 떴다 스스로 사라지는 안내 ──
+     확인을 받아야 하는 말이 아니라 그냥 알려 주는 말에 쓴다 — 그래서 모달이 아니라 토스트다.
+     한 번에 하나만 뜬다. 이미 뜬 게 있으면 지우고 새로 띄운다(안 그러면 겹쳐 쌓인다).
+     닫기 버튼이 없다 — 손 안 대도 사라지고, 눌러서 먼저 지울 수도 있다(막지 않는다). */
+  showToast(msg, ms){
+    const old=document.getElementById('appToast');
+    if(old) old.remove();
+    const el=document.createElement('div');
+    el.id='appToast'; el.className='toast'; el.setAttribute('role','status'); el.setAttribute('aria-live','polite');
+    el.textContent=msg;
+    el.addEventListener('click',()=>this.hideToast(el));
+    document.body.appendChild(el);
+    /* 붙인 프레임에 곧바로 클래스를 넣으면 브라우저가 시작 상태와 끝 상태를 한 번에
+       처리해 전환이 안 걸린다 — 이스터에그 카드와 같은 이유로 한 프레임 늦춘다. */
+    requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('show')));
+    setTimeout(()=>this.hideToast(el), ms || 4200);
+  },
+  hideToast(el){
+    if(!el || !el.isConnected) return;
+    el.classList.remove('show');
+    setTimeout(()=>el.remove(), this.motionMs('--dur-exit')+20);
+  },
+
+  /* ── 진동 토글의 첫 안내 ──
+     진동을 켰는데 안 느껴지면 "고장났나?"가 된다. 이유가 두 가지고 서로 달라서
+     문구도 갈라 둔다:
+     · 이 브라우저가 애초에 진동을 구현 안 함(대표적으로 아이폰 사파리) — 무음을 풀어도
+       소용없다. 이 경우는 토글을 어느 쪽으로 누르든(꺼도) 한 번은 알려 준다 —
+       버튼이 하는 일이 없다는 것 자체가 알아야 할 사실이라서다.
+     · 브라우저는 지원하는데(대개 안드로이드 크롬) 기기가 무음/방해금지 모드 — 켰을 때만
+       알려 준다. 껐을 때 무음 얘기를 하면 맥락에 안 맞는다.
+     각자 한 번만 뜬다 — localStorage에 남겨 두고 다시는 안 띄운다. 매번 뜨면
+     설정 하나 만질 때마다 뜨는 잔소리가 된다. */
+  hapticHint(){
+    if(!navigator.vibrate){
+      if(localStorage.getItem('chem_haptic_hint_unsupported')) return;
+      try{localStorage.setItem('chem_haptic_hint_unsupported','1');}catch(e){}
+      this.showToast('이 브라우저는 진동을 지원하지 않아요. 소리로는 계속 알려드릴게요.');
+      return;
+    }
+    if(!this.state.isHapticOn) return;
+    if(localStorage.getItem('chem_haptic_hint_silent')) return;
+    try{localStorage.setItem('chem_haptic_hint_silent','1');}catch(e){}
+    this.showToast('무음 모드에서는 진동이 안 울릴 수 있어요. 기기 설정에서 무음을 해제해 보세요.');
+  },
+
   /* 실제 가시 영역(px)을 CSS 변수로 유지 — iOS Safari/삼성 인터넷의 동적 주소창 때문에
      vh/vw가 실제 화면과 어긋나는 문제를 우회한다. 회전 전체화면이 열려 있으면 즉시 재계산.
      핀치 줌 중에는 visualViewport의 resize/scroll이 프레임마다 여러 번 발생하므로,
@@ -277,11 +323,23 @@ const App={
       }
     } catch(e) {}
   },
+  /* ── 진동 패턴을 고른 이유 ──
+     웹의 navigator.vibrate()는 "몇 ms 동안 켜고 끄는지"만 정할 수 있다 — 아이폰의
+     Taptic Engine처럼 세기(amplitude)나 파형(sharpness)을 따로 줄 방법이 아예 없다
+     (W3C 명세 자체가 duration/pattern 두 가지뿐이라고 못 박아 둔다). 그래서 이 함수를
+     아무리 다듬어도 iOS 네이티브 앱의 그 "톡" 하는 손맛과는 못 간다 — 이건 기능이
+     아니라 이 API의 한계다. 다음 세대 표준(Web Haptics API, navigator.playHaptics)이
+     세기를 지원하지만 2026년 지금 어떤 브라우저도 구현하지 않았다.
+     그 안에서 할 수 있는 건 리듬뿐이다: 펄스가 길수록 "세게", 펄스 사이 간격이
+     좁을수록 "빽빽하게" 느껴진다. success가 원래 [25,40,25,40,25]로 똑같은 펄스
+     세 번을 나란히 울렸는데, 이게 "성공"보다는 벨소리처럼 읽혔다 — 세 번 다 같은
+     길이라 리듬이 아니라 반복으로 느껴진 것. 짧고 긴 두 박(작게·크게)으로 바꾸면
+     "톡-투욱"처럼 커지는 쪽으로 읽혀 도착점이 있는 소리가 된다. */
   playHaptic(type){
     if(!this.state.isHapticOn || !navigator.vibrate) return;
     try {
       if(type === 'tap') navigator.vibrate(18);
-      else if(type === 'success') navigator.vibrate([25, 40, 25, 40, 25]);
+      else if(type === 'success') navigator.vibrate([18, 60, 32]);
       else if(type === 'error') navigator.vibrate([70]);
     } catch(e) {}
   },
@@ -723,6 +781,7 @@ const App={
         this.state.isHapticOn = !this.state.isHapticOn;
         try{localStorage.setItem('chem_haptic', this.state.isHapticOn);}catch(e){}
         this.updateFeedbackBtns(); this.playHaptic('tap');
+        this.hapticHint();
       }
       if(extR){this.exitRetry();this.feedback('tap');}
     });
