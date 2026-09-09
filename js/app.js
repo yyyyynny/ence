@@ -145,26 +145,25 @@ const App={
     setTimeout(()=>el.remove(), this.motionMs('--dur-exit')+20);
   },
 
-  /* ── 진동 토글의 첫 안내 ──
+  /* ── 진동 토글의 안내 ──
      진동을 켰는데 안 느껴지면 "고장났나?"가 된다. 이유가 두 가지고 서로 달라서
      문구도 갈라 둔다:
      · 이 브라우저가 애초에 진동을 구현 안 함(대표적으로 아이폰 사파리) — 무음을 풀어도
-       소용없다. 이 경우는 토글을 어느 쪽으로 누르든(꺼도) 한 번은 알려 준다 —
-       버튼이 하는 일이 없다는 것 자체가 알아야 할 사실이라서다.
+       소용없다. 토글을 어느 쪽으로 누르든 알려 준다 — 버튼이 하는 일이 없다는 것
+       자체가 알아야 할 사실이라서다.
      · 브라우저는 지원하는데(대개 안드로이드 크롬) 기기가 무음/방해금지 모드 — 켰을 때만
        알려 준다. 껐을 때 무음 얘기를 하면 맥락에 안 맞는다.
-     각자 한 번만 뜬다 — localStorage에 남겨 두고 다시는 안 띄운다. 매번 뜨면
-     설정 하나 만질 때마다 뜨는 잔소리가 된다. */
+     "처음 한 번만" localStorage에 남겨 두고 다시는 안 띄우게 했던 적이 있는데,
+     그러면 "다시 보고 싶다"가 개발자 도구로 그 값을 지우는 것 말고는 방법이 없어진다 —
+     기본 동작이 콘솔로만 되돌아가는 자리를 만들면 안 된다. 그래서 조건을 없애고
+     그냥 매번 뜨게 한다. 토글을 자주 누르는 버튼이 아니고, 토스트도 짧게 떴다
+     스스로 사라지니 자주 눌러도 성가시지 않다. */
   hapticHint(){
     if(!navigator.vibrate){
-      if(localStorage.getItem('chem_haptic_hint_unsupported')) return;
-      try{localStorage.setItem('chem_haptic_hint_unsupported','1');}catch(e){}
       this.showToast('이 브라우저는 진동을 지원 안 해요');
       return;
     }
     if(!this.state.isHapticOn) return;
-    if(localStorage.getItem('chem_haptic_hint_silent')) return;
-    try{localStorage.setItem('chem_haptic_hint_silent','1');}catch(e){}
     this.showToast('무음 모드에선 진동이 안 울릴 수 있어요');
   },
 
