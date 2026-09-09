@@ -32,6 +32,7 @@ const App={
     confirmBtn:document.querySelector('.kb-key.confirm'),nextBtn:document.querySelector('.kb-key.next-q'),
     hintModalOverlay:document.getElementById('hintModalOverlay'),wrongNoteModalOverlay:document.getElementById('wrongNoteModalOverlay'),
     reactionList:document.getElementById('reactionList'),wrongNoteList:document.getElementById('wrongNoteList'),
+    hintModalTitle:document.getElementById('hintModalTitle'),
     timerBar:document.getElementById('timerBar'),wrongNoteFilters:document.getElementById('wrongNoteFilters'),
     questionCard:document.getElementById('questionCard'),keyboardWrap:document.getElementById('keyboardWrap'),
     timerSelectWrap:document.getElementById('timerSelectWrap'),mode6Wrap:document.getElementById('mode6Wrap'),
@@ -700,7 +701,13 @@ const App={
   /* 반응식 목록 — 지금 보고 있는 구역의 것만. 여기서는 state.section이 맞다. 문제가 아니라
      「내가 지금 보는 범위의 참고표」라서, 구역 탭을 누르는 순간 바뀌어야 하는 것이 맞기 때문이다.
      (문제 출제 쪽은 반대로 모드를 기준으로 삼는다 — rxPool 주석 참고.)
-     전에는 init()에서 딱 한 번만 불려서, 구역을 바꿔도 목록이 바뀔 기회조차 없었다. */
+     전에는 init()에서 딱 한 번만 불려서, 구역을 바꿔도 목록이 바뀔 기회조차 없었다.
+
+     이온식(MODE 11, 「고2 화학」)은 예전엔 여기 아예 없었다 — 이 참고표가 반응식만
+     알고 있어서, 이온식 쓰기를 풀다가 힌트를 눌러도 뜻밖의 반응식 몇 개만 보이고
+     정작 외워야 할 이온식은 하나도 안 보였다. 탭으로 나누지 않고 반응식 목록 아래에
+     그냥 이어 붙인다 — 16종뿐이라 가나다·원소·번호 같은 별도 정렬이 필요할 만큼
+     많지 않고, 굳이 나누면 오히려 "이게 또 뭐가 다르지"를 만든다. */
   buildModalList(){
     const fmt=side=>side.map(r=>(r.coef>1?`<span class="eq-text">${r.coef}</span>`:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')+this.phaseHTML(r.phase)).join(' <span class="eq-plus">+</span> ');
     const sec=this.state.section, meta=sectionMeta(sec)||{label:''};
@@ -715,7 +722,17 @@ const App={
     const head=`<p class="dia-exp" style="margin:0 2px 10px"><b>${meta.label}</b>에서 다루는 반응식 <b>${list.length}개</b>. `+
       `구역 탭을 바꾸면 이 목록도 그 구역 것으로 바뀐다.</p>`;
     const empty=`<p class="dia-exp" style="margin:0 2px">이 구역에서 다루는 반응식은 없어요.</p>`;
-    this.$.reactionList.innerHTML=head+legend+(list.length?list.map((rx,i)=>`<div class="reaction-item"><div class="reaction-header"><div class="reaction-name"><span class="reaction-num">${i+1}</span>${rx.name}</div></div><div class="reaction-eq">${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}</div></div>`).join(''):empty);
+    let html=head+legend+(list.length?list.map((rx,i)=>`<div class="reaction-item"><div class="reaction-header"><div class="reaction-name"><span class="reaction-num">${i+1}</span>${rx.name}</div></div><div class="reaction-eq">${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}</div></div>`).join(''):empty);
+
+    /* 이온식을 다루는 모드(11)가 있는 구역은 「고2 화학」 하나뿐이다(curriculum.js 참고).
+       다른 구역에는 이온식 자체가 없으므로 빈 목록을 만들지 않고 아예 안 보인다. */
+    const hasIons = sec === 'chem';
+    if(hasIons){
+      html += `<p class="dia-exp" style="margin:var(--s-5) 2px 10px"><b>이온식</b> <b>${IONS_WRITE.length}개</b>.</p>`
+        + IONS_WRITE.map((ion,i)=>`<div class="reaction-item"><div class="reaction-header"><div class="reaction-name"><span class="reaction-num">${i+1}</span>${ion.name}</div></div><div class="reaction-eq">${this.formatInput(ion.f)}</div></div>`).join('');
+    }
+    this.$.reactionList.innerHTML=html;
+    if(this.$.hintModalTitle) this.$.hintModalTitle.textContent = hasIons ? '반응식·이온식 목록' : '반응식 목록';
     this.renderWrongNotes();
   },
   renderWrongNotes(){

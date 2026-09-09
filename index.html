@@ -24,7 +24,7 @@
 <!-- 탭·홈 화면 아이콘. 파일을 새로 두지 않으려고 SVG 를 그대로 주소에 적는다
      (빌드 도구가 없고 file:// 로 열어도 그대로 떠야 한다). -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23191817'/%3E%3Ctext x='16' y='23' font-size='20' font-family='monospace' font-weight='700' text-anchor='middle' fill='%238FB0B6'%3E%E2%9A%97%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/style.css?v=2026.09.03-8">
+<link rel="stylesheet" href="css/style.css?v=2026.09.03-9">
 </head>
 <body>
 
@@ -92,7 +92,7 @@
       <button class="icon-btn" id="soundBtn" title="소리 토글" aria-label="소리 토글" aria-pressed="true"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-sound-on"></use></svg></button>
       <button class="icon-btn" id="hapticBtn" title="진동 토글" aria-label="진동 토글" aria-pressed="true"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-vibrate-on"></use></svg></button>
       <button class="icon-btn" id="wrongNoteBtn" title="오답 노트" aria-label="오답 노트"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-notebook"></use></svg></button>
-      <button class="icon-btn" id="hintBtn" title="전체 반응식 보기" aria-label="전체 반응식 보기"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-list"></use></svg></button>
+      <button class="icon-btn" id="hintBtn" title="참고 자료 보기" aria-label="참고 자료 보기"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-list"></use></svg></button>
       <button class="icon-btn" id="periodicBtn" title="주기율표 보기" aria-label="주기율표 보기"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-atom"></use></svg></button>
       <button class="icon-btn" id="themeBtn" title="테마 고르기" aria-label="테마 고르기"><svg class="ic ic-lg" aria-hidden="true" focusable="false"><use href="#i-theme"></use></svg></button>
     </div>
@@ -274,8 +274,9 @@
 
 <div class="modal-overlay" id="hintModalOverlay">
   <div class="modal-box">
-    <!-- 「전체」가 아니다 — 지금 고른 구역의 반응식만 나온다(buildModalList). 목록 첫 줄이 어느 구역인지 말한다. -->
-    <div class="modal-header"><div class="modal-title">반응식 목록</div><button class="modal-close" id="hintModalClose"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div>
+    <!-- 「전체」가 아니다 — 지금 고른 구역의 반응식(+ 고2 화학이면 이온식)만 나온다(buildModalList).
+         제목도 그 구역에 실제로 뭐가 실렸는지에 맞춰 buildModalList가 고쳐 쓴다. -->
+    <div class="modal-header"><div class="modal-title" id="hintModalTitle">반응식 목록</div><button class="modal-close" id="hintModalClose"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div>
     <div class="modal-content" id="reactionList"></div>
   </div>
 </div>
@@ -316,15 +317,15 @@
   </div>
 </main>
 
-<script src="js/version.js?v=2026.09.03-8"></script>
-<script src="js/theme.js?v=2026.09.03-8"></script>
-<script src="js/data.js?v=2026.09.03-8"></script>
-<script src="js/curriculum.js?v=2026.09.03-8"></script>
-<script src="js/diagram.js?v=2026.09.03-8"></script>
-<script src="js/app.js?v=2026.09.03-8"></script>
+<script src="js/version.js?v=2026.09.03-9"></script>
+<script src="js/theme.js?v=2026.09.03-9"></script>
+<script src="js/data.js?v=2026.09.03-9"></script>
+<script src="js/curriculum.js?v=2026.09.03-9"></script>
+<script src="js/diagram.js?v=2026.09.03-9"></script>
+<script src="js/app.js?v=2026.09.03-9"></script>
 <!-- 자가 검사. 앱 동작에는 관여하지 않고 window.SelfCheck 만 정의한다.
      주소에 ?selfcheck 를 붙이면 저절로 돌고 결과가 화면에 뜬다 —
      개발자도구를 못 여는 폰에서도 확인할 수 있어야 실제로 돌리게 된다. -->
-<script src="js/selfcheck.js?v=2026.09.03-8"></script>
+<script src="js/selfcheck.js?v=2026.09.03-9"></script>
 </body>
 </html>

@@ -388,6 +388,35 @@
     }
   }
 
+  /* ── ⑨-b 힌트 창(참고 자료)이 실제로 배우는 걸 다 보여 주는가 ──
+     한동안 이 창(#reactionList)이 반응식만 알고 있었다 — 「고2 화학」에서 이온식 쓰기
+     (MODE 11)를 풀다가 힌트를 눌러도 이온식은 하나도 안 보이고 상관없는 반응식 몇 개만
+     떴다. buildModalList가 이온식을 반응식 목록 아래에 이어 붙이도록 고쳤는데, 이 검사는
+     그 참고표가 실제로 배우는 내용을 빠짐없이 담고 있는지를 셈으로 확인한다.
+     화면 문구(제목·안내 글)가 아니라 항목 개수를 세는 이유: 문구는 나중에 바뀌어도
+     뜻은 같을 수 있지만, 개수가 안 맞으면 참고표가 뭔가를 빠뜨렸다는 사실 자체는 그대로다. */
+  function checkReferenceList(rep) {
+    if (typeof SECTIONS === 'undefined' || typeof App === 'undefined' || typeof IONS_WRITE === 'undefined') {
+      rep.warn.push('참고 자료 검사 건너뜀'); return;
+    }
+    const back = App.state.section;
+    try {
+      for (const s of SECTIONS) {
+        App.setSection(s.id);
+        App.buildModalList();
+        const items = document.querySelectorAll('#reactionList .reaction-item').length;
+        const rx = (typeof reactionsInSection === 'function') ? reactionsInSection(s.id).length : 0;
+        /* 이온식은 지금은 「고2 화학」한 곳뿐이다(curriculum.js MODE 11). 다른 구역으로
+           옮겨가면 이 조건도 같이 고쳐야 하므로, 무엇을 근거로 판단했는지 여기 적어 둔다. */
+        const wantIons = s.id === 'chem' ? IONS_WRITE.length : 0;
+        rep.ok('참고 자료 · ' + s.label + ' 항목 수 = 반응식(' + rx + ') + 이온식(' + wantIons + ')',
+          items === rx + wantIons, '실제 ' + items + '개');
+      }
+    } finally {
+      App.setSection(back); App.buildModalList();
+    }
+  }
+
   /* ── ⑩ 창 여닫기 ──
      창은 --dur-enter 에 걸쳐 서서히 나타난다. 누르자마자 opacity 를 읽으면
      전환이 **시작된 순간의 값**(0)을 잡아, 멀쩡한 창을 "안 보인다"고 신고한다.
@@ -488,7 +517,7 @@
     themePairs: checkThemePairs, tokens: checkTokens, fonts: checkFonts,
     emoji: checkEmoji, motion: checkMotion, modes: checkModes,
     modals: checkModals, version: checkVersion, fontSize: checkFontSize,
-    svgText: checkSvgText
+    svgText: checkSvgText, referenceList: checkReferenceList
   };
 
   /* 창 검사가 전환이 끝나기를 기다려야 해서 전체가 비동기다.
