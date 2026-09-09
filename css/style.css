@@ -23,6 +23,13 @@
     --c-correct-bg:rgba(111,180,137,0.15); --c-wrong-bg:rgba(217,128,122,0.15);
     --c-focus-glow:rgba(143,176,182,0.2); --c-tint-a2:rgba(216,210,198,0.16);
     --c-tint-a1:rgba(143,176,182,0.14);
+    /* 손이 닿는 순간에만 뜨는 유리판. 애플 HIG의 Liquid Glass "Regular" 변형과 같은 자리에
+       쓴다 — 콘텐츠가 아니라 위에 뜬 조작판(toolbar·아이콘 버튼)에만, 평소엔 안 보이다가
+       닿을 때만. 배경은 새로 지어내지 않고 이미 있는 solid 표면색을 그대로 반투명하게
+       뺐다. 테두리(--glass-edge)는 --c-border-active를 그대로 쓰지 않는다 — 그 토큰은
+       불투명한 면 위에서 3:1을 넘기게 잡은 값이라, 반투명한 유리 위에 얹으면
+       note 테마에서 2.64:1로 못 미쳤다. 유리 배경과 합성한 뒤로 다시 재서 0.7 알파로 올렸다. */
+    --glass-bg:rgba(32,31,29,0.55); --glass-edge:rgba(143,176,182,0.7);
     /* 전자 색은 세 켜다. 전자는 전부 같은 동그라미이고 색과 채도만 다르다.
        inner = 안쪽 껍질. 채도를 죽여 뒤로 물린다 — 셀 것은 바깥 껍질 전자다.
        own  = 중심 원자가 내놓은 전자, other = 상대 원자가 내놓은 전자. 둘 다 채도가 높고
@@ -204,6 +211,7 @@
     --c-correct-bg:rgba(31,107,69,0.15); --c-wrong-bg:rgba(163,32,32,0.15);
     --c-focus-glow:rgba(23,85,122,0.2);
     --c-tint-a1:rgba(23,85,122,0.10); --c-tint-a2:rgba(62,70,80,0.14);
+    --glass-bg:rgba(251,249,244,0.55); --glass-edge:rgba(23,85,122,0.7);
     --c-e-inner:#6E7480;
     --c-e-own:#8A5710;            /* 남의 전자와 밝기 1.88:1 — 흑백으로 봐도 갈린다 */
     --c-e-other:#4A2A6B;
@@ -230,6 +238,7 @@
     --c-correct-bg:rgba(111,180,137,0.15); --c-wrong-bg:rgba(217,128,122,0.15);
     --c-focus-glow:rgba(143,176,182,0.2);
     --c-tint-a1:rgba(143,176,182,0.14); --c-tint-a2:rgba(216,210,198,0.16);
+    --glass-bg:rgba(32,31,29,0.55); --glass-edge:rgba(143,176,182,0.7);
     /* 전자 점은 --c-bg 위가 아니라 그림 판 위에 그려진다(.dia-panel = surface-2 겹친 카드 =
        실제 rgb(54,53,51)). 전에 적혀 있던 4.05:1은 --c-bg 기준이라 실제보다 후하게 잰
        값이었고, 판 위에서는 2.80:1로 도형 기준 3:1에 미달했다. 판 기준으로 다시 잡는다. */
@@ -253,6 +262,10 @@
     --c-correct-bg:rgba(76,227,154,0.15); --c-wrong-bg:rgba(255,139,139,0.15);
     --c-focus-glow:rgba(127,227,240,0.2); --c-tint-a2:rgba(255,255,255,0.16);
     --c-tint-a1:rgba(127,227,240,0.22);
+    /* 고대비에서는 유리판도 흐리게 비치면 안 된다 — 이 테마 자체가 OS의
+       prefers-contrast:more 대응판이고, 그 요구는 "반투명 대신 거의 불투명 + 뚜렷한 테두리"다.
+       그래서 거의 안 비치게(0.92) 두고, 아래 .theme-contrast 규칙에서 흐림 자체를 끈다. */
+    --glass-bg:rgba(11,11,11,0.92); --glass-edge:#FFFFFF;
     /* 고대비에서 "채도가 낮다"는 밝기를 낮춘다는 뜻이 아니다 — 회색으로 가되 밝기는 지킨다 */
     /* 공유 전자 두 색은 밝기로도 갈려야 한다 — 색을 못 가르는 사람에게는 그것만 남는다.
        #C4A6FF 는 own 과 밝기 1.67:1 로 여기서 정한 하한(1.7)에 못 미쳤다. 한 급 낮춰
@@ -298,11 +311,11 @@
     flex:1 1 auto;min-width:min(100%,232px);}
   /* 아이콘 일곱 개가 각자 상자를 두르고 있었다. 아이콘은 그 자체로 모양이 있어서
      테두리가 하는 일이 없다 — 지켜야 하는 건 손가락 크기뿐이다. */
-  .icon-btn{background:transparent;border:1px solid transparent;color:var(--c-text-secondary);width:52px;height:52px;border-radius:var(--r-2);cursor:pointer;font-size:var(--t-title);display:flex;align-items:center;justify-content:center;transition:var(--t-btn);flex-shrink:0;}
+  .icon-btn{background:transparent;border:1px solid transparent;color:var(--c-text-secondary);width:52px;height:52px;border-radius:var(--r-pill);cursor:pointer;font-size:var(--t-title);display:flex;align-items:center;justify-content:center;transition:var(--t-btn);flex-shrink:0;}
   @media (max-width:460px){
     .logo-egg{font-size:var(--t-body);}
     /* 44px 아래로는 안 줄인다 — 손가락이 닿는 최소 크기다. 전에는 42px이라 그 선을 넘었다. */
-    .icon-btn{width:44px;height:44px;font-size:var(--t-title);border-radius:var(--r-2);}
+    .icon-btn{width:44px;height:44px;font-size:var(--t-title);border-radius:var(--r-pill);}
     .header-right{gap:var(--s-2);}
   }
   /* 일곱 개가 한 줄에 못 들어가는 폭(대략 376px 미만)에서는 그냥 흘려 보내면 여섯 개 뒤에
@@ -317,6 +330,24 @@
      제자리에서 감싼다(파일 끝으로 몰면 .m6-save-wrong-btn.saved 처럼 뒤에 오는 같은 굵기의
      규칙을 hover 가 이기게 되어, 저장된 카드의 글자가 배경색과 같아져 안 보인다). */
   @media (hover:hover){.icon-btn:hover{color:var(--c-accent-1);}}
+  /* ── 아이콘 버튼의 유리(Liquid Glass, "Regular" 변형) ──
+     애플 HIG 원문(Materials 문서에 실제로 적힌 말): Liquid Glass는 "the navigation layer
+     that floats above app content" 전용이고 "never apply to content itself"다. 이 앱에서
+     그 조작판 자리는 헤더의 아이콘 버튼뿐이다 — 문제 카드·키패드·주기율표 칸은 콘텐츠라
+     손대지 않는다(실제로 키패드는 지난 라운드에 괘선표로 일부러 납작하게 만든 자리다).
+     평소엔 여전히 상자가 없다 — 위 "테두리가 하는 일이 없다"는 판단은 그대로 두고,
+     유리는 손이 닿는 순간에만("interactive" glass) 나타난다.
+     웹엔 진짜 렌즈 굴절을 낼 API가 없다(backdrop-filter는 뒤를 흐릴 뿐 빛을 구부리지
+     못한다) — 그래서 흐림은 약하게 쓰고, 위쪽 가장자리 테두리 하나로 "빛이 닿는 면"이라는
+     신호만 남긴다. 배경은 이미 있는 --c-surface-solid를 그대로 반투명하게 뺀 --glass-bg다. */
+  @media (hover:hover){.icon-btn:hover{
+    background:var(--glass-bg);border-color:var(--glass-edge);
+    -webkit-backdrop-filter:blur(12px) saturate(140%);backdrop-filter:blur(12px) saturate(140%);
+  }}
+  .icon-btn:active,.icon-btn:focus-visible{
+    background:var(--glass-bg);border-color:var(--glass-edge);
+    -webkit-backdrop-filter:blur(12px) saturate(140%);backdrop-filter:blur(12px) saturate(140%);
+  }
   /* 점수는 카드가 아니라 지면의 머리글이다 — 숫자 한 줄과 그 아래 괘선.
      상자를 없애면 화면 맨 위가 조용해지고, 눈이 문제로 바로 간다. */
   .stat-bar{display:flex;align-items:center;gap:var(--s-4);padding:0 var(--s-1) var(--s-3);
@@ -525,9 +556,19 @@
   /* ✕ 는 글자 하나뿐이라 상자가 26×31 밖에 안 됐다 — 창에서 나가는 유일한 문인데
      화면에서 제일 작은 버튼이었다. 위아래 음수 여백으로 헤더 높이는 그대로 두고
      손가락이 닿는 넓이만 44×44 로 넓힌다(배경이 없어 눈에는 달라지지 않는다). */
-  .modal-close{background:none;border:none;color:var(--c-text-secondary);font-size:var(--t-display);cursor:pointer;
+  .modal-close{background:none;border:1px solid transparent;border-radius:var(--r-pill);color:var(--c-text-secondary);font-size:var(--t-display);cursor:pointer;
     min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;
     margin-block:-7px;padding:0;}
+  /* 아이콘 버튼과 같은 유리 — 위 .icon-btn 주석 참고. 모달 위에 뜬 X도 콘텐츠가 아니라
+     조작판이라 같은 재질을 쓴다. */
+  @media (hover:hover){.modal-close:hover{
+    background:var(--glass-bg);border-color:var(--glass-edge);
+    -webkit-backdrop-filter:blur(12px) saturate(140%);backdrop-filter:blur(12px) saturate(140%);
+  }}
+  .modal-close:active,.modal-close:focus-visible{
+    background:var(--glass-bg);border-color:var(--glass-edge);
+    -webkit-backdrop-filter:blur(12px) saturate(140%);backdrop-filter:blur(12px) saturate(140%);
+  }
   .modal-content{overflow-y:auto;display:flex;flex-direction:column;gap:var(--s-3);padding-right:var(--s-1);scrollbar-width:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
   .modal-content::-webkit-scrollbar{display:none;}
   /* 세로로 스크롤되는 flex 컨테이너의 자식은 절대 찌그러지면 안 된다.
@@ -1035,14 +1076,38 @@
      띠에 가까워야 한다: 패딩을 절반 가까이 줄이고, 모서리도 --r-3(판)이 아니라
      --r-2(누르는 것들과 같은 급)로 낮추고, 글자도 캡션 크기로 내렸다
      (--t-caption=12px, 이 앱이 정한 하한 그대로라 더는 못 줄인다). */
+  /* 이 토스트도 콘텐츠 위에 잠깐 뜨는 조작판이라 유리 재질이 맞는 자리다(위 .icon-btn 주석의
+     같은 기준). 위쪽 테두리만 --glass-edge로 밝혀 "빛이 위에서 닿는 면"이라는 신호를
+     준다 — 나머지 세 변은 중립적인 --c-border 그대로다. */
   .toast{position:fixed;left:50%;bottom:calc(var(--s-4) + env(safe-area-inset-bottom));
     transform:translate(-50%,0);max-width:min(86vw,340px);
-    background:var(--c-surface-solid);color:var(--c-text-primary);border:1px solid var(--c-border);
+    background:var(--glass-bg);color:var(--c-text-primary);
+    border:1px solid var(--c-border);border-top-color:var(--glass-edge);
+    -webkit-backdrop-filter:blur(16px) saturate(160%);backdrop-filter:blur(16px) saturate(160%);
     border-radius:var(--r-2);padding:var(--s-2) var(--s-3);font-size:var(--t-caption);line-height:var(--lh-caption);
     box-shadow:0 6px 20px rgba(0,0,0,.28);z-index:500;opacity:0;pointer-events:none;
     transition:opacity var(--dur-exit) var(--ease-in),transform var(--dur-exit) var(--ease-in);}
   .toast.show{opacity:1;transform:translate(-50%,-4px);pointer-events:auto;
     transition:opacity var(--dur-enter) var(--ease-out),transform var(--dur-enter) var(--ease-out);}
+
+  /* ── 유리 재질의 접근성 대응 ──
+     애플 HIG가 Liquid Glass 자체에 정해 둔 두 가지 예외다(원문 취지: 흐림은 장식이지
+     내용이 아니므로, 접근성 설정이 요구하면 물러난다).
+     · prefers-reduced-transparency — "반투명을 줄여 달라"는 OS 설정. 흐림을 끄고
+       배경을 --glass-bg보다 진하게 올린다(뒤가 안 비쳐도 뜻은 그대로 전달된다).
+     · 고대비 테마 — 이 앱의 prefers-contrast:more 대응판이라 처음부터 --glass-bg를
+       거의 불투명(0.92)하게 정의해 뒀지만(위 테마 블록 참고), 흐림 자체도 여기서 끈다 —
+       흐린 뒤가 살짝이라도 비치면 "거의 불투명 + 뚜렷한 테두리"라는 그 테마의 약속이 깨진다. */
+  @media (prefers-reduced-transparency: reduce){
+    .icon-btn:hover,.icon-btn:active,.icon-btn:focus-visible,
+    .modal-close:hover,.modal-close:active,.modal-close:focus-visible{
+      background:var(--c-surface-solid);-webkit-backdrop-filter:none;backdrop-filter:none;
+    }
+    .toast{background:var(--c-surface-solid);-webkit-backdrop-filter:none;backdrop-filter:none;}
+  }
+  .theme-contrast .icon-btn:hover,.theme-contrast .icon-btn:active,.theme-contrast .icon-btn:focus-visible,
+  .theme-contrast .modal-close:hover,.theme-contrast .modal-close:active,.theme-contrast .modal-close:focus-visible,
+  .theme-contrast .toast{-webkit-backdrop-filter:none;backdrop-filter:none;}
 
   /* 배너 안의 「그만두기」 — 흰 바탕에 --c-wrong 글자를 인라인으로 박아 두었었다.
      --c-wrong 은 어두운 테마에서 밝은 빨강(#F87171·#D98A8A·#FF6B6B)이라 흰 바탕에 얹으면

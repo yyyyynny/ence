@@ -137,7 +137,7 @@ const App={
     /* 붙인 프레임에 곧바로 클래스를 넣으면 브라우저가 시작 상태와 끝 상태를 한 번에
        처리해 전환이 안 걸린다 — 이스터에그 카드와 같은 이유로 한 프레임 늦춘다. */
     requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('show')));
-    setTimeout(()=>this.hideToast(el), ms || 4200);
+    setTimeout(()=>this.hideToast(el), ms || 1500);
   },
   hideToast(el){
     if(!el || !el.isConnected) return;
