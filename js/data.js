@@ -28,7 +28,21 @@ const REACTIONS=[
   {name:"뷰테인 + 산소 → 이산화탄소 + 물",sections:["ms","chem"],reactants:[{coef:2,formula:[{sym:"C",sub:4},{sym:"H",sub:10}]},{coef:13,formula:[{sym:"O",sub:2}]}],products:[{coef:8,formula:[{sym:"CO",sub:2}]},{coef:10,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
   {name:"마그네슘 + 염산 → 염화마그네슘 + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Mg"}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
   {name:"탄산칼슘 + 염산 → 염화칼슘 + 물 + 이산화탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"CO",sub:2}],phase:"↑"}]},
-  {name:"염화나트륨 + 질산은 → 질산나트륨 + 염화은",sections:["plus"],reactants:[{coef:1,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}],products:[{coef:1,formula:[{sym:"Na"},{sym:"NO",sub:3}]},{coef:1,formula:[{sym:"Ag"},{sym:"Cl"}],phase:"↓"}]}
+  {name:"염화나트륨 + 질산은 → 질산나트륨 + 염화은",sections:["plus"],reactants:[{coef:1,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}],products:[{coef:1,formula:[{sym:"Na"},{sym:"NO",sub:3}]},{coef:1,formula:[{sym:"Ag"},{sym:"Cl"}],phase:"↓"}]},
+  /* 중학 구역이 10개뿐이라 계수 맞추기를 오래 풀면 금방 같은 반응이 돌아왔다. 다섯 개를
+     더하되 아무 반응이나 채우지 않았다 — 이미 있는 네 갈래(화합·연소/분해/금속+산/탄산염+산)
+     안에서만 골랐다. 복분해(앙금 생성)·중화 반응은 넣지 않는다 — 바로 위 두 반응(탄산나트륨+
+     염화칼슘, 염화나트륨+질산은)이 같은 이유로 이미 "심화"에 있다: 2022 개정 중학 교육과정에서
+     빠진 자리이지, 어렵거나 아무렇게나 고른 게 아니다. 다섯 다 실제 중등 교과서 화학반응식
+     단원의 정석 예시다(가열 실험으로 흔히 다루는 반응들). */
+  {name:"수소 + 산소 → 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"H",sub:2}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"알루미늄 + 산소 → 산화알루미늄",sections:["ms"],reactants:[{coef:4,formula:[{sym:"Al"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Al",sub:2},{sym:"O",sub:3}]}]},
+  {name:"철 + 산소 → 산화철(Ⅲ)",sections:["ms"],reactants:[{coef:4,formula:[{sym:"Fe"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Fe",sub:2},{sym:"O",sub:3}]}]},
+  {name:"아연 + 염산 → 염화아연 + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Zn"}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Zn"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
+  /* 염소산칼륨 분해도 고체를 가열하는 반응이다(이산화망가니즈를 촉매로 씀) — 바로 위
+     탄산수소나트륨 열분해와 같은 이유로 ↑를 안 붙인다. "용액에서 빠져나간다"가 아니라
+     "가열한 고체에서 기체가 생긴다"라서, 이 표기의 뜻이 여기엔 안 맞는다. */
+  {name:"염소산칼륨 → 염화칼륨 + 산소",sections:["ms"],reactants:[{coef:2,formula:[{sym:"K"},{sym:"Cl"},{sym:"O",sub:3}]}],products:[{coef:2,formula:[{sym:"K"},{sym:"Cl"}]},{coef:3,formula:[{sym:"O",sub:2}]}]}
 ];
 const CHEMICALS=[
   {name:"일산화탄소",formula:[{sym:"CO"}]},{name:"이산화탄소",formula:[{sym:"CO",sub:2}]},
@@ -45,7 +59,11 @@ const CHEMICALS=[
   {name:"탄산수소나트륨",formula:[{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}]},{name:"질산은",formula:[{sym:"Ag"},{sym:"NO",sub:3}]},
   {name:"염화은",formula:[{sym:"Ag"},{sym:"Cl"}]},{name:"질산나트륨",formula:[{sym:"Na"},{sym:"NO",sub:3}]},
   {name:"프로페인",formula:[{sym:"C",sub:3},{sym:"H",sub:8}]},{name:"뷰테인",formula:[{sym:"C",sub:4},{sym:"H",sub:10}]},
-  {name:"황",formula:[{sym:"S"}]},{name:"인",formula:[{sym:"P"}]}
+  {name:"황",formula:[{sym:"S"}]},{name:"인",formula:[{sym:"P"}]},
+  {name:"알루미늄",formula:[{sym:"Al"}]},{name:"산화알루미늄",formula:[{sym:"Al",sub:2},{sym:"O",sub:3}]},
+  {name:"철",formula:[{sym:"Fe"}]},{name:"산화철(Ⅲ)",formula:[{sym:"Fe",sub:2},{sym:"O",sub:3}]},
+  {name:"아연",formula:[{sym:"Zn"}]},{name:"염화아연",formula:[{sym:"Zn"},{sym:"Cl",sub:2}]},
+  {name:"염소산칼륨",formula:[{sym:"K"},{sym:"Cl"},{sym:"O",sub:3}]},{name:"염화칼륨",formula:[{sym:"K"},{sym:"Cl"}]}
 ];
 const COEF_TEMPLATES=[
   {label:"A₂ + B₂ → AB₂",gen:()=>({fmt:[{coef:1,formula:[{sym:"A",sub:2}]},{coef:2,formula:[{sym:"B",sub:2}]}],fmtP:[{coef:2,formula:[{sym:"A"},{sym:"B",sub:2}]}]})},
@@ -56,7 +74,7 @@ const COEF_TEMPLATES=[
   {label:"A₂ + B → AB₃",gen:()=>({fmt:[{coef:1,formula:[{sym:"A",sub:2}]},{coef:6,formula:[{sym:"B"}]}],fmtP:[{coef:2,formula:[{sym:"A"},{sym:"B",sub:3}]}]})},
   {label:"A + B₂ → A₂B₃",gen:()=>({fmt:[{coef:4,formula:[{sym:"A"}]},{coef:3,formula:[{sym:"B",sub:2}]}],fmtP:[{coef:2,formula:[{sym:"A",sub:2},{sym:"B",sub:3}]}]})}
 ];
-const CORE_ELEMENTS=['H','C','O','N','S','P','Na','Mg','Ca','Cu','Ag','Cl','A','B'];
+const CORE_ELEMENTS=['H','C','O','N','S','P','Na','Mg','Ca','Cu','Ag','Cl','Al','Fe','Zn','K','A','B'];
 /* MODE_NAMES / MODE_ICONS는 js/curriculum.js의 MODES에서 파생된다 */
 
 /* z=원자번호, sym=원소기호, name=한글이름, cat=분류(색상), group=족(1~18), period=주기(1~7), f=란타넘족/악티늄족일 때의 순번(1~15) */

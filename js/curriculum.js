@@ -35,7 +35,9 @@ const MODES={
      subModes:[{id:2,label:'반응물'},{id:3,label:'생성물'},{id:4,label:'전체식'}]},
   3:{parent:2, subLabel:'생성물'},
   4:{parent:2, subLabel:'전체식'},
-  5:{section:'ms', name:'화학식 암기',   desc:'30종 전체', std:'9과11-01'},
+  /* 「16개 전체」를 손으로 적어 뒀다가 반응식이 늘어난 순간 화면이 거짓말을 했던
+     자리다(위 MODE 2 desc 주석 참고). CHEMICALS가 몇 종이든 이 줄은 저절로 맞는다. */
+  5:{section:'ms', name:'화학식 암기',   desc:CHEMICALS.length+'종 전체', std:'9과11-01'},
   6:{section:'ms', name:'플래시카드',    custom:'flashcard', cards:['full','reactant','product','formula']},
   7:{section:'is1',name:'주기·족 맞추기', desc:'1~20번 + 할로젠·알칼리', std:'10통과1-02-03', noCoefWarning:true},
   /* 이온식을 외우는 모드가 아니다. 2022 개정 [9과11-04] 해설이 "전자를 잃으면 양이온이 되고
