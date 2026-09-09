@@ -20,7 +20,12 @@ const REACTIONS=[
   {name:"수소 + 염소 → 염화수소",sections:["is1"],reactants:[{coef:1,formula:[{sym:"H",sub:2}]},{coef:1,formula:[{sym:"Cl",sub:2}]}],products:[{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}]},
   {name:"마그네슘 + 산소 → 산화마그네슘",sections:["ms","is1"],reactants:[{coef:2,formula:[{sym:"Mg"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Mg"},{sym:"O"}]}]},
   {name:"질소 + 산소 → 이산화질소",sections:["chem"],reactants:[{coef:1,formula:[{sym:"N",sub:2}]},{coef:2,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"N"},{sym:"O",sub:2}]}]},
-  {name:"질소 + 수소 → 암모니아",sections:["is1","chem"],reactants:[{coef:1,formula:[{sym:"N",sub:2}]},{coef:3,formula:[{sym:"H",sub:2}]}],products:[{coef:2,formula:[{sym:"N"},{sym:"H",sub:3}]}]},
+  /* 원래 "is1","chem"만 있었다 — 화합 반응으로서는 중학 수준 그대로인데(질소:수소:암모니아의
+     계수 1:3:2를 맞추는 것뿐, 하버-보슈법 같은 공업적 배경은 안 다룬다) 중학 계수 맞추기
+     문제 풀에서는 빠져 있었다. 실제 중등 문제집(정리 노트류)에 표준으로 실려 있는 반응이라
+     "ms"를 더한다 — 새 반응을 추가하는 게 아니라 이미 있던 이 반응이 어느 구역 문제 풀에
+     들어가는지만 넓힌다. */
+  {name:"질소 + 수소 → 암모니아",sections:["ms","is1","chem"],reactants:[{coef:1,formula:[{sym:"N",sub:2}]},{coef:3,formula:[{sym:"H",sub:2}]}],products:[{coef:2,formula:[{sym:"N"},{sym:"H",sub:3}]}]},
   {name:"에탄올 + 산소 → 이산화탄소 + 물",sections:["ms"],reactants:[{coef:1,formula:[{sym:"C",sub:2},{sym:"H",sub:5},{sym:"O"},{sym:"H"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]},{coef:3,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
   {name:"탄산나트륨 + 염화칼슘 → 염화나트륨 + 탄산칼슘",sections:["plus"],reactants:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]}],products:[{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}],phase:"↓"}]},
   {name:"탄산수소나트륨 → 탄산나트륨 + 이산화탄소 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}]}],products:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:1,formula:[{sym:"CO",sub:2}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
@@ -42,7 +47,32 @@ const REACTIONS=[
   /* 염소산칼륨 분해도 고체를 가열하는 반응이다(이산화망가니즈를 촉매로 씀) — 바로 위
      탄산수소나트륨 열분해와 같은 이유로 ↑를 안 붙인다. "용액에서 빠져나간다"가 아니라
      "가열한 고체에서 기체가 생긴다"라서, 이 표기의 뜻이 여기엔 안 맞는다. */
-  {name:"염소산칼륨 → 염화칼륨 + 산소",sections:["ms"],reactants:[{coef:2,formula:[{sym:"K"},{sym:"Cl"},{sym:"O",sub:3}]}],products:[{coef:2,formula:[{sym:"K"},{sym:"Cl"}]},{coef:3,formula:[{sym:"O",sub:2}]}]}
+  {name:"염소산칼륨 → 염화칼륨 + 산소",sections:["ms"],reactants:[{coef:2,formula:[{sym:"K"},{sym:"Cl"},{sym:"O",sub:3}]}],products:[{coef:2,formula:[{sym:"K"},{sym:"Cl"}]},{coef:3,formula:[{sym:"O",sub:2}]}]},
+  /* 15개로 늘린 뒤에도 "여전히 적다"는 지적을 받고, 이번엔 실제 중등 화학반응식 정리 자료
+     둘을 찾아 이 앱의 목록과 맞대봤다(자료마다 겹치는 걸 보면 사실상 정해진 "표준 세트"에
+     가깝다). 거기 있는데 이 앱에 없던 것 중 안전하게 넣을 수 있는 둘만 추가한다:
+
+     · 나트륨 + 염소 → 염화나트륨 — 금속과 비금속이 직접 화합하는 표준 예시.
+       이미 있는 마그네슘·구리·알루미늄·철 + 산소와 같은 갈래(화합 반응)라 새 원소도
+       새 물질도 필요 없다(Na·Cl2·NaCl 전부 이미 있음).
+     · 물의 전기 분해 — 바로 위 "수소+산소→물"의 역반응. 호프만 전해 장치로 수소:산소
+       부피비 2:1을 관찰하는, 아마 이 단원에서 가장 먼저 나오는 실험이다. 분해 반응 갈래를
+       하나 더 두껍게 한다.
+
+     찾은 자료엔 있지만 이 앱엔 아직 없는 것 둘은 **일부러** 안 넣는다 — 커버리지가 부족해서가
+     아니라 각자 다른 이유로 이 앱의 틀에 안 맞는다:
+     · 염산 + 수산화칼슘 → 염화칼슘 + 물(중화 반응) — 화학적으로는 문제없는 반응이지만,
+       Ca(OH)₂를 정확히 쓰려면 괄호로 묶은 아래첨자(OH를 통째로 2배)가 필요하다.
+       이 앱의 화학식 렌더러(f2s, formatFormula)와 반응식용 키패드는 원소기호+숫자만
+       이어 붙이는 구조라 괄호를 다루지 못한다 — "CaOH2"로 적으면 OH 전체가 아니라
+       H만 2개인 것처럼 읽혀 오히려 틀린 표기를 가르치게 된다. 괄호 표기 자체를
+       지원하게 고치는 건 이번 추가와 다른 작업이라 손대지 않았다.
+     · 암모니아 + 산소 → 일산화질소 + 물 — 백금 촉매가 있어야 일어나는 오스트발트법
+       중간 반응이라, 마그네슘 연소·염소산칼륨 분해처럼 학생이 직접 보는 실험이 아니다.
+       화학적으로는 맞지만 "간단한 화학 반응"([9과16-02])보다는 산업 공정에 가까워
+       중학보다 한 단계 위 내용으로 남겨 둔다. */
+  {name:"나트륨 + 염소 → 염화나트륨",sections:["ms"],reactants:[{coef:2,formula:[{sym:"Na"}]},{coef:1,formula:[{sym:"Cl",sub:2}]}],products:[{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]}]},
+  {name:"물 → 수소 + 산소",sections:["ms"],reactants:[{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}],products:[{coef:2,formula:[{sym:"H",sub:2}],phase:"↑"},{coef:1,formula:[{sym:"O",sub:2}],phase:"↑"}]}
 ];
 const CHEMICALS=[
   {name:"일산화탄소",formula:[{sym:"CO"}]},{name:"이산화탄소",formula:[{sym:"CO",sub:2}]},
@@ -63,7 +93,8 @@ const CHEMICALS=[
   {name:"알루미늄",formula:[{sym:"Al"}]},{name:"산화알루미늄",formula:[{sym:"Al",sub:2},{sym:"O",sub:3}]},
   {name:"철",formula:[{sym:"Fe"}]},{name:"산화철(Ⅲ)",formula:[{sym:"Fe",sub:2},{sym:"O",sub:3}]},
   {name:"아연",formula:[{sym:"Zn"}]},{name:"염화아연",formula:[{sym:"Zn"},{sym:"Cl",sub:2}]},
-  {name:"염소산칼륨",formula:[{sym:"K"},{sym:"Cl"},{sym:"O",sub:3}]},{name:"염화칼륨",formula:[{sym:"K"},{sym:"Cl"}]}
+  {name:"염소산칼륨",formula:[{sym:"K"},{sym:"Cl"},{sym:"O",sub:3}]},{name:"염화칼륨",formula:[{sym:"K"},{sym:"Cl"}]},
+  {name:"나트륨",formula:[{sym:"Na"}]}
 ];
 const COEF_TEMPLATES=[
   {label:"A₂ + B₂ → AB₂",gen:()=>({fmt:[{coef:1,formula:[{sym:"A",sub:2}]},{coef:2,formula:[{sym:"B",sub:2}]}],fmtP:[{coef:2,formula:[{sym:"A"},{sym:"B",sub:2}]}]})},
