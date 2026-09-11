@@ -895,7 +895,15 @@
   .pt-legend{display:flex;flex-wrap:wrap;gap:var(--s-2) var(--s-4);margin-bottom:var(--s-4);font-size:var(--t-caption);color:var(--c-text-secondary);}
   .pt-legend-item{display:flex;align-items:center;gap:var(--s-1);}
   .pt-legend-swatch{width:11px;height:11px;border-radius:var(--r-1);flex-shrink:0;}
-  .pt-scroll{overflow-x:auto;padding-bottom:var(--s-2);scrollbar-width:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+  /* overflow-y를 안 적으면(기본값 visible) overflow-x:auto와 짝이 안 맞아 브라우저가
+     computed value에서 overflow-y도 auto로 끌어올린다(스펙: 둘 중 하나가 visible이면
+     안 맞는 그 값을 auto로 바꿔치기). 그러면 이 칸이 세로로도 "스크롤 컨테이너"가 되는데
+     정작 세로로는 넘치는 내용이 없다(표 높이가 곧 이 칸 높이). 실제 세로 스크롤은 바깥
+     .modal-content 몫인데, 안쪽 칸이 세로 제스처를 먼저 붙들고는 넘길 내용이 없어 그대로
+     삼켜 버려 위아래 드래그가 먹통이 됐다 — 가로만 되고 세로는 안 되던 원인이다.
+     overflow-y:hidden을 명시하면(visible이 아니므로 auto로 안 바뀐다) 이 칸은 가로 전용
+     스크롤 컨테이너가 되고, 세로 제스처는 처음부터 여기서 안 잡혀 바깥으로 그대로 넘어간다. */
+  .pt-scroll{overflow-x:auto;overflow-y:hidden;padding-bottom:var(--s-2);scrollbar-width:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
   .pt-scroll::-webkit-scrollbar{display:none;}
   .pt-grid{display:grid;gap:var(--s-1);min-width:960px;}
   .pt-grid.pt-simple{min-width:0;max-width:680px;margin:0 auto;}

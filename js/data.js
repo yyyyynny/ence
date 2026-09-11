@@ -306,15 +306,15 @@ const PT_CAT_COLORS_LIGHT={
 };
 
 /* ── 성질 간소화 ──
-   11가지 분류 중 전이 금속·란타넘족·악티늄족·전이 후 금속 넷은 이 앱 어디에서도 이름으로
-   안 나온다 — 교육과정이 이름 붙여 가르치는 족은 알칼리 금속·알칼리 토금속·할로젠·
-   비활성 기체뿐이다(curriculum.js MODE 7 "1~20번 + 할로젠·알칼리" 참고). 세분화된 색만
-   많고 그만큼 배우는 것도 아니면 표만 복잡해 보인다. 넷을 "금속" 하나로 묶어 보여주는
+   11가지 분류 중 이 앱이 실제로 이름을 붙여 가르치는 족은 알칼리 금속과 할로젠뿐이다
+   (curriculum.js MODE 7 "1~20번 + 할로젠·알칼리" 참고 — 알칼리 토금속은 그 목록에도 없다).
+   나머지(알칼리 토금속·전이 금속·란타넘족·악티늄족·전이 후 금속)는 다섯 다 "이 앱이
+   따로 이름으로 묻지 않는 금속"이라는 점에서 같으므로 전부 "금속" 하나로 묶어 보여주는
    토글이다(App.state.isSimpleCategory). 색은 새로 만들지 않고 그중 하나(전이 후 금속의
-   회색)를 그대로 쓴다 — 넷 다 "그 밖의 금속"이라는 같은 뜻이니 새 대비를 또 잴 이유가 없다. */
-const PT_SIMPLE_CAT_MAP={transition:'metal', lanth:'metal', actin:'metal', post:'metal'};
+   회색)를 그대로 쓴다 — 다섯 다 "그 밖의 금속"이라는 같은 뜻이니 새 대비를 또 잴 이유가 없다. */
+const PT_SIMPLE_CAT_MAP={alkaline:'metal', transition:'metal', lanth:'metal', actin:'metal', post:'metal'};
 const PT_CATEGORIES_SIMPLE=[
-  ['alkali','알칼리 금속'],['alkaline','알칼리 토금속'],['metal','금속'],
+  ['alkali','알칼리 금속'],['metal','금속'],
   ['metalloid','준금속'],['nonmetal','비금속'],['halogen','할로젠'],['noble','비활성 기체'],
   ['unknown','성질 미확인']
 ];
