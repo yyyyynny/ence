@@ -8,6 +8,17 @@
    · 설명하는 글(그림 해설 등)은 평서체를 쓴다 — 그건 학생에게 말을 거는 게 아니라
      사실을 적어 두는 것이라 격이 다르다.
    · 「완벽합니다!」「축하합니다!」처럼 부풀린 칭찬은 쓰지 않는다. 맞았으면 맞았다고 한다. */
+
+/* 참고 자료 목록(buildModalList)을 늘어놓는 네 가지 방식 — 번호·가나다·원소·즐겨찾기.
+   번호가 기본값이고 곧 "원래 순서"다. 가나다·원소는 같은 항목을 다시 늘어놓거나 나누는
+   것뿐이라 저장할 필요가 없어 세션 동안만 기억한다(state.hintSort). 즐겨찾기는 어떤 항목을
+   골랐는지가 값이라 localStorage에 남긴다(state.hintFavorites, loadSettings 참고). */
+const HINT_SORTS=[
+  {id:'num', label:'번호순'},
+  {id:'abc', label:'가나다순'},
+  {id:'elem',label:'원소별'},
+  {id:'fav', label:'즐겨찾기'}
+];
 const App={
   state:{
     currentMode:null,score:{streak:0,correct:0,wrong:0},
@@ -21,7 +32,8 @@ const App={
     section:'ms', showDiagram:true,
     isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:true,
     savedCycleState:null,
-    isRetryPlaylistMode:false, retryPlaylist:[]
+    isRetryPlaylistMode:false, retryPlaylist:[],
+    hintSort:'num', hintFavorites:[]
   },
   $:{
     app:document.getElementById('app'),statBar:document.getElementById('statBar'),streakCount:document.getElementById('streakCount'),streakFlames:document.getElementById('streakFlames'),
@@ -32,7 +44,7 @@ const App={
     confirmBtn:document.querySelector('.kb-key.confirm'),nextBtn:document.querySelector('.kb-key.next-q'),
     hintModalOverlay:document.getElementById('hintModalOverlay'),wrongNoteModalOverlay:document.getElementById('wrongNoteModalOverlay'),
     reactionList:document.getElementById('reactionList'),wrongNoteList:document.getElementById('wrongNoteList'),
-    hintModalTitle:document.getElementById('hintModalTitle'),
+    hintModalTitle:document.getElementById('hintModalTitle'),hintSortChips:document.getElementById('hintSortChips'),
     timerBar:document.getElementById('timerBar'),wrongNoteFilters:document.getElementById('wrongNoteFilters'),
     questionCard:document.getElementById('questionCard'),keyboardWrap:document.getElementById('keyboardWrap'),
     timerSelectWrap:document.getElementById('timerSelectWrap'),mode6Wrap:document.getElementById('mode6Wrap'),
@@ -260,6 +272,13 @@ const App={
         if(moved !== savedTheme){ try{localStorage.setItem('chem_theme', moved);}catch(e){} }
       }
       else this.state.theme = this.systemTheme();
+      /* 참고 자료의 즐겨찾기 — 반응식/이온식 이름을 키로 쓴다(둘은 겹칠 일이 없다:
+         반응식 이름엔 항상 " → "가 있고 이온식 이름엔 없다). 정렬 방식(hintSort)은
+         고른 항목이 아니라 "지금 어떻게 보고 있나"일 뿐이라 세션 동안만 기억하고
+         저장하지 않는다. */
+      const favD=localStorage.getItem('chem_hint_favorites');
+      const favParsed=favD?JSON.parse(favD):[];
+      if(Array.isArray(favParsed)) this.state.hintFavorites=favParsed.filter(x=>typeof x==='string');
     }catch(e){}
     this.applyTheme(this.state.theme);
     this.updateFeedbackBtns();
@@ -705,9 +724,13 @@ const App={
 
      이온식(MODE 11, 「고2 화학」)은 예전엔 여기 아예 없었다 — 이 참고표가 반응식만
      알고 있어서, 이온식 쓰기를 풀다가 힌트를 눌러도 뜻밖의 반응식 몇 개만 보이고
-     정작 외워야 할 이온식은 하나도 안 보였다. 탭으로 나누지 않고 반응식 목록 아래에
-     그냥 이어 붙인다 — 16종뿐이라 가나다·원소·번호 같은 별도 정렬이 필요할 만큼
-     많지 않고, 굳이 나누면 오히려 "이게 또 뭐가 다르지"를 만든다. */
+     정작 외워야 할 이온식은 하나도 안 보였다. 탭으로는 나누지 않고 반응식 목록 아래에
+     이어 붙이되, 정렬(가나다·원소·번호·즐겨찾기)은 반응식·이온식 각각 안에서 따로
+     적용한다 — 둘을 섞어 늘어놓으면 "왜 이온식이 반응식 사이에 끼어 있지"가 생긴다.
+
+     예전엔 16종뿐이라 가나다·원소·번호 같은 정렬이 필요 없다고 보고 뺐었다. 반응식이
+     문제집 분량(39개, ms 기준)까지 늘어난 지금은 얘기가 다르다 — 아래로 쭉 훑어야만
+     찾을 수 있던 걸 정렬로 바로 찾게 한다(arrangeHintEntries). */
   buildModalList(){
     const fmt=side=>side.map(r=>(r.coef>1?`<span class="eq-text">${r.coef}</span>`:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')+this.phaseHTML(r.phase)).join(' <span class="eq-plus">+</span> ');
     const sec=this.state.section, meta=sectionMeta(sec)||{label:''};
@@ -722,18 +745,91 @@ const App={
     const head=`<p class="dia-exp" style="margin:0 2px 10px"><b>${meta.label}</b>에서 다루는 반응식 <b>${list.length}개</b>. `+
       `구역 탭을 바꾸면 이 목록도 그 구역 것으로 바뀐다.</p>`;
     const empty=`<p class="dia-exp" style="margin:0 2px">이 구역에서 다루는 반응식은 없어요.</p>`;
-    let html=head+legend+(list.length?list.map((rx,i)=>`<div class="reaction-item"><div class="reaction-header"><div class="reaction-name"><span class="reaction-num">${i+1}</span>${rx.name}</div></div><div class="reaction-eq">${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}</div></div>`).join(''):empty);
+
+    /* 화학식 조각(formula[].sym)은 원소 기호 하나가 아니라 화학식 글자 전체일 수 있다
+       (예: 이산화탄소는 {sym:"CO",sub:2} 한 덩어리 — data.js 참고). 그래서 숫자·전하
+       기호를 지운 뒤 "대문자 하나 + 소문자 0~1개" 패턴으로 원소 기호만 뽑는다.
+       ION_WRITE_SYMBOLS(data.js)를 만들 때 쓴 것과 같은 정규식이다. */
+    const elemsOf=syms=>{
+      const out=[];
+      syms.forEach(s=>(s.replace(/[0-9+\-^]/g,'').match(/[A-Z][a-z]?/g)||[]).forEach(e=>{ if(!out.includes(e)) out.push(e); }));
+      return out;
+    };
+    /* 번호는 이 구역에서의 원래 순서로 고정한다 — 정렬 방식을 바꿔도 번호가 같이
+       바뀌면 "12번"이라고 부를 기준이 사라진다. */
+    const rxEntries=list.map((rx,i)=>({
+      key:rx.name, num:i+1, name:rx.name,
+      elements:elemsOf(rx.reactants.concat(rx.products).flatMap(c=>c.formula.map(p=>p.sym))),
+      body:`${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}`
+    }));
+    let html=head+legend+(list.length?this.arrangeHintEntries(rxEntries,'반응식'):empty);
 
     /* 이온식을 다루는 모드(11)가 있는 구역은 「고2 화학」 하나뿐이다(curriculum.js 참고).
        다른 구역에는 이온식 자체가 없으므로 빈 목록을 만들지 않고 아예 안 보인다. */
     const hasIons = sec === 'chem';
     if(hasIons){
+      const ionEntries=IONS_WRITE.map((ion,i)=>({
+        key:ion.name, num:i+1, name:ion.name, elements:elemsOf([ion.f]),
+        body:this.formatInput(ion.f)
+      }));
       html += `<p class="dia-exp" style="margin:var(--s-5) 2px 10px"><b>이온식</b> <b>${IONS_WRITE.length}개</b>.</p>`
-        + IONS_WRITE.map((ion,i)=>`<div class="reaction-item"><div class="reaction-header"><div class="reaction-name"><span class="reaction-num">${i+1}</span>${ion.name}</div></div><div class="reaction-eq">${this.formatInput(ion.f)}</div></div>`).join('');
+        + this.arrangeHintEntries(ionEntries,'이온식');
     }
     this.$.reactionList.innerHTML=html;
     if(this.$.hintModalTitle) this.$.hintModalTitle.textContent = hasIons ? '반응식·이온식 목록' : '반응식 목록';
+    this.renderHintSortChips();
     this.renderWrongNotes();
+  },
+  /* 정렬 탭 — 반응식 목록·이온식 목록 둘 다 이걸 거쳐서 그려진다(위 buildModalList).
+     번호·가나다는 같은 항목을 다시 늘어놓기만 하고, 원소별은 원소마다 소제목을 달아
+     나눈다(한 항목에 원소가 여러 개면 그 항목은 여러 소제목 아래에 다시 나온다 —
+     중복이 아니라 "이 반응에 이 원소도 들어 있다"는 뜻이다). 즐겨찾기는 고른 것만
+     남긴다. checkReferenceList(selfcheck.js)는 기본값(번호순)에서만 항목 수를 세므로
+     원소별의 중복 표시는 그 검사와 부딪히지 않는다. */
+  arrangeHintEntries(entries, label){
+    const mode=this.state.hintSort;
+    const itemHtml=e=>{
+      const fav=this.state.hintFavorites.includes(e.key);
+      return `<div class="reaction-item"><div class="reaction-header"><div class="reaction-name"><span class="reaction-num">${e.num}</span>${e.name}</div>`+
+        `<button class="fav-btn${fav?' active':''}" data-fav-key="${e.key.replace(/"/g,'&quot;')}" aria-pressed="${fav}" aria-label="즐겨찾기에 담기">${this.icon('bookmark','sm')}</button></div>`+
+        `<div class="reaction-eq">${e.body}</div></div>`;
+    };
+    if(mode==='fav'){
+      const picked=entries.filter(e=>this.state.hintFavorites.includes(e.key));
+      return picked.length?picked.map(itemHtml).join('')
+        :`<p class="dia-exp" style="margin:0 2px">즐겨찾기한 ${label}이 없어요. 항목 오른쪽 <b>북마크</b> 버튼을 눌러 담아 보세요.</p>`;
+    }
+    if(mode==='abc'){
+      return entries.slice().sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(itemHtml).join('');
+    }
+    if(mode==='elem'){
+      const syms=[];
+      entries.forEach(e=>e.elements.forEach(s=>{ if(!syms.includes(s)) syms.push(s); }));
+      syms.sort((a,b)=>{
+        const za=(ELEMENTS.find(x=>x.sym===a)||{}).z ?? 999, zb=(ELEMENTS.find(x=>x.sym===b)||{}).z ?? 999;
+        return za-zb;
+      });
+      if(!syms.length) return `<p class="dia-exp" style="margin:0 2px">원소를 알아낼 수 없는 ${label}이에요.</p>`;
+      return syms.map(s=>{
+        const group=entries.filter(e=>e.elements.includes(s));
+        const nm=(ELEMENTS.find(x=>x.sym===s)||{}).name || s;
+        return `<p class="dia-exp" style="margin:var(--s-5) 2px var(--s-2)"><b>${nm}(${s})</b> 포함 · ${group.length}개</p>`+group.map(itemHtml).join('');
+      }).join('');
+    }
+    /* 'num' — 기본값, 원래 순서 그대로 */
+    return entries.map(itemHtml).join('');
+  },
+  renderHintSortChips(){
+    if(!this.$.hintSortChips) return;
+    this.$.hintSortChips.innerHTML = HINT_SORTS.map(s=>
+      `<button class="filter-chip${this.state.hintSort===s.id?' active':''}" data-hint-sort="${s.id}">${s.label}</button>`
+    ).join('');
+  },
+  toggleHintFavorite(key){
+    const i=this.state.hintFavorites.indexOf(key);
+    if(i===-1) this.state.hintFavorites.push(key); else this.state.hintFavorites.splice(i,1);
+    try{localStorage.setItem('chem_hint_favorites', JSON.stringify(this.state.hintFavorites));}catch(e){}
+    this.buildModalList();
   },
   renderWrongNotes(){
     let f=this.state.wrongNotes;
@@ -848,6 +944,21 @@ const App={
     /* 창을 여는 버튼(themeBtn·hintBtn 등)은 전부 tap을 주면서, 닫는 X 버튼 넷은 하나도
        안 울리고 있었다 — 여는 동작과 닫는 동작이 같은 무게의 탭인데 한쪽만 무음이었다. */
     document.getElementById('hintModalClose').addEventListener('click',()=>{this.feedback('tap');this.$.hintModalOverlay.classList.remove('show');});
+    /* 참고 자료 정렬 탭 — 번호·가나다·원소·즐겨찾기(HINT_SORTS). 고른 탭만 바뀌고
+       목록은 buildModalList가 다시 그린다(칩도 그 안에서 다시 그려 active가 맞는 탭으로 옮겨간다). */
+    if(this.$.hintSortChips) this.$.hintSortChips.addEventListener('click',e=>{
+      const c=e.target.closest('.filter-chip[data-hint-sort]');if(!c)return;
+      this.feedback('tap');
+      this.state.hintSort=c.dataset.hintSort;
+      this.buildModalList();
+    });
+    /* 항목 각각의 북마크 버튼 — 목록이 정렬 바뀔 때마다 통째로 다시 그려지므로
+       항목 하나하나에 리스너를 달지 않고 목록 컨테이너에서 위임한다. */
+    this.$.reactionList.addEventListener('click',e=>{
+      const b=e.target.closest('.fav-btn[data-fav-key]');if(!b)return;
+      this.feedback('tap');
+      this.toggleHintFavorite(b.dataset.favKey);
+    });
     document.getElementById('wrongNoteModalClose').addEventListener('click',()=>{this.feedback('tap');this.$.wrongNoteModalOverlay.classList.remove('show');});
     document.getElementById('periodicModalClose').addEventListener('click',()=>{this.feedback('tap');this.$.periodicModalOverlay.classList.remove('show');});
     document.getElementById('themeModalClose').addEventListener('click',()=>{this.feedback('tap');this.$.themeModalOverlay.classList.remove('show');});

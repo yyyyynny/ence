@@ -605,6 +605,20 @@
   .reaction-num{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 var(--s-1);border-radius:var(--r-2);background:var(--c-surface-1);color:var(--c-accent-1);font-size:var(--t-caption);font-family:var(--font-mono);font-weight:600;flex-shrink:0;}
   .reaction-badge{display:inline-flex;align-items:center;gap:var(--s-1);background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:var(--r-3);padding:var(--s-0) var(--s-3) var(--s-0) var(--s-2);font-size:var(--t-caption);font-family:var(--font-ui);font-weight:500;color:var(--c-text-secondary);white-space:nowrap;flex-shrink:0;}
   .reaction-fail{color:var(--c-wrong);font-size:var(--t-caption);font-family:var(--font-ui);font-weight:500;white-space:nowrap;}
+  /* 즐겨찾기 버튼 — modal-close와 같은 요령으로 손가락 닿는 넓이는 44×44를 지키되
+     음수 여백으로 줄 높이는 그대로 둔다(.reaction-header 주석 옆 modal-close 참고). */
+  .fav-btn{background:none;border:1px solid transparent;border-radius:var(--r-pill);color:var(--c-text-secondary);cursor:pointer;
+    min-width:44px;min-height:44px;display:flex;align-items:center;justify-content:center;padding:0;margin-block:-8px;flex-shrink:0;}
+  .fav-btn.active{color:var(--c-accent-1);}
+  .fav-btn.active svg{fill:currentColor;}
+  @media (hover:hover){.fav-btn:hover{
+    background:var(--glass-bg);border-color:var(--glass-edge);
+    -webkit-backdrop-filter:blur(12px) saturate(140%);backdrop-filter:blur(12px) saturate(140%);
+  }}
+  .fav-btn:active,.fav-btn:focus-visible{
+    background:var(--glass-bg);border-color:var(--glass-edge);
+    -webkit-backdrop-filter:blur(12px) saturate(140%);backdrop-filter:blur(12px) saturate(140%);
+  }
   .reaction-eq{color:var(--c-text-primary);font-size:var(--t-body-lg);line-height:1.6;background:var(--c-surface-2);padding:var(--s-3) var(--s-4);border-radius:var(--r-2);border-left:3px solid var(--c-border-active);text-align:center;}
   /* 오답노트 리스트 안에서는 플래시카드 앞/뒷면을 한 줄로, 폰트도 축소(카드 원본은 그대로) */
   .m6-note-row{display:flex;align-items:center;justify-content:center;gap:var(--s-2);flex-wrap:wrap;}
@@ -1199,12 +1213,12 @@
   .modal-close,.dia-replay,.pt-detail-close,.update-close,.blank-box,.logo-egg,
   .retry-note-btn,.delete-note-btn,.show-answer-btn,.clear-all-btn,.theme-opt,
   .pt-toggle-switch,.mode-tab,.choice-btn,.m6-wrongnote-link,.m6-save-wrong-btn,
-  .update-reload,.reaction-item,.exit-retry-btn,.retry-playlist-btn{transition:var(--t-btn);}
+  .update-reload,.reaction-item,.exit-retry-btn,.retry-playlist-btn,.fav-btn{transition:var(--t-btn);}
   .kb-key:active,.m6-nav-btn:active{transform:scale(.90);}
   .icon-btn:active,.timer-btn:active,.section-tab:active,.cycle-btn:active,.dir-btn:active,
   .dia-btn:active,.sub-btn:active,.filter-chip:active,.m6-opt-btn:active,.m6-shuffle:active,
   .pt-rotate-btn:active,.pt-fs-close:active,.modal-close:active,.dia-replay:active,
-  .pt-detail-close:active,.update-close:active,.blank-box:active,.logo-egg:active,
+  .pt-detail-close:active,.update-close:active,.blank-box:active,.logo-egg:active,.fav-btn:active,
   .retry-note-btn:active,.delete-note-btn:active,.show-answer-btn:active,
   .clear-all-btn:active,.theme-opt:active,.pt-toggle-switch:active{transform:scale(.94);}
   /* 이 셋은 원래 index.html 에 style= 로 박혀 있어 위 목록에서 통째로 빠져 있었다 —
