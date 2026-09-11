@@ -2466,6 +2466,39 @@ const App={
     const t=this.ptTableHTML();
     this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-scroll">${t.grid}</div>${t.extra}`;
     this.closePtDetail(this.$.ptDetailPanel);
+    /* 매번 innerHTML을 새로 쓰므로 .pt-scroll도 매번 새 요소다 — 리스너를 다시 건다.
+       (오래된 요소에 붙어 있던 리스너는 그 요소와 함께 버려지므로 쌓이지 않는다.) */
+    this.setupPtDrag(this.$.periodicContent.querySelector('.pt-scroll'), this.$.periodicContent);
+  },
+  /* 회전(전체화면) 없이 보는 보통 창 — 표가 옆으로도 넘쳐 .pt-scroll이 overflow-x:auto다.
+     그런데 기기에 따라 이 칸이 세로 제스처까지 먼저 붙잡아, 정작 세로 스크롤을 맡은
+     바깥 .modal-content(vBox)로 넘기지 못하는 경우가 있다 — overflow-y:hidden을 명시해도
+     마찬가지인 기기가 있었다(사용자 보고로 확인). 네이티브 스크롤의 축 판정에 기대는
+     대신, 손가락이 움직인 만큼 두 칸의 scrollLeft/scrollTop을 직접 옮긴다 — 브라우저가
+     "이 제스처는 가로다/세로다"를 판단할 필요 자체가 없어지므로 기기마다 달라질 여지가 없다.
+     작게 움직인 것(탭)은 그대로 둬서 칸 클릭(ptToggleDetail)이 안 깨지게 한다. */
+  setupPtDrag(hBox, vBox){
+    if(!hBox || !vBox) return;
+    let sx=0, sy=0, startL=0, startT=0, dragging=false, moved=false;
+    hBox.addEventListener('touchstart', e=>{
+      if(e.touches.length!==1){ dragging=false; return; }
+      sx=e.touches[0].clientX; sy=e.touches[0].clientY;
+      startL=hBox.scrollLeft; startT=vBox.scrollTop;
+      dragging=true; moved=false;
+    }, {passive:true});
+    hBox.addEventListener('touchmove', e=>{
+      if(!dragging || e.touches.length!==1) return;
+      const dx=e.touches[0].clientX-sx, dy=e.touches[0].clientY-sy;
+      /* 4px 문턱 — 그 밑에서는 탭일 수 있으니 네이티브에 맡긴다. 넘는 순간부터는
+         끝까지 이 손으로 직접 옮긴다(중간에 다시 네이티브로 돌아가면 뚝뚝 끊겨 보인다). */
+      if(!moved){ if(Math.hypot(dx,dy)<4) return; moved=true; }
+      hBox.scrollLeft=startL-dx;
+      vBox.scrollTop=startT-dy;
+      e.preventDefault();
+    }, {passive:false});
+    const stop=()=>{ dragging=false; moved=false; };
+    hBox.addEventListener('touchend', stop, {passive:true});
+    hBox.addEventListener('touchcancel', stop, {passive:true});
   },
   openPtFullscreen(){
     const t=this.ptTableHTML();
