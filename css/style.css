@@ -973,6 +973,9 @@
   .pt-cat-lanth{background:#F0B6FF;}
   .pt-cat-actin{background:#FF99CC;}
   .pt-cat-post{background:#C4C4C4;}
+  /* 성질 간소화(metal) — 전이 금속·란타넘족·악티늄족·전이 후 금속을 합친 자리라
+     그중 전이 후 금속과 같은 회색을 그대로 쓴다(data.js PT_SIMPLE_CAT_MAP 참고). */
+  .pt-cat-metal{background:#C4C4C4;}
   .pt-cat-metalloid{background:#B9C982;}
   .pt-cat-nonmetal{background:#A0FFA0;}
   .pt-cat-halogen{background:#FFFF99;}

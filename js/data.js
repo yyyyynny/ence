@@ -296,14 +296,28 @@ const PT_CATEGORIES=[
    거의 안 보이므로, 같은 색상 계열의 더 짙은 톤을 별도로 둔다. */
 const PT_CAT_COLORS={
   alkali:'#FF6666', alkaline:'#FFD9A0', transition:'#FFC0C0', lanth:'#F0B6FF',
-  actin:'#FF99CC', post:'#C4C4C4', metalloid:'#B9C982', nonmetal:'#A0FFA0',
+  actin:'#FF99CC', post:'#C4C4C4', metal:'#C4C4C4', metalloid:'#B9C982', nonmetal:'#A0FFA0',
   halogen:'#FFFF99', noble:'#C0FFFF', unknown:'#E4E4E4'
 };
 const PT_CAT_COLORS_LIGHT={
   alkali:'#B33A3A', alkaline:'#8A5A15', transition:'#A85454', lanth:'#8B3FA0',
-  actin:'#A83A70', post:'#5A5A5A', metalloid:'#5B6B25', nonmetal:'#1F7A3D',
+  actin:'#A83A70', post:'#5A5A5A', metal:'#5A5A5A', metalloid:'#5B6B25', nonmetal:'#1F7A3D',
   halogen:'#7A6B00', noble:'#1F6B7A', unknown:'#585858'
 };
+
+/* ── 성질 간소화 ──
+   11가지 분류 중 전이 금속·란타넘족·악티늄족·전이 후 금속 넷은 이 앱 어디에서도 이름으로
+   안 나온다 — 교육과정이 이름 붙여 가르치는 족은 알칼리 금속·알칼리 토금속·할로젠·
+   비활성 기체뿐이다(curriculum.js MODE 7 "1~20번 + 할로젠·알칼리" 참고). 세분화된 색만
+   많고 그만큼 배우는 것도 아니면 표만 복잡해 보인다. 넷을 "금속" 하나로 묶어 보여주는
+   토글이다(App.state.isSimpleCategory). 색은 새로 만들지 않고 그중 하나(전이 후 금속의
+   회색)를 그대로 쓴다 — 넷 다 "그 밖의 금속"이라는 같은 뜻이니 새 대비를 또 잴 이유가 없다. */
+const PT_SIMPLE_CAT_MAP={transition:'metal', lanth:'metal', actin:'metal', post:'metal'};
+const PT_CATEGORIES_SIMPLE=[
+  ['alkali','알칼리 금속'],['alkaline','알칼리 토금속'],['metal','금속'],
+  ['metalloid','준금속'],['nonmetal','비금속'],['halogen','할로젠'],['noble','비활성 기체'],
+  ['unknown','성질 미확인']
+];
 /* 간략히 보기: 1~20번 외에 불꽃반응 예시로 다루는 원소 + 1족·17족 세로줄이 2족처럼 6주기까지
    끊기지 않고 이어지도록 채워 넣는 알칼리 금속·할로젠 (Fr은 7주기라 간략히 보기 격자에 자리가 없음) */
 const PT_SIMPLE_EXTRA_Z=[35,37,38,53,55,56,85]; // Br, Rb, Sr, I, Cs, Ba, At

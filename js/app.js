@@ -30,7 +30,7 @@ const App={
     m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,lastBondOrder:null,
     m7Dir:'toPG',
     section:'ms', showDiagram:true,
-    isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:true,
+    isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:true, isSimpleCategory:false,
     savedCycleState:null,
     isRetryPlaylistMode:false, retryPlaylist:[],
     hintSort:'num', hintFavorites:[]
@@ -54,7 +54,7 @@ const App={
     layoutBtn:document.getElementById('layoutBtn'),
     periodicModalOverlay:document.getElementById('periodicModalOverlay'),periodicContent:document.getElementById('periodicContent'),
     themeModalOverlay:document.getElementById('themeModalOverlay'),themeList:document.getElementById('themeList'),
-    simplePeriodicToggle:document.getElementById('simplePeriodicToggle'),
+    simplePeriodicToggle:document.getElementById('simplePeriodicToggle'),simpleCategoryToggle:document.getElementById('simpleCategoryToggle'),
     ptDetailPanel:document.getElementById('ptDetailPanel'),ptFsDetailPanel:document.getElementById('ptFsDetailPanel')
   },
 
@@ -254,6 +254,9 @@ const App={
       /* 기본은 「간략히 보기」다 — 중학교 필수 원소 위주로 보여야 좁은 화면에서 표가 안 잘린다.
          118종을 다 펼치는 건 골라서 켜는 쪽으로 둔다. */
       this.state.isSimplePeriodic = localStorage.getItem('chem_pt_simple') !== 'false';
+      /* 이쪽은 기본이 꺼짐이다 — 간략히 보기(원소 개수)와 달리 색을 바꾸는 쪽이라,
+         이미 쓰던 사람 화면이 말없이 달라지면 안 된다. 켜 본 사람만 다음에도 켜져 있다. */
+      this.state.isSimpleCategory = localStorage.getItem('chem_pt_cat_simple') === 'true';
       /* 저장된 구역이 개정으로 사라졌을 수 있으므로 실재하는지 확인하고 쓴다 */
       const savedSec = localStorage.getItem('chem_section');
       if(savedSec && sectionMeta(savedSec)) this.state.section = savedSec;
@@ -286,6 +289,8 @@ const App={
     this.$.layoutBtn.innerHTML = this.icon('layout', 'lg');
     this.$.simplePeriodicToggle.classList.toggle('on', this.state.isSimplePeriodic);
     this.$.simplePeriodicToggle.setAttribute('aria-checked', this.state.isSimplePeriodic);
+    this.$.simpleCategoryToggle.classList.toggle('on', this.state.isSimpleCategory);
+    this.$.simpleCategoryToggle.setAttribute('aria-checked', this.state.isSimpleCategory);
 
   },
   /* 켜짐/꺼짐은 이모지와 흐리기로 보여 주는데, 그건 눈으로 보는 사람에게만 닿는다.
@@ -1005,6 +1010,14 @@ const App={
       try{localStorage.setItem('chem_pt_simple', this.state.isSimplePeriodic);}catch(e){}
       this.$.simplePeriodicToggle.classList.toggle('on', this.state.isSimplePeriodic);
       this.$.simplePeriodicToggle.setAttribute('aria-checked', this.state.isSimplePeriodic);
+      this.feedback('tap');
+      this.renderPeriodicTable();
+    });
+    this.$.simpleCategoryToggle.addEventListener('click',()=>{
+      this.state.isSimpleCategory=!this.state.isSimpleCategory;
+      try{localStorage.setItem('chem_pt_cat_simple', this.state.isSimpleCategory);}catch(e){}
+      this.$.simpleCategoryToggle.classList.toggle('on', this.state.isSimpleCategory);
+      this.$.simpleCategoryToggle.setAttribute('aria-checked', this.state.isSimpleCategory);
       this.feedback('tap');
       this.renderPeriodicTable();
     });
@@ -2395,12 +2408,17 @@ const App={
   },
 
   /* ── 주기율표 ── */
+  /* 성질 간소화가 켜져 있으면 전이 금속·란타넘족·악티늄족·전이 후 금속을 "금속" 하나로
+     본다(PT_SIMPLE_CAT_MAP). 칸 색·범례·상세 패널의 「분류」가 전부 이 한 곳을 거친다 —
+     따로 판단하면 셋 중 하나가 토글을 안 따라가는 사고가 난다. */
+  ptCatOf(e){ return this.state.isSimpleCategory ? (PT_SIMPLE_CAT_MAP[e.cat]||e.cat) : e.cat; },
   ptLegendHTML(){
-    return `<div class="pt-legend">${PT_CATEGORIES.map(([cls,label])=>`<span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-${cls}"></span>${label}</span>`).join('')}</div>`;
+    const list = this.state.isSimpleCategory ? PT_CATEGORIES_SIMPLE : PT_CATEGORIES;
+    return `<div class="pt-legend">${list.map(([cls,label])=>`<span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-${cls}"></span>${label}</span>`).join('')}</div>`;
   },
   ptCellHTML(e,col,row){
     const pos = (col!=null && row!=null) ? `grid-column:${col};grid-row:${row}` : '';
-    return `<div class="pt-cell pt-cat-${e.cat}" data-z="${e.z}" style="${pos}" title="${e.z}. ${e.name} (${e.sym})"><span class="pt-z">${e.z}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
+    return `<div class="pt-cell pt-cat-${this.ptCatOf(e)}" data-z="${e.z}" style="${pos}" title="${e.z}. ${e.name} (${e.sym})"><span class="pt-z">${e.z}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
   },
   /* 원소 칸과 동일한 레이아웃(pt-z/pt-sym/pt-name)을 재사용하되, 배경을 족 색상 대신 실제 불꽃 반응 색으로,
      맨 위 숫자 칸은 원자번호 대신 색 이름으로 바꿔서 보여준다 */
@@ -2495,13 +2513,14 @@ const App={
      기호·이름 글자색은 주기율표 칸의 분류 색(PT_CAT_COLORS)과 맞춰 어떤 칸을 눌렀는지 한눈에 이어지게 함 */
   ptDetailHTML(e){
     const palette=this.isLightTheme()?PT_CAT_COLORS_LIGHT:PT_CAT_COLORS;
-    const catColor=palette[e.cat]||'var(--c-accent-1)';
+    const catKey=this.ptCatOf(e);
+    const catColor=palette[catKey]||'var(--c-accent-1)';
     /* 이 앱이 문제로 묻는 값들 — 주기·족(모드 7), 원자가 전자(모드 8), 이온(모드 9·11) —
        을 설명 문단보다 먼저 보여 준다. 예전에는 원자번호·기호·이름과 줄글뿐이라,
        정작 학생이 확인하고 싶은 숫자가 화면에 없었다.
        값은 전부 문제의 정답을 만드는 함수에서 그대로 가져온다(shellsOf·valenceOf·ELEMENTS).
        따로 적어 두면 언젠가 정답과 어긋나는데, 교육용에서 그건 허용할 수 없다. */
-    const cat=(PT_CATEGORIES.find(([c])=>c===e.cat)||[,''])[1];
+    const cat=((this.state.isSimpleCategory?PT_CATEGORIES_SIMPLE:PT_CATEGORIES).find(([c])=>c===catKey)||[,''])[1];
     /* 란타넘족·악티늄족 30종은 족 번호가 없다 — 주기율표가 이들을 3족 자리에 묶어
        따로 떼어 놓기 때문이고, 번호를 안 매기는 게 맞다. 그대로 찍으면 「undefined족」이
        화면에 나온다(실제로 냈고 검사가 잡았다). 없는 값은 그 사실을 적는다. */
