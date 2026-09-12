@@ -2476,15 +2476,22 @@ const App={
      마찬가지인 기기가 있었다(사용자 보고로 확인). 네이티브 스크롤의 축 판정에 기대는
      대신, 손가락이 움직인 만큼 두 칸의 scrollLeft/scrollTop을 직접 옮긴다 — 브라우저가
      "이 제스처는 가로다/세로다"를 판단할 필요 자체가 없어지므로 기기마다 달라질 여지가 없다.
-     작게 움직인 것(탭)은 그대로 둬서 칸 클릭(ptToggleDetail)이 안 깨지게 한다. */
+     작게 움직인 것(탭)은 그대로 둬서 칸 클릭(ptToggleDetail)이 안 깨지게 한다.
+
+     손을 떼면 그 자리에서 뚝 멈추던 것도 여기서 같이 고친다 — 최근 100ms 표본으로 속도를
+     구해 관성을 준다. 새로 만들지 않고 이 표(회전 보기)가 이미 쓰던 ptPanFling과 같은
+     감쇠 상수(decel=0.994)·정지 문턱(30)을 그대로 가져다 쓴다 — 같은 표인데 회전 여부에
+     따라 관성이 다른 느낌이면 그게 더 이상하다. */
   setupPtDrag(hBox, vBox){
     if(!hBox || !vBox) return;
-    let sx=0, sy=0, startL=0, startT=0, dragging=false, moved=false;
+    let sx=0, sy=0, startL=0, startT=0, dragging=false, moved=false, hist=[];
     hBox.addEventListener('touchstart', e=>{
       if(e.touches.length!==1){ dragging=false; return; }
+      cancelAnimationFrame(this._ptDragRAF); this._ptDragRAF=null;
       sx=e.touches[0].clientX; sy=e.touches[0].clientY;
       startL=hBox.scrollLeft; startT=vBox.scrollTop;
       dragging=true; moved=false;
+      hist=[{l:startL, t:startT, time:performance.now()}];
     }, {passive:true});
     hBox.addEventListener('touchmove', e=>{
       if(!dragging || e.touches.length!==1) return;
@@ -2495,10 +2502,45 @@ const App={
       hBox.scrollLeft=startL-dx;
       vBox.scrollTop=startT-dy;
       e.preventDefault();
+      /* 최근 표본만 남긴다 — 손 뗄 때 속도는 "방금 움직인 방향"이어야지 제스처 시작부터의
+         평균이면 안 된다(ptPanFling 쪽 같은 이유). */
+      const now=performance.now();
+      hist.push({l:hBox.scrollLeft, t:vBox.scrollTop, time:now});
+      while(hist.length>2 && now-hist[0].time>100) hist.shift();
     }, {passive:false});
-    const stop=()=>{ dragging=false; moved=false; };
-    hBox.addEventListener('touchend', stop, {passive:true});
-    hBox.addEventListener('touchcancel', stop, {passive:true});
+    const release=()=>{
+      if(!dragging) return;
+      dragging=false;
+      if(moved && hist.length>=2){
+        const a=hist[0], b=hist[hist.length-1], dt=(b.time-a.time)/1000;
+        if(dt>0) this.ptDragFling(hBox, vBox, (b.l-a.l)/dt, (b.t-a.t)/dt);
+      }
+      moved=false; hist=[];
+    };
+    hBox.addEventListener('touchend', release, {passive:true});
+    hBox.addEventListener('touchcancel', release, {passive:true});
+  },
+  /* 던진 방향으로 속도를 갖고 더 가다가 감속해 멈춘다 — ptPanFling과 같은 물리다.
+     다른 점은 경계 처리뿐이다: 여긴 지도처럼 당겨 보는 자리가 아니라 순수 목록
+     스크롤이라 고무줄이 필요 없다 — scrollLeft/scrollTop 자체가 0과 최댓값에서
+     알아서 멈춰 준다. 끝에 닿은 축의 속도만 0으로 죽인다 — 안 죽이면 속도가 허공에
+     계속 쌓이다가 반대로 움직일 때 죽었던 속도가 되살아난 것처럼 보인다. */
+  ptDragFling(hBox, vBox, vx, vy){
+    cancelAnimationFrame(this._ptDragRAF);
+    const decel=0.994;
+    let lastT=performance.now();
+    const step=(now)=>{
+      const dt=Math.min(32, now-lastT); lastT=now;
+      if(Math.hypot(vx,vy)<30){ this._ptDragRAF=null; return; }
+      hBox.scrollLeft+=vx*dt/1000;
+      vBox.scrollTop+=vy*dt/1000;
+      const decayFrame=Math.pow(decel, dt);
+      vx*=decayFrame; vy*=decayFrame;
+      if(hBox.scrollLeft<=0 || hBox.scrollLeft>=hBox.scrollWidth-hBox.clientWidth) vx=0;
+      if(vBox.scrollTop<=0 || vBox.scrollTop>=vBox.scrollHeight-vBox.clientHeight) vy=0;
+      this._ptDragRAF=requestAnimationFrame(step);
+    };
+    this._ptDragRAF=requestAnimationFrame(step);
   },
   openPtFullscreen(){
     const t=this.ptTableHTML();
