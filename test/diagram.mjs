@@ -227,7 +227,10 @@ for(const it of ctx.ION_FORMING){
   /* alt 글의 껍질 배치가 실제 최종 배치와 같은가 */
   const sh=ctx.shellsOf(it.z);
   const fin=it.dir==='gain'?sh.slice(0,-1).concat(sh[sh.length-1]+it.n):sh.slice(0,-1);
-  const alt=/aria-label="([^"]*)"/.exec(h)[1];
+  /* svg 태그의 aria-label만 본다 — .dia-panel(그림을 눌러 크게 보기, js/diagram.js
+     panelAttrs)도 이제 자기 aria-label을 갖고 있어서, 그냥 첫 aria-label="..."을
+     집으면 그림의 alt 대신 그 문구가 잡힌다. */
+  const alt=/<svg[^>]*aria-label="([^"]*)"/.exec(h)[1];
   const N=['첫째','둘째','셋째','넷째'];
   const want=fin.map((v,i)=>`${N[i]} 껍질 ${v}개`).join(', ');
   if(!alt.includes(want)) F.push(`[개수] 이온되기 ${el.sym} — alt 글의 최종 배치가 "${want}"와 다름: ${alt}`);

@@ -72,7 +72,11 @@ async function once({ vp, theme, reduced, blockFonts }) {
   const boom = [];
   page.on('pageerror', (e) => boom.push('PAGEERROR ' + e.message));
   page.on('console', (m) => {
-    if (m.type() === 'error' && !/favicon|fonts\.g|ERR_(CONNECTION|BLOCKED|FAILED)/.test(m.text())) boom.push(m.text());
+    /* fonts.g*(구글 폰트) 요청이 막히는 방식은 연결 거부(ERR_CONNECTION_REFUSED)만이
+       아니다 — 이 샌드박스에서는 프록시 인증서 문제(ERR_CERT_AUTHORITY_INVALID)로도
+       실패하는 걸 실제로 봤다. 둘 다 "글꼴이 안 왔다"는 같은 사실이고 앱이 견뎌야
+       하는 것도 같으므로(위 주석 참고), 어떤 네트워크 오류 코드든 다 눈감아 준다. */
+    if (m.type() === 'error' && !/favicon|fonts\.g|ERR_(CONNECTION|BLOCKED|FAILED|CERT|NAME_NOT_RESOLVED|TIMED_OUT)/.test(m.text())) boom.push(m.text());
   });
 
   await page.goto(PAGE, { waitUntil: 'domcontentloaded' });

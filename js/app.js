@@ -45,6 +45,7 @@ const App={
     hintModalOverlay:document.getElementById('hintModalOverlay'),wrongNoteModalOverlay:document.getElementById('wrongNoteModalOverlay'),
     reactionList:document.getElementById('reactionList'),wrongNoteList:document.getElementById('wrongNoteList'),
     hintModalTitle:document.getElementById('hintModalTitle'),hintSortChips:document.getElementById('hintSortChips'),
+    diaModalOverlay:document.getElementById('diaModalOverlay'),diaModalContent:document.getElementById('diaModalContent'),
     timerBar:document.getElementById('timerBar'),wrongNoteFilters:document.getElementById('wrongNoteFilters'),
     questionCard:document.getElementById('questionCard'),keyboardWrap:document.getElementById('keyboardWrap'),
     timerSelectWrap:document.getElementById('timerSelectWrap'),mode6Wrap:document.getElementById('mode6Wrap'),
@@ -874,6 +875,8 @@ const App={
       /* 그림은 매번 다시 그려지므로 버튼에 직접 리스너를 달 수 없다 — 위임으로 받는다 */
       const rp=e.target.closest('.dia-replay');
       if(rp){this.replayDiagram(rp);return;}
+      const dp=e.target.closest('.dia-panel');
+      if(dp){this.openDiaZoom(dp);return;}
       const th=e.target.closest('#themeBtn'),hi=e.target.closest('#hintBtn'),wn=e.target.closest('#wrongNoteBtn'),sa=e.target.closest('.show-answer-btn');
       const snd=e.target.closest('#soundBtn'),hpt=e.target.closest('#hapticBtn'),lyt=e.target.closest('#layoutBtn');
       const extR=e.target.closest('#exitRetryBtn'),pt=e.target.closest('#periodicBtn');
@@ -949,6 +952,7 @@ const App={
     /* 창을 여는 버튼(themeBtn·hintBtn 등)은 전부 tap을 주면서, 닫는 X 버튼 넷은 하나도
        안 울리고 있었다 — 여는 동작과 닫는 동작이 같은 무게의 탭인데 한쪽만 무음이었다. */
     document.getElementById('hintModalClose').addEventListener('click',()=>{this.feedback('tap');this.$.hintModalOverlay.classList.remove('show');});
+    document.getElementById('diaModalClose').addEventListener('click',()=>{this.feedback('tap');this.$.diaModalOverlay.classList.remove('show');});
     /* 참고 자료 정렬 탭 — 번호·가나다·원소·즐겨찾기(HINT_SORTS). 고른 탭만 바뀌고
        목록은 buildModalList가 다시 그린다(칩도 그 안에서 다시 그려 active가 맞는 탭으로 옮겨간다). */
     if(this.$.hintSortChips) this.$.hintSortChips.addEventListener('click',e=>{
@@ -976,7 +980,7 @@ const App={
       this.feedback('tap');
     });
     /* 어두운 배경 탭 시 모달 닫기 (인증 모달 제외) */
-    [this.$.hintModalOverlay,this.$.wrongNoteModalOverlay,this.$.periodicModalOverlay,this.$.themeModalOverlay].forEach(ov=>{
+    [this.$.hintModalOverlay,this.$.wrongNoteModalOverlay,this.$.periodicModalOverlay,this.$.themeModalOverlay,this.$.diaModalOverlay].forEach(ov=>{
       ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('show');});
     });
     document.getElementById('ptRotateBtn').addEventListener('click',()=>{
@@ -1083,18 +1087,27 @@ const App={
     });
 
     document.addEventListener('keydown',e=>{
+      /* 그림 칸(.dia-panel)에 포커스를 두고 Enter·Space를 누르면 확대해서 본다.
+         div라 실제 <button>이 아니므로(js/diagram.js panelAttrs) 클릭처럼 저절로 안
+         일어난다 — 직접 연결해 줘야 한다. 맨 위에서 먼저 본다: 플래시카드 모드의
+         Space=뒤집기 같은 아래 분기가 먼저 가로채면, 포커스가 카드 안 그림에 있어도
+         늘 카드만 뒤집히고 그림은 확대되지 않는다. */
+      if((e.key==='Enter'||e.key===' ')&&document.activeElement&&document.activeElement.classList.contains('dia-panel')){
+        e.preventDefault();this.openDiaZoom(document.activeElement);return;
+      }
       if(document.getElementById('ptFullscreen').classList.contains('show')){
         if(e.key==='Escape')this.closePtFullscreen();
         return;
       }
       if(e.key==='Escape'){
         if(this.$.periodicModalOverlay.classList.contains('show')){this.$.periodicModalOverlay.classList.remove('show');return;}
+        if(this.$.diaModalOverlay.classList.contains('show')){this.$.diaModalOverlay.classList.remove('show');return;}
         if(this.$.hintModalOverlay.classList.contains('show')){this.$.hintModalOverlay.classList.remove('show');return;}
         if(this.$.wrongNoteModalOverlay.classList.contains('show')){this.$.wrongNoteModalOverlay.classList.remove('show');return;}
         if(this.$.themeModalOverlay.classList.contains('show')){this.$.themeModalOverlay.classList.remove('show');return;}
       }
       /* 팝업이 떠 있는 동안은 아래 문제 풀이 단축키가 먹으면 안 된다 */
-      if(this.$.hintModalOverlay.classList.contains('show')||this.$.wrongNoteModalOverlay.classList.contains('show')||this.$.themeModalOverlay.classList.contains('show'))return;
+      if(this.$.hintModalOverlay.classList.contains('show')||this.$.wrongNoteModalOverlay.classList.contains('show')||this.$.themeModalOverlay.classList.contains('show')||this.$.diaModalOverlay.classList.contains('show'))return;
       if(document.getElementById('retryM6Card').style.display!=='none'){
         /* 오답노트 재풀이 중 플래시카드 복습 카드 — 숨겨진 실제 mode6 세션이 아니라 이 카드를 조작 */
         if(e.key===' '){e.preventDefault();document.getElementById('retryM6Flashcard').classList.toggle('flipped');}
@@ -1121,23 +1134,25 @@ const App={
     const m6o=document.getElementById('m6Outer');
     let tx=0,th2=false;
     m6o.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;th2=false;},{passive:true});
-    /* 카드 안에 「다시 보기」 버튼이 들어가면서 탭 = 뒤집기와 겹쳤다.
-       버튼을 눌렀을 때는 뒤집지 않는다 — 애니메이션만 다시 보고 싶은 것이다. */
-    const onReplay=e=>!!(e.target&&e.target.closest&&e.target.closest('.dia-replay'));
+    /* 카드 안에 「다시 보기」 버튼과, 누르면 확대해서 보는 그림 칸(.dia-panel)이 들어가면서
+       탭 = 뒤집기와 겹쳤다. 둘 중 하나를 눌렀을 때는 뒤집지 않는다 — 애니메이션만 다시
+       보고 싶거나 그림을 확대해서 보고 싶은 것이지 카드를 뒤집으려던 게 아니다. */
+    const onDiaClick=e=>!!(e.target&&e.target.closest&&e.target.closest('.dia-replay, .dia-panel'));
     m6o.addEventListener('touchend',e=>{
       th2=true;const dx=e.changedTouches[0].clientX-tx;
       if(Math.abs(dx)>50){if(dx<0)this.m6Next();else this.m6Prev();}
-      else if(!onReplay(e)) this.m6Flip();
+      else if(!onDiaClick(e)) this.m6Flip();
     });
-    m6o.addEventListener('click',e=>{if(!th2&&!onReplay(e))this.m6Flip();th2=false;});
+    m6o.addEventListener('click',e=>{if(!th2&&!onDiaClick(e))this.m6Flip();th2=false;});
 
     document.getElementById('m6WrongNoteBtn').addEventListener('click',()=>{
       this.feedback('tap');
       this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');
     });
     document.getElementById('retryM6Flashcard').addEventListener('click',e=>{
-      /* 카드 안의 「다시 보기」를 누른 것이면 뒤집지 않는다 — 위임 처리 쪽에 맡긴다 */
-      if(e.target.closest('.dia-replay')) return;
+      /* 카드 안의 「다시 보기」나 확대되는 그림 칸을 누른 것이면 뒤집지 않는다 —
+         그림 확대는 위임 처리 쪽(diaZoom)에 맡긴다 */
+      if(e.target.closest('.dia-replay, .dia-panel')) return;
       this.feedback('tap');
       const card=document.getElementById('retryM6Flashcard');
       card.classList.toggle('flipped');
@@ -1910,6 +1925,26 @@ const App={
     const host=btn&&btn.closest('#explainBox, .m6-face, #retryM6FContent, #retryM6BContent');
     if(!host||host.id==='explainBox'){ this.renderExplain(); return; }
     this.restartAnim(host);
+  },
+  /* 그림을 눌러 크게 보기 — SVG 안 <text>는 viewBox 배율만큼 화면에서 줄어드는데,
+     폭이 좁을수록 더 줄어든다(검토-대기-목록.md 안건 1 — 320px 폰에서 이온 결합
+     그림 글자가 실제로 7~8px였다). 그림마다 좌표가 다 얽혀 있어 배치 자체를 바꾸는
+     대신(diagram.js 파일 머리말 주석 참고), 이 배율을 1:1로 되돌리는 쪽을 택했다 —
+     viewBox 폭만큼 그대로 CSS px 폭을 주면 14px·16px로 선언한 글자가 그 크기 그대로
+     그려진다. 화면보다 넓으면 가로로 밀어서 본다(#diaModalContent, 주기율표 일반
+     보기와 같은 방식). 원본을 옮기지 않고 사본을 넣는다 — 원본이 사라지면 뒤에서
+     다시 열었을 때(예: 오답노트) 그 자리가 비어 있게 된다. */
+  openDiaZoom(panel){
+    const svg=panel.querySelector('svg.dia'); if(!svg) return;
+    this.feedback('tap');
+    /* .dia-panel의 내용물(캡션 + svg)만 가져온다 — role="button"·tabindex는 바깥 칸에
+       붙어 있어(panelAttrs) 같이 딸려 오지 않는다. 확대 보기 안에는 더 누를 게 없으므로
+       그걸로 충분하다. */
+    this.$.diaModalContent.innerHTML=panel.innerHTML;
+    const clone=this.$.diaModalContent.querySelector('svg.dia');
+    const w=svg.viewBox.baseVal.width;
+    if(clone && w) clone.style.width=w+'px';
+    this.$.diaModalOverlay.classList.add('show');
   },
   /* 상자 안의 애니메이션을 처음부터 다시 재생한다.
      **DOM을 다시 만들지 않는다.** 예전에는 innerHTML을 자기 자신으로 다시 넣어 요소를

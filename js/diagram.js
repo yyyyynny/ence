@@ -90,6 +90,14 @@ const DIA = {
      별도 재생 제어가 필요 없어서 버튼 하나로 끝난다. */
   replayBtn(){ return `<button type="button" class="dia-replay">↻ 다시 보기</button>`; },
 
+  /* 그림 칸(.dia-panel)에 붙이는 속성 — 누르면 확대해서 본다(js/app.js의 openDiaZoom).
+     SVG 안 <text>는 viewBox 배율만큼 같이 줄어드는데, 폰이 좁을수록 더 줄어든다
+     (검토-대기-목록.md 안건 1 — 320px에서 이온 결합 그림 글자가 실제로 7~8px였다).
+     이온 결합·공유 결합·전자껍질(원자가 전자·이온 되기) 다섯 함수가 전부 같은 구조
+     (.dia-panel > svg.dia[viewBox])를 쓰므로, 여기 한 곳에서만 속성을 붙여야
+     다섯 그림이 같은 문구·같은 동작으로 맞는다(따로 적으면 하나쯤 빠뜨리기 쉽다). */
+  panelAttrs(){ return `role="button" tabindex="0" aria-label="그림을 눌러 크게 보기"`; },
+
   /* 화살촉 정의. 이온 결합 그림과 이온 되기 그림이 같은 표기를 써야 두 화면에서
      "전자가 이 길로 간다"가 같은 뜻으로 읽힌다. 두 곳이 같은 마크업을 쓰도록 여기 모아 둔다. */
   arrowDefs(){
@@ -267,7 +275,7 @@ function ionicDiagramHTML(b){
     `${ionNameKo(sym, dir)}(${sym}<sup>${DIA.chargeText(n, sign)}</sup>)`;
 
   return `<div class="dia-wrap">
-    <div class="dia-panel"><div class="dia-cap">전자가 넘어가 이온이 된다 — ${moveNote}</div>${svg}</div>
+    <div class="dia-panel" ${DIA.panelAttrs()}><div class="dia-cap">전자가 넘어가 이온이 된다 — ${moveNote}</div>${svg}</div>
     ${DIA.replayBtn()}
     <p class="dia-exp">${josa(M.name,'은','는')} 원자가 전자 ${valenceOf(M.z)}개를 내주고, ${josa(X.name,'은','는')} ${b.take}개를 받아 둘 다 바깥 껍질이 꽉 찬다.
     그래서 ${ionName(b.M, 'lose', b.give, '+')}과 ${ionName(b.X, 'gain', b.take, '−')}이 된다.
@@ -464,7 +472,7 @@ function covalentDiagramHTML(b, opts){
        공유하는 전자쌍이 늘수록 두 원자가 더 세게 붙잡혀 결합이 짧고 강해진다.`
     : `${uniq}. 두 껍질이 겹친 자리에 찍힌 것이 그 전자쌍이다.`) + key;
   return `<div class="dia-wrap">
-    <div class="dia-panel"><div class="dia-cap">${cap}</div>
+    <div class="dia-panel" ${DIA.panelAttrs()}><div class="dia-cap">${cap}</div>
       <svg class="dia" viewBox="${vb}" role="img" aria-label="${alt}">${s}</svg></div>
     ${DIA.replayBtn()}
     <p class="dia-exp">${exp}</p>
@@ -567,7 +575,7 @@ function ionFormingDiagramHTML(z, item){
       + `처음 ${DIA.shellText(sh)}, 이온이 된 뒤 ${DIA.shellText(fin)}.`
     : `${el.name}(${el.sym}) 전자껍질 그림 — ${DIA.shellText(sh)}. `
       + '이미 꽉 차 있어 이온이 되지 않는다.';
-  return `<div class="dia-wrap"><div class="dia-panel"><div class="dia-cap">${cap}</div>
+  return `<div class="dia-wrap"><div class="dia-panel" ${DIA.panelAttrs()}><div class="dia-cap">${cap}</div>
     <svg class="dia" viewBox="0 0 ${W} ${H}" role="img" aria-label="${alt}">${DIA.arrowDefs()}${s}</svg></div>${DIA.replayBtn()}</div>`;
 }
 
@@ -595,7 +603,7 @@ function shellDiagramHTML(z, charge){
   /* 이 그림만 캡션이 없어 글로 된 설명이 곁에 아예 없었다 — 이름이 더 중요하다. */
   const alt = `${el.name}(${el.sym})${charge ? ' ' + charge : ''} 전자껍질 그림 — ${DIA.shellText(sh)}. `
             + `바깥 껍질에 ${sh[sh.length - 1]}개.`;
-  return `<div class="dia-wrap"><div class="dia-panel">
+  return `<div class="dia-wrap"><div class="dia-panel" ${DIA.panelAttrs()}>
     <svg class="dia" viewBox="0 0 ${W} ${H}" role="img" aria-label="${alt}">${s}</svg>
   </div>${DIA.replayBtn()}</div>`;
 }
