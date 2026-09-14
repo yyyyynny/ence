@@ -623,7 +623,15 @@ const App={
     /* 이온식에는 K·Al처럼 반응식용 키패드에 없는 기호가 필요해 전용 목록으로 갈아끼운다 */
     const syms=revM7?PT_QUIZ_SYMBOLS:(isIonWrite?ION_WRITE_SYMBOLS:CORE_ELEMENTS);
     if(this._elemRowSyms!==syms){
-      this.$.elemRow.innerHTML=syms.map(s=>`<button class="kb-key elem" data-key="ELEM_${s}">${s}</button>`).join('');
+      let html=syms.map(s=>`<button class="kb-key elem" data-key="ELEM_${s}">${s}</button>`).join('');
+      /* 괄호는 반응식·화학식을 적을 때만 필요하다 — Ca(OH)₂처럼 다원자 이온 묶음이
+         둘 이상일 때 쓰는 표기다(js/data.js 머리말 참고). 이온식 쓰기(MODE 11)는
+         이온 하나씩만 적어 묶을 일이 없고, MODE 7 역방향은 원소 기호 하나만 답하므로
+         둘 다 필요 없다 — CORE_ELEMENTS를 쓰는 자리에만 더한다.
+         handleKeyPress는 ELEM_ 키를 그대로 문자로 꽂아 넣으므로(app.js) 새 키 종류를
+         따로 만들 필요가 없다 — 괄호도 그냥 "글자 하나"다. */
+      if(syms===CORE_ELEMENTS) html+=`<button class="kb-key elem" data-key="ELEM_(">(</button><button class="kb-key elem" data-key="ELEM_)">)</button>`;
+      this.$.elemRow.innerHTML=html;
       this._elemRowSyms=syms;
     }
   },
@@ -738,7 +746,7 @@ const App={
      문제집 분량(39개, ms 기준)까지 늘어난 지금은 얘기가 다르다 — 아래로 쭉 훑어야만
      찾을 수 있던 걸 정렬로 바로 찾게 한다(arrangeHintEntries). */
   buildModalList(){
-    const fmt=side=>side.map(r=>(r.coef>1?`<span class="eq-text">${r.coef}</span>`:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')+this.phaseHTML(r.phase)).join(' <span class="eq-plus">+</span> ');
+    const fmt=side=>side.map(r=>(r.coef>1?`<span class="eq-text">${r.coef}</span>`:'')+fmtFormula(r.formula,true)+this.phaseHTML(r.phase)).join(' <span class="eq-plus">+</span> ');
     const sec=this.state.section, meta=sectionMeta(sec)||{label:''};
     const list=reactionsInSection(sec);
     /* ↓·↑가 한자리에 모여 보이는 곳이라 여기서 뜻을 알려 준다. 문제 화면(모드 1~4)에는
@@ -765,7 +773,7 @@ const App={
        바뀌면 "12번"이라고 부를 기준이 사라진다. */
     const rxEntries=list.map((rx,i)=>({
       key:rx.name, num:i+1, name:rx.name,
-      elements:elemsOf(rx.reactants.concat(rx.products).flatMap(c=>c.formula.map(p=>p.sym))),
+      elements:elemsOf(rx.reactants.concat(rx.products).flatMap(c=>flattenSyms(c.formula))),
       body:`${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}`
     }));
     let html=head+legend+(list.length?this.arrangeHintEntries(rxEntries,'반응식'):empty);
@@ -1509,7 +1517,7 @@ const App={
     this.state.isAnswerChecked=false;this.state.isAnswerRevealed=false;
     this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};this.state.wrongAlreadyPenalized=false;
     const q={blanks:[],inputs:{},isTimedOut:false};
-    const f2s=c=>{let s=c.coef>1?c.coef.toString():'';s+=c.formula.map(p=>p.sym+(p.sub?p.sub.toString():'')).join('');return s;};
+    const f2s=c=>{let s=c.coef>1?c.coef.toString():'';s+=fmtFormula(c.formula);return s;};
 
     const useCycle=this.state.isCycleMode&&!isCardMode(this.state.currentMode);
     /* 같은 문제가 연달아 나오지 않게 한다. 그런데 풀 항목의 name과 화면에 뜨는 q.name의 꼴이
@@ -1566,7 +1574,7 @@ const App={
       case 2:{const rp=this.rxPool();const idx=pickIndex(rp);const rx=rp[idx];q.reaction=rx;q.name=rx.name;q.type='반응물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:false}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));break;}
       case 3:{const rp=this.rxPool();const idx=pickIndex(rp);const rx=rp[idx];q.reaction=rx;q.name=rx.name;q.type='생성물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:false}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
       case 4:{const rp=this.rxPool();const idx=pickIndex(rp);const rx=rp[idx];q.reaction=rx;q.name=rx.name;q.type='전체 반응식';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
-      case 5:{const idx=pickIndex(CHEMICALS);const c=CHEMICALS[idx];q.name=c.name;q.type='화학식 암기';q.isMode5=true;q.isAbstract=false;const fs=c.formula.map(p=>p.sym+(p.sub?p.sub.toString():'')).join('');q.blanks.push({key:'M5',answer:fs});break;}
+      case 5:{const idx=pickIndex(CHEMICALS);const c=CHEMICALS[idx];q.name=c.name;q.type='화학식 암기';q.isMode5=true;q.isAbstract=false;const fs=fmtFormula(c.formula);q.blanks.push({key:'M5',answer:fs});break;}
       case 7:{
         const idx=pickIndex(PT_QUIZ_ELEMENTS);const el=PT_QUIZ_ELEMENTS[idx];
         q.type='주기·족 맞추기';q.isMode7=true;q.isAbstract=false;
@@ -1809,7 +1817,7 @@ const App={
   },
 
   generateBeautifulWrongNote(q){
-    const fmt=side=>side.map(c=>(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+c.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')+this.phaseHTML(c.phase)).join(' <span class="eq-plus">+</span> ');
+    const fmt=side=>side.map(c=>(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+fmtFormula(c.formula,true)+this.phaseHTML(c.phase)).join(' <span class="eq-plus">+</span> ');
     let h='';
     if(q.isMode5){h=`<span class="eq-text eq-answer">${this.formatInput(q.blanks[0].answer)}</span>`;}
     else if(q.isMode7){
@@ -2220,7 +2228,7 @@ const App={
     return '<svg class="ic' + (size ? ' ic-' + size : '') + '" aria-hidden="true" focusable="false">' +
            '<use href="#i-' + name + '"></use></svg>';
   },
-  m6Fmt(side){return side.map(r=>(r.coef>1?r.coef:'')+r.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')+this.phaseHTML(r.phase)).join(' + ');},
+  m6Fmt(side){return side.map(r=>(r.coef>1?r.coef:'')+fmtFormula(r.formula,true)+this.phaseHTML(r.phase)).join(' + ');},
   /* 카드 유형(t)에서 카드 배열만 순수하게 만들어낸다 — 오답노트 재풀이(renderRetryFlashcard)에서도
      실제 mode6 세션 상태(state.m6Cards/m6Index)를 건드리지 않고 재사용하기 위해 분리 */
   /* 카드 유형 정의 — 구역마다 다루는 내용이 다르므로 MODES[n].cards로 어떤 유형을 쓸지 고른다 */
@@ -2265,7 +2273,7 @@ const App={
     else if(t==='full'){cards=rx.map(r=>({fhtml:`<span class="m6-korean">${r.name}</span>`,bhtml:`<span class="m6-formula">${this.m6Fmt(r.reactants)} → ${this.m6Fmt(r.products)}</span>`}));}
     else if(t==='reactant'){cards=rx.map(r=>({fhtml:`<span class="m6-korean">${r.name}</span>`,bhtml:`<span class="m6-formula">${this.m6Fmt(r.reactants)}</span>`}));}
     else if(t==='product'){cards=rx.map(r=>({fhtml:`<span class="m6-korean">${r.name}</span>`,bhtml:`<span class="m6-formula">${this.m6Fmt(r.products)}</span>`}));}
-    else{cards=CHEMICALS.map(c=>({fhtml:`<span class="m6-korean">${c.name}</span>`,bhtml:`<span class="m6-formula">${c.formula.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('')}</span>`}));}
+    else{cards=CHEMICALS.map(c=>({fhtml:`<span class="m6-korean">${c.name}</span>`,bhtml:`<span class="m6-formula">${fmtFormula(c.formula,true)}</span>`}));}
     /* 앞뒤 이름은 유형에서 온다. 카드가 따로 정한 것만 그대로 둔다(앙금 유무, 오비탈 두 갈래). */
     const d=cardType(t);
     return cards.map(c=>({ftag:d.front,btag:d.back,...c}));

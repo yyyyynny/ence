@@ -12,6 +12,36 @@ const DEFAULT_TIMER=20000;
    ↑는 "용액에서 기체가 빠져나갈 때"만 붙인다 — 연소처럼 용액이 아닌 반응에서
    생성물이 기체라고 붙이면 표기의 뜻이 사라진다. 탄산수소나트륨 열분해는 고체를
    가열하는 반응이라 뺐다(교과서마다 표기가 갈리는 자리다). */
+/* ── 화학식 조각(formula) ──
+   조각은 둘 중 하나다 — 원소 하나 {sym,sub}, 또는 괄호로 묶인 다원자 이온 등
+   {group:[...조각], sub}. sub가 없으면(또는 1이면) 첨자를 안 붙인다.
+   괄호는 곱해야 할 다원자 묶음이 2개 이상일 때만 쓴다 — Ca(OH)₂는 맞지만
+   NaOH를 굳이 (OH) 묶음으로 안 쓴다(괄호 안이 1개면 괄호 자체가 필요 없다).
+
+   왜 이제야 생겼나: 예전엔 조각이 {sym,sub} 하나뿐이라 Cu(NO₃)₂·(NH₄)₂SO₄처럼
+   다가 금속·다가 이온이 만나는 화합물을 아예 못 넣었다(괄호 없이 "CuNO32" 같은
+   틀린 표기를 가르칠 순 없어서). 그래서 그런 반응은 전부 황산염(1:1) 쪽으로
+   피해 왔다 — 이제 진짜로 필요한 자리에는 괄호를 쓴다.
+
+   sym이 원소 기호 하나가 아니라 여러 글자일 수 있다는 점은 그대로다(예: 이산화탄소는
+   {sym:"CO",sub:2} — "CO" 뒤에 첨자 2, 마지막 글자에만 적용되는 셈이라 실제로는
+   C 1개·O 2개다). flattenSyms/fmtFormula 둘 다 이 규칙을 그대로 따른다 —
+   여기서 새로 만든 것이 아니라 기존 규칙에 그룹만 얹었다. */
+function fmtFormula(parts, asHtml){
+  const sub=n=>(n&&n>1)?(asHtml?`<sub>${n}</sub>`:String(n)):'';
+  return parts.map(p=>p.group ? `(${fmtFormula(p.group,asHtml)})${sub(p.sub)}` : p.sym+sub(p.sub)).join('');
+}
+/* 화학식(그룹 포함)을 펼쳐 조각별 sym 문자열 목록으로 만든다. 각 sym은 원소 기호
+   하나가 아니라 여러 글자가 붙어 있을 수 있으므로(위 설명), 진짜 원소 기호만
+   골라내는 일(정규식 [A-Z][a-z]?)은 이 함수를 부르는 쪽이 한다 — js/app.js의
+   elemsOf, test/chem.mjs의 atoms()가 그 예다. */
+function flattenSyms(parts){
+  const out=[];
+  const walk=arr=>arr.forEach(p=>{ if(p.group) walk(p.group); else out.push(p.sym); });
+  walk(parts);
+  return out;
+}
+
 const REACTIONS=[
   {name:"일산화탄소 + 산소 → 이산화탄소",sections:["chem"],reactants:[{coef:2,formula:[{sym:"CO"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]}]},
   {name:"메테인 + 산소 → 이산화탄소 + 물",sections:["ms"],reactants:[{coef:1,formula:[{sym:"CH",sub:4}]},{coef:2,formula:[{sym:"O",sub:2}]}],products:[{coef:1,formula:[{sym:"CO",sub:2}]},{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
@@ -59,14 +89,14 @@ const REACTIONS=[
        부피비 2:1을 관찰하는, 아마 이 단원에서 가장 먼저 나오는 실험이다. 분해 반응 갈래를
        하나 더 두껍게 한다.
 
-     찾은 자료엔 있지만 이 앱엔 아직 없는 것 둘은 **일부러** 안 넣는다 — 커버리지가 부족해서가
-     아니라 각자 다른 이유로 이 앱의 틀에 안 맞는다:
-     · 염산 + 수산화칼슘 → 염화칼슘 + 물(중화 반응) — 화학적으로는 문제없는 반응이지만,
-       Ca(OH)₂를 정확히 쓰려면 괄호로 묶은 아래첨자(OH를 통째로 2배)가 필요하다.
-       이 앱의 화학식 렌더러(f2s, formatFormula)와 반응식용 키패드는 원소기호+숫자만
-       이어 붙이는 구조라 괄호를 다루지 못한다 — "CaOH2"로 적으면 OH 전체가 아니라
-       H만 2개인 것처럼 읽혀 오히려 틀린 표기를 가르치게 된다. 괄호 표기 자체를
-       지원하게 고치는 건 이번 추가와 다른 작업이라 손대지 않았다.
+     찾은 자료엔 있지만 이 앱엔 아직 없던 것 하나는 한동안 **일부러** 빼 두었다 — 커버리지가
+     부족해서가 아니라 이 앱의 틀이 못 그렸기 때문이다:
+     · 염산 + 수산화칼슘 → 염화칼슘 + 물(중화 반응) — Ca(OH)₂를 정확히 쓰려면 괄호로
+       묶은 아래첨자(OH를 통째로 2배)가 필요한데, 그때는 화학식 렌더러(f2s, fmtFormula)와
+       반응식용 키패드가 원소기호+숫자만 이어 붙이는 구조라 괄호를 다루지 못했다.
+       "CaOH2"로 적으면 OH 전체가 아니라 H만 2개인 것처럼 읽혀 틀린 표기를 가르치게
+       됐을 것이다. 그 뒤 괄호 표기(formula의 {group:[...],sub} 조각, fmtFormula/
+       flattenSyms)를 지원하도록 고쳤고, 아래 「중화 반응」 갈래로 넣었다.
      · 암모니아 + 산소 → 일산화질소 + 물 — 백금 촉매가 있어야 일어나는 오스트발트법
        중간 반응이라, 마그네슘 연소·염소산칼륨 분해처럼 학생이 직접 보는 실험이 아니다.
        화학적으로는 맞지만 "간단한 화학 반응"([9과16-02])보다는 산업 공정에 가까워
@@ -84,10 +114,13 @@ const REACTIONS=[
      구리가 석출되는, 중등 실험에서 실제로 다루는 반응이다. 앙금 생성(복분해)과는 다르다 —
      이온이 만나 앙금으로 가라앉는 게 아니라, 반응성이 큰 금속이 반응성이 작은 금속을
      이온에서 밀어내고 그 자리를 차지하는 것이라(전자를 넘겨준다), 2022 개정이 중학에서
-     뺀 "앙금 생성 반응"의 그 자리가 아니다. 다만 여기서도 정산나이트레이트(질산 ○○)는
-     피했다 — Cu(NO₃)₂처럼 금속이 2가이면 괄호가 필요해진다(바로 위 중화 반응과 같은
-     이유로 이 앱이 못 그린다). 그래서 전부 황산염(○○SO₄)으로 짝지었다 — 황산 이온은
-     어느 조합에서도 배수가 안 붙어 괄호가 나올 일이 없다. */
+     뺀 "앙금 생성 반응"의 그 자리가 아니다. 처음 넣을 땐 여기서도 질산염(질산 ○○)을
+     피했다 — Cu(NO₃)₂처럼 금속이 2가이면 괄호가 필요해서 그때는 이 앱이 못 그렸다.
+     그래서 넷 다 황산염(○○SO₄)으로 짝지었다 — 황산 이온은 어느 조합에서도 배수가
+     안 붙어 괄호가 나올 일이 없다. 그 넷은 그대로 둔다(둘 다 화학적으로 맞는 표기라
+     바꿀 이유가 없다). 괄호를 지원한 뒤에는 은수저가 까맣게 변하는 것과 반대로
+     "구리줄을 질산은 용액에 담그면 은이 자라나는" 실험(질산은 사진 감광에도 쓰이는
+     그 은이다)을 다섯 번째로 더했다 — Cu(NO₃)₂를 실제로 넣어 보는 자리이기도 하다. */
   {name:"탄소 + 산소 → 이산화탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"C"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:1,formula:[{sym:"CO",sub:2}]}]},
   {name:"칼슘 + 산소 → 산화칼슘",sections:["ms"],reactants:[{coef:2,formula:[{sym:"Ca"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Ca"},{sym:"O"}]}]},
   {name:"아연 + 산소 → 산화아연",sections:["ms"],reactants:[{coef:2,formula:[{sym:"Zn"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Zn"},{sym:"O"}]}]},
@@ -107,8 +140,14 @@ const REACTIONS=[
   {name:"철 + 황산구리 → 황산철(Ⅱ) + 구리",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Fe"}]},{coef:1,formula:[{sym:"Cu"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Fe"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Cu"}]}]},
   {name:"마그네슘 + 황산구리 → 황산마그네슘 + 구리",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Mg"}]},{coef:1,formula:[{sym:"Cu"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Cu"}]}]},
   {name:"아연 + 황산철(Ⅱ) → 황산아연 + 철",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Zn"}]},{coef:1,formula:[{sym:"Fe"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Zn"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Fe"}]}]},
+  {name:"구리 + 질산은 → 질산구리(Ⅱ) + 은",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Cu"}]},{coef:2,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}],products:[{coef:1,formula:[{sym:"Cu"},{group:[{sym:"NO",sub:3}],sub:2}]},{coef:2,formula:[{sym:"Ag"}]}]},
   {name:"탄산나트륨 + 염산 → 염화나트륨 + 물 + 이산화탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"CO",sub:2}],phase:"↑"}]},
   {name:"탄산마그네슘 + 염산 → 염화마그네슘 + 물 + 이산화탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Mg"},{sym:"CO",sub:3}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"CO",sub:2}],phase:"↑"}]},
+  /* 중화 반응 — 새로 연 마지막 갈래. 산의 H⁺과 염기의 OH⁻이 만나 물이 되고, 남은
+     이온끼리 염을 이룬다(9과16-02 "간단한 화학 반응"의 범위 — 산·염기 이론 자체는
+     여기서 다루지 않고 계수만 맞춘다). 괄호(Ca(OH)₂)를 지원하기 전에는 못 넣던 반응 —
+     바로 위 "새로 연 갈래" 주석 참고. */
+  {name:"염산 + 수산화칼슘 → 염화칼슘 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"H"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ca"},{group:[{sym:"O"},{sym:"H"}],sub:2}]}],products:[{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]},{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
   {name:"에테인 + 산소 → 이산화탄소 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"C",sub:2},{sym:"H",sub:6}]},{coef:7,formula:[{sym:"O",sub:2}]}],products:[{coef:4,formula:[{sym:"CO",sub:2}]},{coef:6,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
   {name:"메탄올 + 산소 → 이산화탄소 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"CH",sub:3},{sym:"O"},{sym:"H"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]},{coef:4,formula:[{sym:"H",sub:2},{sym:"O"}]}]}
 ];
@@ -140,7 +179,12 @@ const CHEMICALS=[
   {name:"황산",formula:[{sym:"H",sub:2},{sym:"SO",sub:4}]},{name:"황산아연",formula:[{sym:"Zn"},{sym:"SO",sub:4}]},
   {name:"황산마그네슘",formula:[{sym:"Mg"},{sym:"SO",sub:4}]},{name:"황산철(Ⅱ)",formula:[{sym:"Fe"},{sym:"SO",sub:4}]},
   {name:"황산구리",formula:[{sym:"Cu"},{sym:"SO",sub:4}]},{name:"탄산마그네슘",formula:[{sym:"Mg"},{sym:"CO",sub:3}]},
-  {name:"에테인",formula:[{sym:"C",sub:2},{sym:"H",sub:6}]},{name:"메탄올",formula:[{sym:"CH",sub:3},{sym:"O"},{sym:"H"}]}
+  {name:"에테인",formula:[{sym:"C",sub:2},{sym:"H",sub:6}]},{name:"메탄올",formula:[{sym:"CH",sub:3},{sym:"O"},{sym:"H"}]},
+  /* 이 둘은 괄호 표기({group:...,sub})를 처음 쓰는 자리다 — 위 REACTIONS 머리말
+     "새로 연 갈래"·"중화 반응" 주석 참고. */
+  {name:"질산구리(Ⅱ)",formula:[{sym:"Cu"},{group:[{sym:"NO",sub:3}],sub:2}]},
+  {name:"수산화칼슘",formula:[{sym:"Ca"},{group:[{sym:"O"},{sym:"H"}],sub:2}]},
+  {name:"은",formula:[{sym:"Ag"}]}
 ];
 const COEF_TEMPLATES=[
   {label:"A₂ + B₂ → AB₂",gen:()=>({fmt:[{coef:1,formula:[{sym:"A",sub:2}]},{coef:2,formula:[{sym:"B",sub:2}]}],fmtP:[{coef:2,formula:[{sym:"A"},{sym:"B",sub:2}]}]})},

@@ -16,9 +16,18 @@ const F=[],P=[];
 const fail=(t,m)=>F.push(`[${t}] ${m}`), pass=t=>P.push(t);
 
 /* ── 1. 반응식 원자 수지 ── */
+/* 조각은 {sym,sub}(원소 하나) 아니면 {group:[...],sub}(괄호 묶음, 예: Ca(OH)₂의 (OH)₂) —
+   data.js 머리말 참고. 묶음은 안쪽 원자 수를 센 뒤 그 묶음의 sub를 곱해 합친다. */
 const atoms = f => { const m={};
-  for(const p of f){ const syms=p.sym.match(/[A-Z][a-z]?/g)||[];
-    syms.forEach((s,i)=>{ m[s]=(m[s]||0)+(i===syms.length-1?(p.sub||1):1); }); }
+  for(const p of f){
+    if(p.group){
+      const inner=atoms(p.group), mult=p.sub||1;
+      for(const k in inner) m[k]=(m[k]||0)+inner[k]*mult;
+      continue;
+    }
+    const syms=p.sym.match(/[A-Z][a-z]?/g)||[];
+    syms.forEach((s,i)=>{ m[s]=(m[s]||0)+(i===syms.length-1?(p.sub||1):1); });
+  }
   return m; };
 const side = arr => { const m={};
   for(const t of arr){ const a=atoms(t.formula);
@@ -304,15 +313,23 @@ for(const e of ctx.ELEMENTS)
 pass('분류 11종 ↔ 색·원소 양방향');
 
 /* ── 13. 키패드에 필요한 기호가 다 있는가 ── */
+/* 괄호 묶음 속까지 파고든다 — Ca(OH)₂의 O·H도 키패드에 있어야 타이핑할 수 있다.
+   괄호 자체는 CORE_ELEMENTS 목록이 아니라 js/app.js syncElemRow가 항상 같이
+   내주므로(CORE_ELEMENTS 자리일 때) 여기서 따로 확인할 대상이 아니다. */
 const need=new Set();
-for(const r of ctx.REACTIONS) for(const t of [...r.reactants,...r.products])
-  for(const p of t.formula) (p.sym.match(/[A-Z][a-z]?/g)||[]).forEach(s=>need.add(s));
+const walkNeed=parts=>parts.forEach(p=>{
+  if(p.group) walkNeed(p.group);
+  else (p.sym.match(/[A-Z][a-z]?/g)||[]).forEach(s=>need.add(s));
+});
+for(const r of ctx.REACTIONS) for(const t of [...r.reactants,...r.products]) walkNeed(t.formula);
 for(const s of need) if(!ctx.CORE_ELEMENTS.includes(s))
   fail('키패드',`반응식에 쓰이는 "${s}"가 CORE_ELEMENTS에 없음 — 입력 불가`);
 pass(`반응식이 쓰는 기호 ${need.size}종 전부 키패드에 있음`);
 
 /* ── 14. CHEMICALS ↔ REACTIONS ── */
-const fs2=f=>f.map(p=>p.sym+(p.sub||'')).join('');
+/* data.js의 fmtFormula와 같은 모양(괄호 재귀)을 여기서는 따로 적는다 — 그쪽 함수를
+   가져다 쓰면 그 함수 자체가 잘못됐을 때 이 검사가 똑같이 속는다. */
+const fs2=f=>f.map(p=>p.group?`(${fs2(p.group)})${p.sub||''}`:p.sym+(p.sub||'')).join('');
 const chem=new Set(ctx.CHEMICALS.map(c=>fs2(c.formula)));
 for(const r of ctx.REACTIONS) for(const t of [...r.reactants,...r.products])
   if(!chem.has(fs2(t.formula))) fail('물질목록',`${r.name}의 ${fs2(t.formula)}가 CHEMICALS에 없음`);
