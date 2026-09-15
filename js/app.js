@@ -390,7 +390,12 @@ const App={
       const d=localStorage.getItem('chem_wrong_notes_v4');
       const parsed=d?JSON.parse(d):[];
       if(Array.isArray(parsed))
-        list=parsed.filter(n=>n&&typeof n==='object'&&n.id&&n.mode&&typeof n.html==='string');
+        list=parsed.filter(n=>n&&typeof n==='object'&&n.id&&n.mode&&typeof n.html==='string'
+          /* 입력형 문제는 qData가 곧 문제 그 자체라, 없으면 다시 풀 수가 없다. 그런 노트를
+             남겨 두면 목록엔 보이는데 「다시 풀기」를 눌러도 아무 일이 안 일어난다
+             (JSON.parse(undefined)에서 조용히 예외가 나고 끝 — 화면이 죽지 않아 더 헷갈린다).
+             플래시카드 노트는 앞면 내용으로 카드를 되찾으므로 qData 없이도 살릴 수 있다. */
+          &&(isCardMode(n.mode)||(n.qData&&typeof n.qData==='object')));
     }catch(e){}
     this.state.wrongNotes=list;
   },
@@ -1308,7 +1313,10 @@ const App={
      오답노트 재풀이에서는 모드가 먼저 바뀌고 구역 탭이 나중에 따라오므로, state.section을 보면
      한 문제 동안 엉뚱한 구역의 반응식이 섞인다.
      favoriteOnly가 켜져 있으면(startFavoriteQuiz) 즐겨찾기한 것만 남긴다 — 모드 1~4가
-     전부 이 한 곳을 거치므로 여기 한 줄만 더하면 넷 다 자동으로 즐겨찾기만 낸다. */
+     전부 이 한 곳을 거치므로 여기 한 줄만 더하면 넷 다 자동으로 즐겨찾기만 낸다.
+     묻기만 하는 함수로 둔다(상태를 건드리지 않는다) — 빈 풀을 어떻게 할지는 healFavoriteOnly가
+     정한다. 여기서 깃발을 내리게 했더니 "개수만 세어 보려고" 부른 자리에서까지 즐겨찾기가
+     꺼졌다(이온식 모드에서 반응식 풀을 넘겨다본 것만으로 풀렸다). */
   rxPool(mode){
     const list=reactionsInSection(sectionOf(mode===undefined?this.state.currentMode:mode));
     return this.state.favoriteOnly ? list.filter(r=>this.state.hintFavorites.includes(r.name)) : list;
@@ -1317,9 +1325,26 @@ const App={
   ionWritePool(){
     return this.state.favoriteOnly ? IONS_WRITE.filter(i=>this.state.hintFavorites.includes(i.name)) : IONS_WRITE;
   },
+  /* 「즐겨찾기만 풀기」 도중에 별표를 하나도 안 남기고 지우면 낼 문제가 없다. 그대로 두면
+     출제 쪽이 빈 풀을 받아 없는 항목을 집고 화면이 멈춘다 — 풀을 손에 쥐기 '전에' 여기서
+     깃발을 내려 전체 풀로 돌려놓는다(받아 간 뒤에 고치면 늦다. 이미 빈 배열이다).
+     방금 별표를 다 지운 행동과도 앞뒤가 맞는 처리다.
+     어느 모드가 어느 풀을 보는지를 이 한 곳에 적어 둔다 — 반응식을 쓰지도 않는 모드에서
+     rxPool을 넘겨다보면 이온식 즐겨찾기가 애먼 이유로 꺼진다. */
+  healFavoriteOnly(){
+    if(!this.state.favoriteOnly) return;
+    const m=this.state.currentMode;
+    const n = m===11 ? this.ionWritePool().length
+            : (m>=1&&m<=4) ? this.rxPool().length : null;
+    if(n===0) this.state.favoriteOnly=false;
+  },
   initCycleQueue(){
+    this.healFavoriteOnly();
     const mode=this.state.currentMode;
-    const rx=this.rxPool(mode);
+    /* 반응식 풀은 실제로 쓰는 가지에서만 부른다 — 예전엔 모드와 상관없이 여기서 무조건
+       한 번 불렀는데, 그 자체로는 탈이 없었어도 "안 쓰는 풀을 미리 집어 둔다"는 버릇이
+       남아 있으면 rxPool에 조건이 하나 붙는 순간(실제로 그럴 뻔했다) 이온식 모드가
+       엉뚱하게 휘말린다. 쓰는 자리에서만 집는다. */
     let pool=[];
     if(mode===5) pool=CHEMICALS.map((_,i)=>i);
     else if(mode===7) pool=PT_QUIZ_ELEMENTS.map((_,i)=>i);
@@ -1335,13 +1360,10 @@ const App={
        길이를 숫자로 박아 두면 반응식을 하나만 더해도 마지막 문제가 영영 안 나온다.
        generateQuestion의 인덱스 산술(idx < COEF_TEMPLATES.length ? 템플릿 : 반응식)과 짝이라
        한쪽만 고치면 큐 뒤쪽이 없는 반응식을 가리킨다 — 둘은 언제나 같은 배열을 봐야 한다. */
-    else if(mode===1) pool=Array.from({length: COEF_TEMPLATES.length+rx.length}, (_,i)=>i);
-    else pool=rx.map((_,i)=>i);
-    /* 즐겨찾기만 풀기 중에 (참고 자료 창을 다시 열어) 즐겨찾기를 전부 지우면 이 풀이
-       비어 버린다 — 그대로 두면 다음 바퀴에서 빈 큐로 pickIndex가 undefined를 뽑아
-       화면이 죽는다. 조용히 즐겨찾기 모드를 끄고 전체 풀로 되돌아간다 — 사용자가
-       방금 한 일(즐겨찾기를 다 지운 것)과 앞뒤가 맞는 동작이다. */
-    if(this.state.favoriteOnly && pool.length===0){ this.state.favoriteOnly=false; this.initCycleQueue(); return; }
+    else if(mode===1){const rx=this.rxPool(mode);pool=Array.from({length: COEF_TEMPLATES.length+rx.length}, (_,i)=>i);}
+    else pool=this.rxPool(mode).map((_,i)=>i);
+    /* 여기서 풀이 비는 경우는 없다 — 맨 위 healFavoriteOnly가 "즐겨찾기가 텅 빈 채로
+       좁혀진 풀"을 먼저 걷어내고(깃발을 내려 전체 풀로 돌려놓는다), 나머지 풀은 붙박이다. */
     for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
     this.state.cycleQueue=[...pool];
     this.state.cycleTotal=pool.length;
@@ -1563,6 +1585,7 @@ const App={
   },
 
   generateQuestion(){
+    this.healFavoriteOnly();
     this.state.isAnswerChecked=false;this.state.isAnswerRevealed=false;
     this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};this.state.wrongAlreadyPenalized=false;
     const q={blanks:[],inputs:{},isTimedOut:false};
@@ -1584,9 +1607,16 @@ const App={
       }
       return idx;
     };
+    /* 순환 큐가 들고 있는 것은 항목이 아니라 풀에서의 '자리 번호'다. 그래서 큐를 짠 뒤에
+       풀이 달라지면(즐겨찾기를 퀴즈 도중에 더하거나 빼면 바로 이렇게 된다) 번호가 없는
+       자리를 가리켜 pool[idx]가 undefined가 되고 문제 만들기가 통째로 죽었다.
+       길이가 달라진 것을 "풀이 바뀌었다"는 신호로 보고 큐를 새로 짠다 — 줄어든 경우(죽던
+       버그)와 늘어난 경우(새로 담은 것이 이번 바퀴에 영영 안 나오던 것) 둘 다 이걸로 잡힌다.
+       호출하는 모든 곳이 initCycleQueue가 번호를 매긴 바로 그 배열을 넘기므로(모드 1의
+       「계수 템플릿+반응식」 합본까지 포함) 길이 비교만으로 어긋남을 가려낼 수 있다. */
     const pickIndex=(pool,nameOf)=>{
       if(useCycle){
-        if(this.state.cycleQueue.length===0) this.initCycleQueue();
+        if(this.state.cycleQueue.length===0||this.state.cycleTotal!==pool.length) this.initCycleQueue();
         return this.state.cycleQueue.shift();
       }
       return pickRandom(pool,nameOf);

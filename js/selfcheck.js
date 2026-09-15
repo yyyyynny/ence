@@ -364,7 +364,14 @@
   function checkModes(rep) {
     if (typeof SECTIONS === 'undefined' || typeof App === 'undefined') { rep.warn.push('SECTIONS/App 없음 — 모드 검사 건너뜀'); return; }
     const back = { sec: App.state.section, mode: App.state.currentMode };
-    const BAD = /undefined|NaN|\[object Object\]|null/;
+    /* 값이 빠진 자리가 화면에 그대로 새어 나오는 걸 잡는다.
+       NaN만 뒤에 글자가 안 붙는 경우로 좁힌 이유: 화학식에는 NaN이 멀쩡한 글자로 들어 있다 —
+       질산나트륨이 NaNO3다(Na + N + O3). 그냥 NaN을 찾으면 이 카드가 뜰 때마다 검사가
+       "값이 새어 나왔다"고 거짓 실패를 낸다(학생이 ?selfcheck로 돌려도 똑같이 겁을 준다).
+       진짜로 새어 나온 NaN은 뒤에 영문자가 붙지 않으므로(「계수 NaN개」, 「NaN」) 그대로 잡힌다.
+       undefined·null·[object Object]는 화학 표기에 나올 일이 없어 좁히지 않는다 —
+       좁히면 「nullnull」처럼 이어 붙은 경우를 놓친다. */
+    const BAD = /undefined|NaN(?![A-Za-z])|\[object Object\]|null/;
     try {
       for (const s of SECTIONS) {
         App.setSection(s.id);
