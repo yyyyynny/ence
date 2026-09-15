@@ -33,7 +33,7 @@ const App={
     isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:true, isSimpleCategory:false,
     savedCycleState:null,
     isRetryPlaylistMode:false, retryPlaylist:[],
-    hintSort:'num', hintFavorites:[]
+    hintSort:'num', hintFavorites:[], favoriteOnly:false
   },
   $:{
     app:document.getElementById('app'),statBar:document.getElementById('statBar'),streakCount:document.getElementById('streakCount'),streakFlames:document.getElementById('streakFlames'),
@@ -711,6 +711,9 @@ const App={
   /* 구역을 바꾸면 그 구역의 첫 모드로 들어간다. 빈 구역이면 문제 카드·키보드를 접는다. */
   setSection(secId){
     if(!sectionMeta(secId)) return;
+    /* 즐겨찾기만 풀기(startFavoriteQuiz)는 지금 구역에 한정된 특수 모드다 — 구역을
+       손으로 바꾸면 끝난 것으로 본다(위 cycle-btn 리스너와 같은 이유). */
+    this.state.favoriteOnly=false;
     this.state.section=secId;
     try{localStorage.setItem('chem_section', secId);}catch(e){}
     this.renderSectionTabs();
@@ -776,7 +779,12 @@ const App={
       elements:elemsOf(rx.reactants.concat(rx.products).flatMap(c=>flattenSyms(c.formula))),
       body:`${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}`
     }));
-    let html=head+legend+(list.length?this.arrangeHintEntries(rxEntries,'반응식'):empty);
+    /* 즐겨찾기 탭에서 보여줄 "즐겨찾기만 풀기" 버튼이 어느 모드로 이어질지 — 반응식을
+       실제로 타이핑해서 푸는 모드(2~4)는 지금 중학 구역에만 있다(rxPool을 부르는 모드가
+       전부 그 구역 소속이라서다, curriculum.js 참고). 다른 구역의 반응식은 참고표일
+       뿐이라 이어줄 문제 화면이 없다 — 그때는 버튼 자체를 안 보여준다(null). */
+    const rxQuizMode = sec==='ms' ? 4 : null;
+    let html=head+legend+(list.length?this.arrangeHintEntries(rxEntries,'반응식',rxQuizMode):empty);
 
     /* 이온식을 다루는 모드(11)가 있는 구역은 「고2 화학」 하나뿐이다(curriculum.js 참고).
        다른 구역에는 이온식 자체가 없으므로 빈 목록을 만들지 않고 아예 안 보인다. */
@@ -787,7 +795,7 @@ const App={
         body:this.formatInput(ion.f)
       }));
       html += `<p class="dia-exp" style="margin:var(--s-5) 2px 10px"><b>이온식</b> <b>${IONS_WRITE.length}개</b>.</p>`
-        + this.arrangeHintEntries(ionEntries,'이온식');
+        + this.arrangeHintEntries(ionEntries,'이온식',11);
     }
     this.$.reactionList.innerHTML=html;
     if(this.$.hintModalTitle) this.$.hintModalTitle.textContent = hasIons ? '반응식·이온식 목록' : '반응식 목록';
@@ -800,7 +808,7 @@ const App={
      중복이 아니라 "이 반응에 이 원소도 들어 있다"는 뜻이다). 즐겨찾기는 고른 것만
      남긴다. checkReferenceList(selfcheck.js)는 기본값(번호순)에서만 항목 수를 세므로
      원소별의 중복 표시는 그 검사와 부딪히지 않는다. */
-  arrangeHintEntries(entries, label){
+  arrangeHintEntries(entries, label, quizMode){
     const mode=this.state.hintSort;
     const itemHtml=e=>{
       const fav=this.state.hintFavorites.includes(e.key);
@@ -810,8 +818,12 @@ const App={
     };
     if(mode==='fav'){
       const picked=entries.filter(e=>this.state.hintFavorites.includes(e.key));
-      return picked.length?picked.map(itemHtml).join('')
-        :`<p class="dia-exp" style="margin:0 2px">즐겨찾기한 ${label}이 없어요. 항목 오른쪽 <b>북마크</b> 버튼을 눌러 담아 보세요.</p>`;
+      if(!picked.length) return `<p class="dia-exp" style="margin:0 2px">즐겨찾기한 ${label}이 없어요. 항목 오른쪽 <b>북마크</b> 버튼을 눌러 담아 보세요.</p>`;
+      /* quizMode가 있을 때만 — 타이핑해서 푸는 문제 화면이 실제로 있는 구역·종류일 때뿐이다
+         (위 buildModalList의 rxQuizMode 주석 참고). startFavoriteQuiz가 이 번호로 모드를 켠다. */
+      const quizBtn = quizMode ? `<button class="retry-playlist-btn" data-quiz-mode="${quizMode}" style="margin-bottom:var(--s-3);width:100%">`+
+        `<svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-infinity"></use></svg> 즐겨찾기한 ${label}만 풀기</button>` : '';
+      return quizBtn + picked.map(itemHtml).join('');
     }
     if(mode==='abc'){
       return entries.slice().sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(itemHtml).join('');
@@ -844,6 +856,23 @@ const App={
     if(i===-1) this.state.hintFavorites.push(key); else this.state.hintFavorites.splice(i,1);
     try{localStorage.setItem('chem_hint_favorites', JSON.stringify(this.state.hintFavorites));}catch(e){}
     this.buildModalList();
+  },
+  /* 「즐겨찾기한 ○○만 풀기」 버튼 — arrangeHintEntries가 만든 버튼의 data-quiz-mode(4 또는
+     11)를 그대로 받는다. rxPool·ionWritePool이 favoriteOnly를 보고 스스로 거르므로,
+     여기서는 그 깃발을 켜고 순환 모드로 목표 모드에 들어가기만 하면 된다 — 어떻게
+     거를지는 몰라도 된다(문제 출제 쪽 로직과 여기가 갈라져 있으면 하나를 고칠 때 다른
+     하나를 잊기 쉬운데, 그럴 일이 없다). setMode는 "이미 그 모드면 아무 것도 안 한다"고
+     정해 둔 함수라(예: 이미 모드 4로 풀고 있다가 눌렀을 때), 그 경우엔 직접 큐를 새로 짠다. */
+  startFavoriteQuiz(mode){
+    this.feedback('tap');
+    this.$.hintModalOverlay.classList.remove('show');
+    this.state.favoriteOnly=true;
+    this.state.isCycleMode=true;
+    this.$.cycleProgressWrap.style.display='flex';
+    document.querySelectorAll('.cycle-btn').forEach(b=>b.classList.toggle('active', b.dataset.cycle==='cycle'));
+    this.updateStatBarVisibility();
+    if(this.state.currentMode===mode){ this.initCycleQueue(); this.generateQuestion(); }
+    else this.setMode(mode);
   },
   renderWrongNotes(){
     let f=this.state.wrongNotes;
@@ -972,6 +1001,8 @@ const App={
     /* 항목 각각의 북마크 버튼 — 목록이 정렬 바뀔 때마다 통째로 다시 그려지므로
        항목 하나하나에 리스너를 달지 않고 목록 컨테이너에서 위임한다. */
     this.$.reactionList.addEventListener('click',e=>{
+      const qb=e.target.closest('[data-quiz-mode]');
+      if(qb){ this.startFavoriteQuiz(parseInt(qb.dataset.quizMode)); return; }
       const b=e.target.closest('.fav-btn[data-fav-key]');if(!b)return;
       this.feedback('tap');
       this.toggleHintFavorite(b.dataset.favKey);
@@ -1087,6 +1118,10 @@ const App={
       document.querySelectorAll('.cycle-btn').forEach(b=>b.classList.remove('active'));
       btn.classList.add('active');
       this.state.isCycleMode=btn.dataset.cycle==='cycle';
+      /* 순환·랜덤을 손으로 누르면 즐겨찾기만 풀기는 끝난 것으로 본다 — startFavoriteQuiz가
+         켠 다음에도 계속 남아 있으면, 이 버튼을 다시 눌렀을 때 왜 즐겨찾기만 나오는지
+         알 수 없어 헷갈린다. 한 번 쓰고 끝나는 특수 모드로 둔다. */
+      this.state.favoriteOnly=false;
       this.$.cycleProgressWrap.style.display=this.state.isCycleMode?'flex':'none';
       this.updateStatBarVisibility();
       this.initCycleQueue();
@@ -1271,8 +1306,17 @@ const App={
   },
   /* 지금 풀고 있는 모드가 속한 구역의 반응식. 기준은 state.section이 아니라 모드다 —
      오답노트 재풀이에서는 모드가 먼저 바뀌고 구역 탭이 나중에 따라오므로, state.section을 보면
-     한 문제 동안 엉뚱한 구역의 반응식이 섞인다. */
-  rxPool(mode){ return reactionsInSection(sectionOf(mode===undefined?this.state.currentMode:mode)); },
+     한 문제 동안 엉뚱한 구역의 반응식이 섞인다.
+     favoriteOnly가 켜져 있으면(startFavoriteQuiz) 즐겨찾기한 것만 남긴다 — 모드 1~4가
+     전부 이 한 곳을 거치므로 여기 한 줄만 더하면 넷 다 자동으로 즐겨찾기만 낸다. */
+  rxPool(mode){
+    const list=reactionsInSection(sectionOf(mode===undefined?this.state.currentMode:mode));
+    return this.state.favoriteOnly ? list.filter(r=>this.state.hintFavorites.includes(r.name)) : list;
+  },
+  /* MODE 11(이온식 쓰기)의 풀 — rxPool과 같은 이유로 즐겨찾기 필터를 여기 한 곳에 둔다. */
+  ionWritePool(){
+    return this.state.favoriteOnly ? IONS_WRITE.filter(i=>this.state.hintFavorites.includes(i.name)) : IONS_WRITE;
+  },
   initCycleQueue(){
     const mode=this.state.currentMode;
     const rx=this.rxPool(mode);
@@ -1282,7 +1326,7 @@ const App={
     else if(mode===8) pool=SHELL_QUIZ_ELEMENTS.map((_,i)=>i);
     else if(mode===9) pool=this.ionPool().map((_,i)=>i);
     else if(mode===10) pool=BONDS.map((_,i)=>i);
-    else if(mode===11) pool=IONS_WRITE.map((_,i)=>i);
+    else if(mode===11) pool=this.ionWritePool().map((_,i)=>i);
     else if(mode===12) pool=this.orderPool().map((_,i)=>i);
     else if(mode===13) pool=PRECIPITATES.map((_,i)=>i);
     else if(mode===14) pool=ORBITAL_KINDS.map((_,i)=>i);
@@ -1293,6 +1337,11 @@ const App={
        한쪽만 고치면 큐 뒤쪽이 없는 반응식을 가리킨다 — 둘은 언제나 같은 배열을 봐야 한다. */
     else if(mode===1) pool=Array.from({length: COEF_TEMPLATES.length+rx.length}, (_,i)=>i);
     else pool=rx.map((_,i)=>i);
+    /* 즐겨찾기만 풀기 중에 (참고 자료 창을 다시 열어) 즐겨찾기를 전부 지우면 이 풀이
+       비어 버린다 — 그대로 두면 다음 바퀴에서 빈 큐로 pickIndex가 undefined를 뽑아
+       화면이 죽는다. 조용히 즐겨찾기 모드를 끄고 전체 풀로 되돌아간다 — 사용자가
+       방금 한 일(즐겨찾기를 다 지운 것)과 앞뒤가 맞는 동작이다. */
+    if(this.state.favoriteOnly && pool.length===0){ this.state.favoriteOnly=false; this.initCycleQueue(); return; }
     for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
     this.state.cycleQueue=[...pool];
     this.state.cycleTotal=pool.length;
@@ -1638,7 +1687,7 @@ const App={
         break;
       }
       case 11:{
-        const idx=pickIndex(IONS_WRITE);const it=IONS_WRITE[idx];
+        const iw=this.ionWritePool();const idx=pickIndex(iw);const it=iw[idx];
         q.type='이온식 쓰기';q.isMode11=true;q.isAbstract=false;
         q.name=it.name;
         q.blanks.push({key:'M11',answer:it.f});
@@ -2391,7 +2440,7 @@ const App={
     this.m6Render();
   },
 
-  formatFormula(f){return f.map(p=>p.sym+(p.sub?`<sub>${p.sub}</sub>`:'')).join('');},
+  formatFormula(f){return fmtFormula(f,true);},
   /* 앙금(↓)·기체(↑) 표기. 화학식 뒤에 별도 span으로 붙는다 —
      학생이 입력하는 답(f2s)에는 절대 들어가지 않는다. 채점은 coef와 formula만 본다. */
   phaseHTML(ph){ return ph?`<span class="eq-phase" aria-hidden="true">${ph}</span>`:''; },
