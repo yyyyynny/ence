@@ -110,7 +110,7 @@ const REACTIONS=[
      계수 맞추기가 결국 "이 갈래를 알아보고 원자 수를 세는" 연습이라, 한 갈래에 예시가
      여럿이어야 답을 외우는 게 아니라 패턴을 연습하게 된다. 스물한 개를 더한다(18→39개).
 
-     새로 연 갈래 하나: **금속의 반응성(치환 반응)** — 아연을 황산구리 수용액에 넣으면
+     새로 연 갈래 하나: **금속의 반응성(치환 반응)** — 아연을 황산구리(Ⅱ) 수용액에 넣으면
      구리가 석출되는, 중등 실험에서 실제로 다루는 반응이다. 앙금 생성(복분해)과는 다르다 —
      이온이 만나 앙금으로 가라앉는 게 아니라, 반응성이 큰 금속이 반응성이 작은 금속을
      이온에서 밀어내고 그 자리를 차지하는 것이라(전자를 넘겨준다), 2022 개정이 중학에서
@@ -136,9 +136,9 @@ const REACTIONS=[
   {name:"아연 + 황산 → 황산아연 + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Zn"}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Zn"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
   {name:"마그네슘 + 황산 → 황산마그네슘 + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Mg"}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
   {name:"철 + 황산 → 황산철(Ⅱ) + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Fe"}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Fe"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
-  {name:"아연 + 황산구리 → 황산아연 + 구리",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Zn"}]},{coef:1,formula:[{sym:"Cu"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Zn"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Cu"}]}]},
-  {name:"철 + 황산구리 → 황산철(Ⅱ) + 구리",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Fe"}]},{coef:1,formula:[{sym:"Cu"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Fe"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Cu"}]}]},
-  {name:"마그네슘 + 황산구리 → 황산마그네슘 + 구리",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Mg"}]},{coef:1,formula:[{sym:"Cu"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Cu"}]}]},
+  {name:"아연 + 황산구리(Ⅱ) → 황산아연 + 구리",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Zn"}]},{coef:1,formula:[{sym:"Cu"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Zn"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Cu"}]}]},
+  {name:"철 + 황산구리(Ⅱ) → 황산철(Ⅱ) + 구리",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Fe"}]},{coef:1,formula:[{sym:"Cu"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Fe"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Cu"}]}]},
+  {name:"마그네슘 + 황산구리(Ⅱ) → 황산마그네슘 + 구리",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Mg"}]},{coef:1,formula:[{sym:"Cu"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Cu"}]}]},
   {name:"아연 + 황산철(Ⅱ) → 황산아연 + 철",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Zn"}]},{coef:1,formula:[{sym:"Fe"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Zn"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Fe"}]}]},
   {name:"구리 + 질산은 → 질산구리(Ⅱ) + 은",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Cu"}]},{coef:2,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}],products:[{coef:1,formula:[{sym:"Cu"},{group:[{sym:"NO",sub:3}],sub:2}]},{coef:2,formula:[{sym:"Ag"}]}]},
   {name:"탄산나트륨 + 염산 → 염화나트륨 + 물 + 이산화탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"CO",sub:2}],phase:"↑"}]},
@@ -178,7 +178,7 @@ const CHEMICALS=[
   {name:"염화철(Ⅱ)",formula:[{sym:"Fe"},{sym:"Cl",sub:2}]},{name:"염화알루미늄",formula:[{sym:"Al"},{sym:"Cl",sub:3}]},
   {name:"황산",formula:[{sym:"H",sub:2},{sym:"SO",sub:4}]},{name:"황산아연",formula:[{sym:"Zn"},{sym:"SO",sub:4}]},
   {name:"황산마그네슘",formula:[{sym:"Mg"},{sym:"SO",sub:4}]},{name:"황산철(Ⅱ)",formula:[{sym:"Fe"},{sym:"SO",sub:4}]},
-  {name:"황산구리",formula:[{sym:"Cu"},{sym:"SO",sub:4}]},{name:"탄산마그네슘",formula:[{sym:"Mg"},{sym:"CO",sub:3}]},
+  {name:"황산구리(Ⅱ)",formula:[{sym:"Cu"},{sym:"SO",sub:4}]},{name:"탄산마그네슘",formula:[{sym:"Mg"},{sym:"CO",sub:3}]},
   {name:"에테인",formula:[{sym:"C",sub:2},{sym:"H",sub:6}]},{name:"메탄올",formula:[{sym:"CH",sub:3},{sym:"O"},{sym:"H"}]},
   /* 이 둘은 괄호 표기({group:...,sub})를 처음 쓰는 자리다 — 위 REACTIONS 머리말
      "새로 연 갈래"·"중화 반응" 주석 참고. */

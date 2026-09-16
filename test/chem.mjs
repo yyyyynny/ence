@@ -197,6 +197,71 @@ for(const i of ctx.IONS_WRITE){
 }
 pass(`이온식 ${ctx.IONS_WRITE.length}종 표기·전하`);
 
+/* ── 6b. 산화수를 로마 숫자로 밝혀야 하는 물질 ──
+   구리와 철은 값이 둘 이상이라(Cu⁺/Cu²⁺, Fe²⁺/Fe³⁺) 이름만으로는 어느 쪽인지 못 정한다.
+   그래서 「산화구리(Ⅱ)」처럼 로마 숫자를 붙이는 게 규칙인데, 황산구리 하나만 이 규칙에서
+   빠져 있었다 — 같은 앱이 산화구리(Ⅱ)·질산구리(Ⅱ)라고 가르쳐 놓고 CuSO₄만 그냥
+   「황산구리」라고 불렀다. 학생 눈에는 규칙이 들쭉날쭉해 보인다.
+
+   문자열만 대조하면 "숫자가 붙어 있다"까지밖에 못 본다. 화학식에서 음이온 전하를 빼
+   금속의 산화수를 실제로 계산하고, 이름의 숫자가 그 값과 같은지까지 본다 — 숫자를
+   빠뜨린 경우와 잘못 붙인 경우(FeCl₂를 염화철(Ⅲ)이라 쓰는 것)를 둘 다 잡는다. */
+const VAR_METAL={Cu:'구리', Fe:'철'};                  /* 값이 여럿이라 숫자가 필요한 금속 */
+const ANION_CHG={O:-2, Cl:-1, S:-2, SO4:-2, NO3:-1, CO3:-2, OH:-1};
+const ROMAN={1:'Ⅰ',2:'Ⅱ',3:'Ⅲ',4:'Ⅳ'};
+/* 조각의 sym은 원소 기호 하나가 아니라 화학식 글자 덩어리다({sym:"SO",sub:4}는 SO₄ 한 덩어리).
+   그래서 조각 단위로 보지 않고 글자로 편 다음 읽는다 — data.js 쪽 표현이 바뀌어도 안 흔들린다. */
+const txt=parts=>parts.map(p=>p.group?`(${txt(p.group)})${p.sub||''}`:p.sym+(p.sub||'')).join('');
+/* 금속을 떼고 남은 글자를 (음이온, 개수) 목록으로 읽는다. 못 읽으면 null(검사 대상 밖) */
+const readAnions=rest=>{
+  const keys=Object.keys(ANION_CHG).sort((a,b)=>b.length-a.length);  /* SO4 를 S 보다 먼저 */
+  const out=[]; let i=0;
+  while(i<rest.length){
+    const g=/^\(([A-Za-z0-9]+)\)(\d*)/.exec(rest.slice(i));
+    if(g){ out.push([g[1], g[2]?+g[2]:1]); i+=g[0].length; continue; }
+    const k=keys.find(k=>rest.startsWith(k,i));
+    if(!k) return null;
+    i+=k.length;
+    const n=/^\d+/.exec(rest.slice(i));
+    out.push([k, n?+n[0]:1]);
+    if(n) i+=n[0].length;
+  }
+  return out;
+};
+let romanChecked=0;
+for(const c of ctx.CHEMICALS){
+  const f=txt(c.formula);
+  const m=/^([A-Z][a-z]?)(\d*)(.+)$/.exec(f);
+  if(!m || !VAR_METAL[m[1]]) continue;
+  const mcount=m[2]?+m[2]:1;
+  const anions=readAnions(m[3]);
+  if(!anions) continue;
+  let neg=0, known=true;
+  for(const [a,n] of anions){
+    if(!(a in ANION_CHG)){ known=false; break; }
+    neg += ANION_CHG[a]*n;
+  }
+  if(!known) continue;
+  if((-neg)%mcount!==0){ fail('명명',`${c.name}(${f}) — 산화수가 정수로 안 떨어짐`); continue; }
+  const ox=(-neg)/mcount, want=ROMAN[ox];
+  romanChecked++;
+  if(!want) fail('명명',`${c.name}(${f}) — 계산된 산화수 ${ox}에 맞는 로마 숫자가 없음`);
+  else if(!c.name.includes(`(${want})`))
+    fail('명명',`${c.name}(${f}) — ${m[1]}는 산화수가 여럿이라 이름이 「…(${want})」여야 한다 `+
+                `(${VAR_METAL[m[1]]} 화합물에는 전부 붙인다)`);
+}
+/* 반응식 이름도 같은 이름을 써야 한다 — 목록과 문제에서 다르게 보이면 안 된다 */
+for(const r of ctx.REACTIONS){
+  for(const c of ctx.CHEMICALS){
+    if(!/\(([ⅠⅡⅢⅣ])\)/.test(c.name)) continue;
+    const bare=c.name.replace(/\([ⅠⅡⅢⅣ]\)/,'');
+    /* 「황산구리」가 「황산구리(Ⅱ)」의 일부가 아니라 홀로 쓰인 경우만 잡는다 */
+    const loose=new RegExp(bare.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'(?!\\s*\\([ⅠⅡⅢⅣ]\\))');
+    if(loose.test(r.name)) fail('명명',`반응식 "${r.name}" — "${bare}"를 "${c.name}"로 써야 한다`);
+  }
+}
+pass(`산화수 로마 숫자 ${romanChecked}종 (화학식에서 계산해 대조) + 반응식 이름 일치`);
+
 /* ── 7. 앙금 ── */
 const REF_PPT={'Ag^+|Cl^-':['AgCl','흰색'],'Ag^+|I^-':['AgI','노란색'],
  'Ca^2+|CO3^2-':['CaCO3','흰색'],'Ba^2+|CO3^2-':['BaCO3','흰색'],'Ba^2+|SO4^2-':['BaSO4','흰색'],
