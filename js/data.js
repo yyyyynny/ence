@@ -1,11 +1,18 @@
 /* ── 데이터 ── */
 const DEFAULT_TIMER=20000;
 /* sections — 이 반응식을 어느 구역에서 다루는가. 한 반응이 여러 구역에 걸칠 수 있어 배열이다
-   (연소는 중학에서 계수를 맞추고 고2에서 다시 쓴다). 구역 id는 curriculum.js의 SECTIONS와 같다.
-   "언제 배우나"를 아는 곳은 curriculum.js 한 곳이라는 원칙에 맞춰, 이 배열을 실제로 해석하는
-   함수(reactionsInSection)는 그쪽에 둔다. 여기 있는 건 사실 표시뿐이다.
+   (연소는 중학에서 계수를 맞추고 고2에서 몰수비로 다시 쓴다). 구역 id는 curriculum.js의
+   SECTIONS와 같다. "언제 배우나"를 아는 곳은 curriculum.js 한 곳이라는 원칙에 맞춰, 이 배열을
+   실제로 해석하는 함수(reactionsInSection)는 그쪽에 둔다. 여기 있는 건 사실 표시뿐이다.
+
+   ⚠️ 이 줄은 한동안 거짓말이었다. 반응식을 내는 모드가 중학에만 있어서 is1·chem 태그는
+   아무 데도 닿지 않는 죽은 표시였다 — "고2에서 다시 쓴다"고 적어 놓고 쓸 화면이 없었다.
+   지금은 통합과학(모드 19)·고2 화학(모드 20)에도 반응식 모드가 있어 태그가 실제로 산다.
+   태그를 새로 붙일 때는 **그 구역에 그 반응식을 낼 모드가 있는지** 확인할 것.
+
    앙금 두 건이 plus에만 있는 것이 중요하다 — 앱은 앙금을 이미 「심화」로 분류해 두고도
-   중학 계수·반응식 문제에서 그 둘을 그대로 내고 있었다. */
+   중학 계수·반응식 문제에서 그 둘을 그대로 내고 있었다. 지금 이 둘은 반응식으로는
+   출제되지 않고 참고 목록에만 뜬다. 같은 내용을 모드 13(앙금 생성)이 이온 쌍으로 묻는다. */
 /* phase — 용액에서 가라앉는 앙금(↓)과 빠져나가는 기체(↑) 표기.
    화면에만 붙는 표시다. 정답 문자열을 만드는 f2s()는 coef와 formula만 읽으므로
    여기에 무엇을 적어도 학생이 입력할 답은 달라지지 않는다.
@@ -148,6 +155,13 @@ const REACTIONS=[
      여기서 다루지 않고 계수만 맞춘다). 괄호(Ca(OH)₂)를 지원하기 전에는 못 넣던 반응 —
      바로 위 "새로 연 갈래" 주석 참고. */
   {name:"염산 + 수산화 칼슘 → 염화 칼슘 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"H"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ca"},{group:[{sym:"O"},{sym:"H"}],sub:2}]}],products:[{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]},{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"염산 + 수산화 나트륨 → 염화 나트륨 + 물",sections:["ms","is1"],reactants:[{coef:1,formula:[{sym:"H"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Na"},{sym:"O"},{sym:"H"}]}],products:[{coef:1,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"황산 + 수산화 나트륨 → 황산 나트륨 + 물",sections:["ms","is1","chem"],reactants:[{coef:1,formula:[{sym:"H",sub:2},{sym:"SO",sub:4}]},{coef:2,formula:[{sym:"Na"},{sym:"O"},{sym:"H"}]}],products:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"SO",sub:4}]},{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  /* 산화·환원 — 통합과학2 [10통과2-01-03]이 「광합성·화석 연료·철의 제련」을 콕 집어
+     예로 든다. 산소를 잃고 얻는 것이 눈에 바로 보이는 두 반응을 그 갈래로 넣는다.
+     (산화수는 다루지 않는다 — 고시 해설이 명시적으로 뺐다.) */
+  {name:"산화 구리(Ⅱ) + 수소 → 구리 + 물",sections:["ms","is1"],reactants:[{coef:1,formula:[{sym:"Cu"},{sym:"O"}]},{coef:1,formula:[{sym:"H",sub:2}]}],products:[{coef:1,formula:[{sym:"Cu"}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"산화 철(Ⅲ) + 일산화 탄소 → 철 + 이산화 탄소",sections:["is1","chem"],reactants:[{coef:1,formula:[{sym:"Fe",sub:2},{sym:"O",sub:3}]},{coef:3,formula:[{sym:"CO"}]}],products:[{coef:2,formula:[{sym:"Fe"}]},{coef:3,formula:[{sym:"CO",sub:2}]}]},
   {name:"에테인 + 산소 → 이산화 탄소 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"C",sub:2},{sym:"H",sub:6}]},{coef:7,formula:[{sym:"O",sub:2}]}],products:[{coef:4,formula:[{sym:"CO",sub:2}]},{coef:6,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
   {name:"메탄올 + 산소 → 이산화 탄소 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"CH",sub:3},{sym:"O"},{sym:"H"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]},{coef:4,formula:[{sym:"H",sub:2},{sym:"O"}]}]}
 ];
@@ -183,6 +197,8 @@ const CHEMICALS=[
   /* 이 둘은 괄호 표기({group:...,sub})를 처음 쓰는 자리다 — 위 REACTIONS 머리말
      "새로 연 갈래"·"중화 반응" 주석 참고. */
   {name:"질산 구리(Ⅱ)",formula:[{sym:"Cu"},{group:[{sym:"NO",sub:3}],sub:2}]},
+  {name:"수산화 나트륨",formula:[{sym:"Na"},{sym:"O"},{sym:"H"}]},
+  {name:"황산 나트륨",formula:[{sym:"Na",sub:2},{sym:"SO",sub:4}]},
   {name:"수산화 칼슘",formula:[{sym:"Ca"},{group:[{sym:"O"},{sym:"H"}],sub:2}]},
   {name:"은",formula:[{sym:"Ag"}]}
 ];

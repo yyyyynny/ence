@@ -61,6 +61,17 @@ const MODES={
   15:{parent:14, subLabel:'껍질 최대 전자'},
   /* 플래시카드는 구역마다 하나씩 — 각자 그 구역 내용만 카드로 만든다.
      중학 것은 모드 6번 그대로라 이미 저장된 오답노트가 안 깨진다. */
+  /* ── 반응식을 쓰는 모드는 오래 중학 구역에만 있었다 ──
+     그래서 sections 에 is1·chem 만 붙은 반응식은 어느 화면에도 안 나오는 죽은 자료였고,
+     data.js 머리말의 "연소는 중학에서 계수를 맞추고 고2에서 다시 쓴다"도 사실이 아니었다.
+     근거는 구역마다 따로 있다:
+     · 통합과학 — [10통과2-01-03] 산화·환원(광합성·화석 연료·철의 제련), [10통과2-01-04] 중화 반응.
+       통합과학1·2 모두 고1 공통 과목이라 이 탭 하나가 둘을 같이 담는다.
+     · 고2 화학 — [12화학01-03] "여러 가지 반응을 화학 반응식으로 나타내고, 화학 반응에서
+       물질의 양적 관계를 설명할 수 있다". 중학과 다른 점은 계수비를 몰수비로 읽는다는 것이라
+       desc 에 그 한 줄을 남긴다. */
+  19:{section:'is1', name:'반응식 쓰기', desc:reactionsInSection('is1').length+'개', std:'10통과2-01-03'},
+  20:{section:'chem',name:'반응식 쓰기', desc:'계수비 = 몰수비', std:'12화학01-03'},
   16:{section:'is1', name:'플래시카드', custom:'flashcard', cards:['bond','group']},
   17:{section:'chem',name:'플래시카드', custom:'flashcard', cards:['ion','order']},
   18:{section:'plus',name:'플래시카드', custom:'flashcard', cards:['precip','orbital']}

@@ -813,7 +813,7 @@ const App={
        실제로 타이핑해서 푸는 모드(2~4)는 지금 중학 구역에만 있다(rxPool을 부르는 모드가
        전부 그 구역 소속이라서다, curriculum.js 참고). 다른 구역의 반응식은 참고표일
        뿐이라 이어줄 문제 화면이 없다 — 그때는 버튼 자체를 안 보여준다(null). */
-    const rxQuizMode = sec==='ms' ? 4 : null;
+    const rxQuizMode = sec==='ms' ? 4 : sec==='is1' ? 19 : sec==='chem' ? 20 : null;
     let html=head+legend+(list.length?this.arrangeHintEntries(rxEntries,'반응식',rxQuizMode):empty);
 
     /* 이온식을 다루는 모드(11)가 있는 구역은 「고2 화학」 하나뿐이다(curriculum.js 참고).
@@ -1729,6 +1729,9 @@ const App={
         break;
       case 2:{const rp=this.rxPool();const idx=pickIndex(rp);const rx=rp[idx];q.reaction=rx;q.name=rx.name;q.type='반응물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:false}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));break;}
       case 3:{const rp=this.rxPool();const idx=pickIndex(rp);const rx=rp[idx];q.reaction=rx;q.name=rx.name;q.type='생성물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:false}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
+      /* 19(통합과학)·20(고2 화학)도 같은 「전체 반응식」이다. rxPool 이 지금 모드의
+         구역을 보므로 분기를 따로 둘 필요가 없다 — 풀만 달라진다. */
+      case 19: case 20:
       case 4:{const rp=this.rxPool();const idx=pickIndex(rp);const rx=rp[idx];q.reaction=rx;q.name=rx.name;q.type='전체 반응식';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
       case 5:{const idx=pickIndex(CHEMICALS);const c=CHEMICALS[idx];q.name=c.name;q.type='화학식 암기';q.isMode5=true;q.isAbstract=false;const fs=fmtFormula(c.formula);q.blanks.push({key:'M5',answer:fs});break;}
       case 7:{
