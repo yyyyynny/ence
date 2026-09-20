@@ -411,13 +411,36 @@ const App={
       const id=Date.now().toString();
       this.state.wrongNotes.unshift({id,mode:m,title:t,html:h,qData,failCount:1});
     }
-    try{localStorage.setItem('chem_wrong_notes_v4',JSON.stringify(this.state.wrongNotes));}catch(e){}
+    this.saveNotes();
     this.renderWrongNotes();
   },
 
+  /* ── 저장이 막혔을 때 ──
+     예전에는 쓰기가 전부 `try{ setItem }catch(e){}` 였다. 예외를 삼키는 것까지는 맞다 —
+     알림 하나 때문에 공부를 못 하게 둘 수는 없다. 문제는 **삼킨 뒤에 아무 일도 안 한 것**이다.
+     state.wrongNotes에는 이미 새 노트가 들어가 있고 화면도 그걸 그리므로 학생에게는
+     "저장됐다"로 보인다. 그런데 새로고침하면 전부 없다. 사파리 프라이빗 모드(할당량 0),
+     사이트 데이터 차단, 용량 초과에서 실제로 일어난다.
+
+     그래서 한 곳으로 모으고, 실패하면 그 회차에 딱 한 번 알려 준다. 반복 알림을 막는
+     플래그는 메모리에만 둔다 — localStorage에 두면 그게 바로 지금 고장난 것이다. */
+  persist(key, value){
+    try{
+      localStorage.setItem(key, value);
+      return true;
+    }catch(e){
+      if(!this._storageWarned){
+        this._storageWarned = true;
+        this.showToast('저장 공간이 막혀 있어 기록을 못 남겨요. 새로고침하면 사라져요.', 4000);
+      }
+      return false;
+    }
+  },
+  saveNotes(){ return this.persist('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes)); },
+
   deleteWrongNote(id){
     this.state.wrongNotes=this.state.wrongNotes.filter(n=>n.id!==id);
-    try{localStorage.setItem('chem_wrong_notes_v4',JSON.stringify(this.state.wrongNotes));}catch(e){}
+    this.saveNotes();
     this.renderWrongNotes();
     if(isCardMode(this.state.currentMode))this.m6SyncSaveBtn();
   },
@@ -439,14 +462,16 @@ const App={
     clearTimeout(btn._t);delete btn.dataset.confirming;
     btn.innerHTML=this.icon('trash','sm')+' 전체 삭제';btn.style.background='';btn.style.color='';
     this.state.wrongNotes=[];
-    try{localStorage.removeItem('chem_wrong_notes_v4');}catch(e){}
+    /* 빈 배열을 쓰는 것으로 지운다 — removeItem 을 따로 쓰면 저장이 막혔을 때
+       "지웠다"고 보이지만 새로고침하면 되살아나는 것을 알릴 길이 없다. */
+    this.saveNotes();
     this.renderWrongNotes();
   },
 
   startRetryPlaylist() {
     if (this.state.wrongNotes.length === 0) return;
     this.feedback('tap');
-    this.$.wrongNoteModalOverlay.classList.remove('show');
+    this.closeModal(this.$.wrongNoteModalOverlay,{silent:true});
 
     if (!this.state.retryNoteId && !this.state.isRetryPlaylistMode) {
       this.state.savedCycleState = { queue: [...this.state.cycleQueue], total: this.state.cycleTotal, mode: this.state.currentMode };
@@ -539,7 +564,7 @@ const App={
   startRetry(id){
     const note = this.state.wrongNotes.find(n => n.id === id);
     if(!note) return;
-    this.$.wrongNoteModalOverlay.classList.remove('show');
+    this.closeModal(this.$.wrongNoteModalOverlay,{silent:true});
 
     if (!this.state.retryNoteId && !this.state.isRetryPlaylistMode) {
       this.state.savedCycleState = { queue: [...this.state.cycleQueue], total: this.state.cycleTotal, mode: this.state.currentMode };
@@ -859,7 +884,7 @@ const App={
   toggleHintFavorite(key){
     const i=this.state.hintFavorites.indexOf(key);
     if(i===-1) this.state.hintFavorites.push(key); else this.state.hintFavorites.splice(i,1);
-    try{localStorage.setItem('chem_hint_favorites', JSON.stringify(this.state.hintFavorites));}catch(e){}
+    this.persist('chem_hint_favorites', JSON.stringify(this.state.hintFavorites));
     this.buildModalList();
   },
   /* 「즐겨찾기한 ○○만 풀기」 버튼 — arrangeHintEntries가 만든 버튼의 data-quiz-mode(4 또는
@@ -870,7 +895,7 @@ const App={
      정해 둔 함수라(예: 이미 모드 4로 풀고 있다가 눌렀을 때), 그 경우엔 직접 큐를 새로 짠다. */
   startFavoriteQuiz(mode){
     this.feedback('tap');
-    this.$.hintModalOverlay.classList.remove('show');
+    this.closeModal(this.$.hintModalOverlay,{silent:true});
     this.state.favoriteOnly=true;
     this.state.isCycleMode=true;
     this.$.cycleProgressWrap.style.display='flex';
@@ -928,12 +953,12 @@ const App={
       if(mt){this.setMode(parseInt(mt.dataset.mode));this.feedback('tap');}
       if(bb)this.setActiveBlank(bb.dataset.key);
       if(kb)this.handleKeyPress(kb.dataset.key);
-      if(th){this.renderThemeList();this.$.themeModalOverlay.classList.add('show');this.feedback('tap');}
-      if(hi){this.$.hintModalOverlay.classList.add('show');this.feedback('tap');}
-      if(wn){this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');this.feedback('tap');}
+      if(th){this.renderThemeList();this.openModal(this.$.themeModalOverlay);}
+      if(hi){this.openModal(this.$.hintModalOverlay);}
+      if(wn){this.renderWrongNotes();this.openModal(this.$.wrongNoteModalOverlay);}
       if(sa)this.revealAnswers();
       if(lyt) this.toggleWideMode();
-      if(pt){this.renderPeriodicTable();this.$.periodicModalOverlay.classList.add('show');this.feedback('tap');}
+      if(pt){this.renderPeriodicTable();this.openModal(this.$.periodicModalOverlay);}
       if(snd){
         this.state.isSoundOn = !this.state.isSoundOn;
         try{localStorage.setItem('chem_sound', this.state.isSoundOn);}catch(e){}
@@ -993,8 +1018,8 @@ const App={
     });
     /* 창을 여는 버튼(themeBtn·hintBtn 등)은 전부 tap을 주면서, 닫는 X 버튼 넷은 하나도
        안 울리고 있었다 — 여는 동작과 닫는 동작이 같은 무게의 탭인데 한쪽만 무음이었다. */
-    document.getElementById('hintModalClose').addEventListener('click',()=>{this.feedback('tap');this.$.hintModalOverlay.classList.remove('show');});
-    document.getElementById('diaModalClose').addEventListener('click',()=>{this.feedback('tap');this.$.diaModalOverlay.classList.remove('show');});
+    document.getElementById('hintModalClose').addEventListener('click',()=>this.closeModal(this.$.hintModalOverlay));
+    document.getElementById('diaModalClose').addEventListener('click',()=>this.closeModal(this.$.diaModalOverlay));
     /* 참고 자료 정렬 탭 — 번호·가나다·원소·즐겨찾기(HINT_SORTS). 고른 탭만 바뀌고
        목록은 buildModalList가 다시 그린다(칩도 그 안에서 다시 그려 active가 맞는 탭으로 옮겨간다). */
     if(this.$.hintSortChips) this.$.hintSortChips.addEventListener('click',e=>{
@@ -1012,9 +1037,9 @@ const App={
       this.feedback('tap');
       this.toggleHintFavorite(b.dataset.favKey);
     });
-    document.getElementById('wrongNoteModalClose').addEventListener('click',()=>{this.feedback('tap');this.$.wrongNoteModalOverlay.classList.remove('show');});
-    document.getElementById('periodicModalClose').addEventListener('click',()=>{this.feedback('tap');this.$.periodicModalOverlay.classList.remove('show');});
-    document.getElementById('themeModalClose').addEventListener('click',()=>{this.feedback('tap');this.$.themeModalOverlay.classList.remove('show');});
+    document.getElementById('wrongNoteModalClose').addEventListener('click',()=>this.closeModal(this.$.wrongNoteModalOverlay));
+    document.getElementById('periodicModalClose').addEventListener('click',()=>this.closeModal(this.$.periodicModalOverlay));
+    document.getElementById('themeModalClose').addEventListener('click',()=>this.closeModal(this.$.themeModalOverlay));
     this.$.themeList.addEventListener('click',e=>{
       const opt=e.target.closest('.theme-opt');if(!opt)return;
       /* 여기서 고른 것만 저장한다 — 이제부터는 폰 설정이 바뀌어도 이 선택이 이긴다 */
@@ -1025,7 +1050,7 @@ const App={
     });
     /* 어두운 배경 탭 시 모달 닫기 (인증 모달 제외) */
     [this.$.hintModalOverlay,this.$.wrongNoteModalOverlay,this.$.periodicModalOverlay,this.$.themeModalOverlay,this.$.diaModalOverlay].forEach(ov=>{
-      ov.addEventListener('click',e=>{if(e.target===ov)ov.classList.remove('show');});
+      ov.addEventListener('click',e=>{if(e.target===ov)this.closeModal(ov,{silent:true});});
     });
     document.getElementById('ptRotateBtn').addEventListener('click',()=>{
       this.openPtFullscreen();
@@ -1148,14 +1173,28 @@ const App={
         return;
       }
       if(e.key==='Escape'){
-        if(this.$.periodicModalOverlay.classList.contains('show')){this.$.periodicModalOverlay.classList.remove('show');return;}
-        if(this.$.diaModalOverlay.classList.contains('show')){this.$.diaModalOverlay.classList.remove('show');return;}
-        if(this.$.hintModalOverlay.classList.contains('show')){this.$.hintModalOverlay.classList.remove('show');return;}
-        if(this.$.wrongNoteModalOverlay.classList.contains('show')){this.$.wrongNoteModalOverlay.classList.remove('show');return;}
-        if(this.$.themeModalOverlay.classList.contains('show')){this.$.themeModalOverlay.classList.remove('show');return;}
+        /* 열려 있는 창 하나를 닫는다 — 어느 창인지 일일이 따질 필요가 없다 */
+        const openOv=this.openOverlay();
+        if(openOv){this.closeModal(openOv,{silent:true});return;}
+      }
+      /* 창 안에서 Tab이 끝에 닿으면 반대쪽 끝으로 감는다.
+         #app에 걸어 둔 inert가 뒤 본문으로 새는 것은 이미 막지만, 그것만으로는
+         마지막 요소에서 Tab을 누르면 초점이 브라우저 UI로 빠져나간다. 그리고 inert를
+         모르는 브라우저에서는 가둠 자체가 없다 — 그 둘을 여기서 함께 막는다. */
+      const tabOv=e.key==='Tab'?this.openOverlay():null;
+      if(tabOv){
+        const box=tabOv.querySelector('.modal-box');
+        const f=box?this.focusablesIn(box):[];
+        if(!f.length){ e.preventDefault(); }
+        else{
+          const first=f[0], last=f[f.length-1], cur=document.activeElement;
+          if(e.shiftKey && (cur===first||!box.contains(cur))){ e.preventDefault(); last.focus(); }
+          else if(!e.shiftKey && (cur===last||!box.contains(cur))){ e.preventDefault(); first.focus(); }
+        }
+        return;
       }
       /* 팝업이 떠 있는 동안은 아래 문제 풀이 단축키가 먹으면 안 된다 */
-      if(this.$.hintModalOverlay.classList.contains('show')||this.$.wrongNoteModalOverlay.classList.contains('show')||this.$.themeModalOverlay.classList.contains('show')||this.$.diaModalOverlay.classList.contains('show'))return;
+      if(this.openOverlay())return;
       if(document.getElementById('retryM6Card').style.display!=='none'){
         /* 오답노트 재풀이 중 플래시카드 복습 카드 — 숨겨진 실제 mode6 세션이 아니라 이 카드를 조작 */
         if(e.key===' '){e.preventDefault();document.getElementById('retryM6Flashcard').classList.toggle('flipped');}
@@ -1195,7 +1234,7 @@ const App={
 
     document.getElementById('m6WrongNoteBtn').addEventListener('click',()=>{
       this.feedback('tap');
-      this.renderWrongNotes();this.$.wrongNoteModalOverlay.classList.add('show');
+      this.renderWrongNotes();this.openModal(this.$.wrongNoteModalOverlay,{silent:true});
     });
     document.getElementById('retryM6Flashcard').addEventListener('click',e=>{
       /* 카드 안의 「다시 보기」나 확대되는 그림 칸을 누른 것이면 뒤집지 않는다 —
@@ -1412,7 +1451,7 @@ const App={
       const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
       if(note) {
         note.failCount = Math.min((note.failCount || 1) + 1, 3);
-        try{localStorage.setItem('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes));}catch(e){}
+        this.saveNotes();
         this.renderWrongNotes();
       }
     }
@@ -1809,7 +1848,7 @@ const App={
           const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
           if(note) {
             note.failCount = Math.min((note.failCount || 1) + 1, 3);
-            try{localStorage.setItem('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes));}catch(e){}
+            this.saveNotes();
             this.renderWrongNotes();
           }
         }
@@ -1850,7 +1889,7 @@ const App={
           const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
           if(note) {
             note.failCount = Math.min((note.failCount || 1) + 1, 3);
-            try{localStorage.setItem('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes));}catch(e){}
+            this.saveNotes();
             this.renderWrongNotes();
           }
         }
@@ -2031,8 +2070,53 @@ const App={
     const clone=this.$.diaModalContent.querySelector('svg.dia');
     const w=svg.viewBox.baseVal.width;
     if(clone && w) clone.style.width=w+'px';
-    this.$.diaModalOverlay.classList.add('show');
+    this.openModal(this.$.diaModalOverlay,{silent:true});
   },
+  /* ── 창 여닫기 한 쌍 ──
+     예전에는 여는 코드 5벌, 닫는 코드가 X·Escape·배경 탭으로 갈라져 15벌쯤 흩어져 있었다.
+     그 상태로 초점 처리를 붙이면 반드시 어딘가를 빠뜨리므로 먼저 한 곳으로 모은다.
+
+     왜 초점을 가둬야 하나: 창이 떠도 초점은 연 버튼에 그대로 남고 Tab이 덮개를 무시하고
+     뒤 페이지를 계속 걸어갔다. 실제로 테마 창을 연 채 Tab→Enter로 뒤에 있는 「무제한」
+     제한시간 버튼이 눌렸다 — 학생 눈에는 아무 일도 안 일어난 것처럼 보이고, 창을 닫고 나서야
+     시간이 바뀐 걸 안다. 읽어 주는 기계 쪽에서는 창이 떴다는 사실 자체를 모른 채 뒤 본문을
+     계속 읽는다.
+
+     inert는 #app에만 건다 — 창들은 <main> 밖 body 직속이라야 이게 성립한다(index.html 참고).
+     inert를 모르는 브라우저를 위해 Tab 순환은 따로 직접 처리한다(keydown). */
+  focusablesIn(box){
+    return [...box.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')]
+      .filter(el=>!el.disabled && el.offsetParent!==null);
+  },
+  openModal(overlay, opts){
+    const o=opts||{};
+    if(!o.silent) this.feedback('tap');
+    /* 창에서 나간 뒤 초점을 어디로 돌려줄지. 창 위에 창이 겹치는 경우는 이 앱에 없다. */
+    this._lastFocus = document.activeElement;
+    overlay.classList.add('show');
+    this.$.app.setAttribute('inert','');
+    const box=overlay.querySelector('.modal-box');
+    const f=box?this.focusablesIn(box):[];
+    /* 첫 컨트롤은 닫기 X다 — 창에서 나가는 문을 손에 쥐여 주고 시작한다.
+       누를 것이 하나도 없는 창(그림 확대)은 상자 자체에 초점을 준다. */
+    if(f.length) f[0].focus();
+    else if(box){ box.setAttribute('tabindex','-1'); box.focus(); }
+  },
+  closeModal(overlay, opts){
+    const o=opts||{};
+    if(!overlay.classList.contains('show')) return;
+    if(!o.silent) this.feedback('tap');
+    overlay.classList.remove('show');
+    /* 아직 열려 있는 창이 없을 때만 본문을 되살린다 */
+    if(!document.querySelector('.modal-overlay.show')) this.$.app.removeAttribute('inert');
+    const back=this._lastFocus;
+    this._lastFocus=null;
+    /* 연 버튼이 그새 사라졌을 수 있다(목록을 다시 그리는 창이 있다) */
+    if(back && document.contains(back) && back.offsetParent!==null) back.focus();
+  },
+  /* 지금 열려 있는 창 (없으면 null) */
+  openOverlay(){ return document.querySelector('.modal-overlay.show'); },
+
   /* 상자 안의 애니메이션을 처음부터 다시 재생한다.
      **DOM을 다시 만들지 않는다.** 예전에는 innerHTML을 자기 자신으로 다시 넣어 요소를
      새로 만들었는데, 그 대가가 컸다:
@@ -2457,7 +2541,7 @@ const App={
     this.m6SyncSaveBtn();
   },
   viewFlashcardNote(note){
-    this.$.wrongNoteModalOverlay.classList.remove('show');
+    this.closeModal(this.$.wrongNoteModalOverlay,{silent:true});
     /* 플래시카드는 구역마다 하나씩(6·16·17·18) 있으므로 6번으로 고정하면 안 된다.
        고2 「이온식」 카드를 저장해 놓고 다시보기를 누르면 중학 반응식 카드가 떴다. */
     this.setMode(note.mode);

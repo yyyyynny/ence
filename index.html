@@ -24,7 +24,7 @@
 <!-- 탭·홈 화면 아이콘. 파일을 새로 두지 않으려고 SVG 를 그대로 주소에 적는다
      (빌드 도구가 없고 file:// 로 열어도 그대로 떠야 한다). -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23191817'/%3E%3Ctext x='16' y='23' font-size='20' font-family='monospace' font-weight='700' text-anchor='middle' fill='%238FB0B6'%3E%E2%9A%97%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/style.css?v=2026.09.16">
+<link rel="stylesheet" href="css/style.css?v=2026.09.20">
 </head>
 <body>
 
@@ -170,7 +170,7 @@
       <div class="q-sublabel" id="qSubLabel"></div>
     </div>
     <div class="equation-display" id="equationDisplay"></div>
-    <div class="result-banner" id="resultBanner"></div>
+    <div class="result-banner" id="resultBanner" role="status" aria-live="polite" aria-atomic="true"></div>
     <!-- 정답 후 해설 그림(전자껍질·결합)이 들어간다. 「해설 그림」을 끄면 비어 있다. -->
     <div id="explainBox"></div>
   </div>
@@ -262,21 +262,25 @@
       <button class="kb-key next-q" data-key="NEXT" style="display:none; flex-grow:3"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-arrow-right"></use></svg> 다음 문제</button>
     </div>
   </div>
-</div>
+</main>
 
+<!-- 창과 회전 뷰는 <main> 밖, body 직속이다. 예전에는 태그 짝이 어긋나 전부 <main> 안에
+     들어가 있었다. 그러면 (1) 창 다섯이 본문의 일부로 읽히고 (2) #app이 만드는 쌓임 맥락에
+     갇혀 z-index 숫자가 제 일을 못 하며 (3) 무엇보다 창을 열 때 #app에 inert를 걸 수가 없다
+     — 창까지 같이 꺼지기 때문이다. 초점 가둠(App.openModal)이 이 구조에 기대고 있다. -->
 <div class="modal-overlay" id="themeModalOverlay">
-  <div class="modal-box" style="max-width:440px">
-    <div class="modal-header"><div class="modal-title">테마</div><button class="modal-close" id="themeModalClose"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="themeModalTitle" style="max-width:440px">
+    <div class="modal-header"><div class="modal-title" id="themeModalTitle">테마</div><button class="modal-close" id="themeModalClose" aria-label="테마 창 닫기"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div>
     <!-- 목록은 THEMES(js/theme.js)에서 만들어 넣는다 — 테마를 더해도 이 마크업은 그대로다 -->
     <div class="modal-content" id="themeList"></div>
   </div>
 </div>
 
 <div class="modal-overlay" id="hintModalOverlay">
-  <div class="modal-box">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="hintModalTitle">
     <!-- 「전체」가 아니다 — 지금 고른 구역의 반응식(+ 고2 화학이면 이온식)만 나온다(buildModalList).
          제목도 그 구역에 실제로 뭐가 실렸는지에 맞춰 buildModalList가 고쳐 쓴다. -->
-    <div class="modal-header"><div class="modal-title" id="hintModalTitle">반응식 목록</div><button class="modal-close" id="hintModalClose"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div>
+    <div class="modal-header"><div class="modal-title" id="hintModalTitle">반응식 목록</div><button class="modal-close" id="hintModalClose" aria-label="참고 자료 창 닫기"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div>
     <!-- 정렬 탭(번호·가나다·원소·즐겨찾기)은 buildModalList가 채운다(js/app.js) -->
     <div class="filter-chips" id="hintSortChips"></div>
     <div class="modal-content" id="reactionList"></div>
@@ -287,22 +291,22 @@
      SVG 안 글자는 viewBox 배율만큼 화면 폭에 따라 줄어드는데, 여기서는 그 배율을
      1:1로 되돌려 보여준다(검토-대기-목록.md 안건 1). -->
 <div class="modal-overlay" id="diaModalOverlay">
-  <div class="modal-box">
-    <div class="modal-header"><div class="modal-title">그림 크게 보기</div><button class="modal-close" id="diaModalClose"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="diaModalTitle">
+    <div class="modal-header"><div class="modal-title" id="diaModalTitle">그림 크게 보기</div><button class="modal-close" id="diaModalClose" aria-label="그림 창 닫기"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div>
     <div id="diaModalContent"></div>
   </div>
 </div>
 
 <div class="modal-overlay" id="periodicModalOverlay">
-  <div class="modal-box pt-modal-box">
-    <div class="modal-header"><div class="modal-title">주기율표</div><div style="display:flex;gap:10px;align-items:center"><button class="pt-rotate-btn" id="ptRotateBtn" title="회전해서 보기"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg> 회전</button><button class="modal-close" id="periodicModalClose"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div></div>
+  <div class="modal-box pt-modal-box" role="dialog" aria-modal="true" aria-labelledby="periodicModalTitle">
+    <div class="modal-header"><div class="modal-title" id="periodicModalTitle">주기율표</div><div style="display:flex;gap:10px;align-items:center"><button class="pt-rotate-btn" id="ptRotateBtn" title="회전해서 보기"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg> 회전</button><button class="modal-close" id="periodicModalClose" aria-label="주기율표 창 닫기"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div></div>
     <div class="pt-toggle-row">
-      <div class="pt-toggle-label">간략히 보기<small>중학교 필수 원소 (1~20번) + 불꽃반응·자주 나오는 원소만 표시</small></div>
-      <button class="pt-toggle-switch" id="simplePeriodicToggle" role="switch" aria-checked="false"><span class="pt-toggle-knob"></span></button>
+      <div class="pt-toggle-label" id="simplePeriodicLabel">간략히 보기<small>중학교 필수 원소 (1~20번) + 불꽃반응·자주 나오는 원소만 표시</small></div>
+      <button class="pt-toggle-switch" id="simplePeriodicToggle" role="switch" aria-checked="false" aria-label="간략히 보기"><span class="pt-toggle-knob"></span></button>
     </div>
     <div class="pt-toggle-row">
-      <div class="pt-toggle-label">성질 간소화<small>전이 금속·란타넘족·악티늄족·전이 후 금속을 「금속」 하나로 묶어서 보여줘요</small></div>
-      <button class="pt-toggle-switch" id="simpleCategoryToggle" role="switch" aria-checked="false"><span class="pt-toggle-knob"></span></button>
+      <div class="pt-toggle-label" id="simpleCategoryLabel">성질 간소화<small>전이 금속·란타넘족·악티늄족·전이 후 금속을 「금속」 하나로 묶어서 보여줘요</small></div>
+      <button class="pt-toggle-switch" id="simpleCategoryToggle" role="switch" aria-checked="false" aria-label="성질 간소화"><span class="pt-toggle-knob"></span></button>
     </div>
     <div class="modal-content" id="periodicContent"></div>
     <div class="pt-detail-panel" id="ptDetailPanel"><div class="pt-detail-inner"><div class="pt-detail-content"></div></div></div>
@@ -320,8 +324,8 @@
 </div>
 
 <div class="modal-overlay" id="wrongNoteModalOverlay">
-  <div class="modal-box" style="height:90vh">
-    <div class="modal-header"><div class="modal-title">오답 노트</div><button class="modal-close" id="wrongNoteModalClose"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div>
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="wrongNoteModalTitle" style="height:90vh">
+    <div class="modal-header"><div class="modal-title" id="wrongNoteModalTitle">오답 노트</div><button class="modal-close" id="wrongNoteModalClose" aria-label="오답 노트 창 닫기"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div>
     <div style="display:flex; justify-content:space-between; margin-bottom:16px;">
         <button class="retry-playlist-btn" id="retryPlaylistBtn"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-infinity"></use></svg> 랜덤 연속 풀기</button>
         <button class="clear-all-btn" id="clearAllNotesBtn" style="margin-bottom:0"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-trash"></use></svg> 전체 삭제</button>
@@ -331,17 +335,17 @@
     <div class="filter-chips" id="wrongNoteFilters"></div>
     <div class="modal-content" id="wrongNoteList"></div>
   </div>
-</main>
+</div>
 
-<script src="js/version.js?v=2026.09.16"></script>
-<script src="js/theme.js?v=2026.09.16"></script>
-<script src="js/data.js?v=2026.09.16"></script>
-<script src="js/curriculum.js?v=2026.09.16"></script>
-<script src="js/diagram.js?v=2026.09.16"></script>
-<script src="js/app.js?v=2026.09.16"></script>
+<script src="js/version.js?v=2026.09.20"></script>
+<script src="js/theme.js?v=2026.09.20"></script>
+<script src="js/data.js?v=2026.09.20"></script>
+<script src="js/curriculum.js?v=2026.09.20"></script>
+<script src="js/diagram.js?v=2026.09.20"></script>
+<script src="js/app.js?v=2026.09.20"></script>
 <!-- 자가 검사. 앱 동작에는 관여하지 않고 window.SelfCheck 만 정의한다.
      주소에 ?selfcheck 를 붙이면 저절로 돌고 결과가 화면에 뜬다 —
      개발자도구를 못 여는 폰에서도 확인할 수 있어야 실제로 돌리게 된다. -->
-<script src="js/selfcheck.js?v=2026.09.16"></script>
+<script src="js/selfcheck.js?v=2026.09.20"></script>
 </body>
 </html>
