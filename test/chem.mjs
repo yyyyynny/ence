@@ -260,7 +260,57 @@ for(const r of ctx.REACTIONS){
     if(loose.test(r.name)) fail('명명',`반응식 "${r.name}" — "${bare}"를 "${c.name}"로 써야 한다`);
   }
 }
-pass(`산화수 로마 숫자 ${romanChecked}종 (화학식에서 계산해 대조) + 반응식 이름 일치`);
+/* 같은 규칙을 앙금 이름과 이온 이름에도 들이댄다. 예전에는 CHEMICALS 와 반응식 이름만
+   봐서, 검사 밖에 있던 PRECIPITATES 의 「황화 구리」(CuS)가 그대로 통과했다 — 황산구리를
+   고친 바로 그 종류의 오류가 검사가 안 닿는 자리에 남아 있었던 것이다. */
+const roman2=[];
+for(const pp of ctx.PRECIPITATES){
+  if(pp.none) continue;
+  const m=/^([A-Z][a-z]?)(\d*)(.+)$/.exec(pp.f);
+  if(!m || !VAR_METAL[m[1]]) continue;
+  const anions=readAnions(m[3]); if(!anions) continue;
+  let neg=0, known=true;
+  for(const [a,n] of anions){ if(!(a in ANION_CHG)){known=false;break;} neg+=ANION_CHG[a]*n; }
+  if(!known) continue;
+  const ox=(-neg)/(m[2]?+m[2]:1), want=ROMAN[ox];
+  roman2.push(pp.name);
+  if(want && !pp.name.includes(`(${want})`))
+    fail('명명',`앙금 "${pp.name}"(${pp.f}) — ${m[1]}는 산화수가 여럿이라 「…(${want})」여야 한다`);
+}
+if(ctx.ION_KO) for(const [f,ko] of Object.entries(ctx.ION_KO)){
+  const m=/^([A-Z][a-z]?)\^(\d*)([+-])$/.exec(f);
+  if(!m || !VAR_METAL[m[1]] || m[3]!=='+') continue;
+  const want=ROMAN[m[2]?+m[2]:1];
+  roman2.push(ko);
+  if(want && !ko.includes(`(${want})`))
+    fail('명명',`이온 이름 "${ko}"(${f}) — 「…(${want}) 이온」이어야 한다`);
+}
+
+/* ── 6c. 물질 이름의 띄어쓰기 ──
+   표준은 띄어쓰기다. 교육부 고시 제2022-33호 본문이 「이산화 탄소」·「수산화 나트륨」·
+   「탄산 칼슘」·「산화 칼슘」·「염화 코발트」로 일관되게 띄어 쓰고, 붙여 쓴 예는 0건이다
+   (대한화학회 명명법도 IUPAC 띄어쓰기를 따른다). 예전에는 앙금 9종만 띄어 쓰고 나머지
+   90여 개가 붙어 있어, 같은 물질이 화면 두 곳에서 다른 이름으로 나왔다.
+   음이온 부분과 뒤따르는 원소 이름 사이에는 공백이 하나 있어야 한다. */
+const ANION_HEAD=['탄산수소','아이오딘화','플루오린화','브로민화','수산화','과산화','염소산',
+ '이황화','이산화','일산화','삼산화','사산화','오산화','염화','산화','황화','탄산','황산','질산','인산'];
+const spaceBad=[];
+const checkSpacing=(name, where)=>{
+  /* 목록이 긴 것부터라, 처음 걸린 접두사로 판정하고 **바로 빠져나와야** 한다.
+     안 그러면 「탄산수소 나트륨」이 뒤 순번의 「탄산」에도 걸려 거짓 실패가 난다. */
+  for(const a of ANION_HEAD){
+    if(!name.startsWith(a) || name.length<=a.length) continue;
+    /* 「황산」처럼 그 자체가 한 물질인 이름은 뒤에 아무것도 안 붙어 여기 안 온다 */
+    if(name[a.length]!==' ') spaceBad.push(`${where} "${name}" → "${a} ${name.slice(a.length)}"`);
+    return;
+  }
+};
+for(const c of ctx.CHEMICALS) checkSpacing(c.name,'물질');
+for(const b2 of ctx.BONDS) checkSpacing(b2.name,'결합');
+for(const pp of ctx.PRECIPITATES) if(!pp.none) checkSpacing(pp.name,'앙금');
+for(const i of ctx.IONS_WRITE) checkSpacing(i.name,'이온식');
+for(const b3 of spaceBad) fail('띄어쓰기', b3);
+pass(`산화수 로마 숫자 ${romanChecked+roman2.length}종(물질·앙금·이온) + 반응식 이름 일치 + 물질명 띄어쓰기`);
 
 /* ── 7. 앙금 ── */
 const REF_PPT={'Ag^+|Cl^-':['AgCl','흰색'],'Ag^+|I^-':['AgI','노란색'],

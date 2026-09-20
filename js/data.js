@@ -10,7 +10,7 @@ const DEFAULT_TIMER=20000;
    화면에만 붙는 표시다. 정답 문자열을 만드는 f2s()는 coef와 formula만 읽으므로
    여기에 무엇을 적어도 학생이 입력할 답은 달라지지 않는다.
    ↑는 "용액에서 기체가 빠져나갈 때"만 붙인다 — 연소처럼 용액이 아닌 반응에서
-   생성물이 기체라고 붙이면 표기의 뜻이 사라진다. 탄산수소나트륨 열분해는 고체를
+   생성물이 기체라고 붙이면 표기의 뜻이 사라진다. 탄산수소 나트륨 열분해는 고체를
    가열하는 반응이라 뺐다(교과서마다 표기가 갈리는 자리다). */
 /* ── 화학식 조각(formula) ──
    조각은 둘 중 하나다 — 원소 하나 {sym,sub}, 또는 괄호로 묶인 다원자 이온 등
@@ -23,7 +23,7 @@ const DEFAULT_TIMER=20000;
    틀린 표기를 가르칠 순 없어서). 그래서 그런 반응은 전부 황산염(1:1) 쪽으로
    피해 왔다 — 이제 진짜로 필요한 자리에는 괄호를 쓴다.
 
-   sym이 원소 기호 하나가 아니라 여러 글자일 수 있다는 점은 그대로다(예: 이산화탄소는
+   sym이 원소 기호 하나가 아니라 여러 글자일 수 있다는 점은 그대로다(예: 이산화 탄소는
    {sym:"CO",sub:2} — "CO" 뒤에 첨자 2, 마지막 글자에만 적용되는 셈이라 실제로는
    C 1개·O 2개다). flattenSyms/fmtFormula 둘 다 이 규칙을 그대로 따른다 —
    여기서 새로 만든 것이 아니라 기존 규칙에 그룹만 얹었다. */
@@ -43,46 +43,46 @@ function flattenSyms(parts){
 }
 
 const REACTIONS=[
-  {name:"일산화탄소 + 산소 → 이산화탄소",sections:["chem"],reactants:[{coef:2,formula:[{sym:"CO"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]}]},
-  {name:"메테인 + 산소 → 이산화탄소 + 물",sections:["ms"],reactants:[{coef:1,formula:[{sym:"CH",sub:4}]},{coef:2,formula:[{sym:"O",sub:2}]}],products:[{coef:1,formula:[{sym:"CO",sub:2}]},{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
-  {name:"구리 + 산소 → 산화구리(Ⅱ)",sections:["ms","is1"],reactants:[{coef:2,formula:[{sym:"Cu"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Cu"},{sym:"O"}]}]},
-  {name:"과산화수소 → 물 + 산소",sections:["ms"],reactants:[{coef:2,formula:[{sym:"H",sub:2},{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"O",sub:2}],phase:"↑"}]},
-  {name:"수소 + 염소 → 염화수소",sections:["is1"],reactants:[{coef:1,formula:[{sym:"H",sub:2}]},{coef:1,formula:[{sym:"Cl",sub:2}]}],products:[{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}]},
-  {name:"마그네슘 + 산소 → 산화마그네슘",sections:["ms","is1"],reactants:[{coef:2,formula:[{sym:"Mg"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Mg"},{sym:"O"}]}]},
-  {name:"질소 + 산소 → 이산화질소",sections:["chem"],reactants:[{coef:1,formula:[{sym:"N",sub:2}]},{coef:2,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"N"},{sym:"O",sub:2}]}]},
+  {name:"일산화 탄소 + 산소 → 이산화 탄소",sections:["chem"],reactants:[{coef:2,formula:[{sym:"CO"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]}]},
+  {name:"메테인 + 산소 → 이산화 탄소 + 물",sections:["ms"],reactants:[{coef:1,formula:[{sym:"CH",sub:4}]},{coef:2,formula:[{sym:"O",sub:2}]}],products:[{coef:1,formula:[{sym:"CO",sub:2}]},{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"구리 + 산소 → 산화 구리(Ⅱ)",sections:["ms","is1"],reactants:[{coef:2,formula:[{sym:"Cu"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Cu"},{sym:"O"}]}]},
+  {name:"과산화 수소 → 물 + 산소",sections:["ms"],reactants:[{coef:2,formula:[{sym:"H",sub:2},{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"O",sub:2}],phase:"↑"}]},
+  {name:"수소 + 염소 → 염화 수소",sections:["is1"],reactants:[{coef:1,formula:[{sym:"H",sub:2}]},{coef:1,formula:[{sym:"Cl",sub:2}]}],products:[{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}]},
+  {name:"마그네슘 + 산소 → 산화 마그네슘",sections:["ms","is1"],reactants:[{coef:2,formula:[{sym:"Mg"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Mg"},{sym:"O"}]}]},
+  {name:"질소 + 산소 → 이산화 질소",sections:["chem"],reactants:[{coef:1,formula:[{sym:"N",sub:2}]},{coef:2,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"N"},{sym:"O",sub:2}]}]},
   /* 원래 "is1","chem"만 있었다 — 화합 반응으로서는 중학 수준 그대로인데(질소:수소:암모니아의
      계수 1:3:2를 맞추는 것뿐, 하버-보슈법 같은 공업적 배경은 안 다룬다) 중학 계수 맞추기
      문제 풀에서는 빠져 있었다. 실제 중등 문제집(정리 노트류)에 표준으로 실려 있는 반응이라
      "ms"를 더한다 — 새 반응을 추가하는 게 아니라 이미 있던 이 반응이 어느 구역 문제 풀에
      들어가는지만 넓힌다. */
   {name:"질소 + 수소 → 암모니아",sections:["ms","is1","chem"],reactants:[{coef:1,formula:[{sym:"N",sub:2}]},{coef:3,formula:[{sym:"H",sub:2}]}],products:[{coef:2,formula:[{sym:"N"},{sym:"H",sub:3}]}]},
-  {name:"에탄올 + 산소 → 이산화탄소 + 물",sections:["ms"],reactants:[{coef:1,formula:[{sym:"C",sub:2},{sym:"H",sub:5},{sym:"O"},{sym:"H"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]},{coef:3,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
-  {name:"탄산나트륨 + 염화칼슘 → 염화나트륨 + 탄산칼슘",sections:["plus"],reactants:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]}],products:[{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}],phase:"↓"}]},
-  {name:"탄산수소나트륨 → 탄산나트륨 + 이산화탄소 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}]}],products:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:1,formula:[{sym:"CO",sub:2}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
-  {name:"프로페인 + 산소 → 이산화탄소 + 물",sections:["ms","chem"],reactants:[{coef:1,formula:[{sym:"C",sub:3},{sym:"H",sub:8}]},{coef:5,formula:[{sym:"O",sub:2}]}],products:[{coef:3,formula:[{sym:"CO",sub:2}]},{coef:4,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
-  {name:"뷰테인 + 산소 → 이산화탄소 + 물",sections:["ms","chem"],reactants:[{coef:2,formula:[{sym:"C",sub:4},{sym:"H",sub:10}]},{coef:13,formula:[{sym:"O",sub:2}]}],products:[{coef:8,formula:[{sym:"CO",sub:2}]},{coef:10,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
-  {name:"마그네슘 + 염산 → 염화마그네슘 + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Mg"}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
-  {name:"탄산칼슘 + 염산 → 염화칼슘 + 물 + 이산화탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"CO",sub:2}],phase:"↑"}]},
-  {name:"염화나트륨 + 질산은 → 질산나트륨 + 염화은",sections:["plus"],reactants:[{coef:1,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}],products:[{coef:1,formula:[{sym:"Na"},{sym:"NO",sub:3}]},{coef:1,formula:[{sym:"Ag"},{sym:"Cl"}],phase:"↓"}]},
+  {name:"에탄올 + 산소 → 이산화 탄소 + 물",sections:["ms"],reactants:[{coef:1,formula:[{sym:"C",sub:2},{sym:"H",sub:5},{sym:"O"},{sym:"H"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]},{coef:3,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"탄산 나트륨 + 염화 칼슘 → 염화 나트륨 + 탄산 칼슘",sections:["plus"],reactants:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]}],products:[{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}],phase:"↓"}]},
+  {name:"탄산수소 나트륨 → 탄산 나트륨 + 이산화 탄소 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}]}],products:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:1,formula:[{sym:"CO",sub:2}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"프로페인 + 산소 → 이산화 탄소 + 물",sections:["ms","chem"],reactants:[{coef:1,formula:[{sym:"C",sub:3},{sym:"H",sub:8}]},{coef:5,formula:[{sym:"O",sub:2}]}],products:[{coef:3,formula:[{sym:"CO",sub:2}]},{coef:4,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"뷰테인 + 산소 → 이산화 탄소 + 물",sections:["ms","chem"],reactants:[{coef:2,formula:[{sym:"C",sub:4},{sym:"H",sub:10}]},{coef:13,formula:[{sym:"O",sub:2}]}],products:[{coef:8,formula:[{sym:"CO",sub:2}]},{coef:10,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"마그네슘 + 염산 → 염화 마그네슘 + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Mg"}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
+  {name:"탄산 칼슘 + 염산 → 염화 칼슘 + 물 + 이산화 탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"CO",sub:2}],phase:"↑"}]},
+  {name:"염화 나트륨 + 질산 은 → 질산 나트륨 + 염화 은",sections:["plus"],reactants:[{coef:1,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}],products:[{coef:1,formula:[{sym:"Na"},{sym:"NO",sub:3}]},{coef:1,formula:[{sym:"Ag"},{sym:"Cl"}],phase:"↓"}]},
   /* 중학 구역이 10개뿐이라 계수 맞추기를 오래 풀면 금방 같은 반응이 돌아왔다. 다섯 개를
      더하되 아무 반응이나 채우지 않았다 — 이미 있는 네 갈래(화합·연소/분해/금속+산/탄산염+산)
-     안에서만 골랐다. 복분해(앙금 생성)·중화 반응은 넣지 않는다 — 바로 위 두 반응(탄산나트륨+
-     염화칼슘, 염화나트륨+질산은)이 같은 이유로 이미 "심화"에 있다: 2022 개정 중학 교육과정에서
+     안에서만 골랐다. 복분해(앙금 생성)·중화 반응은 넣지 않는다 — 바로 위 두 반응(탄산 나트륨+
+     염화 칼슘, 염화 나트륨+질산 은)이 같은 이유로 이미 "심화"에 있다: 2022 개정 중학 교육과정에서
      빠진 자리이지, 어렵거나 아무렇게나 고른 게 아니다. 다섯 다 실제 중등 교과서 화학반응식
      단원의 정석 예시다(가열 실험으로 흔히 다루는 반응들). */
   {name:"수소 + 산소 → 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"H",sub:2}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
-  {name:"알루미늄 + 산소 → 산화알루미늄",sections:["ms"],reactants:[{coef:4,formula:[{sym:"Al"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Al",sub:2},{sym:"O",sub:3}]}]},
-  {name:"철 + 산소 → 산화철(Ⅲ)",sections:["ms"],reactants:[{coef:4,formula:[{sym:"Fe"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Fe",sub:2},{sym:"O",sub:3}]}]},
-  {name:"아연 + 염산 → 염화아연 + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Zn"}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Zn"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
-  /* 염소산칼륨 분해도 고체를 가열하는 반응이다(이산화망가니즈를 촉매로 씀) — 바로 위
-     탄산수소나트륨 열분해와 같은 이유로 ↑를 안 붙인다. "용액에서 빠져나간다"가 아니라
+  {name:"알루미늄 + 산소 → 산화 알루미늄",sections:["ms"],reactants:[{coef:4,formula:[{sym:"Al"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Al",sub:2},{sym:"O",sub:3}]}]},
+  {name:"철 + 산소 → 산화 철(Ⅲ)",sections:["ms"],reactants:[{coef:4,formula:[{sym:"Fe"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Fe",sub:2},{sym:"O",sub:3}]}]},
+  {name:"아연 + 염산 → 염화 아연 + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Zn"}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Zn"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
+  /* 염소산 칼륨 분해도 고체를 가열하는 반응이다(이산화망가니즈를 촉매로 씀) — 바로 위
+     탄산수소 나트륨 열분해와 같은 이유로 ↑를 안 붙인다. "용액에서 빠져나간다"가 아니라
      "가열한 고체에서 기체가 생긴다"라서, 이 표기의 뜻이 여기엔 안 맞는다. */
-  {name:"염소산칼륨 → 염화칼륨 + 산소",sections:["ms"],reactants:[{coef:2,formula:[{sym:"K"},{sym:"Cl"},{sym:"O",sub:3}]}],products:[{coef:2,formula:[{sym:"K"},{sym:"Cl"}]},{coef:3,formula:[{sym:"O",sub:2}]}]},
+  {name:"염소산 칼륨 → 염화 칼륨 + 산소",sections:["ms"],reactants:[{coef:2,formula:[{sym:"K"},{sym:"Cl"},{sym:"O",sub:3}]}],products:[{coef:2,formula:[{sym:"K"},{sym:"Cl"}]},{coef:3,formula:[{sym:"O",sub:2}]}]},
   /* 15개로 늘린 뒤에도 "여전히 적다"는 지적을 받고, 이번엔 실제 중등 화학반응식 정리 자료
      둘을 찾아 이 앱의 목록과 맞대봤다(자료마다 겹치는 걸 보면 사실상 정해진 "표준 세트"에
      가깝다). 거기 있는데 이 앱에 없던 것 중 안전하게 넣을 수 있는 둘만 추가한다:
 
-     · 나트륨 + 염소 → 염화나트륨 — 금속과 비금속이 직접 화합하는 표준 예시.
+     · 나트륨 + 염소 → 염화 나트륨 — 금속과 비금속이 직접 화합하는 표준 예시.
        이미 있는 마그네슘·구리·알루미늄·철 + 산소와 같은 갈래(화합 반응)라 새 원소도
        새 물질도 필요 없다(Na·Cl2·NaCl 전부 이미 있음).
      · 물의 전기 분해 — 바로 위 "수소+산소→물"의 역반응. 호프만 전해 장치로 수소:산소
@@ -91,17 +91,17 @@ const REACTIONS=[
 
      찾은 자료엔 있지만 이 앱엔 아직 없던 것 하나는 한동안 **일부러** 빼 두었다 — 커버리지가
      부족해서가 아니라 이 앱의 틀이 못 그렸기 때문이다:
-     · 염산 + 수산화칼슘 → 염화칼슘 + 물(중화 반응) — Ca(OH)₂를 정확히 쓰려면 괄호로
+     · 염산 + 수산화 칼슘 → 염화 칼슘 + 물(중화 반응) — Ca(OH)₂를 정확히 쓰려면 괄호로
        묶은 아래첨자(OH를 통째로 2배)가 필요한데, 그때는 화학식 렌더러(f2s, fmtFormula)와
        반응식용 키패드가 원소기호+숫자만 이어 붙이는 구조라 괄호를 다루지 못했다.
        "CaOH2"로 적으면 OH 전체가 아니라 H만 2개인 것처럼 읽혀 틀린 표기를 가르치게
        됐을 것이다. 그 뒤 괄호 표기(formula의 {group:[...],sub} 조각, fmtFormula/
        flattenSyms)를 지원하도록 고쳤고, 아래 「중화 반응」 갈래로 넣었다.
      · 암모니아 + 산소 → 일산화질소 + 물 — 백금 촉매가 있어야 일어나는 오스트발트법
-       중간 반응이라, 마그네슘 연소·염소산칼륨 분해처럼 학생이 직접 보는 실험이 아니다.
+       중간 반응이라, 마그네슘 연소·염소산 칼륨 분해처럼 학생이 직접 보는 실험이 아니다.
        화학적으로는 맞지만 "간단한 화학 반응"([9과16-02])보다는 산업 공정에 가까워
        중학보다 한 단계 위 내용으로 남겨 둔다. */
-  {name:"나트륨 + 염소 → 염화나트륨",sections:["ms"],reactants:[{coef:2,formula:[{sym:"Na"}]},{coef:1,formula:[{sym:"Cl",sub:2}]}],products:[{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]}]},
+  {name:"나트륨 + 염소 → 염화 나트륨",sections:["ms"],reactants:[{coef:2,formula:[{sym:"Na"}]},{coef:1,formula:[{sym:"Cl",sub:2}]}],products:[{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]}]},
   {name:"물 → 수소 + 산소",sections:["ms"],reactants:[{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}],products:[{coef:2,formula:[{sym:"H",sub:2}],phase:"↑"},{coef:1,formula:[{sym:"O",sub:2}],phase:"↑"}]},
   /* 18개까지 늘린 뒤에도 "그래도 적다"는 지적이 이어졌다. 이번엔 물어봤다 — 목표가
      "교과서에 매번 나오는 대표 예시 한 벌"이 아니라 "문제집 분량"이라는 답을 받았다.
@@ -110,7 +110,7 @@ const REACTIONS=[
      계수 맞추기가 결국 "이 갈래를 알아보고 원자 수를 세는" 연습이라, 한 갈래에 예시가
      여럿이어야 답을 외우는 게 아니라 패턴을 연습하게 된다. 스물한 개를 더한다(18→39개).
 
-     새로 연 갈래 하나: **금속의 반응성(치환 반응)** — 아연을 황산구리(Ⅱ) 수용액에 넣으면
+     새로 연 갈래 하나: **금속의 반응성(치환 반응)** — 아연을 황산 구리(Ⅱ) 수용액에 넣으면
      구리가 석출되는, 중등 실험에서 실제로 다루는 반응이다. 앙금 생성(복분해)과는 다르다 —
      이온이 만나 앙금으로 가라앉는 게 아니라, 반응성이 큰 금속이 반응성이 작은 금속을
      이온에서 밀어내고 그 자리를 차지하는 것이라(전자를 넘겨준다), 2022 개정이 중학에서
@@ -119,71 +119,71 @@ const REACTIONS=[
      그래서 넷 다 황산염(○○SO₄)으로 짝지었다 — 황산 이온은 어느 조합에서도 배수가
      안 붙어 괄호가 나올 일이 없다. 그 넷은 그대로 둔다(둘 다 화학적으로 맞는 표기라
      바꿀 이유가 없다). 괄호를 지원한 뒤에는 은수저가 까맣게 변하는 것과 반대로
-     "구리줄을 질산은 용액에 담그면 은이 자라나는" 실험(질산은 사진 감광에도 쓰이는
+     "구리줄을 질산 은 용액에 담그면 은이 자라나는" 실험(질산 은 사진 감광에도 쓰이는
      그 은이다)을 다섯 번째로 더했다 — Cu(NO₃)₂를 실제로 넣어 보는 자리이기도 하다. */
-  {name:"탄소 + 산소 → 이산화탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"C"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:1,formula:[{sym:"CO",sub:2}]}]},
-  {name:"칼슘 + 산소 → 산화칼슘",sections:["ms"],reactants:[{coef:2,formula:[{sym:"Ca"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Ca"},{sym:"O"}]}]},
-  {name:"아연 + 산소 → 산화아연",sections:["ms"],reactants:[{coef:2,formula:[{sym:"Zn"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Zn"},{sym:"O"}]}]},
-  {name:"황 + 산소 → 이산화황",sections:["ms"],reactants:[{coef:1,formula:[{sym:"S"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:1,formula:[{sym:"S"},{sym:"O",sub:2}]}]},
-  {name:"수소 + 황 → 황화수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"H",sub:2}]},{coef:1,formula:[{sym:"S"}]}],products:[{coef:1,formula:[{sym:"H",sub:2},{sym:"S"}]}]},
-  {name:"인 + 산소 → 오산화이인",sections:["ms"],reactants:[{coef:4,formula:[{sym:"P"}]},{coef:5,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"P",sub:2},{sym:"O",sub:5}]}]},
-  /* 탄산칼슘 열분해 — 석회석을 구워 생석회를 만드는 반응. 바로 위 탄산수소나트륨·
-     염소산칼륨과 같은 이유로(고체 가열) ↑를 안 붙인다. */
-  {name:"탄산칼슘 → 산화칼슘 + 이산화탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]}],products:[{coef:1,formula:[{sym:"Ca"},{sym:"O"}]},{coef:1,formula:[{sym:"CO",sub:2}]}]},
-  {name:"철 + 염산 → 염화철(Ⅱ) + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Fe"}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Fe"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
-  {name:"알루미늄 + 염산 → 염화알루미늄 + 수소",sections:["ms"],reactants:[{coef:2,formula:[{sym:"Al"}]},{coef:6,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:2,formula:[{sym:"Al"},{sym:"Cl",sub:3}]},{coef:3,formula:[{sym:"H",sub:2}],phase:"↑"}]},
-  {name:"칼슘 + 염산 → 염화칼슘 + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Ca"}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
-  {name:"아연 + 황산 → 황산아연 + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Zn"}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Zn"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
-  {name:"마그네슘 + 황산 → 황산마그네슘 + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Mg"}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
-  {name:"철 + 황산 → 황산철(Ⅱ) + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Fe"}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Fe"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
-  {name:"아연 + 황산구리(Ⅱ) → 황산아연 + 구리",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Zn"}]},{coef:1,formula:[{sym:"Cu"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Zn"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Cu"}]}]},
-  {name:"철 + 황산구리(Ⅱ) → 황산철(Ⅱ) + 구리",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Fe"}]},{coef:1,formula:[{sym:"Cu"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Fe"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Cu"}]}]},
-  {name:"마그네슘 + 황산구리(Ⅱ) → 황산마그네슘 + 구리",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Mg"}]},{coef:1,formula:[{sym:"Cu"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Cu"}]}]},
-  {name:"아연 + 황산철(Ⅱ) → 황산아연 + 철",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Zn"}]},{coef:1,formula:[{sym:"Fe"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Zn"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Fe"}]}]},
-  {name:"구리 + 질산은 → 질산구리(Ⅱ) + 은",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Cu"}]},{coef:2,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}],products:[{coef:1,formula:[{sym:"Cu"},{group:[{sym:"NO",sub:3}],sub:2}]},{coef:2,formula:[{sym:"Ag"}]}]},
-  {name:"탄산나트륨 + 염산 → 염화나트륨 + 물 + 이산화탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"CO",sub:2}],phase:"↑"}]},
-  {name:"탄산마그네슘 + 염산 → 염화마그네슘 + 물 + 이산화탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Mg"},{sym:"CO",sub:3}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"CO",sub:2}],phase:"↑"}]},
+  {name:"탄소 + 산소 → 이산화 탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"C"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:1,formula:[{sym:"CO",sub:2}]}]},
+  {name:"칼슘 + 산소 → 산화 칼슘",sections:["ms"],reactants:[{coef:2,formula:[{sym:"Ca"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Ca"},{sym:"O"}]}]},
+  {name:"아연 + 산소 → 산화 아연",sections:["ms"],reactants:[{coef:2,formula:[{sym:"Zn"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"Zn"},{sym:"O"}]}]},
+  {name:"황 + 산소 → 이산화 황",sections:["ms"],reactants:[{coef:1,formula:[{sym:"S"}]},{coef:1,formula:[{sym:"O",sub:2}]}],products:[{coef:1,formula:[{sym:"S"},{sym:"O",sub:2}]}]},
+  {name:"수소 + 황 → 황화 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"H",sub:2}]},{coef:1,formula:[{sym:"S"}]}],products:[{coef:1,formula:[{sym:"H",sub:2},{sym:"S"}]}]},
+  {name:"인 + 산소 → 오산화 이인",sections:["ms"],reactants:[{coef:4,formula:[{sym:"P"}]},{coef:5,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"P",sub:2},{sym:"O",sub:5}]}]},
+  /* 탄산 칼슘 열분해 — 석회석을 구워 생석회를 만드는 반응. 바로 위 탄산수소 나트륨·
+     염소산 칼륨과 같은 이유로(고체 가열) ↑를 안 붙인다. */
+  {name:"탄산 칼슘 → 산화 칼슘 + 이산화 탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Ca"},{sym:"CO",sub:3}]}],products:[{coef:1,formula:[{sym:"Ca"},{sym:"O"}]},{coef:1,formula:[{sym:"CO",sub:2}]}]},
+  {name:"철 + 염산 → 염화 철(Ⅱ) + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Fe"}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Fe"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
+  {name:"알루미늄 + 염산 → 염화 알루미늄 + 수소",sections:["ms"],reactants:[{coef:2,formula:[{sym:"Al"}]},{coef:6,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:2,formula:[{sym:"Al"},{sym:"Cl",sub:3}]},{coef:3,formula:[{sym:"H",sub:2}],phase:"↑"}]},
+  {name:"칼슘 + 염산 → 염화 칼슘 + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Ca"}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
+  {name:"아연 + 황산 → 황산 아연 + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Zn"}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Zn"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
+  {name:"마그네슘 + 황산 → 황산 마그네슘 + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Mg"}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
+  {name:"철 + 황산 → 황산 철(Ⅱ) + 수소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Fe"}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Fe"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"H",sub:2}],phase:"↑"}]},
+  {name:"아연 + 황산 구리(Ⅱ) → 황산 아연 + 구리",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Zn"}]},{coef:1,formula:[{sym:"Cu"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Zn"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Cu"}]}]},
+  {name:"철 + 황산 구리(Ⅱ) → 황산 철(Ⅱ) + 구리",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Fe"}]},{coef:1,formula:[{sym:"Cu"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Fe"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Cu"}]}]},
+  {name:"마그네슘 + 황산 구리(Ⅱ) → 황산 마그네슘 + 구리",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Mg"}]},{coef:1,formula:[{sym:"Cu"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Cu"}]}]},
+  {name:"아연 + 황산 철(Ⅱ) → 황산 아연 + 철",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Zn"}]},{coef:1,formula:[{sym:"Fe"},{sym:"SO",sub:4}]}],products:[{coef:1,formula:[{sym:"Zn"},{sym:"SO",sub:4}]},{coef:1,formula:[{sym:"Fe"}]}]},
+  {name:"구리 + 질산 은 → 질산 구리(Ⅱ) + 은",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Cu"}]},{coef:2,formula:[{sym:"Ag"},{sym:"NO",sub:3}]}],products:[{coef:1,formula:[{sym:"Cu"},{group:[{sym:"NO",sub:3}],sub:2}]},{coef:2,formula:[{sym:"Ag"}]}]},
+  {name:"탄산 나트륨 + 염산 → 염화 나트륨 + 물 + 이산화 탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:2,formula:[{sym:"Na"},{sym:"Cl"}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"CO",sub:2}],phase:"↑"}]},
+  {name:"탄산 마그네슘 + 염산 → 염화 마그네슘 + 물 + 이산화 탄소",sections:["ms"],reactants:[{coef:1,formula:[{sym:"Mg"},{sym:"CO",sub:3}]},{coef:2,formula:[{sym:"H"},{sym:"Cl"}]}],products:[{coef:1,formula:[{sym:"Mg"},{sym:"Cl",sub:2}]},{coef:1,formula:[{sym:"H",sub:2},{sym:"O"}]},{coef:1,formula:[{sym:"CO",sub:2}],phase:"↑"}]},
   /* 중화 반응 — 새로 연 마지막 갈래. 산의 H⁺과 염기의 OH⁻이 만나 물이 되고, 남은
      이온끼리 염을 이룬다(9과16-02 "간단한 화학 반응"의 범위 — 산·염기 이론 자체는
      여기서 다루지 않고 계수만 맞춘다). 괄호(Ca(OH)₂)를 지원하기 전에는 못 넣던 반응 —
      바로 위 "새로 연 갈래" 주석 참고. */
-  {name:"염산 + 수산화칼슘 → 염화칼슘 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"H"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ca"},{group:[{sym:"O"},{sym:"H"}],sub:2}]}],products:[{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]},{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
-  {name:"에테인 + 산소 → 이산화탄소 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"C",sub:2},{sym:"H",sub:6}]},{coef:7,formula:[{sym:"O",sub:2}]}],products:[{coef:4,formula:[{sym:"CO",sub:2}]},{coef:6,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
-  {name:"메탄올 + 산소 → 이산화탄소 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"CH",sub:3},{sym:"O"},{sym:"H"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]},{coef:4,formula:[{sym:"H",sub:2},{sym:"O"}]}]}
+  {name:"염산 + 수산화 칼슘 → 염화 칼슘 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"H"},{sym:"Cl"}]},{coef:1,formula:[{sym:"Ca"},{group:[{sym:"O"},{sym:"H"}],sub:2}]}],products:[{coef:1,formula:[{sym:"Ca"},{sym:"Cl",sub:2}]},{coef:2,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"에테인 + 산소 → 이산화 탄소 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"C",sub:2},{sym:"H",sub:6}]},{coef:7,formula:[{sym:"O",sub:2}]}],products:[{coef:4,formula:[{sym:"CO",sub:2}]},{coef:6,formula:[{sym:"H",sub:2},{sym:"O"}]}]},
+  {name:"메탄올 + 산소 → 이산화 탄소 + 물",sections:["ms"],reactants:[{coef:2,formula:[{sym:"CH",sub:3},{sym:"O"},{sym:"H"}]},{coef:3,formula:[{sym:"O",sub:2}]}],products:[{coef:2,formula:[{sym:"CO",sub:2}]},{coef:4,formula:[{sym:"H",sub:2},{sym:"O"}]}]}
 ];
 const CHEMICALS=[
-  {name:"일산화탄소",formula:[{sym:"CO"}]},{name:"이산화탄소",formula:[{sym:"CO",sub:2}]},
+  {name:"일산화 탄소",formula:[{sym:"CO"}]},{name:"이산화 탄소",formula:[{sym:"CO",sub:2}]},
   {name:"산소",formula:[{sym:"O",sub:2}]},{name:"물",formula:[{sym:"H",sub:2},{sym:"O"}]},
   {name:"메테인",formula:[{sym:"CH",sub:4}]},{name:"구리",formula:[{sym:"Cu"}]},
-  {name:"산화구리(Ⅱ)",formula:[{sym:"Cu"},{sym:"O"}]},{name:"과산화수소",formula:[{sym:"H",sub:2},{sym:"O",sub:2}]},
+  {name:"산화 구리(Ⅱ)",formula:[{sym:"Cu"},{sym:"O"}]},{name:"과산화 수소",formula:[{sym:"H",sub:2},{sym:"O",sub:2}]},
   {name:"수소",formula:[{sym:"H",sub:2}]},{name:"염소",formula:[{sym:"Cl",sub:2}]},
-  {name:"염화수소(염산)",formula:[{sym:"H"},{sym:"Cl"}]},{name:"마그네슘",formula:[{sym:"Mg"}]},
-  {name:"산화마그네슘",formula:[{sym:"Mg"},{sym:"O"}]},{name:"염화마그네슘",formula:[{sym:"Mg"},{sym:"Cl",sub:2}]},
-  {name:"질소",formula:[{sym:"N",sub:2}]},{name:"이산화질소",formula:[{sym:"N"},{sym:"O",sub:2}]},
+  {name:"염화 수소(염산)",formula:[{sym:"H"},{sym:"Cl"}]},{name:"마그네슘",formula:[{sym:"Mg"}]},
+  {name:"산화 마그네슘",formula:[{sym:"Mg"},{sym:"O"}]},{name:"염화 마그네슘",formula:[{sym:"Mg"},{sym:"Cl",sub:2}]},
+  {name:"질소",formula:[{sym:"N",sub:2}]},{name:"이산화 질소",formula:[{sym:"N"},{sym:"O",sub:2}]},
   {name:"암모니아",formula:[{sym:"N"},{sym:"H",sub:3}]},{name:"에탄올",formula:[{sym:"C",sub:2},{sym:"H",sub:5},{sym:"O"},{sym:"H"}]},
-  {name:"탄산나트륨",formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{name:"염화칼슘",formula:[{sym:"Ca"},{sym:"Cl",sub:2}]},
-  {name:"염화나트륨",formula:[{sym:"Na"},{sym:"Cl"}]},{name:"탄산칼슘",formula:[{sym:"Ca"},{sym:"CO",sub:3}]},
-  {name:"탄산수소나트륨",formula:[{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}]},{name:"질산은",formula:[{sym:"Ag"},{sym:"NO",sub:3}]},
-  {name:"염화은",formula:[{sym:"Ag"},{sym:"Cl"}]},{name:"질산나트륨",formula:[{sym:"Na"},{sym:"NO",sub:3}]},
+  {name:"탄산 나트륨",formula:[{sym:"Na",sub:2},{sym:"CO",sub:3}]},{name:"염화 칼슘",formula:[{sym:"Ca"},{sym:"Cl",sub:2}]},
+  {name:"염화 나트륨",formula:[{sym:"Na"},{sym:"Cl"}]},{name:"탄산 칼슘",formula:[{sym:"Ca"},{sym:"CO",sub:3}]},
+  {name:"탄산수소 나트륨",formula:[{sym:"Na"},{sym:"H"},{sym:"CO",sub:3}]},{name:"질산 은",formula:[{sym:"Ag"},{sym:"NO",sub:3}]},
+  {name:"염화 은",formula:[{sym:"Ag"},{sym:"Cl"}]},{name:"질산 나트륨",formula:[{sym:"Na"},{sym:"NO",sub:3}]},
   {name:"프로페인",formula:[{sym:"C",sub:3},{sym:"H",sub:8}]},{name:"뷰테인",formula:[{sym:"C",sub:4},{sym:"H",sub:10}]},
   {name:"황",formula:[{sym:"S"}]},{name:"인",formula:[{sym:"P"}]},
-  {name:"알루미늄",formula:[{sym:"Al"}]},{name:"산화알루미늄",formula:[{sym:"Al",sub:2},{sym:"O",sub:3}]},
-  {name:"철",formula:[{sym:"Fe"}]},{name:"산화철(Ⅲ)",formula:[{sym:"Fe",sub:2},{sym:"O",sub:3}]},
-  {name:"아연",formula:[{sym:"Zn"}]},{name:"염화아연",formula:[{sym:"Zn"},{sym:"Cl",sub:2}]},
-  {name:"염소산칼륨",formula:[{sym:"K"},{sym:"Cl"},{sym:"O",sub:3}]},{name:"염화칼륨",formula:[{sym:"K"},{sym:"Cl"}]},
+  {name:"알루미늄",formula:[{sym:"Al"}]},{name:"산화 알루미늄",formula:[{sym:"Al",sub:2},{sym:"O",sub:3}]},
+  {name:"철",formula:[{sym:"Fe"}]},{name:"산화 철(Ⅲ)",formula:[{sym:"Fe",sub:2},{sym:"O",sub:3}]},
+  {name:"아연",formula:[{sym:"Zn"}]},{name:"염화 아연",formula:[{sym:"Zn"},{sym:"Cl",sub:2}]},
+  {name:"염소산 칼륨",formula:[{sym:"K"},{sym:"Cl"},{sym:"O",sub:3}]},{name:"염화 칼륨",formula:[{sym:"K"},{sym:"Cl"}]},
   {name:"나트륨",formula:[{sym:"Na"}]},
-  {name:"탄소",formula:[{sym:"C"}]},{name:"칼슘",formula:[{sym:"Ca"}]},{name:"산화칼슘",formula:[{sym:"Ca"},{sym:"O"}]},
-  {name:"산화아연",formula:[{sym:"Zn"},{sym:"O"}]},{name:"이산화황",formula:[{sym:"S"},{sym:"O",sub:2}]},
-  {name:"황화수소",formula:[{sym:"H",sub:2},{sym:"S"}]},{name:"오산화이인",formula:[{sym:"P",sub:2},{sym:"O",sub:5}]},
-  {name:"염화철(Ⅱ)",formula:[{sym:"Fe"},{sym:"Cl",sub:2}]},{name:"염화알루미늄",formula:[{sym:"Al"},{sym:"Cl",sub:3}]},
-  {name:"황산",formula:[{sym:"H",sub:2},{sym:"SO",sub:4}]},{name:"황산아연",formula:[{sym:"Zn"},{sym:"SO",sub:4}]},
-  {name:"황산마그네슘",formula:[{sym:"Mg"},{sym:"SO",sub:4}]},{name:"황산철(Ⅱ)",formula:[{sym:"Fe"},{sym:"SO",sub:4}]},
-  {name:"황산구리(Ⅱ)",formula:[{sym:"Cu"},{sym:"SO",sub:4}]},{name:"탄산마그네슘",formula:[{sym:"Mg"},{sym:"CO",sub:3}]},
+  {name:"탄소",formula:[{sym:"C"}]},{name:"칼슘",formula:[{sym:"Ca"}]},{name:"산화 칼슘",formula:[{sym:"Ca"},{sym:"O"}]},
+  {name:"산화 아연",formula:[{sym:"Zn"},{sym:"O"}]},{name:"이산화 황",formula:[{sym:"S"},{sym:"O",sub:2}]},
+  {name:"황화 수소",formula:[{sym:"H",sub:2},{sym:"S"}]},{name:"오산화 이인",formula:[{sym:"P",sub:2},{sym:"O",sub:5}]},
+  {name:"염화 철(Ⅱ)",formula:[{sym:"Fe"},{sym:"Cl",sub:2}]},{name:"염화 알루미늄",formula:[{sym:"Al"},{sym:"Cl",sub:3}]},
+  {name:"황산",formula:[{sym:"H",sub:2},{sym:"SO",sub:4}]},{name:"황산 아연",formula:[{sym:"Zn"},{sym:"SO",sub:4}]},
+  {name:"황산 마그네슘",formula:[{sym:"Mg"},{sym:"SO",sub:4}]},{name:"황산 철(Ⅱ)",formula:[{sym:"Fe"},{sym:"SO",sub:4}]},
+  {name:"황산 구리(Ⅱ)",formula:[{sym:"Cu"},{sym:"SO",sub:4}]},{name:"탄산 마그네슘",formula:[{sym:"Mg"},{sym:"CO",sub:3}]},
   {name:"에테인",formula:[{sym:"C",sub:2},{sym:"H",sub:6}]},{name:"메탄올",formula:[{sym:"CH",sub:3},{sym:"O"},{sym:"H"}]},
   /* 이 둘은 괄호 표기({group:...,sub})를 처음 쓰는 자리다 — 위 REACTIONS 머리말
      "새로 연 갈래"·"중화 반응" 주석 참고. */
-  {name:"질산구리(Ⅱ)",formula:[{sym:"Cu"},{group:[{sym:"NO",sub:3}],sub:2}]},
-  {name:"수산화칼슘",formula:[{sym:"Ca"},{group:[{sym:"O"},{sym:"H"}],sub:2}]},
+  {name:"질산 구리(Ⅱ)",formula:[{sym:"Cu"},{group:[{sym:"NO",sub:3}],sub:2}]},
+  {name:"수산화 칼슘",formula:[{sym:"Ca"},{group:[{sym:"O"},{sym:"H"}],sub:2}]},
   {name:"은",formula:[{sym:"Ag"}]}
 ];
 const COEF_TEMPLATES=[
@@ -210,16 +210,16 @@ const ELEMENTS=[
   {z:8,sym:'O',name:'산소',cat:'nonmetal',group:16,period:2,desc:'산소는 <strong>공유결합</strong>으로 동일 원소 이원자 분자(<strong>O₂</strong>)를 이루며, 화합물에서는 전자 2개를 받아 <strong>O²⁻</strong> 음이온이 되는 반응성 큰 비금속이다. 동소체로 우리가 호흡하는 산소(O₂)와 자외선을 막아주는 오존(O₃)이 있으며, 생명체의 호흡과 물질의 연소에 필수적이다.'},
   {z:9,sym:'F',name:'플루오린',cat:'halogen',group:17,period:2,desc:'플루오린은 전기음성도가 모든 원소 중 가장 커서 전자 1개를 강하게 끌어당겨 <strong>F⁻</strong> 음이온이 되기 쉬우며, 같은 원소끼리는 <strong>공유결합</strong>으로 이원자 분자(<strong>F₂</strong>)를 이룬다. 치약 속 불소 성분이 충치 예방에 쓰이고, 프라이팬 코팅재 테플론의 원료이기도 하다.'},
   {z:10,sym:'Ne',name:'네온',cat:'noble',group:18,period:2,desc:'네온은 바깥 껍질이 전자 8개로 꽉 차 있어 <strong>원자가 전자가 0개</strong>이고, 그래서 결합도 이온도 거의 만들지 않는 비활성 기체로 언제나 낱개 원자로 존재한다. 저압에서 방전시키면 붉은빛을 내는 성질 때문에 네온사인 조명에 쓰이며, 극저온 냉각제로도 활용된다.'},
-  {z:11,sym:'Na',name:'나트륨',cat:'alkali',group:1,period:3,desc:'나트륨은 <strong>금속결합</strong>을 하는 알칼리 금속으로, 비금속과 만나면 전자 1개를 잃고 <strong>Na⁺</strong> 양이온이 되는 <strong>이온결합</strong> 화합물을 만든다. 염화 이온(<strong>Cl⁻</strong>)과 결합해 우리가 먹는 소금(염화나트륨)을 이루며, 신경 신호 전달에 필수적인 전해질이다.'},
+  {z:11,sym:'Na',name:'나트륨',cat:'alkali',group:1,period:3,desc:'나트륨은 <strong>금속결합</strong>을 하는 알칼리 금속으로, 비금속과 만나면 전자 1개를 잃고 <strong>Na⁺</strong> 양이온이 되는 <strong>이온결합</strong> 화합물을 만든다. 염화 이온(<strong>Cl⁻</strong>)과 결합해 우리가 먹는 소금(염화 나트륨)을 이루며, 신경 신호 전달에 필수적인 전해질이다.'},
   {z:12,sym:'Mg',name:'마그네슘',cat:'alkaline',group:2,period:3,desc:'마그네슘은 <strong>금속결합</strong>을 하는 알칼리 토금속으로, 화합물에서는 전자 2개를 잃고 <strong>Mg²⁺</strong> 양이온이 되는 <strong>이온결합</strong>을 형성한다. 식물의 엽록소 분자 중심에 자리해 광합성에 필수적이며, 불에 타면서 밝은 흰빛을 내 불꽃놀이 재료로도 쓰인다.'},
-  {z:13,sym:'Al',name:'알루미늄',cat:'post',group:13,period:3,desc:'알루미늄은 <strong>금속결합</strong>을 하는 금속으로, 화합물에서는 전자 3개를 잃고 <strong>Al³⁺</strong> 양이온이 되는 <strong>이온결합</strong>을 만든다. 표면에 얇은 산화막(산화알루미늄)이 저절로 생겨 부식에 강하며, 알루미늄 캔·호일과 항공기 동체 재료로 널리 쓰인다.'},
+  {z:13,sym:'Al',name:'알루미늄',cat:'post',group:13,period:3,desc:'알루미늄은 <strong>금속결합</strong>을 하는 금속으로, 화합물에서는 전자 3개를 잃고 <strong>Al³⁺</strong> 양이온이 되는 <strong>이온결합</strong>을 만든다. 표면에 얇은 산화막(산화 알루미늄)이 저절로 생겨 부식에 강하며, 알루미늄 캔·호일과 항공기 동체 재료로 널리 쓰인다.'},
   {z:14,sym:'Si',name:'규소',cat:'metalloid',group:14,period:3,desc:'규소는 탄소처럼 최대 4개의 원자와 전자쌍을 공유하는 <strong>공유결합</strong>을 하는 준금속으로, 이온이 되는 경우는 드물다. 반도체 성질을 지녀 컴퓨터 칩의 핵심 재료이며, 모래와 유리의 주성분(이산화규소)이기도 하다.'},
   {z:15,sym:'P',name:'인',cat:'nonmetal',group:15,period:3,desc:'인은 비금속으로 주로 <strong>공유결합</strong> 화합물을 만들며, 금속과 만나면 전자 3개를 받아 <strong>P³⁻</strong>(인화 이온)이 되기도 한다. 인산이온(<strong>PO₄³⁻</strong>)처럼 여러 원자가 뭉친 음이온 형태로 존재하는 경우가 많다. 동소체로 자연발화하는 흰인과 비교적 안정한 붉은인이 있고, 인산칼슘 형태로 뼈와 치아를 구성한다.'},
   {z:16,sym:'S',name:'황',cat:'nonmetal',group:16,period:3,desc:'황은 비금속으로 <strong>공유결합</strong>을 통해 원자끼리 고리 구조(대표 동소체 사방황은 황 원자 8개가 고리를 이룬 S₈)를 잘 만들며, 금속과 만나면 전자 2개를 받아 <strong>S²⁻</strong>(황화 이온)이 되며, 황산이온(<strong>SO₄²⁻</strong>)처럼 여러 원자가 뭉친 음이온으로도 존재한다. 화약과 성냥의 원료이며, 생고무를 가황하면 탄력 있고 단단한 고무가 된다.'},
-  {z:17,sym:'Cl',name:'염소',cat:'halogen',group:17,period:3,desc:'염소는 같은 원소끼리 <strong>공유결합</strong>해 이원자 분자(<strong>Cl₂</strong>)를 이루며, 금속과 만나면 전자 1개를 받아 <strong>Cl⁻</strong> 음이온이 되는 반응성 큰 할로젠이다. 수돗물과 수영장 물을 소독하는 데 쓰이며, 나트륨과 결합해 소금(염화나트륨)을 이룬다.'},
+  {z:17,sym:'Cl',name:'염소',cat:'halogen',group:17,period:3,desc:'염소는 같은 원소끼리 <strong>공유결합</strong>해 이원자 분자(<strong>Cl₂</strong>)를 이루며, 금속과 만나면 전자 1개를 받아 <strong>Cl⁻</strong> 음이온이 되는 반응성 큰 할로젠이다. 수돗물과 수영장 물을 소독하는 데 쓰이며, 나트륨과 결합해 소금(염화 나트륨)을 이룬다.'},
   {z:18,sym:'Ar',name:'아르곤',cat:'noble',group:18,period:3,desc:'아르곤은 바깥 껍질이 전자 8개로 꽉 차 <strong>원자가 전자가 0개</strong>인 비활성 기체로, 결합도 이온도 거의 만들지 않아 언제나 낱개 원자로 존재한다. 백열전구나 형광등 내부를 채워 필라멘트의 산화를 막고, 용접 시 산소를 차단하는 보호 기체로도 쓰인다.'},
   {z:19,sym:'K',name:'칼륨',cat:'alkali',group:1,period:4,desc:'칼륨은 <strong>금속결합</strong>을 하는 알칼리 금속으로, 비금속과 만나면 전자 1개를 잃고 <strong>K⁺</strong> 양이온이 되는 <strong>이온결합</strong> 화합물을 만든다. 물에 넣으면 격렬히 반응하며 보라색 불꽃을 낸다. 식물 비료의 핵심 성분이며 바나나 등에 풍부해 신경과 근육 기능 유지에 중요하다.'},
-  {z:20,sym:'Ca',name:'칼슘',cat:'alkaline',group:2,period:4,desc:'칼슘은 <strong>금속결합</strong>을 하는 알칼리 토금속으로, 화합물에서는 전자 2개를 잃고 <strong>Ca²⁺</strong> 양이온이 되는 <strong>이온결합</strong>을 형성한다. 인산칼슘 형태로 뼈와 치아를, 탄산칼슘 형태로 석회암·대리석·조개껍데기를 이루며, 불꽃 반응 시 주황빛을 낸다.'},
+  {z:20,sym:'Ca',name:'칼슘',cat:'alkaline',group:2,period:4,desc:'칼슘은 <strong>금속결합</strong>을 하는 알칼리 토금속으로, 화합물에서는 전자 2개를 잃고 <strong>Ca²⁺</strong> 양이온이 되는 <strong>이온결합</strong>을 형성한다. 인산칼슘 형태로 뼈와 치아를, 탄산 칼슘 형태로 석회암·대리석·조개껍데기를 이루며, 불꽃 반응 시 주황빛을 낸다.'},
   {z:21,sym:'Sc',name:'스칸듐',cat:'transition',group:3,period:4,desc:'스칸듐은 <strong>금속결합</strong>을 하는 전이 금속으로, 화합물에서는 주로 <strong>Sc³⁺</strong> 양이온이 되는 <strong>이온결합</strong>을 만든다. 알루미늄에 소량 첨가하면 강도를 크게 높이는 합금이 되어 항공우주 부품이나 고급 자전거 프레임에 쓰인다.'},
   {z:22,sym:'Ti',name:'타이타늄',cat:'transition',group:4,period:4,desc:'타이타늄은 <strong>금속결합</strong>을 하는 전이 금속으로, 화합물에서는 주로 <strong>Ti⁴⁺</strong> 양이온이 된다. 강철에 버금가는 강도를 가지면서도 훨씬 가볍고 부식에 강해 인공관절·치아 임플란트·항공기 부품 재료로 쓰인다.'},
   {z:23,sym:'V',name:'바나듐',cat:'transition',group:5,period:4,desc:'바나듐은 <strong>금속결합</strong>을 하는 전이 금속으로, <strong>V²⁺</strong>부터 <strong>V⁵⁺</strong>까지 다양한 산화수의 이온을 만들 수 있어 여러 반응의 촉매로 활용된다. 바나듐강은 공구·스프링 재료로, 대용량 전력저장용 레독스 흐름전지에도 쓰인다.'},
@@ -529,7 +529,7 @@ const PRECIPITATES=[
   {a:'Ba^2+',b:'CO3^2-', f:'BaCO3',  name:'탄산 바륨',    color:'흰색'},
   {a:'Ba^2+',b:'SO4^2-', f:'BaSO4',  name:'황산 바륨',    color:'흰색'},
   {a:'Pb^2+',b:'I^-',    f:'PbI2',   name:'아이오딘화 납', color:'노란색'},
-  {a:'Cu^2+',b:'S^2-',   f:'CuS',    name:'황화 구리',    color:'검은색'},
+  {a:'Cu^2+',b:'S^2-',   f:'CuS',    name:'황화 구리(Ⅱ)',    color:'검은색'},
   {a:'Pb^2+',b:'S^2-',   f:'PbS',    name:'황화 납',      color:'검은색'},
   {a:'Cd^2+',b:'S^2-',   f:'CdS',    name:'황화 카드뮴',  color:'노란색'},
   /* 앙금이 생기지 않는 조합도 넣어야 "무조건 뭔가 생긴다"고 오해하지 않는다.
@@ -553,7 +553,7 @@ const PRECIP_COLORS = { '흰색':'#F1F5F9', '노란색':'#FACC15', '검은색':'
 const ION_KO={
   'Ag^+':'은 이온',      'Na^+':'나트륨 이온',  'K^+':'칼륨 이온',
   'Ca^2+':'칼슘 이온',   'Ba^2+':'바륨 이온',   'Pb^2+':'납 이온',
-  'Cu^2+':'구리 이온',   'Cd^2+':'카드뮴 이온',
+  'Cu^2+':'구리(Ⅱ) 이온',   'Cd^2+':'카드뮴 이온',
   'Cl^-':'염화 이온',    'I^-':'아이오딘화 이온','S^2-':'황화 이온',
   'NO3^-':'질산 이온',   'CO3^2-':'탄산 이온',  'SO4^2-':'황산 이온'
 };
@@ -595,14 +595,14 @@ const BOND_ORDER_NAME={1:'단일결합',2:'이중결합',3:'삼중결합'};
              pairs = 그 원자와 나누는 공유 전자쌍 수. */
 const BONDS=[
   /* 이온 결합 — 금속이 전자를 내주고 비금속이 받는다 */
-  {name:'염화나트륨', f:'NaCl',  type:'ionic', M:'Na', X:'Cl', give:1, take:1, nM:1, nX:1, note:'소금'},
-  {name:'산화마그네슘',f:'MgO',   type:'ionic', M:'Mg', X:'O',  give:2, take:2, nM:1, nX:1},
-  {name:'염화칼슘',   f:'CaCl2', type:'ionic', M:'Ca', X:'Cl', give:2, take:1, nM:1, nX:2},
-  {name:'염화마그네슘',f:'MgCl2', type:'ionic', M:'Mg', X:'Cl', give:2, take:1, nM:1, nX:2},
-  {name:'산화칼슘',   f:'CaO',   type:'ionic', M:'Ca', X:'O',  give:2, take:2, nM:1, nX:1},
-  {name:'산화리튬',   f:'Li2O',  type:'ionic', M:'Li', X:'O',  give:1, take:2, nM:2, nX:1},
-  {name:'플루오린화나트륨',f:'NaF',type:'ionic', M:'Na', X:'F',  give:1, take:1, nM:1, nX:1},
-  {name:'염화칼륨',   f:'KCl',   type:'ionic', M:'K',  X:'Cl', give:1, take:1, nM:1, nX:1},
+  {name:'염화 나트륨', f:'NaCl',  type:'ionic', M:'Na', X:'Cl', give:1, take:1, nM:1, nX:1, note:'소금'},
+  {name:'산화 마그네슘',f:'MgO',   type:'ionic', M:'Mg', X:'O',  give:2, take:2, nM:1, nX:1},
+  {name:'염화 칼슘',   f:'CaCl2', type:'ionic', M:'Ca', X:'Cl', give:2, take:1, nM:1, nX:2},
+  {name:'염화 마그네슘',f:'MgCl2', type:'ionic', M:'Mg', X:'Cl', give:2, take:1, nM:1, nX:2},
+  {name:'산화 칼슘',   f:'CaO',   type:'ionic', M:'Ca', X:'O',  give:2, take:2, nM:1, nX:1},
+  {name:'산화 리튬',   f:'Li2O',  type:'ionic', M:'Li', X:'O',  give:1, take:2, nM:2, nX:1},
+  {name:'플루오린화 나트륨',f:'NaF',type:'ionic', M:'Na', X:'F',  give:1, take:1, nM:1, nX:1},
+  {name:'염화 칼륨',   f:'KCl',   type:'ionic', M:'K',  X:'Cl', give:1, take:1, nM:1, nX:1},
 
   /* 공유 결합 — 비금속끼리 전자쌍을 나눠 갖는다 */
   {name:'수소',   f:'H2',  type:'covalent', center:'H', ligands:[{sym:'H', pairs:1}]},
@@ -612,11 +612,11 @@ const BONDS=[
   {name:'물',     f:'H2O', type:'covalent', center:'O', ligands:[{sym:'H',pairs:1},{sym:'H',pairs:1}]},
   {name:'암모니아',f:'NH3', type:'covalent', center:'N', ligands:[{sym:'H',pairs:1},{sym:'H',pairs:1},{sym:'H',pairs:1}]},
   {name:'메테인', f:'CH4', type:'covalent', center:'C', ligands:[{sym:'H',pairs:1},{sym:'H',pairs:1},{sym:'H',pairs:1},{sym:'H',pairs:1}]},
-  {name:'이산화탄소',f:'CO2',type:'covalent',center:'C', ligands:[{sym:'O',pairs:2},{sym:'O',pairs:2}]},
-  {name:'염화수소',f:'HCl', type:'covalent', center:'Cl',ligands:[{sym:'H',pairs:1}]},
+  {name:'이산화 탄소',f:'CO2',type:'covalent',center:'C', ligands:[{sym:'O',pairs:2},{sym:'O',pairs:2}]},
+  {name:'염화 수소',f:'HCl', type:'covalent', center:'Cl',ligands:[{sym:'H',pairs:1}]},
   /* 이중결합 예가 O₂·CO₂ 둘뿐이라 결합 차수 문제가 「단일결합」쪽으로 기울었다.
-     이황화탄소는 이산화탄소와 같은 직선형(S=C=S)이고 중심 탄소에 비공유 전자가 없어
+     이황화 탄소는 이산화 탄소와 같은 직선형(S=C=S)이고 중심 탄소에 비공유 전자가 없어
      이 그림 모형으로 정확히 그려진다. */
-  {name:'이황화탄소',f:'CS2',type:'covalent',center:'C', ligands:[{sym:'S',pairs:2},{sym:'S',pairs:2}]}
+  {name:'이황화 탄소',f:'CS2',type:'covalent',center:'C', ligands:[{sym:'S',pairs:2},{sym:'S',pairs:2}]}
 ];
 

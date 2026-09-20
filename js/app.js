@@ -282,7 +282,7 @@ const App={
          저장하지 않는다. */
       const favD=localStorage.getItem('chem_hint_favorites');
       const favParsed=favD?JSON.parse(favD):[];
-      if(Array.isArray(favParsed)) this.state.hintFavorites=favParsed.filter(x=>typeof x==='string');
+      if(Array.isArray(favParsed)) this.state.hintFavorites=this.migrateFavNames(favParsed.filter(x=>typeof x==='string'));
     }catch(e){}
     this.applyTheme(this.state.theme);
     this.updateFeedbackBtns();
@@ -880,6 +880,23 @@ const App={
     this.$.hintSortChips.innerHTML = HINT_SORTS.map(s=>
       `<button class="filter-chip${this.state.hintSort===s.id?' active':''}" data-hint-sort="${s.id}">${s.label}</button>`
     ).join('');
+  },
+  /* 물질 이름의 띄어쓰기를 표준(교육부 고시·대한화학회)에 맞추면서 반응식 이름이 통째로
+     바뀌었다 — 「메테인 + 산소 → 이산화탄소 + 물」이 「… → 이산화 탄소 + 물」이 됐다.
+     즐겨찾기는 그 이름을 키로 들고 있어서, 그냥 두면 학생이 담아 둔 별표가 가리킬 곳을
+     잃고 조용히 사라진다. 공백만 무시하고 맞춰 새 이름으로 옮겨 준다(테마 id 이관과 같은
+     이유다). 못 찾은 것은 버린다 — 없어진 항목을 붙들고 있어 봐야 쓸 데가 없다. */
+  migrateFavNames(list){
+    const all=REACTIONS.map(r=>r.name).concat(IONS_WRITE.map(i=>i.name));
+    const bare=new Map(all.map(n=>[n.replace(/\s+/g,''), n]));
+    const out=[]; let moved=0;
+    for(const k of list){
+      if(all.includes(k)){ out.push(k); continue; }
+      const hit=bare.get(k.replace(/\s+/g,''));
+      if(hit){ out.push(hit); moved++; }
+    }
+    if(moved){ try{localStorage.setItem('chem_hint_favorites', JSON.stringify(out));}catch(e){} }
+    return out;
   },
   toggleHintFavorite(key){
     const i=this.state.hintFavorites.indexOf(key);
