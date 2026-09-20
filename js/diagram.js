@@ -446,7 +446,19 @@ function covalentDiagramHTML(b, opts){
      (중심 원자는 결합을 여러 개 낼 수 있는 쪽이라 정해지는 것이라 화학식 순서와 무관하다.) */
   const bondName = sym => b.f.indexOf(b.center) > b.f.indexOf(sym)
     ? `${sym}–${b.center}` : `${b.center}–${sym}`;
-  const uniq = [...new Set(b.ligands.map(l => `${bondName(l.sym)} 사이에 공유 ${pairWord(l)}`))].join(', ');
+  /* 같은 결합이 여러 개일 때 예전에는 Set으로 같은 문장을 접어 하나만 남겼다. 그래서 물은
+     그림에 전자쌍이 두 쌍 찍혀 있는데 글은 「H–O 사이에 공유 전자쌍 1개」뿐이라, 분자 전체에
+     한 쌍만 있다고 읽힐 수 있었다(메테인은 네 쌍인데 똑같이 1개라고만 적혔다). 결합 하나당
+     몇 쌍인지는 그대로 두되, **결합이 몇 개이고 모두 몇 쌍인지**를 같이 적는다. */
+  const groups = [];
+  for (const l of b.ligands) {
+    const phrase = `${bondName(l.sym)} 사이에 공유 ${pairWord(l)}`;
+    const hit = groups.find(g => g.phrase === phrase);
+    if (hit) hit.n++; else groups.push({ phrase, n: 1, bond: bondName(l.sym), pairs: l.pairs });
+  }
+  const uniq = groups.map(g => g.n === 1
+    ? g.phrase
+    : `${g.bond} 결합 ${g.n}개에 각각 공유 전자쌍 ${g.pairs}개 — 모두 ${g.n * g.pairs}쌍`).join(', ');
   /* 결합 차수 모드에서는 같은 그림을 쓰되 "몇 쌍인가"에 초점을 맞춘다 —
      전자쌍이 하나씩 자리잡는 애니메이션이 그대로 답의 근거가 된다. */
   const order = opts && opts.order;

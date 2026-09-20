@@ -2784,6 +2784,16 @@ const App={
     /* 닫히는 도중에 다시 열 수 있다 — 접히던 것을 도로 펴야 하므로 닫기 표시를 먼저 뗀다 */
     fs.classList.remove('pt-closing');
     fs.classList.add('show');
+    /* 회전 뷰는 .modal-overlay 가 아니라서 openModal 의 초점 가둠 밖에 있었다. 그 결과
+       여기서 Tab 을 누르면 뒤에 깔린 주기율표 창의 컨트롤(전부 이 뷰에 가려 안 보인다)로
+       초점이 걸어갔고, 보이지도 않는 「간략히 보기」가 눌리면 상태만 바뀐 채 표는 118칸
+       그대로라 다음 배치 계산에서 표가 구석의 작은 덩어리로 찌그러졌다.
+       뷰가 열려 있는 동안에는 뒤를 통째로 잠근다 — 창(#app 밖의 .modal-overlay)까지. */
+    this._ptFsLastFocus=document.activeElement;
+    this.$.app.setAttribute('inert','');
+    document.querySelectorAll('.modal-overlay').forEach(ov=>ov.setAttribute('inert',''));
+    const fsClose=document.getElementById('ptFsClose');
+    if(fsClose) fsClose.focus();
     /* 배율은 여는 이 순간에만 1로 되돌린다 — 그 밖의 재계산(상세 열기, 화면 회전)에서
        말없이 버리면 확대해 둔 것이 툭 풀린다. */
     this.layoutPtFullscreen(0, true);
@@ -2797,6 +2807,12 @@ const App={
        .show를 떼는 것과 같은 프레임에 붙여야 한 번의 전환으로 이어진다. */
     fs.classList.add('pt-closing');
     fs.classList.remove('show');
+    /* 잠금은 바로 푼다 — 접히는 애니메이션을 기다리면 그동안 뒤가 먹통으로 남는다.
+       주기율표 창이 아직 열려 있으면 #app 은 그 창의 몫으로 계속 잠가 둔다. */
+    document.querySelectorAll('.modal-overlay[inert]').forEach(ov=>ov.removeAttribute('inert'));
+    if(!this.openOverlay()) this.$.app.removeAttribute('inert');
+    const back=this._ptFsLastFocus; this._ptFsLastFocus=null;
+    if(back && document.contains(back) && back.offsetParent!==null) back.focus();
     /* 전환이 끝난 뒤에 뒷정리한다. 지금 바로 상세를 닫으면 접히는 화면 안에서
        패널이 따로 접히는 게 보여 두 동작이 겹친다. 시간은 CSS에서 읽으므로 어긋나지 않는다. */
     this._ptCloseTimer=setTimeout(()=>{
