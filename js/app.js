@@ -1102,6 +1102,11 @@ const App={
       const b=e.target.closest('.timer-btn');if(!b)return;
       this.state.timerDuration=parseInt(b.dataset.sec)*1000;
       document.querySelectorAll('.timer-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+      /* 지금 풀고 있는 문제에도 바로 적용한다. 예전에는 startTimer가 문제 시작 때 고정한
+         currentMaxTime만 보고 돌아서, 「무제한」을 눌러도 이 문제는 원래 시간에 만료돼
+         오답으로 기록됐다 — 학생 입장에서는 「시간을 껐는데 시간 초과로 틀렸다」였다.
+         이미 채점이 끝난 문제는 건드리지 않는다(타이머가 멈춰 있어야 할 자리다). */
+      if(!this.state.isAnswerChecked) this.startTimer();
       this.feedback('tap');
     });
     this.$.wrongNoteList.addEventListener('click',e=>{
@@ -1211,6 +1216,10 @@ const App={
          보기를 바꿀 수 없었다. 브라우저 기본 동작에 맡긴다. */
       const onBtn=document.activeElement&&document.activeElement.closest('button');
       if(onBtn&&(e.key==='Enter'||e.key===' ')) return;
+      /* 브라우저 단축키의 숫자가 답에 꽂히면 안 된다. 노트북으로 푸는 학생이 글자가 작다고
+         Ctrl+0(확대 되돌리기)을 누르면 활성 칸에 「0」이 들어가 있었다 — 화면이 확대·축소되는
+         바람에 글자가 늘어난 것도 못 보고, 채점은 엄격 비교라 그대로 오답이 됐다. */
+      if(e.ctrlKey||e.metaKey||e.altKey) return;
       if(e.key>='0'&&e.key<='9')this.handleKeyPress(`NUM_${e.key}`);
       else if(e.key==='Backspace')this.handleKeyPress('DEL');
       else if(e.key==='ArrowLeft')this.handleKeyPress('LEFT');
@@ -1482,8 +1491,15 @@ const App={
       let val = q.inputs[q.activeKey] || '';
       let pos = q.cursor[q.activeKey] !== undefined ? q.cursor[q.activeKey] : val.length;
 
+      /* 전하(^2- 등)는 화면에 ^ 없이 위첨자로만 그려진다(formatInput). 그래서 커서가 그
+         안으로 들어가면 화면에는 아무 표시가 없는데 ⌫가 ^ 하나만 지워, 글자 수는 그대로인
+         채 값이 H^+ → H+ 가 되고 그대로 오답이 됐다. 전하는 한 덩어리로 넘나든다 —
+         ⌫가 이미 그렇게 하고 있고(아래 DEL), 커서도 같은 규칙을 따라야 앞뒤가 맞는다. */
+      const chgAt = val.match(/\^\d*[+-]$/);
+      const chgStart = chgAt ? val.length - chgAt[0].length : -1;
       if(key === 'LEFT') {
-        if(pos > 0) q.cursor[q.activeKey] = pos - 1;
+        if(chgStart >= 0 && pos > chgStart) q.cursor[q.activeKey] = chgStart;
+        else if(pos > 0) q.cursor[q.activeKey] = pos - 1;
         else {
           /* 칸의 맨 왼쪽에서 한 번 더 누르면 바로 이전 블랭크의 맨 끝으로 이동 */
           const idx = q.blanks.findIndex(b=>b.key===q.activeKey);
@@ -1494,7 +1510,8 @@ const App={
           }
         }
       } else if(key === 'RIGHT') {
-        if(pos < val.length) q.cursor[q.activeKey] = pos + 1;
+        if(chgStart >= 0 && pos >= chgStart) q.cursor[q.activeKey] = val.length;
+        else if(pos < val.length) q.cursor[q.activeKey] = pos + 1;
         else {
           /* 칸의 맨 오른쪽에서 한 번 더 누르면 바로 다음 블랭크의 맨 앞으로 이동 */
           const idx = q.blanks.findIndex(b=>b.key===q.activeKey);
@@ -1544,6 +1561,10 @@ const App={
             if(q.cursor[emptyB.key] === undefined) q.cursor[emptyB.key] = (q.inputs[emptyB.key]||'').length;
             this.feedback('tap');
             this.renderEquation();
+            /* 커서만 옮기고 조용히 돌아가면, 제한시간을 「무제한」으로 둔 학생이 한 칸을
+               모를 때 그 문제에서 빠져나갈 길이 없다 — 「다음 문제」는 채점 뒤에만 뜨고
+               「정답 확인」은 오답 배너 안에만 있다. 왜 안 넘어가는지라도 알려 준다. */
+            this.showToast('아직 비어 있는 칸이 있어요');
             return;
           }
         }
