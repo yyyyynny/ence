@@ -396,7 +396,10 @@ const App={
       this.state.wrongNotes = this.state.wrongNotes.filter(n => n.id !== existing.id);
       this.state.wrongNotes.unshift(existing);
     }else{
-      const id=Date.now().toString();
+      /* 밀리초만 쓰면 같은 순간에 저장된 두 노트가 같은 id 를 갖고, 하나를 지우면
+         둘 다 사라진다(필터가 id 로 거른다). 손으로 1ms 안에 두 번은 어렵지만 기기
+         시계가 되돌아가면 닿는다. 일련번호를 붙여 같은 시각이어도 갈라지게 한다. */
+      const id=Date.now().toString()+'-'+(this._noteSeq=(this._noteSeq||0)+1);
       this.state.wrongNotes.unshift({id,mode:m,title:t,html:h,qData,failCount:1});
     }
     this.saveNotes();
@@ -428,6 +431,12 @@ const App={
 
   deleteWrongNote(id){
     this.state.wrongNotes=this.state.wrongNotes.filter(n=>n.id!==id);
+    /* 재생목록은 wrongNotes 의 스냅샷이라, 연속 재풀이 도중 오답노트 창에서 노트를 지우면
+       목록에는 그대로 남아 **이미 지운 문제가 계속 나온다**. 그 유령 문제에서는 틀려도
+       failCount 가 안 오르고(찾을 노트가 없다) 맞혀도 지울 게 없어서, 학생이 무엇을 하든
+       아무 데도 기록되지 않는다. 지울 때 목록에서도 같이 뺀다. */
+    if(this.state.retryPlaylist.length)
+      this.state.retryPlaylist=this.state.retryPlaylist.filter(n=>n.id!==id);
     this.saveNotes();
     this.renderWrongNotes();
     if(isCardMode(this.state.currentMode))this.m6SyncSaveBtn();
@@ -461,8 +470,14 @@ const App={
     this.renderWrongNotes();
   },
 
+  /* 지금 필터에서 실제로 보이는 노트 — 목록 그리기와 연속 재풀이가 같은 기준을 쓴다 */
+  visibleNotes(){
+    return this.state.noteFilter==='all'
+      ? [...this.state.wrongNotes]
+      : this.state.wrongNotes.filter(n=>sectionOf(n.mode)===this.state.noteFilter);
+  },
   startRetryPlaylist() {
-    if (this.state.wrongNotes.length === 0) return;
+    if (this.visibleNotes().length === 0) return;
     this.feedback('tap');
     this.closeModal(this.$.wrongNoteModalOverlay,{silent:true});
 
@@ -470,7 +485,11 @@ const App={
       this.state.savedCycleState = { queue: [...this.state.cycleQueue], total: this.state.cycleTotal, mode: this.state.currentMode };
     }
 
-    let playlist = [...this.state.wrongNotes];
+    /* 화면에 보이는 것만 담는다. 이 버튼은 오답노트 창 안에 있고 바로 위에 구역 필터 칩이
+       있다 — 「중학」으로 좁혀 보다가 누르면 안 보이던 다른 구역 노트까지 전부 들어갔고,
+       배너의 「N문제 남음」도 화면의 수와 달랐으며 첫 문제가 다른 구역이면 구역까지 끌려갔다.
+       필터는 "지금 내가 보는 범위"인데 그 범위를 무시하는 버튼이 그 안에 있었다. */
+    let playlist = this.visibleNotes();
     for(let i = playlist.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
@@ -943,9 +962,10 @@ const App={
     else this.setMode(mode);
   },
   renderWrongNotes(){
-    let f=this.state.wrongNotes;
-    /* 필터는 구역 단위다. 모드 단위로 두면 모드 수만큼 칩이 늘어나 못 쓰게 된다. */
-    if(this.state.noteFilter!=='all')f=f.filter(n=>sectionOf(n.mode)===this.state.noteFilter);
+    /* 필터는 구역 단위다. 모드 단위로 두면 모드 수만큼 칩이 늘어나 못 쓰게 된다.
+       거르는 규칙은 visibleNotes() 한 곳에 둔다 — 「연속 재풀이」가 여기와 다른 기준을
+       쓰고 있어서 화면에 안 보이는 노트까지 재생목록에 들어갔다. */
+    const f=this.visibleNotes();
     if(f.length===0){this.$.wrongNoteList.innerHTML=`<p style="color:var(--c-text-secondary);text-align:center;padding:40px 20px">이 구역의 오답 기록이 없습니다.</p>`;return;}
     this.$.wrongNoteList.innerHTML=f.map(n=>{
       const fc = n.failCount || 1;
