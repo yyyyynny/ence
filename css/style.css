@@ -1011,7 +1011,19 @@
     .pt-detail-name{font-size:var(--t-body);}
     .pt-detail-desc{font-size:var(--t-body);}
   }
-  @media (min-width:768px){ #ptRotateBtn{display:none;} }
+  /* 「회전해서 보기」는 표가 좁을 때의 탈출구다. 예전에는 폭만 보고 감췄는데, 폰을 눕히면
+     (844×390) 폭 조건에 걸려 버튼이 사라졌다 — **화면이 가장 납작해서 표가 제일 안 보일 때
+     하필 다른 길이 없어졌다.** 넓기만 한 게 아니라 높기까지 할 때만 감춘다. */
+  @media (min-width:768px) and (min-height:700px){ #ptRotateBtn{display:none;} }
+
+  /* 낮은 화면에서는 주기율표 창의 머리·토글이 표를 짜부러뜨린다(844×390 실측: 표에 남는
+     자리가 상자의 17%뿐이었다 → 43%). 토글의 설명 문장만 접는다.
+     분류 색 범례는 **일부러 남겼다** — 색이 무슨 뜻인지 알려 주는 학습 정보이고, 접어 봐야
+     되찾는 높이가 0px이라(실측) 지울 이유가 없다. */
+  @media (max-height:520px){
+    .pt-toggle-row{padding:0 0 var(--s-2);margin-bottom:var(--s-2);}
+    .pt-toggle-label small{display:none;}
+  }
   .pt-axis-group{align-self:end;padding-bottom:var(--s-0);}
   .pt-axis-period{justify-self:end;padding-right:var(--s-1);}
   .pt-cat-alkali{background:#FF6666;}
@@ -1183,6 +1195,41 @@
   /* 재풀이 배너 */
   #retryBanner {
     display:none; background:var(--c-wrong); color:var(--c-on-wrong); padding:var(--s-4) var(--s-4); border-radius:var(--r-3); margin-bottom:var(--s-4); font-weight:600; align-items:center; justify-content:space-between; font-size:var(--t-body);
+  }
+
+  /* ── 낮은 화면(폰 가로) ──
+     이 파일에는 **높이를 보는 미디어 쿼리가 하나도 없었다.** 폭만 보고 화면을 정하니
+     폰을 눕히면 위쪽 432px이 설정(헤더·제한시간·구역·모드)으로 다 차서 **문제 카드도
+     키패드도 첫 화면 밖**이었다(740×360 실측, 문서 높이가 화면 2.5개). 답을 넣는 동안
+     문제가 안 보이는 상태다.
+
+     눕힌 화면에서 비싼 것은 세로 픽셀이고 남는 것은 가로다. 그래서 문제와 키패드를
+     나란히 놓고, 그 위 설정 줄은 눌러 붙인다. 와이드 모드(사용자가 직접 켜는 것)와는
+     조건도 목적도 다르다 — 저쪽은 "넓으니까 둘로 나눈다", 이쪽은 "낮으니까 눕힌다".
+     기본 배치를 1/-1(가로 전체)로 깔고 필요한 것만 두 칸으로 가르므로, 나중에 #app에
+     자식이 하나 늘어도 격자가 어긋나지 않는다. */
+  @media (max-height: 520px) and (min-width: 600px) {
+    /* dense: 모드 줄이 왼쪽 두 행을 걸치는 동안 오른쪽에 생기는 빈칸을 뒤 항목이 메운다.
+       안 쓰면 반쪽짜리 행이 둘 생겨 아낀 높이를 도로 까먹는다(실측 323 → 375px). */
+    #app{ display:grid; grid-template-columns:1fr 1fr; column-gap:var(--s-4); row-gap:var(--s-2);
+          grid-auto-rows:min-content; grid-auto-flow:row dense; align-content:start; max-width:none; }
+    #app > *{ grid-column:1 / -1; margin-bottom:0 !important; }
+    /* 기본값을 #app > * 로 깔았으므로(ID 포함, 특이도 100) 여기도 같은 수준으로 적어야
+       이긴다 — 클래스만 쓰면 조용히 무시되고 전부 한 줄로 쌓인다(실제로 그랬다). */
+    /* 모드 줄은 가로 전체로 둔다 — 반 폭으로 좁히면 탭이 더 줄바꿈해 오히려 키가 커진다
+       (실측: 전체 폭 122px vs 반 폭 248px). 대신 제한시간과 출제방식을 한 행에 나란히
+       놓아 한 줄을 줄인다. dense 덕분에 모드 줄이 아래로 밀려도 오른쪽 빈칸이 메워진다. */
+    #app > .timer-select-wrap{ grid-column:1; }
+    #app > .cycle-wrap{ grid-column:2; border-top:none; padding-top:0; }
+    #app > .question-card, #app > #retryM6Card{ grid-column:1; }
+    #app > .keyboard-wrap{ grid-column:2; }
+    /* 설정 줄 눌러 붙이기. 눕힌 화면에서 가장 비싼 것은 세로 픽셀이라, 탭의 설명 줄
+       (「중학교 과학」·「계수 1도 입력 필수」)과 구역 안내문을 접는다 — 탭 이름만 있어도
+       어디에 있는지는 알 수 있고, 안내문은 세워서 보면 그대로 있다. */
+    .section-note{ display:none; }
+    .section-tab .section-sub, .mode-tab .tab-desc{ display:none; }
+    .section-tab, .mode-tab, .timer-btn{ padding:var(--s-2) var(--s-3); }
+    .question-card{ padding:var(--s-3); }
   }
 
   /* 와이드(화면 분할) 모드 CSS Grid 재배치 */
