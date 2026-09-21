@@ -87,7 +87,6 @@ const App={
     /* 헤더 아이콘 줄은 이제 가로로 스크롤하지 않고 아랫줄로 내려간다(css 참고) —
        넘친 것을 흐림으로 알릴 일이 없으므로 여기서 부르지 않는다.
        setupScrollFade는 구역 탭 줄이 그대로 쓴다. */
-    this.setupScrollFade(document.getElementById('sectionTabs'));
     this.setupModalScrollLock();
     this.setupViewportVars();
     this.setupPtZoom();
@@ -234,17 +233,6 @@ const App={
     const obs=new MutationObserver(sync);
     overlays.forEach(o=>obs.observe(o,{attributes:true,attributeFilter:['class']}));
     sync();
-  },
-
-  setupScrollFade(el){
-    if(!el) return;
-    const update=()=>{
-      const atEnd = el.scrollWidth - el.scrollLeft - el.clientWidth < 4;
-      el.classList.toggle('fade-end', atEnd);
-    };
-    el.addEventListener('scroll', update, {passive:true});
-    window.addEventListener('resize', update);
-    update();
   },
 
   loadSettings(){
@@ -451,16 +439,21 @@ const App={
     if(!btn.dataset.confirming){
       btn.dataset.confirming='1';
       btn.textContent='정말 삭제? 한 번 더 누르기';
-      btn.style.background='var(--c-accent-3)';btn.style.color='#000';
+      /* 색을 JS에서 박지 않는다. 예전에는 background를 var(--c-accent-3)로 줬는데 그런
+         토큰은 **정의된 적이 없다**(있는 것은 accent-1·2뿐). 정의 안 된 var는 선언 자체가
+         무효가 되어 배경이 투명해지고, 글자는 하드코딩 #000이라 어두운 테마에서 창 바탕 위
+         검정 글자가 됐다 — 대비 약 1.1:1, 즉 **안 보인다**. 되돌릴 수 없는 삭제의 그 한 번의
+         확인이 하필 가장 안 보이는 글자였다. 클래스로 넘겨 테마를 따라가게 한다. */
+      btn.classList.add('confirming');
       btn._t=setTimeout(()=>{
         delete btn.dataset.confirming;
         btn.innerHTML=this.icon('trash','sm')+' 전체 삭제';
-        btn.style.background='';btn.style.color='';
+        btn.classList.remove('confirming');
       },3000);
       return;
     }
     clearTimeout(btn._t);delete btn.dataset.confirming;
-    btn.innerHTML=this.icon('trash','sm')+' 전체 삭제';btn.style.background='';btn.style.color='';
+    btn.innerHTML=this.icon('trash','sm')+' 전체 삭제';btn.classList.remove('confirming');
     this.state.wrongNotes=[];
     /* 빈 배열을 쓰는 것으로 지운다 — removeItem 을 따로 쓰면 저장이 막혔을 때
        "지웠다"고 보이지만 새로고침하면 되살아나는 것을 알릴 길이 없다. */
