@@ -216,11 +216,31 @@ function ionicDiagramHTML(b){
   const outs = [];
   for(let i = 0; i < b.nM; i++)
     for(const [x, y] of DIA.dotPos(lx, my(i), mOutR, mS[mS.length - 1])) outs.push([x, y]);
+  /* ── 받는 자리와 짝짓기 ──
+     예전에는 빈자리를 slots[8-take..7]로 기계적으로 집고 outs[k]↔ins[k]로 짝지었다.
+     그 자리가 주는 쪽을 향해 있지 않아, MgO·CaO·Li₂O에서는 위쪽 전자가 아래로,
+     아래쪽 전자가 위로 날아가 **두 경로가 서로 엇갈렸다** — 어느 전자가 어디로 갔는지가
+     그림에서 사라진다. 전자의 행방이 이 그림의 전부인데.
+     그래서 (1) 빈자리는 주는 쪽(x가 작은 왼쪽)을 향한 것부터 고르고
+          (2) 주는 전자와 받는 자리를 각각 위→아래 순으로 늘어놓아 그 순서대로 짝짓는다.
+     여기서 고른 자리는 아래 "원래 갖고 있던 전자"를 그리는 자리와 반드시 짝이라
+     (겹치거나 비지 않게) 인덱스를 함께 쓴다. */
+  const inIdxOf = j => {
+    const slots = DIA.dotPos(rx, xy(j), xOutR, 8);
+    return slots.map((s2, k) => ({ s2, k }))
+      .sort((u, v) => u.s2[0] - v.s2[0]).slice(0, b.take)
+      .sort((u, v) => u.s2[1] - v.s2[1]).map(o => o.k);
+  };
+  const inIdx = [];
   const ins = [];
   for(let j = 0; j < b.nX; j++){
     const slots = DIA.dotPos(rx, xy(j), xOutR, 8);
-    for(let t = 0; t < b.take; t++) ins.push(slots[8 - b.take + t]);
+    const idx = inIdxOf(j);
+    inIdx.push(idx);
+    for(const k of idx) ins.push(slots[k]);
   }
+  /* 주는 전자도 같은 기준(위→아래)으로 늘어놓는다 */
+  outs.sort((u, v) => u[1] - v[1]);
   const moved = Math.min(outs.length, ins.length);
   /* 마지막 전자가 "도착한" 시각. 출발 시각에 이동 시간을 더해야 한다 —
      전에는 출발 시각만 셌기 때문에 전자가 아직 날아가는 중인데 껍질이 지워지고
@@ -240,7 +260,9 @@ function ionicDiagramHTML(b){
     s += DIA.atom(b.X, xIon.slice(0, -1), rx, xy(j), '', true);
     s += `<circle class="dia-ring" cx="${rx}" cy="${xy(j)}" r="${xOutR}"/>`;
     const slots = DIA.dotPos(rx, xy(j), xOutR, 8);
-    slots.forEach(([x, y], k) => { if(k < 8 - b.take) s += DIA.dot(x, y, 'dia-e'); });
+    /* 받기로 정한 자리(inIdx[j])만 비워 둔다 — 그 자리는 날아오는 전자가 채운다 */
+    const taken = new Set(inIdx[j]);
+    slots.forEach(([x, y], k) => { if(!taken.has(k)) s += DIA.dot(x, y, 'dia-e'); });
     s += DIA.ionBracket(rx, xy(j), xR, DIA.chargeText(b.take, '−'), lastAt + 0.55);
   }
   /* 넘어가는 전자 — 도착지(비금속의 빈자리)에 그려 두고 출발점만 금속 쪽으로 잡는다.
@@ -328,12 +350,17 @@ function covalentDiagramHTML(b, opts){
   const n = b.ligands.length;
   /* 원자를 어디에 놓느냐가 곧 분자 모양이라, 아무 데나 두면 틀린 그림이 된다.
      물을 일직선으로 그리면 안 되고 이산화탄소를 굽은 모양으로 그려도 안 된다.
-     중심 원자에 비공유 전자쌍이 있으면 결합각이 벌어지므로(물 굽은형) 그 기준으로 나눈다.
-     분자 구조 이론 자체는 고2 「화학」 소관이라 이름은 붙이지 않고 모양만 사실대로 그린다. */
+     중심 원자에 비공유 전자쌍이 있으면 결합각이 **좁아진다** — 비공유 전자쌍은 한 원자에만
+     매여 있어 결합 전자쌍보다 더 넓게 퍼지고, 그래서 결합끼리를 밀어 좁힌다(물 104.5°,
+     암모니아 107°로 사면체각 109.5°보다 작다). 이 주석은 한동안 "벌어진다"고 거꾸로
+     적혀 있었다. 가르는 기준으로 쓰는 것은 맞지만 이유가 반대였다.
+     분자 구조 이론 자체는 고2 「화학」 소관이라 이름은 붙이지 않고 모양만 그린다.
+     ⚠️ 평면에 그리는 그림이라 실제 입체각을 그대로 옮기지는 못한다. 굽은형은 실제값
+     104.5°에 맞췄고, 삼각뿔(NH₃)·사면체(CH₄)는 평면으로 펴서 고르게 벌린 표현이다. */
   let angles;
   if(n === 1)      angles = [0];                       /* 이원자 분자 */
-  else if(n === 2) angles = cLone > 0 ? [128, 52] : [180, 0];  /* 물 굽은형 / 이산화탄소 직선형 */
-  else if(n === 3) angles = [-90, 30, 150];            /* 평면 삼각 120° */
+  else if(n === 2) angles = cLone > 0 ? [142, 38] : [180, 0];  /* 물 굽은형 104° / 이산화탄소 직선형 */
+  else if(n === 3) angles = [-90, 30, 150];            /* 삼각뿔을 평면으로 편 표현 */
   else             angles = [-90, 0, 90, 180];         /* 사면체의 평면 표현 */
 
   /* 리간드마다 기하를 먼저 다 계산해 둔다 — viewBox를 재는 데도 같은 값이 필요하다.

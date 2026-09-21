@@ -602,6 +602,34 @@ const App={
     this.startTimer();
   },
 
+  /* 재풀이에서 나가되 **다음 문제는 내지 않는다.** 단일 재풀이를 맞혔을 때 쓴다 —
+     exitRetry 는 setMode 로 곧장 다음 문제를 내는데, 그러면 「맞았어요. 오답 노트에서
+     지웠어요.」를 읽을 틈이 없다. 화면과 순환 큐만 되돌리고, 다음 문제는 학생이
+     「다음 문제」를 누를 때 나간다.
+
+     예전에는 이 자리에서 손으로 두 줄(배너·제한시간 줄)만 되돌렸다. 재풀이로 들어올 때
+     내린 것은 셋인데 cycleWrap 을 아무도 안 올려서 순환/랜덤·진행률·하위 유형·그림 토글이
+     통째로 사라진 채 굳었다. 게다가 retryNoteId 를 여기서 지워 버리는 바람에 「다음 문제」의
+     exitRetry 경로(handleKeyPress)에도 안 걸려 영영 복구되지 않았다 — 모드 탭을 눌러야
+     돌아오는데 그러면 순환 진도까지 날아간다. 나가는 문이 셋이면 셋 다 여기를 지난다. */
+  restoreAfterRetry(){
+    this.state.retryNoteId = null;
+    this.state.isRetryPlaylistMode = false;
+    this.state.retryPlaylist = [];
+    document.getElementById('retryBanner').style.display = 'none';
+    document.getElementById('retryM6Card').style.display = 'none';
+    this.$.timerSelectWrap.style.display = 'flex';
+    this.$.cycleWrap.style.display = isCardMode(this.state.currentMode) ? 'none' : 'flex';
+    const saved = this.state.savedCycleState;
+    if(saved){
+      this.state.cycleQueue = [...saved.queue];
+      this.state.cycleTotal = saved.total;
+      this.renderCycleProgress();
+    }
+    this.state.savedCycleState = null;
+    this.updateStatBarVisibility();
+  },
+
   exitRetry(){
     this.state.retryNoteId = null;
     this.state.isRetryPlaylistMode = false;
@@ -843,7 +871,7 @@ const App={
     const itemHtml=e=>{
       const fav=this.state.hintFavorites.includes(e.key);
       return `<div class="reaction-item"><div class="reaction-header"><div class="reaction-name"><span class="reaction-num">${e.num}</span>${e.name}</div>`+
-        `<button class="fav-btn${fav?' active':''}" data-fav-key="${e.key.replace(/"/g,'&quot;')}" aria-pressed="${fav}" aria-label="즐겨찾기에 담기">${this.icon('bookmark','sm')}</button></div>`+
+        `<button class="fav-btn${fav?' active':''}" data-fav-key="${this.esc(e.key)}" aria-pressed="${fav}" aria-label="즐겨찾기에 담기">${this.icon('bookmark','sm')}</button></div>`+
         `<div class="reaction-eq">${e.body}</div></div>`;
     };
     if(mode==='fav'){
@@ -935,7 +963,7 @@ const App={
       const retryLabel = isCard ? '카드 다시보기' : '단일 풀기';
       /* 배지에 모드 이모지를 앞세우던 자리. 모드 이름만으로 더 잘 읽힌다. */
       const failBadge = fc>1?`<span class="reaction-fail">오답 ${fc}회</span>`:'';
-      return `<div class="reaction-item" style="${style}"><div class="reaction-header"><div class="reaction-name"><span class="reaction-badge">${MODE_NAMES[n.mode]||('모드 '+n.mode)}</span>${n.title}${failBadge}</div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${n.id}">${retryLabel}</button><button class="delete-note-btn" data-id="${n.id}">삭제</button></div></div><div class="reaction-eq" style="border-left-color:var(--c-wrong)">${n.html}</div></div>`;
+      return `<div class="reaction-item" style="${style}"><div class="reaction-header"><div class="reaction-name"><span class="reaction-badge">${MODE_NAMES[n.mode]||('모드 '+n.mode)}</span>${this.esc(n.title)}${failBadge}</div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${this.esc(n.id)}">${retryLabel}</button><button class="delete-note-btn" data-id="${this.esc(n.id)}">삭제</button></div></div><div class="reaction-eq" style="border-left-color:var(--c-wrong)">${n.html}</div></div>`;
     }).join('');
   },
 
@@ -1370,6 +1398,14 @@ const App={
     return c?`<span class="ppt-sw" style="--sw:${c}"></span>`:'';
   },
   /* 「흰색 앙금」처럼 색 이름으로 시작하는 문구 앞에 그 색 동그라미를 붙인다 */
+  /* innerHTML 로 들어가는 값 중 **앱이 만들지 않은 것**에 씌운다.
+     오답 노트의 id·제목이 그대로 꽂히고 있었다. 실사용에서 아픈 쪽은 id 다 — 큰따옴표가
+     하나 들어가면 data-id 속성이 거기서 끊겨 삭제 버튼이 잘린 id 를 들게 되고,
+     목록에는 보이는데 **지울 수 없는 노트**가 된다(전체 삭제 말고는 방법이 없다).
+     같은 구멍으로 스크립트도 실행된다 — 지금은 제 브라우저 안의 일이지만, 노트 내보내기나
+     공유가 생기는 순간 바로 문제가 된다. 노트 본문(n.html)은 앱이 만든 반응식 조각이라
+     HTML 인 게 맞으므로 그대로 둔다. */
+  esc(v){ return String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); },
   withSwatch(text){
     const name=Object.keys(PRECIP_COLORS).find(k=>String(text).startsWith(k));
     return (name?this.swatch(name):'')+text;
@@ -1917,9 +1953,7 @@ const App={
         } else {
           this.feedback('success');
           this.deleteWrongNote(this.state.retryNoteId);
-          this.state.retryNoteId = null;
-          document.getElementById('retryBanner').style.display='none';
-          this.$.timerSelectWrap.style.display='flex';
+          this.restoreAfterRetry();
           this.state.isAnswerChecked=true;
           clearInterval(this.state.timerInterval);
           this.renderAll('retry_correct');

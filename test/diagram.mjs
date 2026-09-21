@@ -236,6 +236,31 @@ for(const it of ctx.ION_FORMING){
   if(!alt.includes(want)) F.push(`[개수] 이온되기 ${el.sym} — alt 글의 최종 배치가 "${want}"와 다름: ${alt}`);
 }
 
+/* ── 넘어가는 전자의 경로가 서로 엇갈리지 않는가 ──
+   MgO·CaO·Li₂O 에서 위쪽 전자가 아래로, 아래쪽 전자가 위로 날아가 두 경로가 교차했다.
+   전자가 어디로 갔는지가 이 그림의 전부인데 그게 뒤엉키면 그림이 제 일을 못 한다.
+   겹침·잘림 검사로는 절대 안 잡힌다 — 점들은 멀쩡히 제자리에 있고 "길"만 꼬였기 때문이다.
+   출발점은 도착점 좌표에 --dx/--dy 를 더해 얻는다(DIA.from 이 그렇게 넘긴다). */
+{
+  const orient=(P,Q,R)=>Math.sign((Q[1]-P[1])*(R[0]-Q[0])-(Q[0]-P[0])*(R[1]-Q[1]));
+  const crosses=(a1,a2,b1,b2)=>
+    orient(a1,a2,b1)!==orient(a1,a2,b2) && orient(b1,b2,a1)!==orient(b1,b2,a2);
+  for(const bd of ctx.BONDS.filter(x=>x.type==='ionic')){
+    const h=ctx.ionicDiagramHTML(bd);
+    const movers=[];
+    for(const m of h.matchAll(/<circle[^>]*class="[^"]*dia-e-move[^"]*"[^>]*>/g)){
+      const tag=m[0];
+      const cx=parseFloat(/cx="([-\d.]+)"/.exec(tag)[1]), cy=parseFloat(/cy="([-\d.]+)"/.exec(tag)[1]);
+      const dx=parseFloat((/--dx:(-?[\d.]+)px/.exec(tag)||[0,0])[1]);
+      const dy=parseFloat((/--dy:(-?[\d.]+)px/.exec(tag)||[0,0])[1]);
+      movers.push([[cx+dx,cy+dy],[cx,cy]]);
+    }
+    for(let i=0;i<movers.length;i++) for(let j=i+1;j<movers.length;j++)
+      if(crosses(movers[i][0],movers[i][1],movers[j][0],movers[j][1]))
+        F.push(`[경로] ${bd.name} — 넘어가는 전자 ${i+1}번과 ${j+1}번의 경로가 엇갈린다`);
+  }
+}
+
 const total = ctx.BONDS.length + ctx.ION_FORMING.length + ctx.ION_NOBLE.length + ctx.SHELL_QUIZ_ELEMENTS.length;
 if (F.length) { console.log(`실패 ${F.length}건:\n` + F.map(x => '  ✗ ' + x).join('\n')); process.exit(1); }
 console.log(`그림 검사 통과 — 겹침·핵 침범·잘림·테두리·전자 수·안내선·캡션·alt (${total}종 이상)`);
