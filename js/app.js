@@ -3410,7 +3410,7 @@ const App={
     const vp=document.getElementById('ptFsViewport');
     const rotor=document.querySelector('.pt-fs-rotor');
     if(!vp||!rotor) return;
-    let mode=null, startDist=0, startScale=1, focal=null, lastMid=null, lastPan=null, lastTap=0, tapStart=null;
+    let mode=null, startDist=0, startScale=1, focal=null, lastMid=null, lastPan=null, lastTap=0, lastTapPt=null, tapStart=null;
     let panHist=[];
     /* 손가락을 대는 순간 transform 전환을 끈다. 상세 패널 토글이나 배율 리셋이 걸어 둔
        transition이 살아 있는 채로 핀치를 시작하면 표가 손가락을 0.3초 늦게 따라와
@@ -3447,9 +3447,20 @@ const App={
         const m0=mid(e.touches[0],e.touches[1]); focal=toLocal(m0.x,m0.y); lastMid=m0;
         e.preventDefault();
       } else if(e.touches.length===1){
-        const now=Date.now();
-        if(now-lastTap<300){ lastTap=0; mode=null; this.ptZoomReset(); e.preventDefault(); return; }
-        lastTap=now;
+        const now=Date.now(), t0=e.touches[0];
+        /* 더블탭은 「배율을 되돌린다」는 뜻이다. 두 가지를 안 보고 있었다.
+           하나, 배율이 1이면 되돌릴 것이 없다. 그런데도 더블탭으로 가로채서, 1을 1로 만드는
+           일을 하면서 두 번째 탭만 삼켰다 — 화면에서는 「눌렀는데 아무 일도 안 일어난다」다.
+           둘, 어느 자리를 눌렀는지. 그래서 주기·족을 견주려고 옆 칸을 빠르게 짚으면(이 화면에서
+           제일 흔한 동작이다) 두 번째 칸이 안 열렸다 — 나트륨 누르고 150ms 뒤 마그네슘을
+           눌러도 상세는 나트륨 그대로였다.
+           같은 자리를 두 번 누른 것일 때만 더블탭으로 본다. 16px는 같은 자리를 노린 손가락이
+           흔들리는 폭이고, 회전 뷰의 칸(22~34px)보다 작아 옆 칸을 짚은 것과 갈린다. */
+        const near = lastTapPt && Math.hypot(t0.clientX-lastTapPt.x, t0.clientY-lastTapPt.y) < 16;
+        if(this.ptZoom.scale>1.001 && now-lastTap<300 && near){
+          lastTap=0; lastTapPt=null; mode=null; this.ptZoomReset(); e.preventDefault(); return;
+        }
+        lastTap=now; lastTapPt={x:t0.clientX,y:t0.clientY};
         if(this.ptZoom.scale>1.001){
           mode='pan'; lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY}; e.preventDefault();
           panHist=[{tx:this.ptZoom.tx,ty:this.ptZoom.ty,t:performance.now()}];

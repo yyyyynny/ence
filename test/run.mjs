@@ -388,6 +388,54 @@ async function periodicPass() {
     }
     await ctx.close();
   }
+
+  /* ── 회전 뷰에서 옆 칸을 빠르게 짚기 ──
+     더블탭 판정이 「어느 자리를 눌렀는가」를 안 봐서, 주기·족을 견주려고 옆 칸을 빠르게
+     짚으면 두 번째 칸이 안 열렸다(더블탭으로 삼켜졌다). 화면을 재는 검사로는 안 잡힌다 —
+     칸도 패널도 멀쩡하고, 두 번째 손가락이 삼켜지는 것뿐이다. */
+  {
+    const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+    const page = await ctx.newPage();
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => typeof App === 'object', null, { timeout: 10000 });
+    await page.waitForTimeout(300);
+    await page.click('#periodicBtn'); await page.waitForTimeout(300);
+    await page.click('#ptRotateBtn'); await page.waitForTimeout(800);
+    const at = (z) => page.evaluate((zz) => {
+      const c = document.querySelector(`#ptFsContent .pt-cell[data-z="${zz}"]`);
+      const r = c.getBoundingClientRect();
+      return { x: r.x + r.width / 2, y: r.y + r.height / 2 };
+    }, z);
+    const shownZ = () => page.evaluate(() => {
+      const e = document.getElementById('ptFsDetailPanel');
+      return e.classList.contains('open') ? e.dataset.z : '';
+    });
+    /* 두 자리를 **미리** 잰다. 사이에 재려고 하면 왕복에 수백 ms가 들어 정작 재고 싶은
+       「300ms 안의 두 번째 탭」이 안 만들어진다(그렇게 해 봤고, 고치기 전 코드도 통과했다).
+       첫 탭이 상세를 열면 패널 높이만큼 표가 다시 맞춰져 자리가 조금 밀린다. 그래서
+       두 번째 탭이 「어느 칸인가」가 아니라 「상세가 바뀌었는가」를 본다. */
+    const na = await at(11), mg = await at(12);
+    await page.touchscreen.tap(na.x, na.y); await page.waitForTimeout(400);
+    ok((await shownZ()) === '11', '회전 뷰 첫 탭으로 그 칸의 상세가 열린다');
+    await page.touchscreen.tap(na.x, na.y); await page.waitForTimeout(400);  /* 같은 칸을 다시 = 닫기 */
+    /* 여기서부터가 재고 싶은 것 — 두 탭 사이에 아무것도 끼우지 않는다. 중간에 좌표를
+       재거나 상태를 읽으면 왕복에 수백 ms가 들어 정작 「300ms 안의 두 번째 탭」이
+       안 만들어진다(그렇게 짜 봤고, 고치기 전 코드도 통과해 버렸다). */
+    await page.touchscreen.tap(na.x, na.y);
+    await page.waitForTimeout(150);
+    await page.touchscreen.tap(mg.x, mg.y);
+    await page.waitForTimeout(450);
+    const after = await shownZ();
+    ok(after !== '11' && after !== '', '150ms 뒤 옆 칸을 짚으면 그 칸이 열린다 (더블탭으로 삼키지 않는다)');
+    /* 확대해 둔 상태에서 같은 자리를 두 번 = 되돌리기. 이건 그대로 살아 있어야 한다 */
+    await page.evaluate(() => { App.ptZoom.scale = 2; App.clampPtZoom(); App.applyPtZoom(); });
+    await page.waitForTimeout(300);
+    const p2 = await at(11);
+    await page.touchscreen.tap(p2.x, p2.y); await page.waitForTimeout(120);
+    await page.touchscreen.tap(p2.x, p2.y); await page.waitForTimeout(500);
+    ok(await page.evaluate(() => App.ptZoom.scale <= 1.001), '확대 상태에서 같은 자리를 두 번 누르면 배율이 돌아온다');
+    await ctx.close();
+  }
   console.log(`  ${bad ? '✕' : '✓'} 주기율표 칸·범례  확인 ${n - bad}${bad ? ` · 실패 ${bad}` : ''}`);
 }
 
