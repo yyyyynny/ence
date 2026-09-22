@@ -3033,10 +3033,28 @@ const App={
     const symH=Math.max(10, Math.round(cell*.30));
     const nameBudget=Math.max(8, contentH-zH-symH);
     const nameLH=1.05;
-    const nameFs=Math.max(4, Math.floor(nameBudget/(2*nameLH)));
-    const nameH=Math.ceil(nameFs*nameLH*2)+1; /* 실제 폰트 기준 필요 높이 + 1px 서브픽셀 안전마진 */
-    scrollEl.style.setProperty('--pt-fs-sym', Math.max(9,symH-1)+'px');
+    /* 하한이 4px였다 — 「읽히든 말든 반드시 그린다」는 뜻이라 320·360px에서 한글 이름이
+       4px로 찍혔다. 4px 한글은 글자가 아니라 얼룩이고, 크게 보려고 회전한 화면에서
+       하필 이름이 제일 안 읽혔다.
+       읽히지 않을 바에는 접고 그 자리를 기호에 준다 — 이름은 칸을 눌러 상세에서 읽으면
+       되지만 기호는 표에서 바로 읽혀야 하는 것이다. 7px이 이 앱이 그림 안 글자에 쓰는
+       하한과 같다(js/selfcheck.js checkSvgText 참고). */
+    const NAME_FLOOR=7;
+    const rawName=Math.floor(nameBudget/(2*nameLH));
+    const showName=rawName>=NAME_FLOOR;
+    const nameFs=showName?rawName:0;
+    const nameH=showName?Math.ceil(nameFs*nameLH*2)+1:0; /* 실제 폰트 기준 필요 높이 + 1px 서브픽셀 안전마진 */
+    /* 이름을 접었으면 그 몫만큼 기호를 키운다(칸 높이의 절반까지) */
+    const symPx=showName?Math.max(9,symH-1):Math.max(9,Math.min(Math.round(cell*.5),symH-1+nameBudget));
+    scrollEl.style.setProperty('--pt-fs-sym', symPx+'px');
     scrollEl.style.setProperty('--pt-fs-name', nameFs+'px');
+    scrollEl.classList.toggle('pt-fs-noname', !showName);
+    /* 자리표시(「57~71」·「89~103」)는 글자 크기가 화면 폭에서 오고 칸 크기는 여기서 나와,
+       둘이 이어져 있지 않아 회전 뷰에서 「89~10」처럼 잘렸다. 가장 긴 6글자가 칸에 들어가는
+       크기로 맞춘다 — 고정폭 글꼴이라 글자 하나가 대략 0.6em 이다. 하한은 이 앱이 그림 안
+       글자에 쓰는 것과 같은 7px 이고, 그 아래로는 어차피 못 읽으므로 더 줄이지 않는다
+       (대신 해당 원소들이 바로 아래 줄에 그대로 있어서 정보가 사라지지는 않는다). */
+    scrollEl.style.setProperty('--pt-fs-ph', Math.max(7, Math.min(13, Math.floor(cell/(6*0.62))))+'px');
     scrollEl.style.setProperty('--pt-fs-z', Math.max(6,zH-1)+'px');
     scrollEl.style.setProperty('--pt-cell-zh', zH+'px');
     scrollEl.style.setProperty('--pt-cell-symh', symH+'px');

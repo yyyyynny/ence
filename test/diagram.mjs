@@ -140,7 +140,6 @@ for(const z of ctx.ION_NOBLE){
 /* ── 원자 하나 (원자가 전자) ── */
 for(const e of ctx.SHELL_QUIZ_ELEMENTS){
   check(`껍질 ${e.sym}`, ctx.shellDiagramHTML(e.z), {n:e.z});
-  check(`껍질 ${e.sym} +`, ctx.shellDiagramHTML(e.z,'＋'), {n:e.z});
 }
 /* ── 같은 이온을 두 화면이 같게 그리는가 ── */
 for(const b of ctx.BONDS.filter(x=>x.type==='ionic')){
@@ -182,7 +181,7 @@ function frame(label, html){
 for(const b of ctx.BONDS) frame(b.f, b.type==='ionic'?ctx.ionicDiagramHTML(b):ctx.covalentDiagramHTML(b));
 for(const i of ctx.ION_FORMING) frame('ion:'+ctx.ELEMENTS.find(e=>e.z===i.z).sym, ctx.ionFormingDiagramHTML(i.z,i));
 for(const z of ctx.ION_NOBLE) frame('noble:'+ctx.ELEMENTS.find(e=>e.z===z).sym, ctx.ionFormingDiagramHTML(z,{noble:true,n:0}));
-for(let z=1;z<=20;z++){ frame('shell:'+z, ctx.shellDiagramHTML(z)); frame('shell+:'+z, ctx.shellDiagramHTML(z,'2＋')); }
+for(let z=1;z<=20;z++){ frame('shell:'+z, ctx.shellDiagramHTML(z)); }
 
 const count=(h,re)=>(h.match(re)||[]).length;
 for(const b of ctx.BONDS.filter(x=>x.type==='ionic')){

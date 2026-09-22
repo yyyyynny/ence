@@ -116,7 +116,10 @@ const DIA = {
   /* 전체 껍질을 그린 원자 하나. shells를 그대로 받으므로 이온(전자를 잃은 뒤)도 같은 함수로 그린다.
      allInner를 주면 넘겨받은 껍질을 전부 "안쪽 껍질"로 흐리게 그린다 — 바깥 껍질을 부르는 쪽에서
      따로 그리는 경우(이온 결합의 비금속)에 쓴다. */
-  atom(sym, shells, cx, cy, charge, allInner){
+  /* charge 인자가 있었는데 두 호출부가 안 주거나 '' 를 줬다 — 전하는 대괄호와 짝으로
+     ionBracket 이 그린다(교과서의 [Na]⁺ 표기). 쓰지 않는 갈래를 남겨 두면 다음 사람이
+     둘 중 어느 쪽으로 전하를 그려야 하는지 헷갈린다. */
+  atom(sym, shells, cx, cy, allInner){
     let s = `<circle class="dia-nuc" cx="${cx}" cy="${cy}" r="${this.NUC}"/>`;
     s += `<text class="dia-sym" x="${cx}" y="${cy}">${sym}</text>`;
     shells.forEach((n, i) => {
@@ -125,10 +128,6 @@ const DIA = {
       /* 안쪽 껍질은 채도를 낮춰 뒤로 물린다 — 문제에서 세어야 하는 것은 바깥 껍질 전자다 */
       s += this.dots(cx, cy, r, n, (allInner || i < shells.length - 1) ? 'dia-e dia-e-inner' : 'dia-e');
     });
-    if(charge){
-      const r = this.R0 + (shells.length - 1) * this.RSTEP;
-      s += `<text class="dia-charge" x="${cx + r + 12}" y="${cy - r - 4}">${charge}</text>`;
-    }
     return s;
   },
 
@@ -257,7 +256,7 @@ function ionicDiagramHTML(b){
   }
   /* 비금속 — 원래 갖고 있던 전자는 그대로, 받는 전자만 금속에서 날아온다 */
   for(let j = 0; j < b.nX; j++){
-    s += DIA.atom(b.X, xIon.slice(0, -1), rx, xy(j), '', true);
+    s += DIA.atom(b.X, xIon.slice(0, -1), rx, xy(j), true);
     s += `<circle class="dia-ring" cx="${rx}" cy="${xy(j)}" r="${xOutR}"/>`;
     const slots = DIA.dotPos(rx, xy(j), xOutR, 8);
     /* 받기로 정한 자리(inIdx[j])만 비워 둔다 — 그 자리는 날아오는 전자가 채운다 */
@@ -270,6 +269,8 @@ function ionicDiagramHTML(b){
      dia-anim-move는 지연 시간 동안 출발점에 그대로 앉아 있으므로, 시작 화면에서 이 점은
      "금속의 바깥 껍질에 실제로 들어 있는 전자"로 보인다 — 나트륨이 전자 11개로 그려진다.
      (전에 쓰던 dia-anim-in은 투명도 0에서 시작해 이 전자가 시작 화면에 아예 없었다.
+     그 CSS(.dia-anim-in·@keyframes diaIn)도 이제 지웠다 — 붙이는 코드는 없는데 규칙만
+     남아 있으면 언젠가 누가 다시 붙인다.
       나트륨을 전자 10개로 그려 놓고 없던 전자가 생겨나 날아가는 그림이었다.) */
   for(let k = 0; k < moved; k++){
     const [fx, fy] = outs[k], [tx, ty] = ins[k];
@@ -625,7 +626,9 @@ function bondDiagramHTML(b){
 /* 원자 하나의 껍질 그림 — 원자가 전자(MODE 8) 해설용.
    바깥 껍질 전자를 하나씩 짚어 준다. 답을 외우는 게 아니라 그림에서 세도록 하는 게
    [9과11-04]가 요구하는 접근이라, 세는 동작 자체를 보여 주는 편이 맞다. */
-function shellDiagramHTML(z, charge){
+/* charge 인자는 앱이 한 번도 안 넘긴다(app.js 는 shellDiagramHTML(q.z) 로만 부른다).
+   검사만 그 갈래를 붙들고 있어서, 아무도 안 보는 그림을 검사가 지켜 주는 꼴이었다. */
+function shellDiagramHTML(z){
   const el = ELEMENTS.find(e => e.z === z);
   const sh = shellsOf(z);
   const r = DIA.atomRadius(sh), W = 2 * (r + 24), H = W, cx = W / 2, cy = H / 2;
@@ -638,9 +641,8 @@ function shellDiagramHTML(z, charge){
     DIA.dotPos(cx, cy, rr, cnt).forEach(([x, y], k) =>
       { s += DIA.dot(x, y, 'dia-e dia-anim-count', DIA.at(DIA.T0 + k * DIA.STEP)); });
   });
-  if(charge) s += `<text class="dia-charge" x="${cx + r + 12}" y="${cy - r - 4}">${charge}</text>`;
   /* 이 그림만 캡션이 없어 글로 된 설명이 곁에 아예 없었다 — 이름이 더 중요하다. */
-  const alt = `${el.name}(${el.sym})${charge ? ' ' + charge : ''} 전자껍질 그림 — ${DIA.shellText(sh)}. `
+  const alt = `${el.name}(${el.sym}) 전자껍질 그림 — ${DIA.shellText(sh)}. `
             + `바깥 껍질에 ${sh[sh.length - 1]}개.`;
   return `<div class="dia-wrap"><div class="dia-panel" ${DIA.panelAttrs()}>
     <svg class="dia" viewBox="0 0 ${W} ${H}" role="img" aria-label="${alt}">${s}</svg>
