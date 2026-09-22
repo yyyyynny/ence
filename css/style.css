@@ -987,7 +987,19 @@
   .pt-scroll{overflow-x:auto;overflow-y:hidden;padding-bottom:var(--s-2);scrollbar-width:none;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
   .pt-scroll::-webkit-scrollbar{display:none;}
   .pt-grid{display:grid;gap:var(--s-1);min-width:960px;}
-  .pt-grid.pt-simple{min-width:0;max-width:680px;margin:0 auto;}
+  /* 간략히 보기는 8열뿐이라 화면 폭에 다 들어갔는데, 그 바람에 칸이 24~36px 이 됐다
+     (320px 24.3 · 360px 29.3 · 414px 36.0 — 전체 118종 표의 46.2px 보다 작다).
+     중학생이 기본으로 보는 화면에서 눌러야 할 것이 제일 작았던 셈이다. 손가락 권장
+     최소인 44px 를 칸 크기로 잡고 그만큼의 폭을 요구한다 — 좁은 화면에서는 전체 표와
+     똑같이 옆으로 밀어 보게 된다(끌기는 이미 setupPtDrag 가 한다).
+     라벨 열 40px + 8칸 + 칸 사이 간격 9개. 숫자를 직접 적지 않고 계산으로 두는 이유는
+     간격 토큰이나 열 수가 바뀌어도 따라오게 하기 위해서다.
+     한 화면에 다 보고 싶을 때는 회전 뷰가 그 몫을 한다(표 전체를 화면에 맞춰 줄인다).
+     회전 뷰에는 이 값이 걸리지 않는다 — 그쪽 폭은 화면 **세로**라 428px보다 넓다.
+     320·360·414px에서 간략·전체 둘 다 표가 뷰포트 안에 들어오는 것을 재서 확인했다.
+     이 값을 화면 세로보다 크게 키우면 그때는 .pt-fs-scroll .pt-grid의 min-width:0 처럼
+     회전 뷰용 예외가 따로 필요해진다. */
+  .pt-grid.pt-simple{min-width:calc(40px + 8 * 44px + 9 * var(--s-1));max-width:680px;margin:0 auto;}
   /* 칸 내부는 3행 그리드(번호 / 기호 / 이름)로 고정 → 어떤 크기에서도 겹치지 않음 */
   .pt-cell{position:relative;aspect-ratio:1/1;border-radius:var(--r-1);display:grid;grid-template-rows:auto 1fr auto;align-items:center;justify-items:center;color:#0B0F19;padding:var(--s-0) var(--s-0);cursor:default;transition:transform var(--dur-press) var(--ease-press);overflow:hidden;min-width:0;}
   .pt-cell:active{transform:scale(.9);}

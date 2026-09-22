@@ -336,6 +336,61 @@ async function tapGuardPass() {
   console.log(`  ${bad ? '✕' : '✓'} 두 번 두드리기  확인 ${n - bad}${bad ? ` · 실패 ${bad}` : ''}`);
 }
 
+/* ── 주기율표 칸과 범례 ──
+   두 가지는 화면을 훑는 검사로 안 잡힌다. 하나, 칸 크기: selfcheck 의 터치 크기 규칙은
+   .pt-cell 을 일부러 뺀다(118칸을 한 화면에 넣어야 해서 키울 수 없다고 적어 뒀다) —
+   그 예외가 8열짜리 간략히 보기까지 덮어 버려 기본 화면의 칸이 24~36px 이어도 조용했다.
+   둘, 범례: 칸이 하나도 없는 분류가 범례에 남아도 화면은 멀쩡해 보인다. 그린 칸의
+   분류와 범례를 맞대 봐야 안다.                                                        */
+async function periodicPass() {
+  let n = 0, bad = 0;
+  const ok = (cond, label) => { n++; if (cond) pass++; else { bad++; fail++; failures.push({ label, fail: [label], boom: [] }); console.log(`  ✕ ${label}`); } };
+  for (const w of [320, 360, 414]) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: 740 }, hasTouch: true, isMobile: true });
+    const page = await ctx.newPage();
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => typeof App === 'object', null, { timeout: 10000 });
+    await page.waitForTimeout(300);
+    await page.click('#periodicBtn'); await page.waitForTimeout(300);
+    for (const simple of [true, false]) {
+      if ((await page.evaluate(() => App.state.isSimplePeriodic)) !== simple) {
+        await page.click('#simplePeriodicToggle'); await page.waitForTimeout(300);
+      }
+      const r = await page.evaluate(() => {
+        const cells = [...document.querySelectorAll('#periodicContent .pt-grid .pt-cell[data-z]')];
+        const min = Math.min(...cells.map((c) => c.getBoundingClientRect().width));
+        const drawn = new Set(cells.flatMap((c) => [...c.classList].filter((k) => k.startsWith('pt-cat-'))));
+        const legend = [...document.querySelectorAll('#periodicContent .pt-legend-swatch')]
+          .map((x) => [...x.classList].find((k) => k.startsWith('pt-cat-')));
+        return { min: Math.round(min * 10) / 10, drawn: [...drawn], legend };
+      });
+      const tag = `${w}px ${simple ? '간략' : '전체'}`;
+      /* 눌러서 원소 설명을 여는 칸이다 — 잘못 누르면 다른 원소가 열린다 */
+      ok(r.min >= 44, `${tag} 칸이 손가락 크기(44px) 이상 (${r.min}px)`);
+      const extra = r.legend.filter((c) => !r.drawn.includes(c));
+      const missing = r.drawn.filter((c) => !r.legend.includes(c));
+      ok(extra.length === 0, `${tag} 칸이 하나도 없는 범례가 없다 (${extra.join(',') || '없음'})`);
+      ok(missing.length === 0, `${tag} 그린 분류가 전부 범례에 있다 (${missing.join(',') || '없음'})`);
+    }
+    /* 회전 뷰는 반대다 — 여기서는 표 전체가 한눈에 들어와야 한다 */
+    for (const simple of [true, false]) {
+      if ((await page.evaluate(() => App.state.isSimplePeriodic)) !== simple) {
+        await page.click('#simplePeriodicToggle'); await page.waitForTimeout(300);
+      }
+      await page.click('#ptRotateBtn'); await page.waitForTimeout(700);
+      const inside = await page.evaluate(() => {
+        const g = document.querySelector('#ptFsContent .pt-grid').getBoundingClientRect();
+        const vp = document.getElementById('ptFsViewport').getBoundingClientRect();
+        return g.left >= vp.left - 1 && g.right <= vp.right + 1 && g.top >= vp.top - 1 && g.bottom <= vp.bottom + 1;
+      });
+      ok(inside, `${w}px ${simple ? '간략' : '전체'} 회전 뷰에서 표 전체가 화면 안에 들어온다`);
+      await page.keyboard.press('Escape'); await page.waitForTimeout(700);
+    }
+    await ctx.close();
+  }
+  console.log(`  ${bad ? '✕' : '✓'} 주기율표 칸·범례  확인 ${n - bad}${bad ? ` · 실패 ${bad}` : ''}`);
+}
+
 /* 테마 목록은 앱의 등록처에서 가져온다 — 테마를 늘리면 검사도 저절로 늘어야 한다 */
 const probe = await browser.newContext();
 const pp = await probe.newPage();
@@ -369,6 +424,9 @@ await keyboardPass();
 
 console.log('\n── 두 번 두드리기 (320px · 360px · 390px) ──');
 await tapGuardPass();
+
+console.log('\n── 주기율표 (320px · 360px · 414px) ──');
+await periodicPass();
 
 await browser.close();
 

@@ -2839,9 +2839,22 @@ const App={
      본다(PT_SIMPLE_CAT_MAP). 칸 색·범례·상세 패널의 「분류」가 전부 이 한 곳을 거친다 —
      따로 판단하면 셋 중 하나가 토글을 안 따라가는 사고가 난다. */
   ptCatOf(e){ return this.state.isSimpleCategory ? (PT_SIMPLE_CAT_MAP[e.cat]||e.cat) : e.cat; },
+  /* 지금 표에 분류 색 칸으로 그려지는 원소들. 범례와 표가 같은 목록을 봐야 「칸이 하나도
+     없는 범례」가 안 생긴다 — 간략히 보기(1~20번 + 7종)에는 전이 금속·란타넘족·악티늄족·
+     성질 미확인에 해당하는 칸이 하나도 없는데 범례에는 그 넷이 그대로 있었다. 320px에서
+     범례가 먹는 80px 중 절반이 화면에 없는 색을 설명한 셈이고, 중학생은 「란타넘족은
+     어디 있지」 하고 표를 뒤진다.
+     불꽃 반응 줄(ptFlameCellHTML)은 분류 색이 아니라 실제 불꽃 색으로 칠하므로 여기
+     넣지 않는다 — 넣으면 구리 칸이 없는데 「전이 금속」 범례가 남는다. */
+  ptShownElements(){
+    return this.state.isSimplePeriodic
+      ? ELEMENTS.filter(e=>(e.z<=20||PT_SIMPLE_EXTRA_Z.includes(e.z))&&!e.f)
+      : ELEMENTS;
+  },
   ptLegendHTML(){
     const list = this.state.isSimpleCategory ? PT_CATEGORIES_SIMPLE : PT_CATEGORIES;
-    return `<div class="pt-legend">${list.map(([cls,label])=>`<span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-${cls}"></span>${label}</span>`).join('')}</div>`;
+    const shown = new Set(this.ptShownElements().map(e=>this.ptCatOf(e)));
+    return `<div class="pt-legend">${list.filter(([cls])=>shown.has(cls)).map(([cls,label])=>`<span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-${cls}"></span>${label}</span>`).join('')}</div>`;
   },
   /* 칸은 <div>지만 눌러서 상세를 여는 버튼이다 — 역할과 이름을 붙여 줘야 키보드·보조기기에서
      같은 일을 할 수 있다(같은 앱의 그림 칸이 이미 DIA.panelAttrs()로 이렇게 한다).
@@ -2866,7 +2879,7 @@ const App={
       const groupLabels=[1,2,13,14,15,16,17,18];
       groupLabels.forEach((g,i)=>{cells+=`<div class="pt-axis pt-axis-group" style="grid-column:${i+2};grid-row:1">${g}족</div>`;});
       [1,2,3,4,5,6].forEach(p=>{cells+=`<div class="pt-axis pt-axis-period" style="grid-column:1;grid-row:${p+1}">${p}주기</div>`;});
-      ELEMENTS.filter(e=>(e.z<=20||PT_SIMPLE_EXTRA_Z.includes(e.z))&&!e.f).forEach(e=>{
+      this.ptShownElements().forEach(e=>{
         const col=(e.group<=2?e.group:e.group-10)+1;
         cells+=this.ptCellHTML(e,col,e.period+1);
       });
