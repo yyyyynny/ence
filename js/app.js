@@ -250,6 +250,12 @@ const App={
       const savedSec = localStorage.getItem('chem_section');
       if(savedSec && sectionMeta(savedSec)) this.state.section = savedSec;
       this.state.showDiagram = localStorage.getItem('chem_diagram') !== 'false';
+      /* 제한시간도 남긴다 — 다른 설정 열 가지가 다 남는데 이것만 안 남아서, 빠르게 푸는
+         학생은 앱을 열 때마다 20초에서 15초로 다시 맞춰야 했다.
+         받아들일 값은 버튼 줄에서 읽는다(따로 적어 두면 버튼을 늘렸을 때 어긋난다).
+         0은 「무제한」이라 유효한 값이므로 거짓 판정을 쓰면 안 된다. */
+      const savedTimer = parseInt(localStorage.getItem('chem_timer'));
+      if(this.timerChoices().includes(savedTimer)) this.state.timerDuration = savedTimer;
       /* 없어진 테마 id가 저장돼 있을 수 있으므로 실재하는지 확인하고 쓴다.
          저장된 게 없으면(첫 방문) 폰 설정을 따른다 — 폰을 밝게 쓰는 사람에게 다크로 시작해
          눈부시게 만들 이유가 없고, 그 사람은 테마 고르기를 찾기 전까지 그냥 참고 본다.
@@ -280,6 +286,9 @@ const App={
     this.$.simplePeriodicToggle.setAttribute('aria-checked', this.state.isSimplePeriodic);
     this.$.simpleCategoryToggle.classList.toggle('on', this.state.isSimpleCategory);
     this.$.simpleCategoryToggle.setAttribute('aria-checked', this.state.isSimpleCategory);
+    /* 눌려 있는 제한시간 버튼도 여기서 정한다 — index.html에 active를 박아 두면
+       저장값과 어긋나는 순간 화면과 실제 시간이 다른 말을 한다. */
+    this.syncTimerBtns();
 
   },
   /* 켜짐/꺼짐은 이모지와 흐리기로 보여 주는데, 그건 눈으로 보는 사람에게만 닿는다.
@@ -415,6 +424,12 @@ const App={
 
      그래서 한 곳으로 모으고, 실패하면 그 회차에 딱 한 번 알려 준다. 반복 알림을 막는
      플래그는 메모리에만 둔다 — localStorage에 두면 그게 바로 지금 고장난 것이다. */
+  /* 고를 수 있는 제한시간(ms) — 버튼 줄이 유일한 출처다 */
+  timerChoices(){ return [...document.querySelectorAll('#timerBtns .timer-btn')].map(b=>parseInt(b.dataset.sec)*1000); },
+  syncTimerBtns(){
+    document.querySelectorAll('#timerBtns .timer-btn').forEach(b=>
+      b.classList.toggle('active', parseInt(b.dataset.sec)*1000===this.state.timerDuration));
+  },
   persist(key, value){
     try{
       localStorage.setItem(key, value);
@@ -1167,7 +1182,8 @@ const App={
     document.getElementById('timerBtns').addEventListener('click',e=>{
       const b=e.target.closest('.timer-btn');if(!b)return;
       this.state.timerDuration=parseInt(b.dataset.sec)*1000;
-      document.querySelectorAll('.timer-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+      this.persist('chem_timer', this.state.timerDuration);
+      this.syncTimerBtns();
       /* 지금 풀고 있는 문제에도 바로 적용한다. 예전에는 startTimer가 문제 시작 때 고정한
          currentMaxTime만 보고 돌아서, 「무제한」을 눌러도 이 문제는 원래 시간에 만료돼
          오답으로 기록됐다 — 학생 입장에서는 「시간을 껐는데 시간 초과로 틀렸다」였다.
@@ -1916,6 +1932,23 @@ const App={
     els.forEach(el=>{ el.style.animationName=''; });
   },
 
+  /* 틀렸을 때 화면이 해야 하는 일 — 오답 경로 네 곳이 똑같이 부른다.
+     예전에는 같은 일곱 줄이 세 군데에 복사돼 있었고, 네 번째(시간 초과 뒤 오답)에는
+     그중 절반만 있었다. 그래서 제한시간이 지난 뒤 틀리면 **어느 칸이 틀렸는지 화면이
+     말해 주지 않았다** — 칸이 넷인 반응식 문제에서는 그게 곧 "다시 다 지워 보라"는 뜻이다.
+     한 곳으로 모으면 이 종류의 누락이 구조적으로 생기지 않는다.
+     · 타이머를 멈춘다: 안 멈추면 틀린 뒤 화면을 그대로 두었을 때 제한시간이 다시 만료되며
+       같은 문제의 오답 횟수가 한 번 더 올라갔다.
+     · isLastWrongAttempt: 다음 키를 누르는 순간 빨간 표시를 지우라는 표시다(handleKeyPress). */
+  showWrongBlanks(q, ce){
+    clearInterval(this.state.timerInterval);
+    this.state.wrongBlanks={};
+    q.blanks.forEach(b=>{if((q.inputs[b.key]||'')!==b.answer)this.state.wrongBlanks[b.key]=true;});
+    q.coefOneErrorFlag=ce;
+    this.state.isLastWrongAttempt=true;
+    this.state.isAnswerChecked=false;
+    this.renderAll(false);
+  },
   checkAnswer(){
     const q=this.state.currentQuestion;if(!q)return;
     let ok=true,ce=false;
@@ -1959,15 +1992,7 @@ const App={
             this.renderWrongNotes();
           }
         }
-        /* 채점이 끝났으면 타이머는 멈춰야 한다. 안 멈추면 틀린 뒤 화면을 그대로 두었을 때
-           제한시간이 다시 만료되면서 같은 문제의 오답 횟수가 한 번 더 올라갔다. */
-        clearInterval(this.state.timerInterval);
-        this.state.wrongBlanks={};
-        q.blanks.forEach(b=>{if((q.inputs[b.key]||'')!==b.answer)this.state.wrongBlanks[b.key]=true;});
-        q.coefOneErrorFlag=ce;
-        this.state.isLastWrongAttempt=true;
-        this.state.isAnswerChecked=false;
-        this.renderAll(false);
+        this.showWrongBlanks(q, ce);
       }
       return;
     }
@@ -1998,21 +2023,13 @@ const App={
             this.renderWrongNotes();
           }
         }
-        /* 채점이 끝났으면 타이머는 멈춰야 한다. 안 멈추면 틀린 뒤 화면을 그대로 두었을 때
-           제한시간이 다시 만료되면서 같은 문제의 오답 횟수가 한 번 더 올라갔다. */
-        clearInterval(this.state.timerInterval);
-        this.state.wrongBlanks={};
-        q.blanks.forEach(b=>{if((q.inputs[b.key]||'')!==b.answer)this.state.wrongBlanks[b.key]=true;});
-        q.coefOneErrorFlag=ce;
-        this.state.isLastWrongAttempt=true;
-        this.state.isAnswerChecked=false;
-        this.renderAll(false);
+        this.showWrongBlanks(q, ce);
       }
       return;
     }
 
     if(q.isTimedOut){
-      if(!ok){this.feedback('error'); q.coefOneErrorFlag=ce;this.state.isAnswerChecked=false;this.renderAll(false);}
+      if(!ok){this.feedback('error'); this.showWrongBlanks(q, ce);}
       else{this.feedback('success'); this.state.isAnswerChecked=true;q.isTimedOut=false;this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};clearInterval(this.state.timerInterval);this.renderAll('timeout_correct');}
     }else{
       clearInterval(this.state.timerInterval);
@@ -2029,12 +2046,7 @@ const App={
           this.generateBeautifulWrongNote(q);
           this.state.wrongAlreadyPenalized=true;
         }
-        this.state.wrongBlanks={};
-        q.blanks.forEach(b=>{if((q.inputs[b.key]||'')!==b.answer)this.state.wrongBlanks[b.key]=true;});
-        q.coefOneErrorFlag=ce;
-        this.state.isLastWrongAttempt=true;
-        this.state.isAnswerChecked=false;
-        this.renderAll(false);
+        this.showWrongBlanks(q, ce);
       }
     }
   },

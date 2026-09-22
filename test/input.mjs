@@ -96,6 +96,56 @@ const judge = (answer, input) => page.evaluate(([a, v]) => {
 ok((await judge('CO2', '1CO2')) === true, '계수 1을 실제로 쓴 답에는 안내가 뜬다');
 ok((await judge('3CO2', '13CO2')) === false, '계수를 13으로 잘못 센 답에는 뜨지 않는다');
 
+console.log('\n── 시간이 지난 뒤 틀렸을 때 (모드 2) ──');
+/* 제한시간이 지나면 한 번 더 풀어 볼 수 있다. 그때 틀리면 일반 경로와 똑같이
+   어느 칸이 틀렸는지 빨갛게 보여 줘야 한다 — 칸이 넷인 반응식에서 표시가 없으면
+   학생은 무엇을 고쳐야 하는지 알 수 없다. */
+await setup(2);
+const timedOut = await page.evaluate(async () => {
+  App.state.timerDuration = 300;
+  App.generateQuestion();
+  await new Promise((r) => setTimeout(r, 700));
+  const q = App.state.currentQuestion;
+  q.activeKey = q.blanks[0].key;
+  /* 일부러 틀린 답을 모든 칸에 채운다 — 빈 칸이 있으면 채점 자체가 안 된다 */
+  q.blanks.forEach((bl) => { q.inputs[bl.key] = bl.answer + 'X'; });
+  App.checkAnswer();
+  return {
+    isTimedOut: !!q.isTimedOut,
+    marked: Object.keys(App.state.wrongBlanks).length,
+    blanks: q.blanks.length,
+    redOnScreen: document.querySelectorAll('.blank-box.wrong').length,
+    lastWrong: App.state.isLastWrongAttempt
+  };
+});
+ok(timedOut.isTimedOut, '시간이 지난 상태가 맞다');
+ok(timedOut.marked === timedOut.blanks, '틀린 칸이 전부 표시된다', timedOut);
+ok(timedOut.redOnScreen > 0, '화면에도 빨간 칸이 그려진다', timedOut.redOnScreen);
+/* 다음 키를 누르면 빨간 표시가 걷혀야 한다 — 그 신호가 isLastWrongAttempt다 */
+ok(timedOut.lastWrong === true, '다음 입력에 표시가 걷히도록 표시해 둔다');
+
+console.log('\n── 제한시간은 다음에 열 때도 그대로 ──');
+await page.evaluate(() => { document.querySelector('#timerBtns .timer-btn[data-sec="15"]').click(); });
+await page.waitForTimeout(150);
+await page.reload({ waitUntil: 'domcontentloaded' });
+await page.waitForFunction(() => typeof App === 'object', null, { timeout: 10000 });
+await page.waitForTimeout(400);
+const kept = await page.evaluate(() => ({
+  ms: App.state.timerDuration,
+  active: [...document.querySelectorAll('#timerBtns .timer-btn.active')].map((x) => x.dataset.sec)
+}));
+ok(kept.ms === 15000, '고른 제한시간이 새로 열어도 남아 있다', kept.ms);
+ok(kept.active.length === 1 && kept.active[0] === '15', '눌린 버튼도 저장값과 같다', kept.active);
+/* 쓰레기 값이 들어 있어도 기본값으로 버틴다 */
+const junk = await page.evaluate(async () => {
+  localStorage.setItem('chem_timer', 'ㅋㅋ');
+  return 0;
+});
+await page.reload({ waitUntil: 'domcontentloaded' });
+await page.waitForFunction(() => typeof App === 'object', null, { timeout: 10000 });
+await page.waitForTimeout(300);
+ok(await page.evaluate(() => App.state.timerDuration === DEFAULT_TIMER), '저장값이 망가져 있으면 기본값으로 돌아간다');
+
 ok(boom.length === 0, '콘솔 예외 없음', boom);
 await b.close();
 console.log(fail ? `\n❌ 입력 엔진 ${fail}건 실패` : '\n✅ 입력 엔진 통과');
