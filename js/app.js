@@ -1565,9 +1565,15 @@ const App={
          ⌫가 이미 그렇게 하고 있고(아래 DEL), 커서도 같은 규칙을 따라야 앞뒤가 맞는다. */
       const chgAt = val.match(/\^\d*[+-]$/);
       const chgStart = chgAt ? val.length - chgAt[0].length : -1;
+      /* Na·Cl 같은 두 글자 기호는 한 덩어리다 — ⌫는 이미 그렇게 지운다(아래 DEL).
+         ←/→만 한 글자씩 움직여서 커서가 기호 가운데에 설 수 있었고, 거기서 H를 넣으면
+         「NHa」, ⌫를 누르면 「a」가 남았다. 소문자 a는 키패드 어느 키로도 만들 수 없어
+         학생이 무엇을 눌러 이렇게 됐는지 되짚을 수가 없다. 셋이 같은 규칙을 쓴다. */
+      const pairBefore = p => p >= 2 && /[A-Z]/.test(val[p-2]) && /[a-z]/.test(val[p-1]);
+      const pairAt = p => p + 1 < val.length && /[A-Z]/.test(val[p]) && /[a-z]/.test(val[p+1]);
       if(key === 'LEFT') {
         if(chgStart >= 0 && pos > chgStart) q.cursor[q.activeKey] = chgStart;
-        else if(pos > 0) q.cursor[q.activeKey] = pos - 1;
+        else if(pos > 0) q.cursor[q.activeKey] = pos - (pairBefore(pos) ? 2 : 1);
         else {
           /* 칸의 맨 왼쪽에서 한 번 더 누르면 바로 이전 블랭크의 맨 끝으로 이동 */
           const idx = q.blanks.findIndex(b=>b.key===q.activeKey);
@@ -1579,7 +1585,7 @@ const App={
         }
       } else if(key === 'RIGHT') {
         if(chgStart >= 0 && pos >= chgStart) q.cursor[q.activeKey] = val.length;
-        else if(pos < val.length) q.cursor[q.activeKey] = pos + 1;
+        else if(pos < val.length) q.cursor[q.activeKey] = pos + (pairAt(pos) ? 2 : 1);
         else {
           /* 칸의 맨 오른쪽에서 한 번 더 누르면 바로 다음 블랭크의 맨 앞으로 이동 */
           const idx = q.blanks.findIndex(b=>b.key===q.activeKey);
@@ -1589,19 +1595,26 @@ const App={
             q.cursor[nextKey] = 0;
           }
         }
-      } else if(key.startsWith('NUM_')) {
-        let char = key.replace('NUM_','');
+      } else if(key.startsWith('NUM_') || key.startsWith('ELEM_')) {
+        /* 숫자 키와 원소 키는 똑같이 「커서 자리에 글자 하나」다 — 한 분기로 둔다.
+           따로 두면 한쪽만 고쳐져 갈라진다(실제로 아래 전하 규칙이 그렇게 어긋났다). */
+        const char = key.replace(/^(?:NUM|ELEM)_/, '');
+        /* 새 글자는 전하 앞(몸통 끝)까지만 들어간다. 전하는 늘 맨 끝에 하나뿐이라는
+           규칙이 CHG_ 쪽에만 있었던 탓에, H⁺에서 숫자를 누르면 H^+2 가 되고 그다음부터
+           전하 키가 몸통을 못 떼어내 ^가 하나 더 붙었다(H^+2^+ → 화면에는 H⁺²⁺).
+           그 값은 전하 키를 아무리 눌러도 그대로라 학생이 빠져나올 길이 없었다.
+           모드 11은 숫자 줄과 전하 줄이 나란히 있어 오타 한 번이면 닿는 자리다. */
+        const caret = val.indexOf('^');
+        if(caret >= 0 && pos > caret) pos = caret;
         q.inputs[q.activeKey] = val.slice(0, pos) + char + val.slice(pos);
         q.cursor[q.activeKey] = pos + char.length;
       } else if(key.startsWith('CHG_')) {
-        /* 전하는 늘 맨 끝에 하나만 붙는다. 커서 위치와 무관하게 끝에 놓고, 이미 있으면 교체한다. */
-        const body = val.replace(/\^\d*[+-]$/, '');
+        /* 전하는 늘 맨 끝에 하나만 붙는다. 커서 위치와 무관하게 끝에 놓고, 이미 있으면 교체한다.
+           ^ 뒤를 통째로 바꾼다 — 끝에 붙은 전하만 떼어내면, 어쩌다 망가진 값에서는
+           교체가 아니라 덧붙이기가 되어 되돌릴 수가 없다. */
+        const body = val.replace(/\^.*$/, '');
         q.inputs[q.activeKey] = body + '^' + key.replace('CHG_','');
         q.cursor[q.activeKey] = q.inputs[q.activeKey].length;
-      } else if(key.startsWith('ELEM_')) {
-        let char = key.replace('ELEM_','');
-        q.inputs[q.activeKey] = val.slice(0, pos) + char + val.slice(pos);
-        q.cursor[q.activeKey] = pos + char.length;
       } else if(key === 'DEL') {
         if(pos > 0) {
           let dl = 1;
@@ -1906,11 +1919,13 @@ const App={
   checkAnswer(){
     const q=this.state.currentQuestion;if(!q)return;
     let ok=true,ce=false;
-    /* '1'+정답 오입력은 계수 생략 규칙을 놓친 것 — 계수를 안 쓰는 MODE 1과, 답이 애초에 숫자인 MODE 7(예: 7족에 17 입력)은 제외 */
     /* '1'+정답 오입력은 계수 생략 규칙을 놓친 것. 정답이 애초에 숫자인 모드에서는
-       (예: 7족 답에 17을 입력) 오작동하므로 MODES의 noCoefWarning으로 끈다. */
+       (예: 7족 답에 17을 입력) 오작동하므로 MODES의 noCoefWarning으로 끈다.
+       정답이 숫자로 시작하는 칸도 마찬가지다 — 정답 3CO₂에 계수를 13으로 잘못 세어
+       「13CO2」를 치면 '1'+'3CO2'와 같아져 「계수 1은 적지 않아요」가 떴다. 1을 쓴 적이
+       없는 학생에게는 무슨 말인지 알 수 없는 안내다. */
     const skipCoefWarn=!!(modeRoot(this.state.currentMode)||{}).noCoefWarning;
-    q.blanks.forEach(b=>{const v=q.inputs[b.key]||'';if(v!==b.answer){ok=false;if(!skipCoefWarn&&v==='1'+b.answer)ce=true;}});
+    q.blanks.forEach(b=>{const v=q.inputs[b.key]||'';if(v!==b.answer){ok=false;if(!skipCoefWarn&&!/^\d/.test(b.answer)&&v==='1'+b.answer)ce=true;}});
 
     if(this.state.isRetryPlaylistMode) {
       if(ok) {
