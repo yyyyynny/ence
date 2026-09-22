@@ -374,6 +374,9 @@
   .stat-bar{display:flex;align-items:center;gap:var(--s-4);padding:0 var(--s-1) var(--s-3);
     margin-bottom:var(--s-4);border-bottom:1px solid var(--c-border);}
   .stat-item{display:flex;align-items:center;gap:var(--s-2);}
+  /* 「연속」과 나머지 둘 사이를 벌린다. 예전에는 빈 <div style="flex:1">을 하나 끼워
+     그 일을 시켰다 — 화면에 아무것도 아닌 요소가 읽어 주는 기계에는 그대로 지나간다. */
+  .stat-item-lead{margin-right:auto;}
   /* ── 작은 라벨 ──
      여기는 전부 mono + 대문자 + 자간 1px 이었다. 그 조판은 영문 소형 캡션용이고,
      이 라벨들은 「제한시간」「출제 방식」「카드 유형」처럼 **한글**이다.
@@ -555,6 +558,10 @@
      키 바닥이 반투명이면 아래 괘선색이 비쳐 회색이 되므로 여기만 단색 판을 쓴다. */
   .kb-key{background:var(--c-surface-solid);color:var(--c-text-primary);border:none;border-radius:0;font-family:var(--font-mono);font-size:var(--t-body-lg);font-weight:500;min-height:54px;min-width:44px;flex:1 1 auto;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--t-btn);}
   .kb-key:active{transform:scale(.95);}
+  /* ← → 는 나머지 키보다 좁다. 예전에는 index.html 에 style= 로 박혀 있었다 —
+     그러면 여백 척도도 토큰도 비껴간다(실제로 CSS 에서 없앤 척도 밖 값 14px 이 거기 남아 있었다). */
+  .kb-key.kb-arrow{flex-grow:1;max-width:60px;}
+  .kb-row-edit{margin-top:var(--s-3);}
   .kb-key.num{color:var(--c-text-primary);}.kb-key.elem{color:var(--c-text-primary);font-weight:500;}
   .kb-key.del{color:var(--c-wrong);flex-grow:2;}.kb-key.confirm{background:var(--c-correct);color:var(--c-on-correct);flex-grow:3;}.kb-key.next-q{background:var(--c-accent-2);color:var(--c-on-accent-2);flex-grow:3;}
   /* manipulation: 더블탭 확대만 끄고 핀치·팬은 그대로 — 확대는 이제 막지 않고 견디는 전략
@@ -600,6 +607,8 @@
      인라인으로 적혀 있었다 — 화면 높이 단위 규칙이 한곳에 모이지 않는다.) */
   #wrongNoteModalOverlay .modal-box{height:90vh;height:90dvh;}
   .modal-header{display:flex;justify-content:space-between;margin-bottom:var(--s-4);align-items:center;}
+  /* 창 제목 오른쪽의 버튼 묶음(주기율표 창의 「회전」 + 닫기 X) */
+  .modal-header-actions{display:flex;gap:var(--s-2);align-items:center;}
   /* 제목에 강조색을 칠하는 건 그 자체가 「생성된 화면」의 표시다.
      제목은 크기와 자간으로 서고, 색은 눌러야 하는 것에만 쓴다. */
   .modal-title{font-size:var(--t-title);font-weight:700;letter-spacing:-0.01em;color:var(--c-text-primary);}
@@ -683,6 +692,12 @@
   /* 예전엔 index.html 에 style= 로 박혀 있어 모션 토큰도 최소 높이도 비껴 갔다. */
   .retry-playlist-btn{background:var(--c-accent-1);color:var(--c-on-accent-1);border:none;border-radius:var(--r-2);
     padding:var(--s-3) var(--s-4);font-size:var(--t-body);font-weight:600;cursor:pointer;}
+  /* 오답 노트가 비었을 때의 한 줄 */
+  /* 40px/20px 이었다 — 척도(최대 24px) 밖이라 가장 가까운 값으로 맞춘다.
+     빈 화면의 여백이라 몇 px 차이는 보이지 않고, 척도를 벗어난 값이 하나 남는 편이 더 비싸다. */
+  .wn-empty{color:var(--c-text-secondary);text-align:center;padding:var(--s-5) var(--s-5);}
+  /* 오답 노트 창 맨 위의 버튼 두 개 — 「랜덤 연속 풀기」와 「전체 삭제」를 양끝으로 민다 */
+  .wn-actions{display:flex;justify-content:space-between;margin-bottom:var(--s-4);}
   .clear-all-btn{background:var(--c-wrong);color:var(--c-on-wrong);border:none;border-radius:var(--r-2);padding:var(--s-3) var(--s-4);font-weight:600;cursor:pointer;margin-bottom:0;align-self:flex-end;}
   /* 「정말 삭제?」 확인 상태 — 평소보다 눈에 띄어야 하지만 테마를 따라가야 한다.
      예전에는 JS가 style.background 에 색을 박았고 그 토큰이 존재하지도 않아
@@ -864,6 +879,8 @@
 
   /* ── 주기율표 ── */
   .pt-modal-box{max-width:1300px;width:96vw;}   /* 배경은 .modal-box 와 같다 */
+  /* 테마 창은 목록이 한 줄에 하나씩이라 넓힐 이유가 없다 — 창마다 폭을 정하는 자리를 여기로 모은다 */
+  #themeModalOverlay .modal-box{max-width:440px;}
   .pt-rotate-btn{background:transparent;border:1px solid transparent;color:var(--c-text-secondary);border-radius:var(--r-2);padding:var(--s-2) var(--s-3);font-size:var(--t-body);font-weight:500;cursor:pointer;transition:var(--t-btn);white-space:nowrap;}
   /* 회전 = 전체화면 가로보기 오버레이: 화면 자체를 90도 돌려 쓰는 전용 뷰.
      확대는 브라우저 네이티브 줌이 아니라 자체 transform 줌(setupPtZoom)으로 처리한다 —
@@ -1165,6 +1182,13 @@
   .m6-nav{display:flex;align-items:center;gap:var(--s-4);}
   .m6-nav-btn{background:transparent;border:1px solid transparent;border-radius:var(--r-2);color:var(--c-text-primary);font-size:var(--t-display);font-weight:600;width:60px;height:60px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:var(--t-btn);flex-shrink:0;line-height:1;}
   @media (hover:hover){.m6-nav-btn:hover{border-color:var(--c-accent-1);color:var(--c-accent-1);}}
+  /* 오답노트 카드 복습의 「기억 안 남」·「기억 남」 두 버튼. 예전에는 index.html 에
+     font-size:14px; font-weight:700 이 인라인으로 박혀 있었다 — 굵기 700 은 규약상
+     수식·창 제목·점수의 것이고 버튼은 500 이다(아래 굵기 규약 참고).
+     .m6-nav-btn 뒤에 적어야 한다. 앞에 두면 같은 무게(클래스 하나)라 나중에 적힌
+     .m6-nav-btn 의 26px·600 이 이긴다 — 인라인일 때는 그게 저절로 막혀 있었다. */
+  .retry-m6-actions{display:flex;gap:var(--s-2);}
+  .retry-m6-btn{flex:1;width:auto;font-size:var(--t-body);font-weight:500;}
   .m6-nav-center{display:flex;flex-direction:column;align-items:center;gap:var(--s-2);flex:1;}
   .m6-counter{font-family:var(--font-mono);font-size:var(--t-body-lg);font-weight:600;color:var(--c-text-primary);}
   .m6-shuffle{background:transparent;border:1px solid transparent;border-radius:var(--r-2);color:var(--c-text-secondary);font-size:var(--t-body);font-weight:500;padding:var(--s-2) var(--s-4);cursor:pointer;transition:var(--t-btn);}
@@ -1289,6 +1313,13 @@
     .section-tab, .mode-tab, .timer-btn{ padding:var(--s-2) var(--s-3); }
     .question-card{ padding:var(--s-3); }
   }
+
+  /* 화면 분할 버튼은 그 배치가 실제로 생기는 폭에서만 보인다(아래 768px 블록).
+     좁은 화면에서는 눌러도 화면이 한 픽셀도 안 바뀌는데 aria-pressed 만 「눌림」이 되어,
+     읽어 주는 기계에는 무언가 켜졌다고 말하면서 눈에는 아무 일도 안 일어났다.
+     게다가 376px 미만에서는 헤더가 두 줄로 내려가는데 그 한 칸을 죽은 버튼이 쓰고 있었다.
+     같은 수를 이 앱이 이미 쓴다 — 회전 버튼도 쓸모없는 폭에서 숨는다(#ptRotateBtn). */
+  @media (max-width: 767px){ #layoutBtn{display:none;} }
 
   /* 와이드(화면 분할) 모드 CSS Grid 재배치 */
   @media (min-width: 768px) {

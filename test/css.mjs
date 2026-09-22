@@ -43,5 +43,17 @@ ok(dvhCount >= 6, `dvh 를 쓰는 자리가 남아 있다 (${dvhCount}곳)`);
 const inlineVh = [...html.matchAll(/style="[^"]*\d+d?vh[^"]*"/g)].map((m) => m[0]);
 ok(inlineVh.length === 0, 'index.html 인라인 style 에 화면 높이 단위가 없다', inlineVh.join(' / ') || '0건');
 
+/* ── index.html 의 인라인 style ──
+   여백·글자 크기·굵기가 style= 로 들어가면 척도도 토큰도 굵기 규약도 통째로 비껴간다.
+   실제로 CSS 에서 없앤 척도 밖 두 값(10px·14px)이 여기 그대로 남아 있었고, 버튼에 굵기
+   700 이 박혀 있었다(규약은 수식·창 제목·점수만 700 이다).
+   남겨 두는 것은 두 가지뿐이다: JS 가 같은 속성을 인라인으로 켜고 끄는 초기 display 값과,
+   화면에 안 보이는 아이콘 스프라이트의 자리 잡기. 나머지는 클래스로 옮긴다. */
+const OK_INLINE = /^(display:none|position:absolute)$/;
+const inline = [...html.matchAll(/<[^>]*\sstyle="([^"]*)"/g)]
+  .map((m) => m[1].trim().replace(/;$/, ''))
+  .filter((v) => !OK_INLINE.test(v));
+ok(inline.length === 0, 'index.html 에 값이 든 인라인 style 이 없다', inline.join(' / ') || '0건');
+
 console.log(fail ? `\n❌ 스타일 규약 ${fail}건 실패` : '\n✅ 스타일 규약 통과');
 process.exit(fail ? 1 : 0);

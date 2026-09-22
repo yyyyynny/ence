@@ -24,7 +24,7 @@
 <!-- 탭·홈 화면 아이콘. 파일을 새로 두지 않으려고 SVG 를 그대로 주소에 적는다
      (빌드 도구가 없고 file:// 로 열어도 그대로 떠야 한다). -->
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23191817'/%3E%3Ctext x='16' y='23' font-size='20' font-family='monospace' font-weight='700' text-anchor='middle' fill='%238FB0B6'%3E%E2%9A%97%3C/text%3E%3C/svg%3E">
-<link rel="stylesheet" href="css/style.css?v=2026.09.22-12">
+<link rel="stylesheet" href="css/style.css?v=2026.09.22-13">
 </head>
 <body>
 
@@ -96,11 +96,10 @@
   <!-- 순환 모드일 때만 보인다(App.updateStatBarVisibility) — 저장도 안 되는
        세션 카운터를 늘 띄워 둘 필요가 없고, 정답 배너가 "연속 N번째"로 이미 알려 준다. -->
   <div class="stat-bar" id="statBar">
-    <div class="stat-item">
+    <div class="stat-item stat-item-lead">
       <div class="stat-label">연속</div>
       <div class="stat-value" id="streakCount">0</div>
           </div>
-    <div style="flex:1"></div>
     <div class="stat-item"><div class="stat-label">맞음</div><div class="stat-value" id="totalCorrect">0</div></div>
     <div class="stat-item"><div class="stat-label">틀림</div><div class="stat-value" id="totalWrong">0</div></div>
   </div>
@@ -175,16 +174,16 @@
       <div class="q-label" id="retryM6Label">플래시카드 복습</div>
       <div class="q-sublabel" id="retryM6Title"></div>
     </div>
-    <div class="m6-perspective" style="flex-grow:1">
+    <div class="m6-perspective">
       <div class="m6-flashcard" id="retryM6Flashcard">
         <div class="m6-face m6-front"><div class="m6-tag" id="retryM6FTag"></div><div id="retryM6FContent"></div></div>
         <div class="m6-face m6-back"><div class="m6-tag" id="retryM6BTag"></div><div id="retryM6BContent"></div></div>
       </div>
     </div>
     <div class="m6-hint"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg> 탭하여 뒤집기</div>
-    <div style="display:flex;gap:10px">
-      <button class="m6-nav-btn" id="retryM6ForgotBtn" style="flex:1;width:auto;font-size:14px;font-weight:700;"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-arrow-right"></use></svg> 다음에 다시</button>
-      <button class="m6-nav-btn retry-know-btn" id="retryM6KnowBtn" style="flex:1;width:auto;font-size:14px;font-weight:700;"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-check"></use></svg> 기억했어요</button>
+    <div class="retry-m6-actions">
+      <button class="m6-nav-btn retry-m6-btn" id="retryM6ForgotBtn"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-arrow-right"></use></svg> 다음에 다시</button>
+      <button class="m6-nav-btn retry-know-btn retry-m6-btn" id="retryM6KnowBtn"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-check"></use></svg> 기억했어요</button>
     </div>
   </div>
 
@@ -248,12 +247,12 @@
     <div id="choiceRow" style="display:none"></div>
     <!-- kb-edit: 글자 단위 편집키. 보기에서 고르는 문제에서는 답이 통째로 들어오므로
          이 키들이 눌리면 답이 깨진다(「이온결합」→⌫→「이온결」). 그때는 통째로 숨긴다. -->
-    <div class="kb-row" style="margin-top:14px">
-      <button class="kb-key kb-edit" data-key="LEFT" style="flex-grow:1; max-width: 60px;" aria-label="왼쪽으로"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-left"></use></svg></button>
-      <button class="kb-key kb-edit" data-key="RIGHT" style="flex-grow:1; max-width: 60px;" aria-label="오른쪽으로"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"></use></svg></button>
-      <button class="kb-key del kb-edit" data-key="DEL" style="flex-grow:2"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-backspace"></use></svg> 지우기</button>
-      <button class="kb-key confirm" data-key="CONFIRM" style="flex-grow:3"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-check"></use></svg> 확인</button>
-      <button class="kb-key next-q" data-key="NEXT" style="display:none; flex-grow:3"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-arrow-right"></use></svg> 다음 문제</button>
+    <div class="kb-row kb-row-edit">
+      <button class="kb-key kb-edit kb-arrow" data-key="LEFT" aria-label="왼쪽으로"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-left"></use></svg></button>
+      <button class="kb-key kb-edit kb-arrow" data-key="RIGHT" aria-label="오른쪽으로"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-chevron-right"></use></svg></button>
+      <button class="kb-key del kb-edit" data-key="DEL"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-backspace"></use></svg> 지우기</button>
+      <button class="kb-key confirm" data-key="CONFIRM"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-check"></use></svg> 확인</button>
+      <button class="kb-key next-q" data-key="NEXT" style="display:none"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-arrow-right"></use></svg> 다음 문제</button>
     </div>
   </div>
 </main>
@@ -263,7 +262,7 @@
      갇혀 z-index 숫자가 제 일을 못 하며 (3) 무엇보다 창을 열 때 #app에 inert를 걸 수가 없다
      — 창까지 같이 꺼지기 때문이다. 초점 가둠(App.openModal)이 이 구조에 기대고 있다. -->
 <div class="modal-overlay" id="themeModalOverlay">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="themeModalTitle" style="max-width:440px">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="themeModalTitle">
     <div class="modal-header"><div class="modal-title" id="themeModalTitle">테마</div><button class="modal-close" id="themeModalClose" aria-label="테마 창 닫기"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div>
     <!-- 목록은 THEMES(js/theme.js)에서 만들어 넣는다 — 테마를 더해도 이 마크업은 그대로다 -->
     <div class="modal-content" id="themeList"></div>
@@ -293,7 +292,7 @@
 
 <div class="modal-overlay" id="periodicModalOverlay">
   <div class="modal-box pt-modal-box" role="dialog" aria-modal="true" aria-labelledby="periodicModalTitle">
-    <div class="modal-header"><div class="modal-title" id="periodicModalTitle">주기율표</div><div style="display:flex;gap:10px;align-items:center"><button class="pt-rotate-btn" id="ptRotateBtn" title="회전해서 보기"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg> 회전</button><button class="modal-close" id="periodicModalClose" aria-label="주기율표 창 닫기"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div></div>
+    <div class="modal-header"><div class="modal-title" id="periodicModalTitle">주기율표</div><div class="modal-header-actions"><button class="pt-rotate-btn" id="ptRotateBtn" title="회전해서 보기"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-refresh"></use></svg> 회전</button><button class="modal-close" id="periodicModalClose" aria-label="주기율표 창 닫기"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div></div>
     <div class="pt-toggle-row">
       <div class="pt-toggle-label" id="simplePeriodicLabel">간략히 보기<small>중학교 필수 원소 (1~20번) + 불꽃반응·자주 나오는 원소만 표시</small></div>
       <button class="pt-toggle-switch" id="simplePeriodicToggle" role="switch" aria-checked="false" aria-label="간략히 보기"><span class="pt-toggle-knob"></span></button>
@@ -320,9 +319,9 @@
 <div class="modal-overlay" id="wrongNoteModalOverlay">
   <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="wrongNoteModalTitle">
     <div class="modal-header"><div class="modal-title" id="wrongNoteModalTitle">오답 노트</div><button class="modal-close" id="wrongNoteModalClose" aria-label="오답 노트 창 닫기"><svg class="ic" aria-hidden="true" focusable="false"><use href="#i-close"></use></svg></button></div>
-    <div style="display:flex; justify-content:space-between; margin-bottom:16px;">
+    <div class="wn-actions">
         <button class="retry-playlist-btn" id="retryPlaylistBtn"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-infinity"></use></svg> 랜덤 연속 풀기</button>
-        <button class="clear-all-btn" id="clearAllNotesBtn" style="margin-bottom:0"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-trash"></use></svg> 전체 삭제</button>
+        <button class="clear-all-btn" id="clearAllNotesBtn"><svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-trash"></use></svg> 전체 삭제</button>
     </div>
     <!-- 모드 단위로 칩을 두면 모드 수만큼 늘어나 못 쓰게 된다. 구역 단위로 거르고,
          어떤 모드였는지는 각 노트의 배지에 이미 보인다. -->
@@ -331,15 +330,15 @@
   </div>
 </div>
 
-<script src="js/version.js?v=2026.09.22-12"></script>
-<script src="js/theme.js?v=2026.09.22-12"></script>
-<script src="js/data.js?v=2026.09.22-12"></script>
-<script src="js/curriculum.js?v=2026.09.22-12"></script>
-<script src="js/diagram.js?v=2026.09.22-12"></script>
-<script src="js/app.js?v=2026.09.22-12"></script>
+<script src="js/version.js?v=2026.09.22-13"></script>
+<script src="js/theme.js?v=2026.09.22-13"></script>
+<script src="js/data.js?v=2026.09.22-13"></script>
+<script src="js/curriculum.js?v=2026.09.22-13"></script>
+<script src="js/diagram.js?v=2026.09.22-13"></script>
+<script src="js/app.js?v=2026.09.22-13"></script>
 <!-- 자가 검사. 앱 동작에는 관여하지 않고 window.SelfCheck 만 정의한다.
      주소에 ?selfcheck 를 붙이면 저절로 돌고 결과가 화면에 뜬다 —
      개발자도구를 못 여는 폰에서도 확인할 수 있어야 실제로 돌리게 된다. -->
-<script src="js/selfcheck.js?v=2026.09.22-12"></script>
+<script src="js/selfcheck.js?v=2026.09.22-13"></script>
 </body>
 </html>

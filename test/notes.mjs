@@ -75,6 +75,45 @@ ns = await notes();
 ok(ns.length === 1, '옛 노트에 새 노트가 겹쳐 생기지 않는다', ns.length);
 ok(ns[0].fails === 2 && !!ns[0].key, '  그 자리에서 신원을 달아 준다', ns[0].key);
 
+console.log('\n── 카드 노트는 「몇 번째」가 아니라 「그 카드」를 기억한다 ──');
+/* cardIndex 는 섞인 배열에서의 자리라 다음에 열 때 아무 뜻이 없다. 주석은 「옛 노트
+   복원용으로만 남긴다」고 적어 두고도 새 노트에 계속 써 넣고 있었고, 앞면을 못 찾는
+   순간 그 번호가 살아나 엉뚱한 카드를 열었다. */
+const card = await page.evaluate(async () => {
+  App.setSection('ms'); App.setMode(6);
+  App.state.m6Index = 3; App.m6Render();
+  const saved = App.state.m6Cards[3];
+  App.m6SaveCurrentAsWrong();
+  const note = App.state.wrongNotes.find((n) => n.mode === 6);
+  const cards = App.m6BuildCards('full', 'ms');            /* 다시 만든(섞이지 않은) 배열 */
+  return {
+    keys: Object.keys(note.qData),
+    savedFront: saved.fhtml,
+    foundFront: cards[App.m6FindCard(cards, note.qData)].fhtml,
+    /* 앞면이 안 맞는 옛 노트 — 저장 당시의 자리(7)를 따라가면 안 된다 */
+    fallback: App.m6FindCard(cards, { ...note.qData, cardFront: '<b>없는 카드</b>', cardIndex: 7 })
+  };
+});
+ok(!card.keys.includes('cardIndex'), '새 노트에 cardIndex 를 쓰지 않는다', card.keys.join(','));
+ok(card.foundFront === card.savedFront, '카드가 다시 섞여도 앞면으로 그 카드를 찾는다');
+ok(card.fallback === 0, '앞면을 못 찾으면 첫 카드다 (옛 노트의 번호를 따라가지 않는다)', card.fallback);
+
+console.log('\n── 노트가 없을 때의 한 줄 ──');
+const empty = await page.evaluate(() => {
+  App.state.wrongNotes = [];
+  App.state.noteFilter = 'all'; App.renderWrongNotes();
+  const all = document.querySelector('#wrongNoteList p').textContent;
+  App.state.noteFilter = 'chem'; App.renderWrongNotes();
+  const sec = document.querySelector('#wrongNoteList p').textContent;
+  App.state.noteFilter = 'all';
+  return { all, sec };
+});
+/* 필터가 「전체」인데 "이 구역의"라고 했다 — 노트가 하나도 없는 새 학생이 보는 첫 문장이다 */
+ok(!empty.all.includes('구역'), '필터가 「전체」면 구역을 말하지 않는다', empty.all);
+ok(empty.sec.includes('구역'), '구역 필터에서는 그 구역 이야기를 한다', empty.sec);
+/* 앱 머리말이 해요체로 못 박았는데 이 자리만 합쇼체였다 */
+ok([empty.all, empty.sec].every((t) => /어요\.$/.test(t.trim())), '둘 다 해요체다');
+
 ok(boom.length === 0, '콘솔 예외 없음', boom);
 await b.close();
 console.log(fail ? `\n❌ 오답노트 ${fail}건 실패` : '\n✅ 오답노트 통과');

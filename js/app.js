@@ -1015,7 +1015,13 @@ const App={
        거르는 규칙은 visibleNotes() 한 곳에 둔다 — 「연속 재풀이」가 여기와 다른 기준을
        쓰고 있어서 화면에 안 보이는 노트까지 재생목록에 들어갔다. */
     const f=this.visibleNotes();
-    if(f.length===0){this.$.wrongNoteList.innerHTML=`<p style="color:var(--c-text-secondary);text-align:center;padding:40px 20px">이 구역의 오답 기록이 없습니다.</p>`;return;}
+    if(f.length===0){
+      /* 필터가 「전체」인데도 "이 구역의"라고 했다 — 노트가 하나도 없는 새 학생이 보는
+         첫 문장이 이것이다. 말투도 이 자리만 합쇼체였다(앱 머리말이 해요체로 못 박았다). */
+      const msg = this.state.noteFilter==='all' ? '아직 오답 기록이 없어요.' : '이 구역에는 오답 기록이 없어요.';
+      this.$.wrongNoteList.innerHTML=`<p class="wn-empty">${msg}</p>`;
+      return;
+    }
     this.$.wrongNoteList.innerHTML=f.map(n=>{
       const fc = n.failCount || 1;
       let style = '';
@@ -2720,7 +2726,10 @@ const App={
       const i = cards.findIndex(c => c.fhtml === q.cardFront);
       if(i >= 0) return i;
     }
-    return Math.min(Math.max(0, (q && q.cardIndex) || 0), cards.length - 1);
+    /* 못 찾았을 때 옛 노트의 cardIndex로 되돌아가는 것은 「무작위 카드」와 같다 —
+       그 번호는 저장 당시 섞인 순서에서의 자리라 지금 배열과 아무 관계가 없다.
+       첫 카드로 여는 편이 낫다: 적어도 늘 같은 자리고, 학생이 무슨 일이 났는지 안다. */
+    return 0;
   },
   m6CurrentSaved(){
     const card=this.state.m6Cards[this.state.m6Index];if(!card)return false;
@@ -2744,9 +2753,11 @@ const App={
     if(this.m6CurrentSaved()){this.feedback('tap');return;} /* 이미 저장됨 → 중복 저장 방지 */
     const {title,html}=this.m6CardNoteData(card);
     /* cardIndex는 "섞인 배열에서 몇 번째"라 복원할 때(원래 순서로 다시 만든다) 다른 카드가 열렸다.
-       카드 앞면 자체를 저장해 그 카드를 찾는다. cardIndex는 옛 노트 복원용으로만 남긴다. */
+       카드 앞면 자체를 저장해 그 카드를 찾는다. cardIndex는 옛 노트 복원용으로만 남긴다 —
+       그렇게 적어 두고도 새 노트에 계속 써 넣고 있었다. 앞면을 못 찾는 순간(다음 판에서 카드
+       HTML이 조금만 바뀌어도 그렇게 된다) 그 「섞인 번호」가 살아나 엉뚱한 카드를 연다. */
     const qData={m6Type:this.state.m6Type,m6Order:this.state.m6Order,
-                 cardFront:card.fhtml,cardIndex:this.state.m6Index,title};
+                 cardFront:card.fhtml,title};
     this.saveWrongNote(this.state.currentMode,title,html,qData,false);
     this.feedback('success');
     this.m6SyncSaveBtn();

@@ -480,6 +480,24 @@
     if (typeof APP_VERSION === 'undefined') { rep.warn.push('APP_VERSION 없음'); return; }
     if (typeof CHANGELOG !== 'undefined' && CHANGELOG.length) {
       rep.ok('CHANGELOG 맨 앞이 지금 판', CHANGELOG[0].v === APP_VERSION, CHANGELOG[0].v + ' vs ' + APP_VERSION);
+      /* 목록의 순서가 곧 「새것/옛것」이다 — 판 번호를 글자로 비교하면 -10 이 -9 보다
+         옛것이 된다('1' < '9'). 그래서 순서를 숫자로 따져 여기서 지킨다.
+         같은 판이 두 번 들어가면 changesSince 가 찾는 자리가 어긋나, 그 사이에 바뀐 내용이
+         학생에게 통째로 안 보인다. */
+      const num = (v) => (String(v).match(/\d+/g) || []).map(Number);
+      const older = (a, b) => {           /* a 가 b 보다 옛것인가 */
+        const x = num(a), y = num(b);
+        for (let i = 0; i < Math.max(x.length, y.length); i++) {
+          const p = x[i] || 0, q = y[i] || 0;
+          if (p !== q) return p < q;
+        }
+        return false;                     /* 같다 */
+      };
+      const vs = CHANGELOG.map((c) => c.v);
+      const dup = vs.filter((v, i) => vs.indexOf(v) !== i);
+      rep.ok('CHANGELOG 에 같은 판이 두 번 없음', dup.length === 0, dup.join(' '));
+      const wrong = vs.map((v, i) => (i === 0 || older(v, vs[i - 1])) ? null : `${vs[i - 1]} → ${v}`).filter(Boolean);
+      rep.ok('CHANGELOG 가 새것부터 차례로', wrong.length === 0, wrong.slice(0, 3).join(' · '));
     }
     const urls = Array.from(document.querySelectorAll('link[href*="?v="],script[src*="?v="]'))
       .map((e) => (e.getAttribute('href') || e.getAttribute('src')));
