@@ -351,7 +351,17 @@
       if (!s) return null;
       return s.endsWith('ms') ? parseFloat(s) : parseFloat(s) * 1000;
     };
-    const inter = ['--dur-press', '--dur-tap', '--dur-enter', '--dur-exit', '--dur-move', '--dur-view'];
+    /* 볼 토큰을 손으로 적어 두면 새 토큰이 생겼을 때 여기에 더하는 걸 빠뜨린다 —
+       실제로 --dur-view-out 하나가 빠져 있었고, 움직임을 껐는데도 창이 260ms 동안
+       흐려지며 닫혔다. --dur-로 시작하는 것을 전부 훑고, 일부러 안 줄이는 것만 뺀다.
+       (그림 --dur-dia-*: 시간을 0으로 만들면 전자가 중간에 멈춘 채 남아 전자 배치가
+        틀리게 보인다. --dur-tick: 타이머의 선형 눈금이라 움직임이 아니다.) */
+    const KEEP = (n) => n.startsWith('--dur-dia-') || n === '--dur-tick';
+    const all = [];
+    for (let i = 0; i < cs.length; i++) { const n = cs[i]; if (n.startsWith('--dur-') && !KEEP(n)) all.push(n); }
+    /* 사용자 정의 속성을 훑지 못하는 브라우저에서도 최소한 아는 것은 본다 */
+    const inter = all.length ? all.sort()
+      : ['--dur-press', '--dur-tap', '--dur-enter', '--dur-exit', '--dur-move', '--dur-view', '--dur-view-out', '--dur-egg'];
     for (const n of inter) { const v = ms(n); rep.ok('모션 토큰 ' + n + ' 있음', v !== null && !isNaN(v)); }
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       for (const n of inter) { const v = ms(n); if (v !== null) rep.ok('움직임 줄이기: ' + n + ' 가 0에 가까움', v <= 1, v + 'ms'); }
@@ -429,7 +439,12 @@
      전환이 **시작된 순간의 값**(0)을 잡아, 멀쩡한 창을 "안 보인다"고 신고한다.
      그래서 이 검사만 비동기다 — 전환이 끝나기를 실제로 기다린다. */
   async function checkModals(rep) {
-    const settle = () => new Promise((r) => setTimeout(r, motionMs('--dur-enter') + 120));
+    /* 창을 연 직후 짧은 동안은 X가 안 먹는다(app.js TAP_GUARD_MS = 300ms) — 여는 버튼과
+       X가 같은 자리에 오는 폭에서 두 번 두드리면 열자마자 닫히던 것을 막는 장치다.
+       그 시간을 안 기다리고 X를 누르면 여기서만 「안 닫힌다」가 나온다 — 학생 손가락이
+       겪는 일이 아니라 검사가 너무 빠른 것이다. 움직임 줄이기에서는 전환이 1ms라
+       전환 시간만 기다리면 어김없이 그 안에 들어간다. */
+    const settle = () => new Promise((r) => setTimeout(r, Math.max(motionMs('--dur-enter') + 120, 360)));
     const pairs = [['오답 노트', 'wrongNoteBtn', 'wrongNoteModalOverlay', 'wrongNoteModalClose'],
       ['반응식 목록', 'hintBtn', 'hintModalOverlay', 'hintModalClose'],
       ['주기율표', 'periodicBtn', 'periodicModalOverlay', 'periodicModalClose'],

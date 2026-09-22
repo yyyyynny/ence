@@ -19,6 +19,12 @@ const HINT_SORTS=[
   {id:'elem',label:'원소별'},
   {id:'fav', label:'즐겨찾기'}
 ];
+/* 창을 연 직후 이 시간 동안은 X·바깥 누르기로 닫지 않는다 — openModal 참고.
+   300ms는 브라우저가 더블탭으로 보는 시간과 같다. 모션 토큰을 쓰지 않는 이유는 이것이
+   애니메이션이 아니라 입력 문제이기 때문이다 — 「움직임 줄이기」로 전환이 0이 되어도
+   손가락이 두 번 닿는 것은 그대로다. */
+const TAP_GUARD_MS = 300;
+
 const App={
   state:{
     currentMode:null,score:{streak:0,correct:0,wrong:0},
@@ -1119,8 +1125,8 @@ const App={
     });
     /* 창을 여는 버튼(themeBtn·hintBtn 등)은 전부 tap을 주면서, 닫는 X 버튼 넷은 하나도
        안 울리고 있었다 — 여는 동작과 닫는 동작이 같은 무게의 탭인데 한쪽만 무음이었다. */
-    document.getElementById('hintModalClose').addEventListener('click',()=>this.closeModal(this.$.hintModalOverlay));
-    document.getElementById('diaModalClose').addEventListener('click',()=>this.closeModal(this.$.diaModalOverlay));
+    document.getElementById('hintModalClose').addEventListener('click',()=>this.closeModal(this.$.hintModalOverlay,{viaPointer:true}));
+    document.getElementById('diaModalClose').addEventListener('click',()=>this.closeModal(this.$.diaModalOverlay,{viaPointer:true}));
     /* 참고 자료 정렬 탭 — 번호·가나다·원소·즐겨찾기(HINT_SORTS). 고른 탭만 바뀌고
        목록은 buildModalList가 다시 그린다(칩도 그 안에서 다시 그려 active가 맞는 탭으로 옮겨간다). */
     if(this.$.hintSortChips) this.$.hintSortChips.addEventListener('click',e=>{
@@ -1138,9 +1144,9 @@ const App={
       this.feedback('tap');
       this.toggleHintFavorite(b.dataset.favKey);
     });
-    document.getElementById('wrongNoteModalClose').addEventListener('click',()=>this.closeModal(this.$.wrongNoteModalOverlay));
-    document.getElementById('periodicModalClose').addEventListener('click',()=>this.closeModal(this.$.periodicModalOverlay));
-    document.getElementById('themeModalClose').addEventListener('click',()=>this.closeModal(this.$.themeModalOverlay));
+    document.getElementById('wrongNoteModalClose').addEventListener('click',()=>this.closeModal(this.$.wrongNoteModalOverlay,{viaPointer:true}));
+    document.getElementById('periodicModalClose').addEventListener('click',()=>this.closeModal(this.$.periodicModalOverlay,{viaPointer:true}));
+    document.getElementById('themeModalClose').addEventListener('click',()=>this.closeModal(this.$.themeModalOverlay,{viaPointer:true}));
     this.$.themeList.addEventListener('click',e=>{
       const opt=e.target.closest('.theme-opt');if(!opt)return;
       /* 여기서 고른 것만 저장한다 — 이제부터는 폰 설정이 바뀌어도 이 선택이 이긴다 */
@@ -1151,7 +1157,7 @@ const App={
     });
     /* 어두운 배경 탭 시 모달 닫기 (인증 모달 제외) */
     [this.$.hintModalOverlay,this.$.wrongNoteModalOverlay,this.$.periodicModalOverlay,this.$.themeModalOverlay,this.$.diaModalOverlay].forEach(ov=>{
-      ov.addEventListener('click',e=>{if(e.target===ov)this.closeModal(ov,{silent:true});});
+      ov.addEventListener('click',e=>{if(e.target===ov)this.closeModal(ov,{silent:true,viaPointer:true});});
     });
     document.getElementById('ptRotateBtn').addEventListener('click',()=>{
       this.openPtFullscreen();
@@ -2288,6 +2294,16 @@ const App={
     /* 창에서 나간 뒤 초점을 어디로 돌려줄지. 창 위에 창이 겹치는 경우는 이 앱에 없다. */
     this._lastFocus = document.activeElement;
     overlay.classList.add('show');
+    /* 막 열린 창은 잠깐 「손가락으로」 닫히지 않는다(TAP_GUARD_MS).
+       320·360px에서는 헤더가 4열이 되면서 오답노트 버튼이 첫 줄 오른쪽 끝으로 가는데,
+       그 자리가 창의 닫기 X와 겹친다(실측 겹침 973px²·947px² — 갤럭시 기본 폭대다).
+       그래서 버튼을 빠르게 두 번 누르면 첫 번째로 열린 창이 두 번째 손가락에 그대로
+       닫혔다. 80·150·250ms 간격 전부에서 그랬다 — 학생에게는 「안 열린다」로 보인다.
+       막는 것은 X·바깥 누르기뿐이고 Esc는 그대로 통한다 — 키보드는 겹칠 일이 없고,
+       열자마자 Esc가 안 먹으면 그쪽이 더 이상하다.
+       창 전체의 pointer-events를 끄는 방법은 쓰지 않는다: 열려 있는데 못 누르는 창이
+       되어, 「창이 실제로 보이고 누를 수 있는가」를 보는 검사(selfcheck)와도 부딪힌다. */
+    overlay._openedAt=Date.now();
     this.$.app.setAttribute('inert','');
     const box=overlay.querySelector('.modal-box');
     const f=box?this.focusablesIn(box):[];
@@ -2299,6 +2315,8 @@ const App={
   closeModal(overlay, opts){
     const o=opts||{};
     if(!overlay.classList.contains('show')) return;
+    /* 방금 연 창을 손가락으로 닫으려는 것은 「열어 준 버튼을 한 번 더 누른 것」이다 */
+    if(o.viaPointer && Date.now()-(overlay._openedAt||0) < TAP_GUARD_MS) return;
     if(!o.silent) this.feedback('tap');
     overlay.classList.remove('show');
     /* 아직 열려 있는 창이 없을 때만 본문을 되살린다 */

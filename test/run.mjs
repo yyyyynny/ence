@@ -291,6 +291,51 @@ async function keyboardPass() {
   console.log(`  ${bad ? '✕' : '✓'} 키보드 경로  확인 ${n - bad}${bad ? ` · 실패 ${bad}` : ''}`);
 }
 
+/* ── 여는 버튼과 닫는 X가 같은 자리에 올 때 ──
+   320·360px에서는 헤더가 4열이 되면서 오답노트 버튼이 첫 줄 오른쪽 끝으로 가는데,
+   그 자리가 창의 닫기 X와 겹친다. 그래서 버튼을 빠르게 두 번 누르면 첫 번째로 열린 창이
+   두 번째 손가락에 닫혔다 — 학생에게는 「안 열린다」로 보인다. 화면을 재는 검사로는
+   이것이 안 보인다: 두 요소는 각각 멀쩡하고, 겹친다는 사실만으로는 아무 규칙도 안 어긴다.
+   실제로 두 번 눌러 봐야 안다.                                                        */
+async function tapGuardPass() {
+  let n = 0, bad = 0;
+  const ok = (cond, label) => { n++; if (cond) pass++; else { bad++; fail++; failures.push({ label, fail: [label], boom: [] }); console.log(`  ✕ ${label}`); } };
+  for (const w of [320, 360, 390]) {
+    const ctx = await browser.newContext({ viewport: { width: w, height: 640 }, hasTouch: true, isMobile: true });
+    const page = await ctx.newPage();
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => typeof App === 'object', null, { timeout: 10000 });
+    await page.waitForTimeout(300);
+    const at = await page.evaluate(() => { const r = document.querySelector('#wrongNoteBtn').getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+    const isOpen = () => page.evaluate(() => document.getElementById('wrongNoteModalOverlay').classList.contains('show'));
+    const reset = async () => { await page.evaluate(() => App.closeModal(document.getElementById('wrongNoteModalOverlay'), { silent: true })); await page.waitForTimeout(350); };
+
+    for (const gap of [80, 150, 250]) {
+      await reset();
+      await page.mouse.click(at.x, at.y);
+      await page.waitForTimeout(gap);
+      await page.mouse.click(at.x, at.y);
+      await page.waitForTimeout(250);
+      ok(await isOpen(), `${w}px 오답노트를 ${gap}ms 간격으로 두 번 눌러도 열려 있다`);
+    }
+    /* 막는 것은 「방금 연 창」뿐이다 — 잠깐 뒤의 X는 그대로 닫아야 하고, Esc는 언제나 통해야 한다 */
+    await reset();
+    await page.mouse.click(at.x, at.y);
+    await page.waitForTimeout(400);
+    await page.click('#wrongNoteModalClose');
+    await page.waitForTimeout(250);
+    ok(!(await isOpen()), `${w}px 잠깐 뒤에 누른 X는 그대로 닫는다`);
+    await reset();
+    await page.mouse.click(at.x, at.y);
+    await page.waitForTimeout(50);
+    await page.keyboard.press('Escape');
+    await page.waitForTimeout(250);
+    ok(!(await isOpen()), `${w}px 열자마자 누른 Esc는 막지 않는다`);
+    await ctx.close();
+  }
+  console.log(`  ${bad ? '✕' : '✓'} 두 번 두드리기  확인 ${n - bad}${bad ? ` · 실패 ${bad}` : ''}`);
+}
+
 /* 테마 목록은 앱의 등록처에서 가져온다 — 테마를 늘리면 검사도 저절로 늘어야 한다 */
 const probe = await browser.newContext();
 const pp = await probe.newPage();
@@ -321,6 +366,9 @@ await walkModes();
 
 console.log('\n── 키보드 (1024px · 360px) ──');
 await keyboardPass();
+
+console.log('\n── 두 번 두드리기 (320px · 360px · 390px) ──');
+await tapGuardPass();
 
 await browser.close();
 
