@@ -183,6 +183,114 @@ async function walkModes() {
   await ctx.close();
 }
 
+/* ── 키보드만으로 쓸 수 있는가 ──
+   여기서만 잡히는 것들이 있다. 창을 열었을 때 초점이 실제로 창 안으로 들어가는지는
+   화면을 재는 검사로는 절대 안 보인다 — 실제로 Tab 을 눌러 봐야 안다.
+   (실제로 1024px 주기율표 창은 초점이 body 에 남고 Tab 이 아무 데도 안 갔다.
+   초점 목록을 [href] 로 훑는 바람에 아이콘의 <use> 가 첫 자리를 차지했고, SVG 는
+   초점을 못 받으니 가둠이 그 자리에서 헛돌았다. 키보드로는 창을 통째로 못 썼다.)   */
+async function keyboardPass() {
+  let n = 0, bad = 0;
+  const ok = (cond, label) => { n++; if (cond) pass++; else { bad++; fail++; failures.push({ label, fail: [label], boom: [] }); console.log(`  ✕ ${label}`); } };
+  for (const vp of [{ width: 1024, height: 800 }, { width: 360, height: 740 }]) {
+    const ctx = await browser.newContext({ viewport: vp });
+    const page = await ctx.newPage();
+    await page.goto(PAGE, { waitUntil: 'domcontentloaded' });
+    await page.waitForFunction(() => typeof App === 'object', null, { timeout: 10000 });
+    await page.waitForTimeout(300);
+    const W = `${vp.width}px`;
+
+    /* 1. 창을 열면 초점이 창 안으로 들어가고, Tab 이 창 밖으로 새지 않는다 */
+    for (const [btn, ov] of [['#periodicBtn', '#periodicModalOverlay'], ['#wrongNoteBtn', '#wrongNoteModalOverlay'], ['#themeBtn', '#themeModalOverlay']]) {
+      await page.click(btn); await page.waitForTimeout(200);
+      const inside = () => page.evaluate((o) => document.querySelector(o).contains(document.activeElement), ov);
+      ok(await inside(), `${W} ${ov} 열면 초점이 창 안에`);
+      /* 창 안 컨트롤 수보다 두 번 더 눌러 본다 — 한 바퀴 돌아도 밖으로 나가면 안 된다 */
+      const n = await page.evaluate((o) => App.focusablesIn(document.querySelector(o).querySelector('.modal-box')).length, ov);
+      for (let i = 0; i < n + 2; i++) await page.keyboard.press('Tab');
+      ok(await inside(), `${W} ${ov} Tab 한 바퀴 뒤에도 창 안에`);
+      await page.keyboard.press('Escape'); await page.waitForTimeout(250);
+    }
+
+    /* 2. 주기율표 칸이 버튼으로서 갖춰야 할 것 */
+    await page.click('#periodicBtn'); await page.waitForTimeout(250);
+    const attrs = await page.evaluate(() => {
+      const c = [...document.querySelectorAll('#periodicContent .pt-cell[data-z]')];
+      return {
+        n: c.length,
+        noRole: c.filter((el) => el.getAttribute('role') !== 'button').length,
+        noName: c.filter((el) => !el.getAttribute('aria-label')).length,
+        stops: c.filter((el) => el.getAttribute('tabindex') === '0').length
+      };
+    });
+    ok(attrs.n > 0 && attrs.noRole === 0, `${W} 모든 칸에 role="button" (빠진 칸 ${attrs.noRole})`);
+    ok(attrs.noName === 0, `${W} 모든 칸에 이름(aria-label) (빠진 칸 ${attrs.noName})`);
+    /* 칸마다 Tab 정거장을 두면 표를 빠져나가는 데만 수십 번이다 — 정거장은 하나여야 한다 */
+    ok(attrs.stops === 1, `${W} 표 전체의 Tab 정거장은 하나 (지금 ${attrs.stops})`);
+
+    /* 3. Tab 으로 칸에 닿고, 화살표로 옮기고, Enter 로 상세가 열린다 */
+    let hops = 0;
+    for (; hops < 8; hops++) {
+      const onCell = await page.evaluate(() => document.activeElement.classList.contains('pt-cell'));
+      if (onCell) break;
+      await page.keyboard.press('Tab');
+    }
+    ok(hops < 8, `${W} Tab 으로 표 안의 칸에 닿는다 (${hops + 1}번)`);
+    const z0 = await page.evaluate(() => document.activeElement.dataset.z);
+    await page.keyboard.press('ArrowRight');
+    const z1 = await page.evaluate(() => document.activeElement.dataset.z);
+    ok(z1 && z1 !== z0, `${W} → 로 옆 칸으로 (${z0}→${z1})`);
+    await page.keyboard.press('Enter'); await page.waitForTimeout(200);
+    ok(await page.evaluate((z) => { const p = document.getElementById('ptDetailPanel'); return p.classList.contains('open') && p.dataset.z === z; }, z1), `${W} Enter 로 그 칸의 상세가 열린다`);
+    await page.keyboard.press('Enter'); await page.waitForTimeout(150);
+    ok(await page.evaluate(() => !document.getElementById('ptDetailPanel').classList.contains('open')), `${W} 같은 칸 Enter 로 닫힌다`);
+
+    /* 4. 화살표만으로 모든 칸에 닿을 수 있는가(간략·전체 둘 다).
+       닿지 못하는 칸이 하나라도 있으면 그 원소는 키보드 사용자에게 없는 것과 같다. */
+    for (const simple of [true, false]) {
+      const cur = await page.evaluate(() => App.state.isSimplePeriodic);
+      if (cur !== simple) { await page.click('#simplePeriodicToggle'); await page.waitForTimeout(250); }
+      /* 앱 쪽 함수가 통째로 없어졌을 때도 검사가 죽지 않고 「실패」로 보고해야 한다 */
+      const r = await page.evaluate(() => {
+        if (typeof App.ptFocusNeighbor !== 'function') return { total: -1, reached: 0 };
+        const root = document.getElementById('periodicContent');
+        const cells = [...root.querySelectorAll('.pt-cell[data-z]')];
+        cells.forEach((c, i) => { c.dataset.navIdx = i; });
+        const seen = new Set([0]); const q = [cells[0]];
+        while (q.length) {
+          const c = q.shift();
+          for (const d of ['right', 'left', 'up', 'down']) {
+            App.ptFocusNeighbor(root, c, d);
+            const nx = document.activeElement;
+            const i = nx && nx.dataset ? +nx.dataset.navIdx : NaN;
+            if (!Number.isNaN(i) && !seen.has(i)) { seen.add(i); q.push(nx); }
+          }
+        }
+        return { total: cells.length, reached: seen.size };
+      });
+      ok(r.total > 0 && r.reached === r.total, `${W} ${simple ? '간략' : '전체'} 표 ${r.total}칸 전부 화살표로 닿는다 (${r.reached})`);
+    }
+    await page.keyboard.press('Escape'); await page.waitForTimeout(250);
+
+    /* 5. 회전 뷰 — 창이 아니라 따로 가둬야 하는 자리다 */
+    if (await page.evaluate(() => { const b = document.getElementById('ptRotateBtn'); return !!b && b.getClientRects().length > 0; })) {
+      await page.click('#periodicBtn'); await page.waitForTimeout(250);
+      const from = await page.evaluate(() => { document.getElementById('ptRotateBtn').focus(); return document.activeElement.id; });
+      await page.click('#ptRotateBtn'); await page.waitForTimeout(600);
+      const inRotor = () => page.evaluate(() => document.querySelector('.pt-fs-rotor').contains(document.activeElement));
+      ok(await inRotor(), `${W} 회전 뷰를 열면 초점이 그 안에`);
+      for (let i = 0; i < 6; i++) await page.keyboard.press('Tab');
+      ok(await inRotor(), `${W} 회전 뷰 안에서 Tab 이 밖으로 새지 않는다`);
+      ok(await page.evaluate(() => document.querySelectorAll('#ptFsContent .pt-cell[tabindex="0"]').length === 1), `${W} 회전 뷰도 Tab 정거장은 하나`);
+      await page.keyboard.press('Escape'); await page.waitForTimeout(700);
+      ok(await page.evaluate((id) => document.activeElement.id === id, from), `${W} 회전 뷰를 닫으면 초점이 누른 버튼으로 돌아온다`);
+      await page.keyboard.press('Escape'); await page.waitForTimeout(250);
+    }
+    await ctx.close();
+  }
+  console.log(`  ${bad ? '✕' : '✓'} 키보드 경로  확인 ${n - bad}${bad ? ` · 실패 ${bad}` : ''}`);
+}
+
 /* 테마 목록은 앱의 등록처에서 가져온다 — 테마를 늘리면 검사도 저절로 늘어야 한다 */
 const probe = await browser.newContext();
 const pp = await probe.newPage();
@@ -210,6 +318,9 @@ await once({ vp: VIEWPORTS[0], theme: THEME_IDS[0], reduced: false });
 
 console.log('\n── 전 모드 (320px) ──');
 await walkModes();
+
+console.log('\n── 키보드 (1024px · 360px) ──');
+await keyboardPass();
 
 await browser.close();
 

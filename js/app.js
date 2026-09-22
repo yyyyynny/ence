@@ -1121,14 +1121,22 @@ const App={
     /* 원소 칸 클릭 → 상세 설명 패널. 모달용/전체화면용 각각 델리게이션(콘텐츠가 매번 innerHTML로 새로 그려지므로) */
     this.$.periodicContent.addEventListener('click',e=>{
       const cell=e.target.closest('.pt-cell[data-z]'); if(!cell) return;
+      /* 손으로 누른 칸을 Tab 정거장으로 옮겨 둔다(초점은 주지 않는다 — 누를 때 링이
+         뜨면 안 된다). 마우스로 보던 칸에서 키보드로 이어 갈 수 있다. */
+      this.ptSetRoving(this.$.periodicContent, cell, false);
       this.ptToggleDetail(this.$.ptDetailPanel, parseInt(cell.dataset.z));
       this.feedback('tap');
     });
-    document.getElementById('ptFsContent').addEventListener('click',e=>{
+    const ptFsContent=document.getElementById('ptFsContent');
+    ptFsContent.addEventListener('click',e=>{
       const cell=e.target.closest('.pt-cell[data-z]'); if(!cell) return;
+      this.ptSetRoving(ptFsContent, cell, false);
       this.ptToggleDetail(this.$.ptFsDetailPanel, parseInt(cell.dataset.z));
       this.feedback('tap');
     });
+    /* 키보드 경로. 콘텐츠 요소 자체는 계속 살아 있으므로(안쪽 innerHTML만 갈린다) 한 번만 건다. */
+    this.setupPtKeys(this.$.periodicContent, this.$.ptDetailPanel);
+    this.setupPtKeys(ptFsContent, this.$.ptFsDetailPanel);
     [this.$.ptDetailPanel,this.$.ptFsDetailPanel].forEach(panel=>{
       panel.addEventListener('click',e=>{
         if(!e.target.closest('.pt-detail-close')) return;
@@ -1231,8 +1239,12 @@ const App={
       if((e.key==='Enter'||e.key===' ')&&document.activeElement&&document.activeElement.classList.contains('dia-panel')){
         e.preventDefault();this.openDiaZoom(document.activeElement);return;
       }
-      if(document.getElementById('ptFullscreen').classList.contains('show')){
+      const ptFs=document.getElementById('ptFullscreen');
+      if(ptFs.classList.contains('show')){
         if(e.key==='Escape')this.closePtFullscreen();
+        /* 이 뷰는 .modal-overlay 가 아니라 아래 창 되감기에 걸리지 않는다 — 여기서 따로 감는다.
+           뒤(#app·창)는 전부 inert라 빠져나간 초점이 갈 곳이 브라우저 UI뿐이었다. */
+        else if(e.key==='Tab') this.trapTab(e, ptFs.querySelector('.pt-fs-rotor'));
         return;
       }
       if(e.key==='Escape'){
@@ -1245,17 +1257,7 @@ const App={
          마지막 요소에서 Tab을 누르면 초점이 브라우저 UI로 빠져나간다. 그리고 inert를
          모르는 브라우저에서는 가둠 자체가 없다 — 그 둘을 여기서 함께 막는다. */
       const tabOv=e.key==='Tab'?this.openOverlay():null;
-      if(tabOv){
-        const box=tabOv.querySelector('.modal-box');
-        const f=box?this.focusablesIn(box):[];
-        if(!f.length){ e.preventDefault(); }
-        else{
-          const first=f[0], last=f[f.length-1], cur=document.activeElement;
-          if(e.shiftKey && (cur===first||!box.contains(cur))){ e.preventDefault(); last.focus(); }
-          else if(!e.shiftKey && (cur===last||!box.contains(cur))){ e.preventDefault(); first.focus(); }
-        }
-        return;
-      }
+      if(tabOv){ this.trapTab(e, tabOv.querySelector('.modal-box')); return; }
       /* 팝업이 떠 있는 동안은 아래 문제 풀이 단축키가 먹으면 안 된다 */
       if(this.openOverlay())return;
       if(document.getElementById('retryM6Card').style.display!=='none'){
@@ -2172,9 +2174,27 @@ const App={
 
      inert는 #app에만 건다 — 창들은 <main> 밖 body 직속이라야 이게 성립한다(index.html 참고).
      inert를 모르는 브라우저를 위해 Tab 순환은 따로 직접 처리한다(keydown). */
+  /* 창 안에서 Tab이 들를 수 있는 것들, 화면 순서대로.
+     [href]로 훑으면 아이콘의 <use href="#i-...">까지 잡혔다 — SVG는 초점을 받지 못하는데
+     이것이 목록 맨 앞에 서면 openModal도 Tab 되감기도 여기에 초점을 주려다 실패해서,
+     창이 열려도 초점이 body에 남고 Tab을 아무리 눌러도 제자리였다(1024px 주기율표 창:
+     회전 버튼이 화면 밖으로 숨는 폭이라 그 안의 <use>가 첫 자리였다 — 키보드로는
+     창 전체를 쓸 수 없었다). 링크만 노린다.
+     보이는지 판정도 offsetParent로는 안 된다 — position:fixed 요소는 보여도 null이고,
+     display:none인 버튼 안의 SVG는 offsetParent 자체가 없어(undefined) 되레 통과했다.
+     실제로 배치된 상자가 있는지(getClientRects)로 본다. */
   focusablesIn(box){
-    return [...box.querySelectorAll('button,[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')]
-      .filter(el=>!el.disabled && el.offsetParent!==null);
+    return [...box.querySelectorAll('button,a[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')]
+      .filter(el=>!el.disabled && el.getClientRects().length>0);
+  },
+  /* 상자 안에서 Tab이 끝에 닿으면 반대쪽 끝으로 감는다. 창(.modal-box)과 회전 뷰(.pt-fs-rotor)가
+     같은 규칙을 쓴다 — 둘 다 「뒤는 inert로 잠갔고 이 상자만 살아 있다」는 같은 상황이다. */
+  trapTab(e,box){
+    const f=box?this.focusablesIn(box):[];
+    if(!f.length){ e.preventDefault(); return; }
+    const first=f[0], last=f[f.length-1], cur=document.activeElement;
+    if(e.shiftKey && (cur===first||!box.contains(cur))){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && (cur===last||!box.contains(cur))){ e.preventDefault(); first.focus(); }
   },
   openModal(overlay, opts){
     const o=opts||{};
@@ -2200,7 +2220,7 @@ const App={
     const back=this._lastFocus;
     this._lastFocus=null;
     /* 연 버튼이 그새 사라졌을 수 있다(목록을 다시 그리는 창이 있다) */
-    if(back && document.contains(back) && back.offsetParent!==null) back.focus();
+    if(back && document.contains(back) && back.getClientRects().length>0) back.focus();
   },
   /* 지금 열려 있는 창 (없으면 null) */
   openOverlay(){ return document.querySelector('.modal-overlay.show'); },
@@ -2719,14 +2739,19 @@ const App={
     const list = this.state.isSimpleCategory ? PT_CATEGORIES_SIMPLE : PT_CATEGORIES;
     return `<div class="pt-legend">${list.map(([cls,label])=>`<span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-${cls}"></span>${label}</span>`).join('')}</div>`;
   },
+  /* 칸은 <div>지만 눌러서 상세를 여는 버튼이다 — 역할과 이름을 붙여 줘야 키보드·보조기기에서
+     같은 일을 할 수 있다(같은 앱의 그림 칸이 이미 DIA.panelAttrs()로 이렇게 한다).
+     tabindex는 -1로 두고 표 전체에 Tab 정거장 하나만 남긴다(ptInitRoving) — 칸마다 정거장을
+     두면 118번을 눌러야 표를 빠져나가고, 그 사이 창의 다른 컨트롤에 닿을 방법이 없다.
+     표 안에서는 화살표로 옮긴다(ptFocusNeighbor) — 2차원 격자의 표준 조작이다. */
   ptCellHTML(e,col,row){
     const pos = (col!=null && row!=null) ? `grid-column:${col};grid-row:${row}` : '';
-    return `<div class="pt-cell pt-cat-${this.ptCatOf(e)}" data-z="${e.z}" style="${pos}" title="${e.z}. ${e.name} (${e.sym})"><span class="pt-z">${e.z}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
+    return `<div class="pt-cell pt-cat-${this.ptCatOf(e)}" data-z="${e.z}" style="${pos}" role="button" tabindex="-1" aria-label="${e.z}. ${e.name} (${e.sym})" title="${e.z}. ${e.name} (${e.sym})"><span class="pt-z">${e.z}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
   },
   /* 원소 칸과 동일한 레이아웃(pt-z/pt-sym/pt-name)을 재사용하되, 배경을 족 색상 대신 실제 불꽃 반응 색으로,
      맨 위 숫자 칸은 원자번호 대신 색 이름으로 바꿔서 보여준다 */
   ptFlameCellHTML(e,fc){
-    return `<div class="pt-cell" data-z="${e.z}" style="background:${fc.color}" title="${e.name}(${e.sym}) 불꽃 반응: ${fc.label}색"><span class="pt-z">${fc.label}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
+    return `<div class="pt-cell" data-z="${e.z}" style="background:${fc.color}" role="button" tabindex="-1" aria-label="${e.name}(${e.sym}) 불꽃 반응: ${fc.label}색" title="${e.name}(${e.sym}) 불꽃 반응: ${fc.label}색"><span class="pt-z">${fc.label}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
   },
   /* 표 본체 HTML 생성 (모달·전체화면 공용). 1열/1행은 주기·족 번호 라벨용이라 원소는 +1 오프셋 배치 */
   ptTableHTML(){
@@ -2769,6 +2794,7 @@ const App={
     const t=this.ptTableHTML();
     this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-scroll">${t.grid}</div>${t.extra}`;
     this.closePtDetail(this.$.ptDetailPanel);
+    this.ptInitRoving(this.$.periodicContent, this.$.ptDetailPanel);
     /* 매번 innerHTML을 새로 쓰므로 .pt-scroll도 매번 새 요소다 — 리스너를 다시 건다.
        (오래된 요소에 붙어 있던 리스너는 그 요소와 함께 버려지므로 쌓이지 않는다.) */
     this.setupPtDrag(this.$.periodicContent.querySelector('.pt-scroll'), this.$.periodicContent);
@@ -2849,6 +2875,7 @@ const App={
     const t=this.ptTableHTML();
     const content=document.getElementById('ptFsContent');
     content.innerHTML=`${t.grid}${t.extra}`;
+    this.ptInitRoving(content, this.$.ptFsDetailPanel);
     /* 여는 순간에는 확대 레이어에 전환을 걸지 않는다 — 여는 전환(.pt-fullscreen)과 겹쳐
        표가 두 번 움직이는 것처럼 보인다. 확대/축소 전환은 그때그때 따로 건다. */
     content.style.transition='';
@@ -2888,7 +2915,7 @@ const App={
     document.querySelectorAll('.modal-overlay[inert]').forEach(ov=>ov.removeAttribute('inert'));
     if(!this.openOverlay()) this.$.app.removeAttribute('inert');
     const back=this._ptFsLastFocus; this._ptFsLastFocus=null;
-    if(back && document.contains(back) && back.offsetParent!==null) back.focus();
+    if(back && document.contains(back) && back.getClientRects().length>0) back.focus();
     /* 전환이 끝난 뒤에 뒷정리한다. 지금 바로 상세를 닫으면 접히는 화면 안에서
        패널이 따로 접히는 게 보여 두 동작이 겹친다. 시간은 CSS에서 읽으므로 어긋나지 않는다. */
     this._ptCloseTimer=setTimeout(()=>{
@@ -2938,6 +2965,69 @@ const App={
     const facts=`<dl class="pt-facts">${rows.map(([k,v])=>
       `<div class="pt-fact"><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
     return `<div class="pt-detail-head"><span class="pt-detail-z">${e.z}</span><span class="pt-detail-sym" style="color:${catColor}">${e.sym}</span><span class="pt-detail-name" style="color:${catColor}">${e.name}</span><button class="pt-detail-close" aria-label="닫기">${this.icon('close')}</button></div>${facts}<p class="pt-detail-desc">${e.desc||''}</p>`;
+  },
+  /* ── 표 안의 키보드 이동 (roving tabindex) ── */
+  /* 표를 다시 그릴 때마다 Tab 정거장을 첫 칸 하나로 되돌린다. 상세가 열려 있으면 그 칸을
+     정거장으로 삼는다 — 토글을 건드려 표가 새로 그려져도 보던 자리를 잃지 않는다. */
+  ptInitRoving(root,panel){
+    if(!root) return;
+    const cells=root.querySelectorAll('.pt-cell[data-z]');
+    if(!cells.length) return;
+    const z=panel&&panel.classList.contains('open')?panel.dataset.z:'';
+    const cur=z?root.querySelector(`.pt-cell[data-z="${z}"]`):null;
+    this.ptSetRoving(root, cur||cells[0], false);
+  },
+  ptSetRoving(root,cell,focus){
+    root.querySelectorAll('.pt-cell[data-z]').forEach(el=>{el.tabIndex=-1;});
+    cell.tabIndex=0;
+    if(focus) cell.focus();
+  },
+  /* 화살표로 옆 칸 찾기. 자리 판단에 화면 좌표(getBoundingClientRect)를 쓰지 않는다 —
+     회전 뷰는 상자 전체가 90도 돌아가 있어서 화면의 「오른쪽」이 표에서는 아래가 된다.
+     offsetLeft/offsetTop은 변형 전 배치 좌표라 두 화면에서 같은 뜻으로 읽힌다.
+     같은 줄을 먼저 다 보고, 그 줄에 아무것도 없을 때만 다른 줄로 넘어간다. 거리만 재서
+     한 번에 고르면 주기율표처럼 줄 안에 큰 빈칸이 있는 표에서 어긋난다 — 수소에서 →를
+     누르면 같은 1주기의 헬륨(8칸 옆)보다 바로 아래 베릴륨이 가까워서 그리로 샜다. */
+  ptFocusNeighbor(root,cur,dir){
+    const rel=el=>{let x=0,y=0,n=el;while(n&&n!==root){x+=n.offsetLeft;y+=n.offsetTop;n=n.offsetParent;}return {x:x+el.offsetWidth/2,y:y+el.offsetHeight/2};};
+    const horiz = dir==='left'||dir==='right';
+    const c=rel(cur);
+    /* 「같은 줄」의 허용 오차 — 칸 하나의 절반. 란타넘족 줄처럼 칸 크기가 달라도 따라간다. */
+    const tol=Math.max(4,(horiz?cur.offsetHeight:cur.offsetWidth)/2);
+    let inLine=null,inDist=Infinity,off=null,offScore=Infinity;
+    root.querySelectorAll('.pt-cell[data-z]').forEach(el=>{
+      if(el===cur) return;
+      const r=rel(el), dx=r.x-c.x, dy=r.y-c.y;
+      const along = dir==='right'?dx : dir==='left'?-dx : dir==='down'?dy : -dy;
+      if(along<=1) return;
+      const across = Math.abs(horiz?dy:dx);
+      if(across<=tol){ if(along<inDist){inDist=along;inLine=el;} }
+      else{ const sc=along+across*3; if(sc<offScore){offScore=sc;off=el;} }
+    });
+    const best=inLine||off;
+    if(best) this.ptSetRoving(root,best,true);
+  },
+  /* 칸에 초점이 있을 때의 키. 이 리스너는 문서 전체 keydown보다 먼저 지나가므로
+     (칸 → 이 컨테이너 → document 순서로 거품이 올라간다) 창이 열려 있으면 아래 단축키로
+     내려가는 길이 막혀 있어도 여기서는 처리된다. */
+  setupPtKeys(root,panel){
+    root.addEventListener('keydown',e=>{
+      const cell=e.target.closest&&e.target.closest('.pt-cell[data-z]');
+      if(!cell) return;
+      const dir={ArrowRight:'right',ArrowLeft:'left',ArrowDown:'down',ArrowUp:'up'}[e.key];
+      if(dir){ e.preventDefault(); this.ptFocusNeighbor(root,cell,dir); return; }
+      if(e.key==='Home'||e.key==='End'){
+        const cells=root.querySelectorAll('.pt-cell[data-z]');
+        if(cells.length){ e.preventDefault(); this.ptSetRoving(root, e.key==='Home'?cells[0]:cells[cells.length-1], true); }
+        return;
+      }
+      /* div라 클릭처럼 저절로 안 일어난다 — Space는 화면이 밀리지 않게 기본 동작을 막는다 */
+      if(e.key==='Enter'||e.key===' '){
+        e.preventDefault();
+        this.ptToggleDetail(panel, parseInt(cell.dataset.z));
+        this.feedback('tap');
+      }
+    });
   },
   /* 같은 칸을 다시 클릭하면 닫히고, 다른 칸을 클릭하면 내용을 교체 — 패널 하나당 항상 하나만 열림 */
   ptToggleDetail(panel,z){
@@ -3285,7 +3375,10 @@ const App={
       if(tapStart && Date.now()-tapStart.t<300){
         const el=document.elementFromPoint(tapStart.x,tapStart.y);
         const cell=el&&el.closest('.pt-cell[data-z]');
-        if(cell) this.ptToggleDetail(this.$.ptFsDetailPanel, parseInt(cell.dataset.z));
+        if(cell){
+          this.ptSetRoving(document.getElementById('ptFsContent'), cell, false);
+          this.ptToggleDetail(this.$.ptFsDetailPanel, parseInt(cell.dataset.z));
+        }
       }
       tapStart=null;
       if(e.touches.length===0){
