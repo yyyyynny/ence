@@ -578,7 +578,13 @@
      뒤 내용이 5.6~8% 비쳤고, 「고대비」테마에서는 판 알파가 0.06 이라 18.8%까지 올라왔다 —
      하필 잘 안 보이는 사람이 고른 테마에서 제일 심했다.
      주기율표 창(.pt-modal-box)은 이미 단색을 쓰고 있었으니 나머지를 거기 맞춘다. */
-  .modal-box{background:var(--c-surface-solid);border:1px solid var(--c-border);border-radius:var(--r-3);width:100%;max-width:700px;max-height:92vh;display:flex;flex-direction:column;padding:var(--s-5);position:relative;
+  /* ── 화면 높이 단위 ──
+     주소창이 오르내리는 폰에서 100vh 는 「주소창이 숨었을 때의 높이」로 고정이라,
+     주소창이 보이는 동안에는 그만큼 화면 밖으로 넘친다. dvh 는 지금 보이는 높이를
+     따라간다. dvh 를 모르는 브라우저는 그 줄을 통째로 무시하므로 vh 를 먼저 적고
+     dvh 를 뒤에 겹쳐 적는다 — 두 줄이 한 짝이다(test/css.mjs 가 짝을 확인한다).
+     회전 뷰처럼 축이 뒤집히는 자리는 JS 실측값(--app-w/--app-h)을 쓴다. */
+  .modal-box{background:var(--c-surface-solid);border:1px solid var(--c-border);border-radius:var(--r-3);width:100%;max-width:700px;max-height:92vh;max-height:92dvh;display:flex;flex-direction:column;padding:var(--s-5);position:relative;
     /* 창이 그냥 흐려지기만 하면 "덮개가 걷혔다"로 읽힌다. 살짝 작은 데서 제자리로 오면
        면(面)이 다가온 것으로 읽힌다 — 나갈 때는 반대로 조금 물러난다. */
     transform:scale(.96);
@@ -589,6 +595,10 @@
     /* 움직임을 끈 사람에게는 크기가 변하지 않는다 — 밝기만 바뀐다(토큰이 시간을 0으로 만든다) */
     .modal-box,.modal-overlay.show .modal-box{transform:none;}
   }
+  /* 오답 노트 창은 내용이 적어도 높이를 붙박이로 잡는다 — 노트를 지울 때마다 창이
+     위아래로 출렁이면 다음 「삭제」가 손가락 밑에서 도망간다. (예전에는 index.html 에
+     인라인으로 적혀 있었다 — 화면 높이 단위 규칙이 한곳에 모이지 않는다.) */
+  #wrongNoteModalOverlay .modal-box{height:90vh;height:90dvh;}
   .modal-header{display:flex;justify-content:space-between;margin-bottom:var(--s-4);align-items:center;}
   /* 제목에 강조색을 칠하는 건 그 자체가 「생성된 화면」의 표시다.
      제목은 크기와 자간으로 서고, 색은 눌러야 하는 것에만 쓴다. */
@@ -753,7 +763,7 @@
   .dia-cap{font-size:var(--t-caption);color:var(--c-text-secondary);font-family:var(--font-mono);letter-spacing:.3px;margin-bottom:var(--s-1);text-align:center;}
   /* 폭에 맞춰 늘리되 세로로는 화면을 다 잡아먹지 않게 상한을 둔다. viewBox가 정사각인 원자 한 개짜리
      그림이 폰에서 세로 370px을 차지해 정작 해설이 화면 밖으로 밀려났다. */
-  .dia{display:block;width:100%;height:auto;max-height:min(46vh,300px);overflow:visible;}
+  .dia{display:block;width:100%;height:auto;max-height:min(46vh,300px);max-height:min(46dvh,300px);overflow:visible;}
   /* 확대 보기(#diaModalOverlay) — .dia-panel과 같은 카드 모양이되, 그 안의 svg.dia는
      openDiaZoom이 폭을 viewBox 그대로(px 1:1)로 바꿔치기해서 글자가 선언한 크기대로
      그려진다. 그 1:1 크기가 화면보다 넓으면 가로로 밀어서 본다 — 주기율표의 일반 보기와
@@ -1009,7 +1019,7 @@
   #periodicContent{transition:padding-bottom var(--dur-enter) var(--ease-out);}
   .pt-detail-panel.open{grid-template-rows:1fr;}
   .pt-detail-inner{overflow:hidden;min-height:0;}
-  .pt-detail-content{padding:var(--s-4) var(--s-5);max-height:45vh;overflow-y:auto;scrollbar-width:none;}
+  .pt-detail-content{padding:var(--s-4) var(--s-5);max-height:45vh;max-height:45dvh;overflow-y:auto;scrollbar-width:none;}
   .pt-detail-content::-webkit-scrollbar{display:none;}
   .pt-detail-head{display:flex;align-items:baseline;gap:var(--s-3);margin-bottom:var(--s-3);}
   .pt-detail-z{font-family:var(--font-mono);font-size:var(--t-body);font-weight:600;color:var(--c-text-secondary);}
@@ -1043,7 +1053,7 @@
     .pt-extra-row .pt-cell{width:56px;}
     .reaction-eq{font-size:var(--t-body);padding:var(--s-3);}
     .reaction-item{padding:var(--s-3);}
-    .pt-detail-content{padding:var(--s-3) var(--s-4);max-height:50vh;}
+    .pt-detail-content{padding:var(--s-3) var(--s-4);max-height:50vh;max-height:50dvh;}
     .pt-detail-sym{font-size:var(--t-title);}
     .pt-detail-name{font-size:var(--t-body);}
     .pt-detail-desc{font-size:var(--t-body);}
@@ -1100,7 +1110,7 @@
   .m6-perspective{perspective:1200px;flex-grow:1;}
   /* 결합 그림 카드는 그림 패널 + 다시 보기 + 해설이 들어가 240px으로는 어림도 없었다.
      화면 높이에 맞춰 늘리되 상한을 둔다. */
-  .m6-flashcard{position:relative;min-height:clamp(300px,54vh,460px);height:100%;transform-style:preserve-3d;transition:transform var(--dur-view) var(--ease-move);cursor:pointer;user-select:none;}
+  .m6-flashcard{position:relative;min-height:clamp(300px,54vh,460px);min-height:clamp(300px,54dvh,460px);height:100%;transform-style:preserve-3d;transition:transform var(--dur-view) var(--ease-move);cursor:pointer;user-select:none;}
   .m6-flashcard.flipped{transform:rotateY(180deg);}
   /* 그래도 넘치는 카드가 있으므로(그림 + 긴 해설) 면 안에서만 세로로 스크롤되게 둔다.
      overflow:hidden이면 뒷부분이 그냥 잘려 나가 답을 못 읽는다. 탭으로 뒤집는 동작과
@@ -1116,7 +1126,7 @@
   /* 카드 안에서는 그림·해설을 한 단계 줄인다 — 카드는 해설 상자보다 훨씬 좁다.
      다만 12px 아래로는 안 내린다. 전에는 곁가지 줄이 11px까지 내려가 카드에서
      같은 문장이 해설 상자에서보다 더 안 보였다 — 좁다고 안 읽히게 만들 이유는 없다. */
-  .m6-face .dia{max-height:clamp(140px,26vh,220px);}
+  .m6-face .dia{max-height:clamp(140px,26vh,220px);max-height:clamp(140px,26dvh,220px);}
   .m6-face .dia-wrap{margin-top:0;width:100%;}
   .m6-face .dia-panel{padding:var(--s-2);margin-bottom:var(--s-2);}
   .m6-face .dia-exp{font-size:var(--t-body);line-height:1.55;margin:var(--s-1) 0 0;}
