@@ -138,6 +138,56 @@ console.log('\n이온식 (고2 화학 · 모드 11)');
   await ctx.close();
 }
 
+console.log('\n모드를 오갈 때 진도');
+{ /* 카드를 잠깐 보고 돌아오면 풀던 진도가 남아 있어야 한다 — 30개를 풀어 둔 학생에게
+     0으로 되돌아가는 것은 사실상 그 모드를 다시 시작하라는 말이다. */
+  const { ctx, p, boom } = await fresh();
+  const progress = () => p.evaluate(() => ({
+    done: App.state.cycleTotal - App.state.cycleQueue.length,
+    total: App.state.cycleTotal,
+    text: document.getElementById('cycleProgressText').textContent
+  }));
+  await p.evaluate(() => App.setMode(2)); await p.waitForTimeout(250);
+  await p.evaluate(() => document.querySelector('.cycle-btn[data-cycle="cycle"]').click());
+  await p.waitForTimeout(250);
+  await spin(p, 8);
+  const before = await progress();
+  ok(before.done >= 8, `모드 2에서 ${before.done}문제를 풀어 둠`, before.text);
+
+  /* 카드 모드(중학 플래시카드)에 들렀다 온다 */
+  await p.evaluate(() => App.setMode(6)); await p.waitForTimeout(250);
+  await p.evaluate(() => App.setMode(2)); await p.waitForTimeout(250);
+  const after = await progress();
+  /* 돌아오면 새 문제가 하나 나오므로 한 칸 나아가는 것이 맞다 — 봐야 할 것은
+     「0으로 돌아가지 않는가」다 */
+  ok(after.done === before.done + 1 && after.total === before.total,
+    '  카드를 다녀와도 진도가 이어진다', `${before.text} → ${after.text}`);
+
+  /* 다른 퀴즈 모드에 들렀다 와도 마찬가지고, 그쪽 진도도 따로 남는다 */
+  await p.evaluate(() => App.setMode(5)); await p.waitForTimeout(250);
+  await spin(p, 3);
+  const five = await progress();
+  await p.evaluate(() => App.setMode(2)); await p.waitForTimeout(250);
+  const back = await progress();
+  ok(back.done === after.done + 1, '  다른 모드를 다녀와도 진도가 이어진다', back.text);
+  await p.evaluate(() => App.setMode(5)); await p.waitForTimeout(250);
+  const fiveAgain = await progress();
+  ok(fiveAgain.done === five.done + 1 && fiveAgain.total === five.total,
+    '  그 다른 모드의 진도도 따로 남는다', `${five.text} → ${fiveAgain.text}`);
+  /* 모드마다 큐가 따로라는 것 자체도 확인한다 — 한 큐를 돌려쓰면 총수가 같아진다 */
+  ok(five.total !== before.total, `  모드마다 풀 크기가 다르다 (${before.total} / ${five.total})`);
+  ok(boom.length === 0, '  오가는 동안 안 죽음', boom[0] || '');
+
+  /* 「순환」을 다시 누르면 새 바퀴다 — 기억이 그걸 막으면 안 된다 */
+  await p.evaluate(() => App.setMode(2)); await p.waitForTimeout(250);
+  await p.evaluate(() => document.querySelector('.cycle-btn[data-cycle="random"]').click());
+  await p.waitForTimeout(150);
+  await p.evaluate(() => document.querySelector('.cycle-btn[data-cycle="cycle"]').click());
+  await p.waitForTimeout(250);
+  ok((await progress()).done <= 1, '  「순환」을 다시 누르면 새 바퀴로 시작');
+  await ctx.close();
+}
+
 await b.close();
 console.log(fail === 0 ? '\n✅ 순환 큐 통과' : `\n❌ 실패 ${fail}`);
 process.exit(fail ? 1 : 0);

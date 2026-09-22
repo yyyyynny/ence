@@ -26,7 +26,7 @@ const App={
     isLastWrongAttempt:false,wrongBlanks:{},wrongAlreadyPenalized:false,
     timerDuration:DEFAULT_TIMER,currentMaxTime:DEFAULT_TIMER,timerLeft:DEFAULT_TIMER,timerInterval:null,
     wrongNotes:[],noteFilter:'all',retryNoteId:null,
-    isCycleMode:false,cycleQueue:[],cycleTotal:0,lastQuestionName:null,
+    isCycleMode:false,cycleQueue:[],cycleTotal:0,cycleQueues:{},lastQuestionName:null,
     m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,lastBondOrder:null,
     m7Dir:'toPG',
     section:'ms', showDiagram:true,
@@ -396,12 +396,36 @@ const App={
     }catch(e){}
     this.state.wrongNotes=list;
   },
+  /* ── 노트의 신원 ──
+     「같은 문제인가」를 화면에 그린 결과물(html)이 아니라 문제 자체로 가린다.
+     모드 7은 출제 방향이 둘인데 본문이 「Na · 3주기 1족」으로 글자 하나까지 같아서,
+     정방향과 역방향을 각각 틀려도 노트 하나로 합쳐졌다 — 「정방향은 되는데 역방향을
+     못 외운다」는, 오답노트가 알려 줘야 할 바로 그 구분이 사라진다. 게다가 합칠 때
+     qData를 마지막 것으로 덮어써서 「단일 풀기」는 늘 마지막 방향만 냈고, 다른 방향은
+     오답노트에서 다시 만날 길이 없었다.
+     문제를 가르는 값이 있으면 전부 넣는다 — 지금 부딪히는 건 모드 7뿐이지만, 본문이
+     같아지는 순간 서로 다른 문제가 합쳐지는 구조 자체를 없애는 것이 요점이다. */
+  noteKeyOf(m, q){
+    if(!q || typeof q !== 'object') return '';
+    const bits = [m];
+    if(q.dir) bits.push(q.dir);            /* 모드 7: 원소→주기·족 / 주기·족→원소 */
+    if(q.z !== undefined) bits.push('z' + q.z);
+    if(q.pKey) bits.push(q.pKey);          /* 모드 13: 어느 두 용액을 섞었나 */
+    if(q.bondName) bits.push(q.bondName);  /* 모드 10 */
+    bits.push(q.name || '');
+    return bits.join('|');
+  },
   saveWrongNote(m,t,h,qData,bump=true){
-    let existing = this.state.wrongNotes.find(n => n.mode === m && n.html === h);
+    const key = this.noteKeyOf(m, qData);
+    /* 예전 노트에는 key가 없다 — 그때 기준(본문)으로 찾아 주고, 찾으면 그 자리에서 달아 둔다.
+       학생 기기에 쌓여 있는 노트를 버리지 않으면서 새 기준으로 넘어가는 길이다. */
+    let existing = this.state.wrongNotes.find(n =>
+      n.mode === m && (key && n.key ? n.key === key : n.html === h));
     if(existing){
       if(!bump) return; /* 플래시카드 수동 저장: 이미 있으면 아무 변화 없음 */
       existing.failCount = Math.min((existing.failCount || 1) + 1, 3);
       existing.qData = qData;
+      if(key) existing.key = key;
       this.state.wrongNotes = this.state.wrongNotes.filter(n => n.id !== existing.id);
       this.state.wrongNotes.unshift(existing);
     }else{
@@ -409,7 +433,7 @@ const App={
          둘 다 사라진다(필터가 id 로 거른다). 손으로 1ms 안에 두 번은 어렵지만 기기
          시계가 되돌아가면 닿는다. 일련번호를 붙여 같은 시각이어도 갈라지게 한다. */
       const id=Date.now().toString()+'-'+(this._noteSeq=(this._noteSeq||0)+1);
-      this.state.wrongNotes.unshift({id,mode:m,title:t,html:h,qData,failCount:1});
+      this.state.wrongNotes.unshift({id,mode:m,title:t,html:h,qData,failCount:1,key});
     }
     this.saveNotes();
     this.renderWrongNotes();
@@ -651,6 +675,9 @@ const App={
     if(saved){
       this.state.cycleQueue = [...saved.queue];
       this.state.cycleTotal = saved.total;
+      /* 되살린 진도는 그것을 떠나온 모드의 것이다 — 지금 모드(재풀이한 노트의 모드)가
+         아니라 그쪽에 적어 둬야, 나중에 그 모드로 돌아갔을 때 맞는 진도가 나온다. */
+      this.rememberCycleQueue(saved.mode);
       this.renderCycleProgress();
     }
     this.state.savedCycleState = null;
@@ -673,6 +700,7 @@ const App={
     if(savedState){
       this.state.cycleQueue = [...savedState.queue];
       this.state.cycleTotal = savedState.total;
+      this.rememberCycleQueue(targetMode);
       this.renderCycleProgress();
     }
 
@@ -1499,7 +1527,37 @@ const App={
     for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
     this.state.cycleQueue=[...pool];
     this.state.cycleTotal=pool.length;
+    this.rememberCycleQueue();
     this.renderCycleProgress();
+  },
+
+  /* ── 모드마다 순환 진도를 따로 기억한다 ──
+     예전에는 순환 큐가 앱 전체에 하나뿐이라, 모드를 옮길 때마다 새로 짜였다. 그래서
+     반응식을 30/41까지 풀다가 플래시카드를 잠깐 보고 돌아오면 진도가 0으로 돌아갔다
+     (setMode의 주석은 그걸 막았다고 적고 있었지만, 막은 것은 「카드로 들어갈 때」뿐이고
+     정작 「돌아올 때」는 그대로 새로 짰다 — 주석이 약속한 결과가 안 나오던 자리다).
+     퀴즈 모드끼리 오갈 때도 마찬가지였다.
+
+     기억에는 큐 **그 배열 자체**를 넣는다(복사본이 아니다). 문제를 낼 때마다 큐를
+     shift 하는데, 복사본을 넣어 두면 그 뒤의 진행이 기억에 안 남아 「돌아오면 처음 그대로」가
+     된다 — 고치려던 것과 같은 증상이 된다.
+     풀이 달라진 경우(즐겨찾기를 지웠다든지)는 여기서 따로 보지 않는다. 문제를 낼 때
+     pickIndex가 길이로 어긋남을 잡아 다시 짠다 — 판단하는 곳이 둘이면 언젠가 갈린다. */
+  rememberCycleQueue(mode){
+    const m = mode===undefined ? this.state.currentMode : mode;
+    if(m===null||m===undefined) return;
+    this.state.cycleQueues[m] = { queue:this.state.cycleQueue, total:this.state.cycleTotal };
+  },
+  restoreCycleQueue(){
+    const saved = this.state.cycleQueues[this.state.currentMode];
+    /* 한 바퀴를 다 돈 큐(빈 배열)는 되살릴 것이 없다 — 새 바퀴를 짠다 */
+    if(saved && saved.queue.length){
+      this.state.cycleQueue = saved.queue;
+      this.state.cycleTotal = saved.total;
+      this.renderCycleProgress();
+      return;
+    }
+    this.initCycleQueue();
   },
 
   renderCycleProgress(){
@@ -1721,12 +1779,13 @@ const App={
     this.$.cycleWrap.classList.toggle('has-dia', this.hasDiagram({['isMode'+mode]:true}));
     this.updateStatBarVisibility();
 
-    /* 플래시카드에는 순환 출제라는 게 없다. 그런데도 initCycleQueue가 돌아 (해당 분기가 없어
-       반응식 풀로 떨어지면서) 순환 진행률이 초기화됐다 — 카드를 잠깐 보고 돌아오면
-       풀던 진도가 사라진다. 카드 모드로 빠지는 길보다 뒤에 둔다. */
+    /* 플래시카드에는 순환 출제라는 게 없다 — 큐를 만들 이유가 없어 여기서 빠진다.
+       「카드를 잠깐 보고 돌아와도 진도가 남는 것」은 이 줄이 아니라 restoreCycleQueue가
+       한다(모드마다 큐를 기억한다). 예전 주석은 이 자리가 그걸 한다고 적고 있었는데,
+       들어갈 때만 막고 돌아올 때는 새로 짜서 결과가 같았다. */
     if(isCard){clearInterval(this.state.timerInterval);this.m6GenCards();this.m6Render();return;}
 
-    if(!preserveCycle) this.initCycleQueue();
+    if(!preserveCycle) this.restoreCycleQueue();
     /* 원소 기호 키패드는 generateQuestion이 문제를 만든 뒤 syncElemRow로 맞춘다 (MODE 7은 출제 방향에 따라 달라짐) */
     this.generateQuestion();
   },
