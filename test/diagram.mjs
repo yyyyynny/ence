@@ -260,6 +260,38 @@ for(const it of ctx.ION_FORMING){
   }
 }
 
+/* ── 중심 원자의 비공유 전자쌍이 「빈 쪽」에 있는가 ──
+   암모니아는 세 결합이 120°씩 고르게 벌어져 있어서 빈 쪽이 없었고, 비공유 전자쌍이
+   H와 H 사이에 끼어 앉았다. 그러면 N 둘레에 네 방향이 거의 같은 간격으로 늘어서
+   암모니아가 4개짜리로 보인다 — 겹침·잘림 검사로는 절대 안 잡힌다. 점도 원자도 전부
+   제자리에 멀쩡히 있고, 「어느 쪽을 향하고 있나」만 틀렸기 때문이다.
+   비공유 전자쌍은 어느 결합 방향과도 충분히 떨어져 있어야 한다. */
+{
+  const ANG = (cx, cy, x, y) => Math.atan2(y - cy, x - cx) * 180 / Math.PI;
+  const diff = (a, b) => { let d = Math.abs(a - b) % 360; return d > 180 ? 360 - d : d; };
+  for (const bd of ctx.BONDS.filter(x => x.type === 'covalent')) {
+    const cPairs = bd.ligands.reduce((n, l) => n + l.pairs, 0);
+    if (ctx.outerShellOf(ctx.ELEMENTS.find(e => e.sym === bd.center).z) - cPairs <= 0) continue; /* 비공유쌍 없음 */
+    const d = parse(ctx.covalentDiagramHTML(bd));
+    const c = d.nucs.find(o => Math.hypot(o.x - 200, o.y - 200) < 1) || { x: 200, y: 200 };
+    /* 중심에서 뻗은 결합 방향 = 리간드 원자핵 방향 */
+    const bonds = d.nucs.filter(o => o !== c).map(o => ANG(c.x, c.y, o.x, o.y));
+    /* 중심 원자가 내놓은 전자 가운데, 어느 결합축에서도 멀리 떨어진 것이 비공유쌍이다.
+       (공유 전자는 결합 방향 ±약간에 놓인다.) */
+    const lone = finalDots(d)
+      .filter(o => /dia-e-own/.test(o.cls))
+      .map(o => ANG(c.x, c.y, o.x, o.y))
+      .filter(a => bonds.every(bg => diff(a, bg) > 35));
+    if (!lone.length) { F.push(`[비공유쌍] ${bd.name} — 비공유 전자쌍을 찾지 못했다`); continue; }
+    for (const a of lone) {
+      const near = Math.min(...bonds.map(bg => diff(a, bg)));
+      /* 결합이 셋이면 이웃 결합과의 사이가 60°는 돼야 「빈 쪽」으로 읽힌다 */
+      /* 실측: 암모니아 103° (고치기 전 53°), 물 71~85°. 55°는 그 사이에 둔 선이다. */
+      if (near < 55) F.push(`[비공유쌍] ${bd.name} — 비공유 전자쌍이 결합 방향과 ${near.toFixed(0)}°밖에 안 떨어졌다 (결합 사이에 끼어 보인다)`);
+    }
+  }
+}
+
 const total = ctx.BONDS.length + ctx.ION_FORMING.length + ctx.ION_NOBLE.length + ctx.SHELL_QUIZ_ELEMENTS.length;
 if (F.length) { console.log(`실패 ${F.length}건:\n` + F.map(x => '  ✗ ' + x).join('\n')); process.exit(1); }
 console.log(`그림 검사 통과 — 겹침·핵 침범·잘림·테두리·전자 수·안내선·캡션·alt (${total}종 이상)`);
