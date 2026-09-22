@@ -2673,6 +2673,16 @@ const App={
     Array.from(de.classList).filter(c=>c.indexOf('theme-')===0).forEach(c=>de.classList.remove(c));
     de.classList.add('theme-'+t.id);
     if(persist){ try{localStorage.setItem('chem_theme',t.id);}catch(e){} }
+    /* 폰 주소창 색. index.html 의 meta 둘은 prefers-color-scheme 으로 갈리는데 그건 **OS 설정**
+       이지 학생이 **고른 테마**가 아니다. 그래서 밝은 폰에서 어두운 테마를 고르면 화면은
+       어두운데 주소창만 밝은 색으로 남았다. 실제 바탕색을 읽어 그대로 맞춘다 — 팔레트가
+       바뀌어도 여기를 다시 고칠 일이 없다. */
+    try{
+      const bg=getComputedStyle(document.documentElement).getPropertyValue('--c-bg').trim();
+      if(bg) document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{
+        m.removeAttribute('media'); m.setAttribute('content', bg);
+      });
+    }catch(e){}
     /* 열려 있는 상세 패널의 헤더 색은 테마별 팔레트를 쓰므로, 테마 전환 시 다시 그려 새 팔레트를 즉시 반영 */
     [this.$.ptDetailPanel,this.$.ptFsDetailPanel].forEach(panel=>{
       if(panel&&panel.classList.contains('open')){

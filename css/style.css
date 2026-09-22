@@ -454,7 +454,19 @@
   #questionHeader{animation:qEnter var(--dur-enter) var(--ease-out);}
   #equationDisplay{animation:qFade var(--dur-enter) var(--ease-out);}
   .question-card{background:var(--c-surface-1);border:1px solid var(--c-border);border-radius:var(--r-3);padding:var(--s-5);margin-bottom:var(--s-4);min-height:180px;display:flex;flex-direction:column;gap:var(--s-4);flex-grow:1;position:relative;overflow:hidden;}
-  .timer-container{position:absolute;top:0;left:0;right:0;height:5px;background:rgba(0,0,0,.2);}
+  /* 검정 알파를 박아 두면 밝은 테마에서만 보인다 — edit 1.31:1, contrast 1.06:1 로 트랙이
+     사실상 없었다. 트랙이 안 보이면 남은 시간 막대가 "전체 중 얼마"인지 견줄 기준선이 없다.
+
+     ⚠️ 트랙을 진하게 할수록 그 위의 막대가 묻힌다 — 둘이 같은 자리를 나눠 쓰기 때문이다.
+     후보를 재 봤다(트랙:카드 / 막대:트랙 / **막대:카드**, 테마 셋의 최솟값):
+       rgba(0,0,0,.2) 1.06 / 3.09 / 2.35
+       --c-text-secondary 3.51 / **1.04** / 3.88   ← 트랙은 잘 보이는데 막대가 사라진다
+       --c-surface-2 1.13 / 2.78 / 3.57
+       --c-border 1.36 / 1.71 / **4.75**
+     고른 기준은 「막대:카드」다. 학생이 읽는 것은 남은 시간(막대)이지 트랙이 아니고,
+     그 값이 전 테마 4.75 이상인 것은 --c-border 뿐이다. 트랙도 어두운 테마에서 크게
+     좋아진다(1.06 → 6.03). 트랙을 더 진하게 "개선"하면 막대를 잃는다. */
+  .timer-container{position:absolute;top:0;left:0;right:0;height:5px;background:var(--c-border);}
   /* 남은 시간은 width가 아니라 scaleX로 줄인다. width는 레이아웃 속성이라 100ms마다
      리플로우가 일어나고, 문제를 푸는 내내 그게 계속된다 — 키보드를 두드리는 동안 미세하게
      걸리던 이유가 여기다. transform은 합성만으로 끝나 주 스레드를 건드리지 않는다. */
@@ -931,7 +943,14 @@
   /* 스위치는 52×30 이 제 모습이라 상자를 키우면 딴 것이 된다.
      대신 보이지 않는 여유를 위아래로 붙여 손가락이 닿는 넓이만 44px 로 만든다. */
   .pt-toggle-switch::after{content:'';position:absolute;inset:-8px 0;}
-  .pt-toggle-knob{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;transition:transform var(--dur-tap) var(--ease-out);box-shadow:0 1px 3px rgba(0,0,0,.3);}
+  /* 흰색을 박아 두면 밝은 테마에서 트랙과 안 갈린다 — note 에서 손잡이:트랙 1.45:1 이라
+     스위치가 켜졌는지 꺼졌는지를 손잡이로는 못 읽었다(WCAG 1.4.11 은 비문자 요소에 3:1).
+     후보를 재 보고 골랐다(꺼짐/켜짐 × 테마 셋, 최솟값):
+       #fff 1.45 · --c-surface-solid 1.38 · --c-bg 1.26 · --c-text-primary 3.14
+     글자색을 쓰는 게 뜻밖이지만 이유는 단순하다 — 트랙은 어느 테마에서나 바탕 쪽 색이고
+     글자색은 그 반대편에 있도록 팔레트가 짜여 있다. 표면 계열을 쓰면 바탕끼리 겹친다.
+     selfcheck 의 대비 검사는 글자 색만 보므로 손잡이·트랙·타이머 막대는 범위 밖이다. */
+  .pt-toggle-knob{position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:var(--c-text-primary);transition:transform var(--dur-tap) var(--ease-out);box-shadow:0 1px 3px rgba(0,0,0,.3);}
   .pt-toggle-switch.on .pt-toggle-knob{transform:translateX(22px);}
   .pt-legend{display:flex;flex-wrap:wrap;gap:var(--s-2) var(--s-4);margin-bottom:var(--s-4);font-size:var(--t-caption);color:var(--c-text-secondary);}
   .pt-legend-item{display:flex;align-items:center;gap:var(--s-1);}
