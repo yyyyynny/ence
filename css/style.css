@@ -18,11 +18,14 @@
        그 테마에서 그 색이 얼마나 밝으냐에 달렸다 — 테마마다 밝기를 보고 정한다. */
     --c-on-accent-1:#191817; --c-on-accent-2:#191817;
     --c-on-correct:#191817; --c-on-wrong:#191817;
-    /* 맞음·틀림 칸의 옅은 바탕, 입력 중인 칸의 테두리 빛, 플래시카드 뒷면 물빛.
-       여기 없이 rgba를 규칙에 직접 적으면 테마를 갈아도 다크 색이 그대로 남는다(실제로 그랬다). */
+    /* 맞음·틀림 칸의 옅은 바탕과 입력 중인 칸의 테두리 빛.
+       여기 없이 rgba를 규칙에 직접 적으면 테마를 갈아도 다크 색이 그대로 남는다(실제로 그랬다).
+       («플래시카드 뒷면 물빛»도 적혀 있었는데 그 기능은 없어진 지 오래다 — 뒷면에만
+        그라디언트를 깔면 딴 물건이 된다며 걷어냈고(.m6-back 참고), 설명만 남아 토큰 8줄이
+        그걸 뒷받침하는 척하고 있었다. 그 토큰들도 같이 지웠다.) */
     --c-correct-bg:rgba(111,180,137,0.15); --c-wrong-bg:rgba(217,128,122,0.15);
-    --c-focus-glow:rgba(143,176,182,0.2); --c-tint-a2:rgba(216,210,198,0.16);
-    --c-tint-a1:rgba(143,176,182,0.14);
+    --c-focus-glow:rgba(143,176,182,0.2);
+   
     /* 손이 닿는 순간에만 뜨는 유리판. 애플 HIG의 Liquid Glass "Regular" 변형과 같은 자리에
        쓴다 — 콘텐츠가 아니라 위에 뜬 조작판(toolbar·아이콘 버튼)에만, 평소엔 안 보이다가
        닿을 때만. 배경은 새로 지어내지 않고 이미 있는 solid 표면색을 그대로 반투명하게
@@ -135,18 +138,20 @@
        19가지를 쓰고 있었고 그중 12가지가 4의 배수 밖이었다(1·2·3·5·7·9·10·11·14·15·18…).
        가장 많이 쓰던 두 값(10px·14px)이 하필 척도 밖이었다. */
     --s-0: 2px;  --s-1: 4px;  --s-2: 8px;  --s-3: 12px;
-    --s-4: 16px; --s-5: 24px; --s-6: 32px;
+    --s-4: 16px; --s-5: 24px;
 
     /* ── 글자 크기 ──
        9~20px 정수를 전부 쓰고 있었다(31가지). 1px 차이는 위계가 아니라
        망설임을 그대로 남긴 것이다. 다섯 단계로 줄인다.
        12px 아래로는 내려가지 않는다 — 폰에서 안 읽힌다.
+       행간은 크기와 짝으로 선언했었는데 --lh-caption 말고는 아무도 안 불렀다(규칙마다
+       1.3~2.0을 손으로 적고 있었다). 안 지키는 체계는 체계인 척만 하므로 쓰는 것만 남긴다.
        (주기율표 칸만 예외다. 118칸을 한 화면에 넣는 건 다른 문제라 clamp 로 따로 둔다.) */
     --t-caption: 12px;   --lh-caption: 1.5;   /* 라벨·주석·설명 */
-    --t-body:    14px;   --lh-body:    1.6;   /* 버튼·목록·본문 */
-    --t-body-lg: 16px;   --lh-body-lg: 1.6;   /* 선택지, 상세 이름 */
-    --t-title:   20px;   --lh-title:   1.35;  /* 창 제목 */
-    --t-display: 26px;   --lh-display: 1.2;   /* 점수, 원소 기호 */
+    --t-body:    14px;   /* 버튼·목록·본문 */
+    --t-body-lg: 16px;   /* 선택지, 상세 이름 */
+    --t-title:   20px;  /* 창 제목 */
+    --t-display: 26px;   /* 점수, 원소 기호 */
 
     /* 아이콘 크기 — 글자 크기가 아니라 따로 둔다.
        예전엔 .icon-btn 이 font-size:22px 으로 이모지를 키우고 있었는데,
@@ -210,7 +215,7 @@
     --c-on-correct:#FBF9F4;  --c-on-wrong:#FBF9F4;
     --c-correct-bg:rgba(31,107,69,0.15); --c-wrong-bg:rgba(163,32,32,0.15);
     --c-focus-glow:rgba(23,85,122,0.2);
-    --c-tint-a1:rgba(23,85,122,0.10); --c-tint-a2:rgba(62,70,80,0.14);
+   
     --glass-bg:rgba(251,249,244,0.55); --glass-edge:rgba(23,85,122,0.7);
     --c-e-inner:#6E7480;
     --c-e-own:#8A5710;            /* 남의 전자와 밝기 1.88:1 — 흑백으로 봐도 갈린다 */
@@ -237,7 +242,7 @@
     --c-on-correct:#191817;  --c-on-wrong:#191817;
     --c-correct-bg:rgba(111,180,137,0.15); --c-wrong-bg:rgba(217,128,122,0.15);
     --c-focus-glow:rgba(143,176,182,0.2);
-    --c-tint-a1:rgba(143,176,182,0.14); --c-tint-a2:rgba(216,210,198,0.16);
+   
     --glass-bg:rgba(32,31,29,0.55); --glass-edge:rgba(143,176,182,0.7);
     /* 전자 점은 --c-bg 위가 아니라 그림 판 위에 그려진다(.dia-panel = surface-2 겹친 카드 =
        실제 rgb(54,53,51)). 전에 적혀 있던 4.05:1은 --c-bg 기준이라 실제보다 후하게 잰
@@ -260,8 +265,8 @@
     --c-on-accent-1:#000000; --c-on-accent-2:#000000;
     --c-on-correct:#000000; --c-on-wrong:#000000;
     --c-correct-bg:rgba(76,227,154,0.15); --c-wrong-bg:rgba(255,139,139,0.15);
-    --c-focus-glow:rgba(127,227,240,0.2); --c-tint-a2:rgba(255,255,255,0.16);
-    --c-tint-a1:rgba(127,227,240,0.22);
+    --c-focus-glow:rgba(127,227,240,0.2);
+   
     /* 고대비에서는 유리판도 흐리게 비치면 안 된다 — 이 테마 자체가 OS의
        prefers-contrast:more 대응판이고, 그 요구는 "반투명 대신 거의 불투명 + 뚜렷한 테두리"다.
        그래서 거의 안 비치게(0.92) 두고, 아래 .theme-contrast 규칙에서 흐림 자체를 끈다. */
@@ -375,7 +380,6 @@
   .stat-value{font-family:var(--font-mono);font-size:var(--t-display);font-weight:700;line-height:1;transition:transform var(--dur-tap) var(--ease-out);}
   .stat-value.bump{transform:scale(1.4);}
   #streakCount{color:var(--c-text-primary);}#totalCorrect{color:var(--c-correct);}#totalWrong{color:var(--c-wrong);}
-  .streak-flames{font-size:var(--t-title);}
   /* ══ 설정 줄 ══
      제한시간·출제 방식·카드 유형·간략히 보기가 각각 테두리 상자였다. 카드 네 개가
      세로로 쌓이면 그게 곧 「생성된 화면」이다. 상자를 걷고 **위쪽 괘선 하나**로 나눈다 —
@@ -744,7 +748,6 @@
   #diaModalContent .dia{max-height:none;margin:0 auto;}
   .dia-nuc{fill:var(--c-surface-1);stroke:var(--c-accent-1);stroke-width:2;}
   .dia-ring{fill:none;stroke:var(--c-border);stroke-width:1.5;}
-  .dia-fill{fill:var(--c-surface-1);}
   .dia-sym{fill:var(--c-text-primary);font-family:var(--font-mono);font-size:var(--t-body);font-weight:700;text-anchor:middle;dominant-baseline:central;}
   .dia-sym-lg{font-size:var(--t-title);}
   .dia-e{fill:var(--c-e-own);}
@@ -1054,7 +1057,6 @@
   #mode6Wrap.m6-active{display:flex;animation:m6Enter var(--dur-enter) var(--ease-out);}
   .m6-wrongnote-link{display:flex;align-items:center;justify-content:center;gap:var(--s-2);background:transparent;border:1px solid var(--c-border);border-radius:var(--r-3);padding:var(--s-3) var(--s-4);color:var(--c-text-primary);font-size:var(--t-body);font-weight:500;cursor:pointer;transition:var(--t-btn);}
   @media (hover:hover){.m6-wrongnote-link:hover{border-color:var(--c-border-active);color:var(--c-accent-1);}}
-  .m6-wrongnote-icon{font-size:var(--t-body);color:var(--c-accent-1);}
   .m6-opt-row{padding:var(--s-3) var(--s-1) 0;border-top:1px solid var(--c-border);}
   .m6-opt-label{font-size:var(--t-caption);color:var(--c-text-secondary);font-weight:500;margin-bottom:var(--s-3);}
   .m6-opt-btns{display:flex;gap:var(--s-2);flex-wrap:wrap;}
@@ -1292,8 +1294,6 @@
       vertical-align:-0.18em;}
   .ic-sm{width:var(--ic-sm);height:var(--ic-sm);}
   .ic-lg{width:var(--ic-lg);height:var(--ic-lg);}
-  /* 글자와 나란히 놓일 때의 사이 — 아이콘은 단어에 붙은 것이지 따로 선 것이 아니다 */
-  .has-ic{display:inline-flex;align-items:center;gap:var(--s-2);}
 
   /* ── 눌린다 ──
      터치에는 :hover가 없다. 그래서 :active가 없으면 폰에서는 무엇을 눌러도 손가락 아래에서

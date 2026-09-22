@@ -36,7 +36,7 @@ const App={
     hintSort:'num', hintFavorites:[], favoriteOnly:false
   },
   $:{
-    app:document.getElementById('app'),statBar:document.getElementById('statBar'),streakCount:document.getElementById('streakCount'),streakFlames:document.getElementById('streakFlames'),
+    app:document.getElementById('app'),statBar:document.getElementById('statBar'),streakCount:document.getElementById('streakCount'),
     totalCorrect:document.getElementById('totalCorrect'),totalWrong:document.getElementById('totalWrong'),modeTabs:document.querySelector('.mode-tabs'),
     qLabel:document.getElementById('qLabel'),qSubLabel:document.getElementById('qSubLabel'),equationDisplay:document.getElementById('equationDisplay'),
     resultBanner:document.getElementById('resultBanner'),numRow:document.getElementById('numRow'),
@@ -2276,7 +2276,6 @@ const App={
     /* 연속 3·5·10 에서 불 이모지를 하나씩 늘려 붙이던 자리.
        판에 박힌 게임화 장치이고, 숫자가 이미 「연속 7」이라고 말하고 있다.
        편집 체계에서 연속을 세는 방법은 숫자와 그 아래 괘선이지 불꽃이 아니다. */
-    this.$.streakFlames.textContent='';
   },
 
   /* 연속·맞음·틀림은 저장도 안 되는 세션 카운터라 늘 칸을 차지하고 있을 필요가 없다 —
