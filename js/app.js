@@ -1,0 +1,3547 @@
+/* ── 앱 ── */
+/* ── 학생에게 하는 말 ──
+   높임 어투를 하나로 정해 둔다: **해요체**.
+   적어 두지 않았더니 해요체·합쇼체·평서체·명령형 네 가지가 한 앱에 공존했고,
+   「빠졌어요 … 있습니다」처럼 한 문장 안에서 부딪히는 자리까지 생겼다.
+   해요체를 고른 이유는 이미 다수이고(구역 설명, 변경 목록), 중학생에게 하는 말로
+   합쇼체보다 가깝기 때문이다.
+   · 설명하는 글(그림 해설 등)은 평서체를 쓴다 — 그건 학생에게 말을 거는 게 아니라
+     사실을 적어 두는 것이라 격이 다르다.
+   · 「완벽합니다!」「축하합니다!」처럼 부풀린 칭찬은 쓰지 않는다. 맞았으면 맞았다고 한다. */
+
+/* 참고 자료 목록(buildModalList)을 늘어놓는 네 가지 방식 — 번호·가나다·원소·즐겨찾기.
+   번호가 기본값이고 곧 "원래 순서"다. 가나다·원소는 같은 항목을 다시 늘어놓거나 나누는
+   것뿐이라 저장할 필요가 없어 세션 동안만 기억한다(state.hintSort). 즐겨찾기는 어떤 항목을
+   골랐는지가 값이라 localStorage에 남긴다(state.hintFavorites, loadSettings 참고). */
+const HINT_SORTS=[
+  {id:'num', label:'번호순'},
+  {id:'abc', label:'가나다순'},
+  {id:'elem',label:'원소별'},
+  {id:'fav', label:'즐겨찾기'}
+];
+/* 창을 연 직후 이 시간 동안은 X·바깥 누르기로 닫지 않는다 — openModal 참고.
+   300ms는 브라우저가 더블탭으로 보는 시간과 같다. 모션 토큰을 쓰지 않는 이유는 이것이
+   애니메이션이 아니라 입력 문제이기 때문이다 — 「움직임 줄이기」로 전환이 0이 되어도
+   손가락이 두 번 닿는 것은 그대로다. */
+const TAP_GUARD_MS = 300;
+
+const App={
+  state:{
+    currentMode:null,score:{streak:0,correct:0,wrong:0},
+    currentQuestion:null,isAnswerChecked:false,isAnswerRevealed:false,theme:THEME_DEFAULT,
+    isLastWrongAttempt:false,wrongBlanks:{},wrongAlreadyPenalized:false,
+    timerDuration:DEFAULT_TIMER,currentMaxTime:DEFAULT_TIMER,timerLeft:DEFAULT_TIMER,timerInterval:null,
+    wrongNotes:[],noteFilter:'all',retryNoteId:null,
+    isCycleMode:false,cycleQueue:[],cycleTotal:0,cycleQueues:{},lastQuestionName:null,
+    m6Type:'full',m6Order:'korean',m6Cards:[],m6Index:0,m6Flipped:false,lastBondOrder:null,
+    m7Dir:'toPG',
+    section:'ms', showDiagram:true,
+    isSoundOn:true, isHapticOn:true, isWideMode:false, isSimplePeriodic:true, isSimpleCategory:false,
+    savedCycleState:null,
+    isRetryPlaylistMode:false, retryPlaylist:[],
+    hintSort:'num', hintFavorites:[], favoriteOnly:false
+  },
+  $:{
+    app:document.getElementById('app'),statBar:document.getElementById('statBar'),streakCount:document.getElementById('streakCount'),
+    totalCorrect:document.getElementById('totalCorrect'),totalWrong:document.getElementById('totalWrong'),modeTabs:document.querySelector('.mode-tabs'),
+    qLabel:document.getElementById('qLabel'),qSubLabel:document.getElementById('qSubLabel'),equationDisplay:document.getElementById('equationDisplay'),
+    resultBanner:document.getElementById('resultBanner'),numRow:document.getElementById('numRow'),
+    elemRowLabel:document.getElementById('elemRowLabel'),elemRow:document.getElementById('elemRow'),
+    confirmBtn:document.querySelector('.kb-key.confirm'),nextBtn:document.querySelector('.kb-key.next-q'),
+    hintModalOverlay:document.getElementById('hintModalOverlay'),wrongNoteModalOverlay:document.getElementById('wrongNoteModalOverlay'),
+    reactionList:document.getElementById('reactionList'),wrongNoteList:document.getElementById('wrongNoteList'),
+    hintModalTitle:document.getElementById('hintModalTitle'),hintSortChips:document.getElementById('hintSortChips'),
+    diaModalOverlay:document.getElementById('diaModalOverlay'),diaModalContent:document.getElementById('diaModalContent'),
+    timerBar:document.getElementById('timerBar'),wrongNoteFilters:document.getElementById('wrongNoteFilters'),
+    questionCard:document.getElementById('questionCard'),keyboardWrap:document.getElementById('keyboardWrap'),
+    timerSelectWrap:document.getElementById('timerSelectWrap'),mode6Wrap:document.getElementById('mode6Wrap'),
+    cycleWrap:document.getElementById('cycleWrap'),cycleProgressWrap:document.getElementById('cycleProgressWrap'),
+    cycleProgressText:document.getElementById('cycleProgressText'),cycleProgressFill:document.getElementById('cycleProgressFill'),
+    soundBtn:document.getElementById('soundBtn'),hapticBtn:document.getElementById('hapticBtn'),
+    layoutBtn:document.getElementById('layoutBtn'),
+    periodicModalOverlay:document.getElementById('periodicModalOverlay'),periodicContent:document.getElementById('periodicContent'),
+    themeModalOverlay:document.getElementById('themeModalOverlay'),themeList:document.getElementById('themeList'),
+    simplePeriodicToggle:document.getElementById('simplePeriodicToggle'),simpleCategoryToggle:document.getElementById('simpleCategoryToggle'),
+    ptDetailPanel:document.getElementById('ptDetailPanel'),ptFsDetailPanel:document.getElementById('ptFsDetailPanel')
+  },
+
+  /* ── 모션 값은 CSS가 유일한 출처다 ──
+     JS가 같은 숫자를 따로 갖고 있으면 언젠가 반드시 어긋난다. 실제로 CSS는 `.3s`인데
+     정리 타이머는 `320`이었고, 그 60ms 틈에 전환이 살아 있는 채로 다음 동작이 시작됐다.
+     여기서 읽으면 css/style.css의 토큰 한 곳만 고쳐도 JS까지 따라온다.
+     값은 자주 안 바뀌고 getComputedStyle은 싸지 않으므로 한 번 읽고 기억한다.
+     (테마를 바꿔도 모션 토큰은 안 바뀐다 — 색만 바뀐다.) */
+  motionMs(token){
+    const c = this._motion || (this._motion = {});
+    if(c[token] === undefined){
+      const v = getComputedStyle(document.documentElement).getPropertyValue(token).trim();
+      c[token] = v.endsWith('ms') ? parseFloat(v) : (parseFloat(v) || 0) * 1000;
+    }
+    return c[token];
+  },
+  init(){
+    this.loadSettings();
+    this.loadWrongNotes();
+    this.buildKeyboard();
+    this.buildModalList();
+    this.attachEventListeners();
+    document.body.addEventListener('click', () => this.initAudioContext(), {once:true});
+    /* iOS Safari는 버튼이 아닌 요소(div로 만든 칸·카드)에 :active를 안 걸어 준다 —
+       문서 어딘가에 touchstart 리스너가 하나라도 있어야 걸어 준다. 아무것도 안 하는
+       리스너를 하나 두는 것이 이 동작을 켜는 표준적인 방법이다. */
+    document.addEventListener('touchstart', () => {}, {passive:true});
+    /* 헤더 아이콘 줄은 이제 가로로 스크롤하지 않고 아랫줄로 내려간다(css 참고) —
+       넘친 것을 흐림으로 알릴 일이 없으므로 여기서 부르지 않는다.
+       setupScrollFade는 구역 탭 줄이 그대로 쓴다. */
+    this.setupModalScrollLock();
+    this.setupViewportVars();
+    this.setupPtZoom();
+    this.renderSectionTabs();
+    this.renderSectionNote();
+    this.renderNoteFilters();
+    document.querySelectorAll('.dia-btn').forEach(b=>b.classList.toggle('active', (b.dataset.dia==='on')===this.state.showDiagram));
+    /* 저장된 구역의 첫 모드로 시작한다 */
+    const first=modesInSection(this.state.section)[0];
+    if(first!==undefined) this.setMode(first); else this.setSection(this.state.section);
+    this.renderUpdateBanner();
+  },
+
+  /* ── 새 판 알림 ──
+     저장해 둔 판 번호와 지금 판을 견주어, 다르면 그 사이에 바뀐 내용을 배너로 알린다.
+     서버도 네트워크 요청도 없다 — service worker는 file://에서 등록이 안 되고
+     이 앱은 파일로 열어도 돌아가야 한다(js/version.js 머리말 참고).
+
+     화면을 저절로 새로고침하지 않는다. 문제를 풀던 중에 화면이 갈아엎히면 답이 날아간다 —
+     언제 받을지는 학생이 정한다.
+
+     판 번호는 배너를 **닫거나 새로고침을 누를 때** 저장한다. 뜨자마자 저장하면,
+     스쳐 지나가듯 본 사람은 무엇이 바뀌었는지 영영 못 보게 된다. */
+  renderUpdateBanner(){
+    const el=document.getElementById('updateBanner');
+    if(!el || typeof APP_VERSION==='undefined') return;
+    let seen=null;
+    try{ seen=localStorage.getItem('chem_seen_version'); }catch(e){}
+    /* 처음 온 사람에게는 알릴 변화가 없다 — 지금 판을 조용히 적어 두고 끝낸다.
+       빈 문자열처럼 쓸 수 없는 값도 같이 여기서 처리한다. 그냥 두면 그 값이 계속 남아
+       다음 판이 나와도 영영 알림이 안 뜬다(첫 방문과 달리 저절로 고쳐지지 않는다). */
+    if(!seen){ this.markVersionSeen(); return; }
+    const lines=changesSince(seen);
+    if(!lines.length) return;
+    document.getElementById('updateList').innerHTML=
+      lines.map(t=>`<li>${t}</li>`).join('');
+    el.hidden=false;
+  },
+  markVersionSeen(){
+    try{ localStorage.setItem('chem_seen_version', APP_VERSION); }catch(e){}
+  },
+  dismissUpdateBanner(){
+    this.feedback('tap');
+    this.markVersionSeen();
+    const el=document.getElementById('updateBanner');
+    if(el) el.hidden=true;
+  },
+
+  /* ── 잠깐 떴다 스스로 사라지는 안내 ──
+     확인을 받아야 하는 말이 아니라 그냥 알려 주는 말에 쓴다 — 그래서 모달이 아니라 토스트다.
+     한 번에 하나만 뜬다. 이미 뜬 게 있으면 지우고 새로 띄운다(안 그러면 겹쳐 쌓인다).
+     닫기 버튼이 없다 — 손 안 대도 사라지고, 눌러서 먼저 지울 수도 있다(막지 않는다). */
+  showToast(msg, ms){
+    const old=document.getElementById('appToast');
+    if(old) old.remove();
+    const el=document.createElement('div');
+    el.id='appToast'; el.className='toast'; el.setAttribute('role','status'); el.setAttribute('aria-live','polite');
+    el.textContent=msg;
+    el.addEventListener('click',()=>this.hideToast(el));
+    document.body.appendChild(el);
+    /* 붙인 프레임에 곧바로 클래스를 넣으면 브라우저가 시작 상태와 끝 상태를 한 번에
+       처리해 전환이 안 걸린다 — 이스터에그 카드와 같은 이유로 한 프레임 늦춘다. */
+    requestAnimationFrame(()=>requestAnimationFrame(()=>el.classList.add('show')));
+    setTimeout(()=>this.hideToast(el), ms || 1500);
+  },
+  hideToast(el){
+    if(!el || !el.isConnected) return;
+    el.classList.remove('show');
+    setTimeout(()=>el.remove(), this.motionMs('--dur-exit')+20);
+  },
+
+  /* ── 진동 토글의 안내 ──
+     진동을 켰는데 안 느껴지면 "고장났나?"가 된다. 이유가 두 가지고 서로 달라서
+     문구도 갈라 둔다:
+     · 이 브라우저가 애초에 진동을 구현 안 함(대표적으로 아이폰 사파리) — 무음을 풀어도
+       소용없다. 토글을 어느 쪽으로 누르든 알려 준다 — 버튼이 하는 일이 없다는 것
+       자체가 알아야 할 사실이라서다.
+     · 브라우저는 지원하는데(대개 안드로이드 크롬) 기기가 무음/방해금지 모드 — 켰을 때만
+       알려 준다. 껐을 때 무음 얘기를 하면 맥락에 안 맞는다.
+     "처음 한 번만" localStorage에 남겨 두고 다시는 안 띄우게 했던 적이 있는데,
+     그러면 "다시 보고 싶다"가 개발자 도구로 그 값을 지우는 것 말고는 방법이 없어진다 —
+     기본 동작이 콘솔로만 되돌아가는 자리를 만들면 안 된다. 그래서 조건을 없애고
+     그냥 매번 뜨게 한다. 토글을 자주 누르는 버튼이 아니고, 토스트도 짧게 떴다
+     스스로 사라지니 자주 눌러도 성가시지 않다. */
+  hapticHint(){
+    if(!navigator.vibrate){
+      this.showToast('이 브라우저는 진동을 지원 안 해요');
+      return;
+    }
+    if(!this.state.isHapticOn) return;
+    this.showToast('무음 모드에선 진동이 안 울릴 수 있어요');
+  },
+
+  /* 실제 가시 영역(px)을 CSS 변수로 유지 — iOS Safari/삼성 인터넷의 동적 주소창 때문에
+     vh/vw가 실제 화면과 어긋나는 문제를 우회한다. 회전 전체화면이 열려 있으면 즉시 재계산.
+     핀치 줌 중에는 visualViewport의 resize/scroll이 프레임마다 여러 번 발생하므로,
+     매번 그리드를 다시 그리면 끊겨 보인다 — requestAnimationFrame으로 프레임당 1회로 묶는다. */
+  setupViewportVars(){
+    let settleTimer=null, lastW=0, lastH=0, lastOrient='';
+    const apply=()=>{
+      const vv=window.visualViewport;
+      /* 핀치 확대 중(scale>1)에는 "보이는 영역"이 좁아진 것일 뿐 화면 크기가 바뀐 게 아니다.
+         삼성 인터넷 등은 user-scalable=no와 touch-action을 모두 무시하고 확대를 허용하므로,
+         확대 도중 재계산하면 확대 제스처와 레이아웃 재계산이 서로 싸우며 화면이 찢어졌다.
+         → 확대 상태에서는 아무것도 갱신하지 않는다. 배율이 1로 돌아오면 그때 한 번만 확인. */
+      if(vv && vv.scale>1.001) return;
+      const w=Math.round(vv?vv.width:window.innerWidth);
+      const h=Math.round(vv?vv.height:window.innerHeight);
+      const orient = w>h ? 'l' : 'p';
+      const fsOpen = document.getElementById('ptFullscreen').classList.contains('show');
+      /* 회전 뷰는 "열 때 화면에 맞춰 고정된 스냅샷"이다. 핀치 도중 삼성 브라우저의 주소창이
+         나타났다 사라지며 화면 높이가 몇십 px 바뀌는데, 그때마다 회전 뷰를 다시 그리면
+         축소 순간 "화면 재로딩" 플래시로 보인다 → 회전 뷰가 열려 있는 동안은 실제 방향 전환
+         (세로↔가로)에만 재계산하고, 주소창발 미세한 높이 변화는 무시한다. */
+      if(fsOpen && orient===lastOrient) return;
+      if(w===lastW && h===lastH) return; /* 크기 변화 없으면 아예 손대지 않음 → 깜빡임 없음 */
+      lastW=w; lastH=h; lastOrient=orient;
+      document.documentElement.style.setProperty('--app-w', w+'px');
+      document.documentElement.style.setProperty('--app-h', h+'px');
+      if(fsOpen) this.layoutPtFullscreen();
+    };
+    /* 제스처(핀치/주소창 애니메이션) 도중에는 이벤트가 프레임마다 쏟아진다 — 매번 반응하지 않고
+       150ms 잠잠해진 뒤 한 번만 적용해, 제스처 끝자락의 "찰나의 다시 그리기"와 끊김을 없앤다. */
+    const update=()=>{ clearTimeout(settleTimer); settleTimer=setTimeout(()=>requestAnimationFrame(apply),150); };
+    apply();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    if(window.visualViewport){
+      window.visualViewport.addEventListener('resize', update);
+      window.visualViewport.addEventListener('scroll', update);
+    }
+  },
+
+  /* 어떤 팝업이든 .show면 body 스크롤 잠금 → 뒤 페이지로 스크롤 전파(바깥 노출) 차단 */
+  setupModalScrollLock(){
+    /* 이전에 여기서 뷰포트 메타(maximum-scale)를 동적으로 잠갔었는데, 삼성 인터넷은 확대 차단은
+       무시하면서 축소 제스처는 잠금 범위와 비교하다 거부해 "축소가 안 되고 멈춤"의 원인이 됐다.
+       차단 효과는 없고 부작용만 있어 제거 — 확대는 setupViewportVars의 동결 가드가 감당한다. */
+    const overlays=[...document.querySelectorAll('.modal-overlay'),document.getElementById('ptFullscreen')].filter(Boolean);
+    const sync=()=>{
+      const anyOpen=overlays.some(o=>o.classList.contains('show'));
+      document.body.classList.toggle('modal-open', anyOpen);
+    };
+    const obs=new MutationObserver(sync);
+    overlays.forEach(o=>obs.observe(o,{attributes:true,attributeFilter:['class']}));
+    sync();
+  },
+
+  loadSettings(){
+    try{
+      this.state.isSoundOn = localStorage.getItem('chem_sound') !== 'false';
+      this.state.isHapticOn = localStorage.getItem('chem_haptic') !== 'false';
+      this.state.isWideMode = localStorage.getItem('chem_wide') === 'true';
+      /* 기본은 「간략히 보기」다 — 중학교 필수 원소 위주로 보여야 좁은 화면에서 표가 안 잘린다.
+         118종을 다 펼치는 건 골라서 켜는 쪽으로 둔다. */
+      this.state.isSimplePeriodic = localStorage.getItem('chem_pt_simple') !== 'false';
+      /* 이쪽은 기본이 꺼짐이다 — 간략히 보기(원소 개수)와 달리 색을 바꾸는 쪽이라,
+         이미 쓰던 사람 화면이 말없이 달라지면 안 된다. 켜 본 사람만 다음에도 켜져 있다. */
+      this.state.isSimpleCategory = localStorage.getItem('chem_pt_cat_simple') === 'true';
+      /* 저장된 구역이 개정으로 사라졌을 수 있으므로 실재하는지 확인하고 쓴다 */
+      const savedSec = localStorage.getItem('chem_section');
+      if(savedSec && sectionMeta(savedSec)) this.state.section = savedSec;
+      this.state.showDiagram = localStorage.getItem('chem_diagram') !== 'false';
+      /* 제한시간도 남긴다 — 다른 설정 열 가지가 다 남는데 이것만 안 남아서, 빠르게 푸는
+         학생은 앱을 열 때마다 20초에서 15초로 다시 맞춰야 했다.
+         받아들일 값은 버튼 줄에서 읽는다(따로 적어 두면 버튼을 늘렸을 때 어긋난다).
+         0은 「무제한」이라 유효한 값이므로 거짓 판정을 쓰면 안 된다. */
+      const savedTimer = parseInt(localStorage.getItem('chem_timer'));
+      if(this.timerChoices().includes(savedTimer)) this.state.timerDuration = savedTimer;
+      /* 없어진 테마 id가 저장돼 있을 수 있으므로 실재하는지 확인하고 쓴다.
+         저장된 게 없으면(첫 방문) 폰 설정을 따른다 — 폰을 밝게 쓰는 사람에게 다크로 시작해
+         눈부시게 만들 이유가 없고, 그 사람은 테마 고르기를 찾기 전까지 그냥 참고 본다.
+         한 번이라도 직접 고른 뒤에는 그 선택이 언제나 이긴다. */
+      const savedTheme = localStorage.getItem('chem_theme');
+      const moved = resolveThemeId(savedTheme);
+      if(savedTheme && THEMES.some(t=>t.id===moved)){
+        this.state.theme = moved;
+        /* 옛 이름이었으면 저장값도 지금 바로 새 이름으로 고쳐 둔다. 안 그러면 저장값이
+           계속 거짓말을 하고, 별칭표를 영영 못 지운다. 단 **아는 옛 이름일 때만** —
+           모르는 값은 아래로 떨어져 폰 설정을 따르되 저장하지 않는다(추론한 건 저장 안 한다). */
+        if(moved !== savedTheme){ try{localStorage.setItem('chem_theme', moved);}catch(e){} }
+      }
+      else this.state.theme = this.systemTheme();
+      /* 참고 자료의 즐겨찾기 — 반응식/이온식 이름을 키로 쓴다(둘은 겹칠 일이 없다:
+         반응식 이름엔 항상 " → "가 있고 이온식 이름엔 없다). 정렬 방식(hintSort)은
+         고른 항목이 아니라 "지금 어떻게 보고 있나"일 뿐이라 세션 동안만 기억하고
+         저장하지 않는다. */
+      const favD=localStorage.getItem('chem_hint_favorites');
+      const favParsed=favD?JSON.parse(favD):[];
+      if(Array.isArray(favParsed)) this.state.hintFavorites=this.migrateFavNames(favParsed.filter(x=>typeof x==='string'));
+    }catch(e){}
+    this.applyTheme(this.state.theme);
+    this.updateFeedbackBtns();
+    if(this.state.isWideMode) document.body.classList.add('wide-mode');
+    this.$.layoutBtn.innerHTML = this.icon('layout', 'lg');
+    this.$.simplePeriodicToggle.classList.toggle('on', this.state.isSimplePeriodic);
+    this.$.simplePeriodicToggle.setAttribute('aria-checked', this.state.isSimplePeriodic);
+    this.$.simpleCategoryToggle.classList.toggle('on', this.state.isSimpleCategory);
+    this.$.simpleCategoryToggle.setAttribute('aria-checked', this.state.isSimpleCategory);
+    /* 눌려 있는 제한시간 버튼도 여기서 정한다 — index.html에 active를 박아 두면
+       저장값과 어긋나는 순간 화면과 실제 시간이 다른 말을 한다. */
+    this.syncTimerBtns();
+
+  },
+  /* 켜짐/꺼짐은 이모지와 흐리기로 보여 주는데, 그건 눈으로 보는 사람에게만 닿는다.
+     읽어 주는 기계는 버튼 이름("소리 토글")만 읽고 지금 켜졌는지는 말해 주지 못하므로
+     aria-pressed 로 상태를 따로 실어 준다 — 이름은 그대로 두고 눌림 여부만 바뀐다. */
+  updateFeedbackBtns(){
+    this.$.soundBtn.innerHTML = this.icon(this.state.isSoundOn ? 'sound-on' : 'sound-off', 'lg');
+    this.$.soundBtn.style.opacity = this.state.isSoundOn ? '1' : '0.5';
+    this.$.soundBtn.setAttribute('aria-pressed', this.state.isSoundOn);
+    this.$.hapticBtn.innerHTML = this.icon(this.state.isHapticOn ? 'vibrate-on' : 'vibrate-off', 'lg');
+    this.$.hapticBtn.style.opacity = this.state.isHapticOn ? '1' : '0.5';
+    this.$.hapticBtn.setAttribute('aria-pressed', this.state.isHapticOn);
+  },
+  toggleWideMode() {
+    this.feedback('tap');
+    this.state.isWideMode = !this.state.isWideMode;
+    document.body.classList.toggle('wide-mode', this.state.isWideMode);
+    try{localStorage.setItem('chem_wide', this.state.isWideMode);}catch(e){}
+    this.$.layoutBtn.innerHTML = this.icon('layout', 'lg');
+    this.$.layoutBtn.setAttribute('aria-pressed', this.state.isWideMode);
+  },
+
+  initAudioContext() {
+    try {
+      if(!window.audioCtx) window.audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      if(window.audioCtx.state === 'suspended') window.audioCtx.resume();
+    } catch(e){}
+  },
+
+  playSound(type){
+    if(!this.state.isSoundOn) return;
+    try {
+      this.initAudioContext();
+      const osc = window.audioCtx.createOscillator();
+      const gain = window.audioCtx.createGain();
+      osc.connect(gain); gain.connect(window.audioCtx.destination);
+      const now = window.audioCtx.currentTime;
+      if(type === 'tap') {
+        osc.type = 'sine'; osc.frequency.setValueAtTime(600, now);
+        gain.gain.setValueAtTime(0.16, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.start(now); osc.stop(now + 0.05);
+      } else if(type === 'success') {
+        osc.type = 'sine'; osc.frequency.setValueAtTime(800, now);
+        osc.frequency.setValueAtTime(1200, now + 0.1);
+        gain.gain.setValueAtTime(0.28, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
+      } else if(type === 'error') {
+        osc.type = 'sawtooth'; osc.frequency.setValueAtTime(150, now);
+        gain.gain.setValueAtTime(0.28, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.2);
+        osc.start(now); osc.stop(now + 0.2);
+      }
+    } catch(e) {}
+  },
+  /* ── 진동 패턴을 고른 이유 ──
+     웹의 navigator.vibrate()는 "몇 ms 동안 켜고 끄는지"만 정할 수 있다 — 아이폰의
+     Taptic Engine처럼 세기(amplitude)나 파형(sharpness)을 따로 줄 방법이 아예 없다
+     (W3C 명세 자체가 duration/pattern 두 가지뿐이라고 못 박아 둔다). 그래서 이 함수를
+     아무리 다듬어도 iOS 네이티브 앱의 그 "톡" 하는 손맛과는 못 간다 — 이건 기능이
+     아니라 이 API의 한계다. 다음 세대 표준(Web Haptics API, navigator.playHaptics)이
+     세기를 지원하지만 2026년 지금 어떤 브라우저도 구현하지 않았다.
+     그 안에서 할 수 있는 건 리듬뿐이다: 펄스가 길수록 "세게", 펄스 사이 간격이
+     좁을수록 "빽빽하게" 느껴진다. success가 원래 [25,40,25,40,25]로 똑같은 펄스
+     세 번을 나란히 울렸는데, 이게 "성공"보다는 벨소리처럼 읽혔다 — 세 번 다 같은
+     길이라 리듬이 아니라 반복으로 느껴진 것. 짧고 긴 두 박(작게·크게)으로 바꾸면
+     "톡-투욱"처럼 커지는 쪽으로 읽혀 도착점이 있는 소리가 된다. */
+  playHaptic(type){
+    if(!this.state.isHapticOn || !navigator.vibrate) return;
+    try {
+      if(type === 'tap') navigator.vibrate(18);
+      else if(type === 'success') navigator.vibrate([18, 60, 32]);
+      else if(type === 'error') navigator.vibrate([70]);
+    } catch(e) {}
+  },
+  /* 소리와 진동을 같이 울릴 땐 반드시 진동을 먼저 부른다 — 순서가 반대였을 때
+     안드로이드 크롬에서 진동이 전혀 느껴지지 않는 문제가 있었다.
+     navigator.vibrate()는 "이 프레임에서 한 번이라도 사용자가 조작한 적 있는가"만
+     본다는 사양(sticky activation)과 달리, 실제 크롬 구현은 같은 클릭 처리 안에서
+     AudioContext.resume()이 먼저 실행되면 그 시점의 활성 상태를 vibrate()가 못
+     받는 경우가 보고돼 있다 — playSound()가 매번 initAudioContext()를 거쳐
+     resume()을 호출하므로, 소리를 먼저 내면 뒤따르는 진동이 조용히 실패한다.
+     진동을 먼저 부르면 이 문제를 피한다. 두 함수 자체는 그대로 두고 부르는
+     순서만 여기 한 곳에 모아 둔다 — 호출부에서 순서를 매번 맞출 필요가 없다. */
+  feedback(type){ this.playHaptic(type); this.playSound(type); },
+
+  /* 저장값은 그대로 믿으면 안 된다. JSON.parse가 성공해도 배열이 아닐 수 있고("null", 문자열, 객체),
+     그러면 목록을 그리다 f.map/f.length에서 죽는다 — 오답노트만 안 뜨는 게 아니라 렌더가 통째로
+     멈춰 앱이 흰 화면이 된다(검증에서 실제로 그렇게 됐다).
+     배열인지 확인하고, 항목도 다시 그릴 수 있는 최소한의 모양(id·모드·본문)을 갖춘 것만 남긴다.
+     못 살릴 항목은 조용히 버린다 — 모드가 없는 노트는 어차피 다시 풀 수도 없다. */
+  loadWrongNotes(){
+    let list=[];
+    try{
+      const d=localStorage.getItem('chem_wrong_notes_v4');
+      const parsed=d?JSON.parse(d):[];
+      if(Array.isArray(parsed))
+        list=parsed.filter(n=>n&&typeof n==='object'&&n.id&&n.mode&&typeof n.html==='string'
+          /* 입력형 문제는 qData가 곧 문제 그 자체라, 없으면 다시 풀 수가 없다. 그런 노트를
+             남겨 두면 목록엔 보이는데 「다시 풀기」를 눌러도 아무 일이 안 일어난다
+             (JSON.parse(undefined)에서 조용히 예외가 나고 끝 — 화면이 죽지 않아 더 헷갈린다).
+             플래시카드 노트는 앞면 내용으로 카드를 되찾으므로 qData 없이도 살릴 수 있다. */
+          &&(isCardMode(n.mode)||(n.qData&&typeof n.qData==='object')));
+    }catch(e){}
+    this.state.wrongNotes=list;
+  },
+  /* ── 노트의 신원 ──
+     「같은 문제인가」를 화면에 그린 결과물(html)이 아니라 문제 자체로 가린다.
+     모드 7은 출제 방향이 둘인데 본문이 「Na · 3주기 1족」으로 글자 하나까지 같아서,
+     정방향과 역방향을 각각 틀려도 노트 하나로 합쳐졌다 — 「정방향은 되는데 역방향을
+     못 외운다」는, 오답노트가 알려 줘야 할 바로 그 구분이 사라진다. 게다가 합칠 때
+     qData를 마지막 것으로 덮어써서 「단일 풀기」는 늘 마지막 방향만 냈고, 다른 방향은
+     오답노트에서 다시 만날 길이 없었다.
+     문제를 가르는 값이 있으면 전부 넣는다 — 지금 부딪히는 건 모드 7뿐이지만, 본문이
+     같아지는 순간 서로 다른 문제가 합쳐지는 구조 자체를 없애는 것이 요점이다. */
+  noteKeyOf(m, q){
+    if(!q || typeof q !== 'object') return '';
+    const bits = [m];
+    if(q.dir) bits.push(q.dir);            /* 모드 7: 원소→주기·족 / 주기·족→원소 */
+    if(q.z !== undefined) bits.push('z' + q.z);
+    if(q.pKey) bits.push(q.pKey);          /* 모드 13: 어느 두 용액을 섞었나 */
+    if(q.bondName) bits.push(q.bondName);  /* 모드 10 */
+    bits.push(q.name || '');
+    return bits.join('|');
+  },
+  saveWrongNote(m,t,h,qData,bump=true){
+    const key = this.noteKeyOf(m, qData);
+    /* 예전 노트에는 key가 없다 — 그때 기준(본문)으로 찾아 주고, 찾으면 그 자리에서 달아 둔다.
+       학생 기기에 쌓여 있는 노트를 버리지 않으면서 새 기준으로 넘어가는 길이다. */
+    let existing = this.state.wrongNotes.find(n =>
+      n.mode === m && (key && n.key ? n.key === key : n.html === h));
+    if(existing){
+      if(!bump) return; /* 플래시카드 수동 저장: 이미 있으면 아무 변화 없음 */
+      existing.failCount = Math.min((existing.failCount || 1) + 1, 3);
+      existing.qData = qData;
+      if(key) existing.key = key;
+      this.state.wrongNotes = this.state.wrongNotes.filter(n => n.id !== existing.id);
+      this.state.wrongNotes.unshift(existing);
+    }else{
+      /* 밀리초만 쓰면 같은 순간에 저장된 두 노트가 같은 id 를 갖고, 하나를 지우면
+         둘 다 사라진다(필터가 id 로 거른다). 손으로 1ms 안에 두 번은 어렵지만 기기
+         시계가 되돌아가면 닿는다. 일련번호를 붙여 같은 시각이어도 갈라지게 한다. */
+      const id=Date.now().toString()+'-'+(this._noteSeq=(this._noteSeq||0)+1);
+      this.state.wrongNotes.unshift({id,mode:m,title:t,html:h,qData,failCount:1,key});
+    }
+    this.saveNotes();
+    this.renderWrongNotes();
+  },
+
+  /* ── 저장이 막혔을 때 ──
+     예전에는 쓰기가 전부 `try{ setItem }catch(e){}` 였다. 예외를 삼키는 것까지는 맞다 —
+     알림 하나 때문에 공부를 못 하게 둘 수는 없다. 문제는 **삼킨 뒤에 아무 일도 안 한 것**이다.
+     state.wrongNotes에는 이미 새 노트가 들어가 있고 화면도 그걸 그리므로 학생에게는
+     "저장됐다"로 보인다. 그런데 새로고침하면 전부 없다. 사파리 프라이빗 모드(할당량 0),
+     사이트 데이터 차단, 용량 초과에서 실제로 일어난다.
+
+     그래서 한 곳으로 모으고, 실패하면 그 회차에 딱 한 번 알려 준다. 반복 알림을 막는
+     플래그는 메모리에만 둔다 — localStorage에 두면 그게 바로 지금 고장난 것이다. */
+  /* 고를 수 있는 제한시간(ms) — 버튼 줄이 유일한 출처다 */
+  timerChoices(){ return [...document.querySelectorAll('#timerBtns .timer-btn')].map(b=>parseInt(b.dataset.sec)*1000); },
+  syncTimerBtns(){
+    document.querySelectorAll('#timerBtns .timer-btn').forEach(b=>
+      b.classList.toggle('active', parseInt(b.dataset.sec)*1000===this.state.timerDuration));
+  },
+  persist(key, value){
+    try{
+      localStorage.setItem(key, value);
+      return true;
+    }catch(e){
+      if(!this._storageWarned){
+        this._storageWarned = true;
+        this.showToast('저장 공간이 막혀 있어 기록을 못 남겨요. 새로고침하면 사라져요.', 4000);
+      }
+      return false;
+    }
+  },
+  saveNotes(){ return this.persist('chem_wrong_notes_v4', JSON.stringify(this.state.wrongNotes)); },
+
+  deleteWrongNote(id){
+    this.state.wrongNotes=this.state.wrongNotes.filter(n=>n.id!==id);
+    /* 재생목록은 wrongNotes 의 스냅샷이라, 연속 재풀이 도중 오답노트 창에서 노트를 지우면
+       목록에는 그대로 남아 **이미 지운 문제가 계속 나온다**. 그 유령 문제에서는 틀려도
+       failCount 가 안 오르고(찾을 노트가 없다) 맞혀도 지울 게 없어서, 학생이 무엇을 하든
+       아무 데도 기록되지 않는다. 지울 때 목록에서도 같이 뺀다. */
+    if(this.state.retryPlaylist.length)
+      this.state.retryPlaylist=this.state.retryPlaylist.filter(n=>n.id!==id);
+    this.saveNotes();
+    this.renderWrongNotes();
+    if(isCardMode(this.state.currentMode))this.m6SyncSaveBtn();
+  },
+
+  clearWrongNotes(){
+    this.feedback('tap');
+    const btn=document.getElementById('clearAllNotesBtn');
+    if(!btn.dataset.confirming){
+      btn.dataset.confirming='1';
+      btn.textContent='정말 삭제? 한 번 더 누르기';
+      /* 색을 JS에서 박지 않는다. 예전에는 background를 var(--c-accent-3)로 줬는데 그런
+         토큰은 **정의된 적이 없다**(있는 것은 accent-1·2뿐). 정의 안 된 var는 선언 자체가
+         무효가 되어 배경이 투명해지고, 글자는 하드코딩 #000이라 어두운 테마에서 창 바탕 위
+         검정 글자가 됐다 — 대비 약 1.1:1, 즉 **안 보인다**. 되돌릴 수 없는 삭제의 그 한 번의
+         확인이 하필 가장 안 보이는 글자였다. 클래스로 넘겨 테마를 따라가게 한다. */
+      btn.classList.add('confirming');
+      btn._t=setTimeout(()=>{
+        delete btn.dataset.confirming;
+        btn.innerHTML=this.icon('trash','sm')+' 전체 삭제';
+        btn.classList.remove('confirming');
+      },3000);
+      return;
+    }
+    clearTimeout(btn._t);delete btn.dataset.confirming;
+    btn.innerHTML=this.icon('trash','sm')+' 전체 삭제';btn.classList.remove('confirming');
+    this.state.wrongNotes=[];
+    /* 빈 배열을 쓰는 것으로 지운다 — removeItem 을 따로 쓰면 저장이 막혔을 때
+       "지웠다"고 보이지만 새로고침하면 되살아나는 것을 알릴 길이 없다. */
+    this.saveNotes();
+    this.renderWrongNotes();
+  },
+
+  /* 지금 필터에서 실제로 보이는 노트 — 목록 그리기와 연속 재풀이가 같은 기준을 쓴다 */
+  visibleNotes(){
+    return this.state.noteFilter==='all'
+      ? [...this.state.wrongNotes]
+      : this.state.wrongNotes.filter(n=>sectionOf(n.mode)===this.state.noteFilter);
+  },
+  startRetryPlaylist() {
+    if (this.visibleNotes().length === 0) return;
+    this.feedback('tap');
+    this.closeModal(this.$.wrongNoteModalOverlay,{silent:true});
+
+    if (!this.state.retryNoteId && !this.state.isRetryPlaylistMode) {
+      this.state.savedCycleState = { queue: [...this.state.cycleQueue], total: this.state.cycleTotal, mode: this.state.currentMode };
+    }
+
+    /* 화면에 보이는 것만 담는다. 이 버튼은 오답노트 창 안에 있고 바로 위에 구역 필터 칩이
+       있다 — 「중학」으로 좁혀 보다가 누르면 안 보이던 다른 구역 노트까지 전부 들어갔고,
+       배너의 「N문제 남음」도 화면의 수와 달랐으며 첫 문제가 다른 구역이면 구역까지 끌려갔다.
+       필터는 "지금 내가 보는 범위"인데 그 범위를 무시하는 버튼이 그 안에 있었다. */
+    let playlist = this.visibleNotes();
+    for(let i = playlist.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [playlist[i], playlist[j]] = [playlist[j], playlist[i]];
+    }
+    this.state.retryPlaylist = playlist;
+    this.state.isRetryPlaylistMode = true;
+
+    this.loadNextRetryPlaylistItem();
+  },
+
+  loadNextRetryPlaylistItem() {
+    if(this.state.retryPlaylist.length === 0) {
+      this.exitRetry();
+      return;
+    }
+    const note = this.state.retryPlaylist[0];
+    this.state.retryNoteId = note.id;
+
+    this.state.currentMode = note.mode;
+    this.syncNavForMode(note.mode);
+    this.$.timerSelectWrap.style.display = 'none';
+    this.$.cycleWrap.style.display = 'none';
+
+    if(isCardMode(note.mode)){
+      this.$.questionCard.style.display = 'none';
+      this.$.keyboardWrap.style.display = 'none';
+      this.$.mode6Wrap.classList.remove('m6-active');
+      this.renderRetryFlashcard(note);
+    }else{
+      document.getElementById('retryM6Card').style.display = 'none';
+      this.$.questionCard.style.display = '';
+      this.$.keyboardWrap.style.display = '';
+      this.$.mode6Wrap.classList.remove('m6-active');
+      const q = JSON.parse(JSON.stringify(note.qData));
+      q.inputs = {}; q.isTimedOut = false; q.cursor = {};
+      if(q.blanks.length > 0) q.activeKey = q.blanks[0].key;
+      this.state.currentQuestion = q;
+      /* MODE 7은 저장된 문제의 출제 방향(q.dir)에 따라 키패드가 달라지므로 q를 복원한 뒤에 맞춘다 */
+      this.syncElemRow(note.mode, q);
+
+      this.state.isAnswerChecked = false;
+      this.state.isAnswerRevealed = false;
+      this.state.isLastWrongAttempt = false;
+      this.state.wrongBlanks = {};
+      this.state.wrongAlreadyPenalized = false;
+      this.renderAll();
+      this.startTimer();
+    }
+
+    document.getElementById('retryBanner').style.display = 'flex';
+    document.getElementById('retryBannerText').innerHTML = `<span>연속 재풀이 모드 <span style="font-size:12px;opacity:0.8">(${this.state.retryPlaylist.length}문제 남음)</span></span>`;
+  },
+
+  /* 오답노트 재풀이 중 플래시카드 노트 — 채점 없이 뒤집어 확인 후 기억/다시 로 진행 */
+  renderRetryFlashcard(note){
+    clearInterval(this.state.timerInterval);
+    document.getElementById('retryM6Card').style.display = '';
+    const q = note.qData||{};
+    const cards = this.m6BuildCards(q.m6Type||'full', sectionOf(note.mode));
+    const card = cards[this.m6FindCard(cards, q)];
+    const isKorFirst = (q.m6Order||'korean')==='korean';
+    /* 헤더가 「MODE 6」로 박혀 있어 통합과학·고2·심화 카드도 전부 모드 6으로 보였다 */
+    document.getElementById('retryM6Label').textContent = `${MODE_NAMES[note.mode]||'플래시카드'} 복습`;
+    document.getElementById('retryM6Title').textContent = note.title;
+    document.getElementById('retryM6FTag').textContent = isKorFirst?card.ftag:card.btag;
+    document.getElementById('retryM6FContent').innerHTML = isKorFirst?card.fhtml:card.bhtml;
+    document.getElementById('retryM6BTag').textContent = isKorFirst?card.btag:card.ftag;
+    document.getElementById('retryM6BContent').innerHTML = isKorFirst?card.bhtml:card.fhtml;
+    document.getElementById('retryM6Flashcard').classList.remove('flipped');
+  },
+  retryFlashcardKnow(){
+    this.feedback('success');
+    this.deleteWrongNote(this.state.retryNoteId);
+    this.state.retryPlaylist.shift();
+    this.loadNextRetryPlaylistItem();
+  },
+  retryFlashcardNext(){
+    this.feedback('tap');
+    const skipped=this.state.retryPlaylist.shift();
+    this.state.retryPlaylist.push(skipped);
+    this.loadNextRetryPlaylistItem();
+  },
+
+  startRetry(id){
+    const note = this.state.wrongNotes.find(n => n.id === id);
+    if(!note) return;
+    this.closeModal(this.$.wrongNoteModalOverlay,{silent:true});
+
+    if (!this.state.retryNoteId && !this.state.isRetryPlaylistMode) {
+      this.state.savedCycleState = { queue: [...this.state.cycleQueue], total: this.state.cycleTotal, mode: this.state.currentMode };
+    }
+
+    this.state.retryNoteId = id;
+    this.state.isRetryPlaylistMode = false;
+    this.state.currentMode = note.mode;
+
+    this.syncNavForMode(note.mode);
+    this.$.questionCard.style.display = '';
+    this.$.keyboardWrap.style.display = '';
+    this.$.timerSelectWrap.style.display = 'none';
+    this.$.mode6Wrap.classList.remove('m6-active');
+    this.$.cycleWrap.style.display = 'none';
+    /* 카드 복습 화면이 떠 있는 상태에서 단일 풀기로 들어오면 두 화면이 겹친 채로 남아
+       어느 쪽 입력도 먹지 않았다. 다른 진입점들과 똑같이 여기서도 내린다. */
+    document.getElementById('retryM6Card').style.display = 'none';
+    const q = JSON.parse(JSON.stringify(note.qData));
+    q.inputs = {}; q.isTimedOut = false; q.cursor = {};
+    if(q.blanks.length > 0) q.activeKey = q.blanks[0].key;
+    this.state.currentQuestion = q;
+    /* MODE 7은 저장된 문제의 출제 방향(q.dir)에 따라 키패드가 달라지므로 q를 복원한 뒤에 맞춘다 */
+    this.syncElemRow(note.mode, q);
+
+    this.state.isAnswerChecked = false;
+    this.state.isAnswerRevealed = false;
+    this.state.isLastWrongAttempt = false;
+    this.state.wrongBlanks = {};
+    this.state.wrongAlreadyPenalized = false;
+
+    document.getElementById('retryBanner').style.display = 'flex';
+    document.getElementById('retryBannerText').textContent = '오답 노트 단일 재풀이 모드';
+    this.renderAll();
+    this.startTimer();
+  },
+
+  /* 재풀이에서 나가되 **다음 문제는 내지 않는다.** 단일 재풀이를 맞혔을 때 쓴다 —
+     exitRetry 는 setMode 로 곧장 다음 문제를 내는데, 그러면 「맞았어요. 오답 노트에서
+     지웠어요.」를 읽을 틈이 없다. 화면과 순환 큐만 되돌리고, 다음 문제는 학생이
+     「다음 문제」를 누를 때 나간다.
+
+     예전에는 이 자리에서 손으로 두 줄(배너·제한시간 줄)만 되돌렸다. 재풀이로 들어올 때
+     내린 것은 셋인데 cycleWrap 을 아무도 안 올려서 순환/랜덤·진행률·하위 유형·그림 토글이
+     통째로 사라진 채 굳었다. 게다가 retryNoteId 를 여기서 지워 버리는 바람에 「다음 문제」의
+     exitRetry 경로(handleKeyPress)에도 안 걸려 영영 복구되지 않았다 — 모드 탭을 눌러야
+     돌아오는데 그러면 순환 진도까지 날아간다. 나가는 문이 셋이면 셋 다 여기를 지난다. */
+  restoreAfterRetry(){
+    this.state.retryNoteId = null;
+    this.state.isRetryPlaylistMode = false;
+    this.state.retryPlaylist = [];
+    document.getElementById('retryBanner').style.display = 'none';
+    document.getElementById('retryM6Card').style.display = 'none';
+    this.$.timerSelectWrap.style.display = 'flex';
+    this.$.cycleWrap.style.display = isCardMode(this.state.currentMode) ? 'none' : 'flex';
+    const saved = this.state.savedCycleState;
+    if(saved){
+      this.state.cycleQueue = [...saved.queue];
+      this.state.cycleTotal = saved.total;
+      /* 되살린 진도는 그것을 떠나온 모드의 것이다 — 지금 모드(재풀이한 노트의 모드)가
+         아니라 그쪽에 적어 둬야, 나중에 그 모드로 돌아갔을 때 맞는 진도가 나온다. */
+      this.rememberCycleQueue(saved.mode);
+      this.renderCycleProgress();
+    }
+    this.state.savedCycleState = null;
+    this.updateStatBarVisibility();
+  },
+
+  exitRetry(){
+    this.state.retryNoteId = null;
+    this.state.isRetryPlaylistMode = false;
+    this.state.retryPlaylist = [];
+    document.getElementById('retryBanner').style.display = 'none';
+    document.getElementById('retryM6Card').style.display = 'none';
+    this.$.timerSelectWrap.style.display = 'flex';
+
+    const savedState = this.state.savedCycleState;
+    const targetMode = savedState ? savedState.mode : this.state.currentMode;
+
+    this.state.currentMode = null;
+
+    if(savedState){
+      this.state.cycleQueue = [...savedState.queue];
+      this.state.cycleTotal = savedState.total;
+      this.rememberCycleQueue(targetMode);
+      this.renderCycleProgress();
+    }
+
+    this.state.savedCycleState = null;
+    this.setMode(targetMode, true);
+  },
+
+  buildKeyboard(){
+    this.$.numRow.innerHTML=[1,2,3,4,5,6,7,8,9,0].map(n=>`<button class="kb-key num" data-key="NUM_${n}">${n}</button>`).join('');
+    document.getElementById('chargeRow').innerHTML=
+      ['+','2+','3+','-','2-','3-'].map(c=>{
+        const label=c.replace('-','−');
+        return `<button class="kb-key num" data-key="CHG_${c}">${label}</button>`;
+      }).join('');
+    this.syncElemRow(null,null);
+  },
+  /* 원소 기호 키패드의 표시 여부와 내용은 모드마다 다르다 — 세 군데(모드 전환·오답노트 재풀이 두 곳)에서
+     같은 판단이 필요해 여기 한 곳으로 모은다.
+     · MODE 1(계수)과 MODE 7 정방향(주기·족 입력)은 숫자만 쓰므로 숨긴다
+     · MODE 7 역방향은 CORE_ELEMENTS(반응식용 14종) 대신 출제 범위 26종으로 갈아끼운다 */
+  syncElemRow(mode,q){
+    const isM7=mode===7, revM7=isM7&&q&&q.dir==='toElem';
+    const isIonWrite=mode===11;
+    /* 답이 숫자뿐이거나(MODE 8) 보기 버튼으로 고르는(MODE 9·10·12) 모드에서는 원소 기호 줄이 필요 없다 */
+    const numOrChoice=mode===8||mode===9||mode===10||mode===12||mode===13||mode===14||mode===15;
+    const show=revM7||isIonWrite||(mode!==1&&!isM7&&!numOrChoice);
+    this.$.elemRowLabel.style.display=show?'block':'none';
+    this.$.elemRow.style.display=show?'grid':'none';
+    /* 전하 키는 이온식을 쓸 때만 필요하다 */
+    const chg=isIonWrite;
+    document.getElementById('chargeRow').style.display=chg?'grid':'none';
+    document.getElementById('chargeRowLabel').style.display=chg?'block':'none';
+    /* 이온식에는 K·Al처럼 반응식용 키패드에 없는 기호가 필요해 전용 목록으로 갈아끼운다 */
+    const syms=revM7?PT_QUIZ_SYMBOLS:(isIonWrite?ION_WRITE_SYMBOLS:CORE_ELEMENTS);
+    if(this._elemRowSyms!==syms){
+      let html=syms.map(s=>`<button class="kb-key elem" data-key="ELEM_${s}">${s}</button>`).join('');
+      /* 괄호는 반응식·화학식을 적을 때만 필요하다 — Ca(OH)₂처럼 다원자 이온 묶음이
+         둘 이상일 때 쓰는 표기다(js/data.js 머리말 참고). 이온식 쓰기(MODE 11)는
+         이온 하나씩만 적어 묶을 일이 없고, MODE 7 역방향은 원소 기호 하나만 답하므로
+         둘 다 필요 없다 — CORE_ELEMENTS를 쓰는 자리에만 더한다.
+         handleKeyPress는 ELEM_ 키를 그대로 문자로 꽂아 넣으므로(app.js) 새 키 종류를
+         따로 만들 필요가 없다 — 괄호도 그냥 "글자 하나"다. */
+      if(syms===CORE_ELEMENTS) html+=`<button class="kb-key elem" data-key="ELEM_(">(</button><button class="kb-key elem" data-key="ELEM_)">)</button>`;
+      this.$.elemRow.innerHTML=html;
+      this._elemRowSyms=syms;
+    }
+  },
+  /* ── 구역·모드 탐색 ──
+     탭과 오답노트 필터는 전부 curriculum.js의 SECTIONS/MODES에서 파생된다.
+     모드를 추가할 때 손댈 곳이 여기 말고 없어야 한다. */
+  renderSectionTabs(){
+    const row=document.getElementById('sectionTabs');
+    row.innerHTML=SECTIONS.map(s=>
+      `<button class="section-tab${s.id===this.state.section?' active':''}" data-section="${s.id}">${s.label}<span class="section-sub">${s.sub}</span></button>`
+    ).join('');
+    this.scrollTabIntoView(row);
+  },
+  /* 구역 줄은 좁은 화면에서 가로로 넘친다. 고른 탭이 그 넘친 자리에 있으면 화면 밖에 남아,
+     화면이 「지금 어느 구역인가」에 답하지 못한다 — 심화를 보던 사람이 앱을 다시 열면
+     활성 탭이 오른쪽으로 잘린 채 시작했다.
+     scrollIntoView는 조상까지 같이 스크롤해 페이지가 통째로 튀므로 쓰지 않고,
+     그 줄의 scrollLeft만 직접 옮긴다. */
+  scrollTabIntoView(row){
+    const el=row && row.querySelector('.active');
+    if(!el || row.scrollWidth<=row.clientWidth) return;
+    const pad=12;   /* 옆 탭이 살짝 보여야 "더 있다"가 전해진다 */
+    const left=el.offsetLeft-pad, right=el.offsetLeft+el.offsetWidth+pad;
+    let to=row.scrollLeft;
+    if(left<to) to=left;
+    else if(right>to+row.clientWidth) to=right-row.clientWidth;
+    if(to===row.scrollLeft) return;
+    /* 첫 그림에서는 즉시 — 앱을 열자마자 줄이 저 혼자 움직이면 무엇이 일어난 건지 알 수 없다.
+       그 뒤 사용자가 구역을 바꿔 생기는 이동만 부드럽게 따라간다. */
+    row.scrollTo({left:to, behavior:this._tabsDrawn?'smooth':'auto'});
+    this._tabsDrawn=true;
+  },
+  renderModeTabs(){
+    const modes=modesInSection(this.state.section);
+    this.$.modeTabs.innerHTML = modes.length
+      ? modes.map(m=>{
+          const d=MODES[m];
+          return `<button class="mode-tab${m===modeRootId(this.state.currentMode)?' active':''}" data-mode="${m}">`+
+                 `<span class="tab-name">${d.name}</span>`+
+                 (d.desc?`<span class="tab-desc">${d.desc}</span>`:'')+`</button>`;
+        }).join('')
+      : `<div class="section-empty">아직 준비 중인 구역이에요</div>`;
+  },
+  renderSectionNote(){
+    const meta=sectionMeta(this.state.section);
+    document.getElementById('sectionNote').textContent = meta && meta.note ? meta.note : '';
+  },
+  /* 하위 유형 줄(반응물·생성물·전체식)은 subModes를 가진 모드에서만 나온다.
+     버튼이 고르는 값은 모드 번호 그 자체라, 눌러도 저장된 오답노트의 mode 값 체계가 유지된다. */
+  renderSubModeBtns(){
+    const root=modeRoot(this.state.currentMode);
+    const subs=root&&root.subModes;
+    this.$.cycleWrap.classList.toggle('has-sub', !!subs);
+    if(!subs){document.getElementById('subModeBtns').innerHTML='';return;}
+    document.getElementById('subModeBtns').innerHTML=subs.map(s=>
+      `<button class="sub-btn${s.id===this.state.currentMode?' active':''}" data-sub="${s.id}">${s.label}</button>`
+    ).join('');
+  },
+  /* 오답노트 재풀이는 setMode를 거치지 않고 모드로 바로 들어간다. 다른 구역의 노트일 수 있으므로
+     구역·탭을 여기서 맞춰 주지 않으면 활성 탭이 없는 상태가 된다. */
+  syncNavForMode(mode){
+    const sec=sectionOf(mode);
+    if(sec && sec!==this.state.section){
+      this.state.section=sec;
+      try{localStorage.setItem('chem_section', sec);}catch(e){}
+      this.renderSectionTabs();
+      this.renderSectionNote();
+    }
+    this.renderModeTabs();
+    this.renderSubModeBtns();
+  },
+  renderNoteFilters(){
+    this.$.wrongNoteFilters.innerHTML=
+      `<button class="filter-chip${this.state.noteFilter==='all'?' active':''}" data-filter="all">전체</button>`+
+      SECTIONS.map(s=>`<button class="filter-chip${this.state.noteFilter===s.id?' active':''}" data-filter="${s.id}">${s.label}</button>`).join('');
+  },
+  /* 구역을 바꾸면 그 구역의 첫 모드로 들어간다. 빈 구역이면 문제 카드·키보드를 접는다. */
+  setSection(secId){
+    if(!sectionMeta(secId)) return;
+    /* 즐겨찾기만 풀기(startFavoriteQuiz)는 지금 구역에 한정된 특수 모드다 — 구역을
+       손으로 바꾸면 끝난 것으로 본다(위 cycle-btn 리스너와 같은 이유). */
+    this.state.favoriteOnly=false;
+    this.state.section=secId;
+    try{localStorage.setItem('chem_section', secId);}catch(e){}
+    this.renderSectionTabs();
+    this.renderSectionNote();
+    /* 반응식 목록은 구역마다 다르므로 구역이 바뀔 때마다 다시 만든다 */
+    this.buildModalList();
+    const modes=modesInSection(secId);
+    if(modes.length){
+      this.setMode(modes[0]);
+    }else{
+      this.state.currentMode=null;
+      clearInterval(this.state.timerInterval);
+      this.renderModeTabs();
+      this.$.questionCard.style.display='none';
+      this.$.keyboardWrap.style.display='none';
+      this.$.timerSelectWrap.style.display='none';
+      this.$.cycleWrap.style.display='none';
+      this.$.mode6Wrap.classList.remove('m6-active');
+    }
+  },
+  /* 반응식 목록 — 지금 보고 있는 구역의 것만. 여기서는 state.section이 맞다. 문제가 아니라
+     「내가 지금 보는 범위의 참고표」라서, 구역 탭을 누르는 순간 바뀌어야 하는 것이 맞기 때문이다.
+     (문제 출제 쪽은 반대로 모드를 기준으로 삼는다 — rxPool 주석 참고.)
+     전에는 init()에서 딱 한 번만 불려서, 구역을 바꿔도 목록이 바뀔 기회조차 없었다.
+
+     이온식(MODE 11, 「고2 화학」)은 예전엔 여기 아예 없었다 — 이 참고표가 반응식만
+     알고 있어서, 이온식 쓰기를 풀다가 힌트를 눌러도 뜻밖의 반응식 몇 개만 보이고
+     정작 외워야 할 이온식은 하나도 안 보였다. 탭으로는 나누지 않고 반응식 목록 아래에
+     이어 붙이되, 정렬(가나다·원소·번호·즐겨찾기)은 반응식·이온식 각각 안에서 따로
+     적용한다 — 둘을 섞어 늘어놓으면 "왜 이온식이 반응식 사이에 끼어 있지"가 생긴다.
+
+     예전엔 16종뿐이라 가나다·원소·번호 같은 정렬이 필요 없다고 보고 뺐었다. 반응식이
+     문제집 분량(39개, ms 기준)까지 늘어난 지금은 얘기가 다르다 — 아래로 쭉 훑어야만
+     찾을 수 있던 걸 정렬로 바로 찾게 한다(arrangeHintEntries). */
+  buildModalList(){
+    const fmt=side=>side.map(r=>(r.coef>1?`<span class="eq-text">${r.coef}</span>`:'')+fmtFormula(r.formula,true)+this.phaseHTML(r.phase)).join(' <span class="eq-plus">+</span> ');
+    const sec=this.state.section, meta=sectionMeta(sec)||{label:''};
+    const list=reactionsInSection(sec);
+    /* ↓·↑가 한자리에 모여 보이는 곳이라 여기서 뜻을 알려 준다. 문제 화면(모드 1~4)에는
+       해설칸이 없어 설명을 붙일 자리가 없고, 여기 두면 어떤 반응에 왜 붙는지 같이 보인다.
+       ↓·↑가 하나도 없는 구역에서는 이 설명이 가리킬 대상이 없으므로 띄우지 않는다. */
+    const hasPhase=list.some(rx=>rx.reactants.concat(rx.products).some(c=>c.phase));
+    const legend=hasPhase?`<p class="dia-exp" style="margin:0 2px 10px">`+
+      `<b>↓</b>는 물에 안 녹고 가라앉는 <b>앙금</b>, <b>↑</b>는 용액에서 빠져나가는 <b>기체</b>를 뜻한다. `+
+      `화학식의 일부가 아니라서 답을 쓸 때는 적지 않는다.</p>`:'';
+    const head=`<p class="dia-exp" style="margin:0 2px 10px"><b>${meta.label}</b>에서 다루는 반응식 <b>${list.length}개</b>. `+
+      `구역 탭을 바꾸면 이 목록도 그 구역 것으로 바뀐다.</p>`;
+    const empty=`<p class="dia-exp" style="margin:0 2px">이 구역에서 다루는 반응식은 없어요.</p>`;
+
+    /* 화학식 조각(formula[].sym)은 원소 기호 하나가 아니라 화학식 글자 전체일 수 있다
+       (예: 이산화탄소는 {sym:"CO",sub:2} 한 덩어리 — data.js 참고). 그래서 숫자·전하
+       기호를 지운 뒤 "대문자 하나 + 소문자 0~1개" 패턴으로 원소 기호만 뽑는다.
+       ION_WRITE_SYMBOLS(data.js)를 만들 때 쓴 것과 같은 정규식이다. */
+    const elemsOf=syms=>{
+      const out=[];
+      syms.forEach(s=>(s.replace(/[0-9+\-^]/g,'').match(/[A-Z][a-z]?/g)||[]).forEach(e=>{ if(!out.includes(e)) out.push(e); }));
+      return out;
+    };
+    /* 번호는 이 구역에서의 원래 순서로 고정한다 — 정렬 방식을 바꿔도 번호가 같이
+       바뀌면 "12번"이라고 부를 기준이 사라진다. */
+    const rxEntries=list.map((rx,i)=>({
+      key:rx.name, num:i+1, name:rx.name,
+      elements:elemsOf(rx.reactants.concat(rx.products).flatMap(c=>flattenSyms(c.formula))),
+      body:`${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}`
+    }));
+    /* 즐겨찾기 탭에서 보여줄 "즐겨찾기만 풀기" 버튼이 어느 모드로 이어질지 — 반응식을
+       실제로 타이핑해서 푸는 모드(2~4)는 지금 중학 구역에만 있다(rxPool을 부르는 모드가
+       전부 그 구역 소속이라서다, curriculum.js 참고). 다른 구역의 반응식은 참고표일
+       뿐이라 이어줄 문제 화면이 없다 — 그때는 버튼 자체를 안 보여준다(null). */
+    const rxQuizMode = sec==='ms' ? 4 : sec==='is1' ? 19 : sec==='chem' ? 20 : null;
+    let html=head+legend+(list.length?this.arrangeHintEntries(rxEntries,'반응식',rxQuizMode):empty);
+
+    /* 이온식을 다루는 모드(11)가 있는 구역은 「고2 화학」 하나뿐이다(curriculum.js 참고).
+       다른 구역에는 이온식 자체가 없으므로 빈 목록을 만들지 않고 아예 안 보인다. */
+    const hasIons = sec === 'chem';
+    if(hasIons){
+      const ionEntries=IONS_WRITE.map((ion,i)=>({
+        key:ion.name, num:i+1, name:ion.name, elements:elemsOf([ion.f]),
+        body:this.formatInput(ion.f)
+      }));
+      html += `<p class="dia-exp" style="margin:var(--s-5) 2px 10px"><b>이온식</b> <b>${IONS_WRITE.length}개</b>.</p>`
+        + this.arrangeHintEntries(ionEntries,'이온식',11);
+    }
+    this.$.reactionList.innerHTML=html;
+    if(this.$.hintModalTitle) this.$.hintModalTitle.textContent = hasIons ? '반응식·이온식 목록' : '반응식 목록';
+    this.renderHintSortChips();
+    this.renderWrongNotes();
+  },
+  /* 정렬 탭 — 반응식 목록·이온식 목록 둘 다 이걸 거쳐서 그려진다(위 buildModalList).
+     번호·가나다는 같은 항목을 다시 늘어놓기만 하고, 원소별은 원소마다 소제목을 달아
+     나눈다(한 항목에 원소가 여러 개면 그 항목은 여러 소제목 아래에 다시 나온다 —
+     중복이 아니라 "이 반응에 이 원소도 들어 있다"는 뜻이다). 즐겨찾기는 고른 것만
+     남긴다. checkReferenceList(selfcheck.js)는 기본값(번호순)에서만 항목 수를 세므로
+     원소별의 중복 표시는 그 검사와 부딪히지 않는다. */
+  arrangeHintEntries(entries, label, quizMode){
+    const mode=this.state.hintSort;
+    const itemHtml=e=>{
+      const fav=this.state.hintFavorites.includes(e.key);
+      return `<div class="reaction-item"><div class="reaction-header"><div class="reaction-name"><span class="reaction-num">${e.num}</span>${e.name}</div>`+
+        `<button class="fav-btn${fav?' active':''}" data-fav-key="${this.esc(e.key)}" aria-pressed="${fav}" aria-label="즐겨찾기에 담기">${this.icon('bookmark','sm')}</button></div>`+
+        `<div class="reaction-eq">${e.body}</div></div>`;
+    };
+    if(mode==='fav'){
+      const picked=entries.filter(e=>this.state.hintFavorites.includes(e.key));
+      if(!picked.length) return `<p class="dia-exp" style="margin:0 2px">즐겨찾기한 ${label}이 없어요. 항목 오른쪽 <b>북마크</b> 버튼을 눌러 담아 보세요.</p>`;
+      /* quizMode가 있을 때만 — 타이핑해서 푸는 문제 화면이 실제로 있는 구역·종류일 때뿐이다
+         (위 buildModalList의 rxQuizMode 주석 참고). startFavoriteQuiz가 이 번호로 모드를 켠다. */
+      const quizBtn = quizMode ? `<button class="retry-playlist-btn" data-quiz-mode="${quizMode}" style="margin-bottom:var(--s-3);width:100%">`+
+        `<svg class="ic ic-sm" aria-hidden="true" focusable="false"><use href="#i-infinity"></use></svg> 즐겨찾기한 ${label}만 풀기</button>` : '';
+      return quizBtn + picked.map(itemHtml).join('');
+    }
+    if(mode==='abc'){
+      return entries.slice().sort((a,b)=>a.name.localeCompare(b.name,'ko')).map(itemHtml).join('');
+    }
+    if(mode==='elem'){
+      const syms=[];
+      entries.forEach(e=>e.elements.forEach(s=>{ if(!syms.includes(s)) syms.push(s); }));
+      syms.sort((a,b)=>{
+        const za=(ELEMENTS.find(x=>x.sym===a)||{}).z ?? 999, zb=(ELEMENTS.find(x=>x.sym===b)||{}).z ?? 999;
+        return za-zb;
+      });
+      if(!syms.length) return `<p class="dia-exp" style="margin:0 2px">원소를 알아낼 수 없는 ${label}이에요.</p>`;
+      return syms.map(s=>{
+        const group=entries.filter(e=>e.elements.includes(s));
+        const nm=(ELEMENTS.find(x=>x.sym===s)||{}).name || s;
+        return `<p class="dia-exp" style="margin:var(--s-5) 2px var(--s-2)"><b>${nm}(${s})</b> 포함 · ${group.length}개</p>`+group.map(itemHtml).join('');
+      }).join('');
+    }
+    /* 'num' — 기본값, 원래 순서 그대로 */
+    return entries.map(itemHtml).join('');
+  },
+  renderHintSortChips(){
+    if(!this.$.hintSortChips) return;
+    this.$.hintSortChips.innerHTML = HINT_SORTS.map(s=>
+      `<button class="filter-chip${this.state.hintSort===s.id?' active':''}" data-hint-sort="${s.id}">${s.label}</button>`
+    ).join('');
+  },
+  /* 물질 이름의 띄어쓰기를 표준(교육부 고시·대한화학회)에 맞추면서 반응식 이름이 통째로
+     바뀌었다 — 「메테인 + 산소 → 이산화탄소 + 물」이 「… → 이산화 탄소 + 물」이 됐다.
+     즐겨찾기는 그 이름을 키로 들고 있어서, 그냥 두면 학생이 담아 둔 별표가 가리킬 곳을
+     잃고 조용히 사라진다. 공백만 무시하고 맞춰 새 이름으로 옮겨 준다(테마 id 이관과 같은
+     이유다). 못 찾은 것은 버린다 — 없어진 항목을 붙들고 있어 봐야 쓸 데가 없다. */
+  migrateFavNames(list){
+    const all=REACTIONS.map(r=>r.name).concat(IONS_WRITE.map(i=>i.name));
+    const bare=new Map(all.map(n=>[n.replace(/\s+/g,''), n]));
+    const out=[]; let moved=0;
+    for(const k of list){
+      if(all.includes(k)){ out.push(k); continue; }
+      const hit=bare.get(k.replace(/\s+/g,''));
+      if(hit){ out.push(hit); moved++; }
+    }
+    if(moved){ try{localStorage.setItem('chem_hint_favorites', JSON.stringify(out));}catch(e){} }
+    return out;
+  },
+  toggleHintFavorite(key){
+    const i=this.state.hintFavorites.indexOf(key);
+    if(i===-1) this.state.hintFavorites.push(key); else this.state.hintFavorites.splice(i,1);
+    this.persist('chem_hint_favorites', JSON.stringify(this.state.hintFavorites));
+    this.buildModalList();
+  },
+  /* 「즐겨찾기한 ○○만 풀기」 버튼 — arrangeHintEntries가 만든 버튼의 data-quiz-mode(4 또는
+     11)를 그대로 받는다. rxPool·ionWritePool이 favoriteOnly를 보고 스스로 거르므로,
+     여기서는 그 깃발을 켜고 순환 모드로 목표 모드에 들어가기만 하면 된다 — 어떻게
+     거를지는 몰라도 된다(문제 출제 쪽 로직과 여기가 갈라져 있으면 하나를 고칠 때 다른
+     하나를 잊기 쉬운데, 그럴 일이 없다). setMode는 "이미 그 모드면 아무 것도 안 한다"고
+     정해 둔 함수라(예: 이미 모드 4로 풀고 있다가 눌렀을 때), 그 경우엔 직접 큐를 새로 짠다. */
+  startFavoriteQuiz(mode){
+    this.feedback('tap');
+    this.closeModal(this.$.hintModalOverlay,{silent:true});
+    this.state.favoriteOnly=true;
+    this.state.isCycleMode=true;
+    this.$.cycleProgressWrap.style.display='flex';
+    document.querySelectorAll('.cycle-btn').forEach(b=>b.classList.toggle('active', b.dataset.cycle==='cycle'));
+    this.updateStatBarVisibility();
+    if(this.state.currentMode===mode){ this.initCycleQueue(); this.generateQuestion(); }
+    else this.setMode(mode);
+  },
+  renderWrongNotes(){
+    /* 필터는 구역 단위다. 모드 단위로 두면 모드 수만큼 칩이 늘어나 못 쓰게 된다.
+       거르는 규칙은 visibleNotes() 한 곳에 둔다 — 「연속 재풀이」가 여기와 다른 기준을
+       쓰고 있어서 화면에 안 보이는 노트까지 재생목록에 들어갔다. */
+    const f=this.visibleNotes();
+    if(f.length===0){
+      /* 필터가 「전체」인데도 "이 구역의"라고 했다 — 노트가 하나도 없는 새 학생이 보는
+         첫 문장이 이것이다. 말투도 이 자리만 합쇼체였다(앱 머리말이 해요체로 못 박았다). */
+      const msg = this.state.noteFilter==='all' ? '아직 오답 기록이 없어요.' : '이 구역에는 오답 기록이 없어요.';
+      this.$.wrongNoteList.innerHTML=`<p class="wn-empty">${msg}</p>`;
+      return;
+    }
+    this.$.wrongNoteList.innerHTML=f.map(n=>{
+      const fc = n.failCount || 1;
+      let style = '';
+      if(fc === 2) style = 'background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.5);';
+      else if(fc >= 3) style = 'background:rgba(239,68,68,0.14);border-color:var(--c-wrong);border-width:2px;';
+      const isCard = modeRoot(n.mode) && modeRoot(n.mode).custom==='flashcard';
+      const retryLabel = isCard ? '카드 다시보기' : '단일 풀기';
+      /* 배지에 모드 이모지를 앞세우던 자리. 모드 이름만으로 더 잘 읽힌다. */
+      const failBadge = fc>1?`<span class="reaction-fail">오답 ${fc}회</span>`:'';
+      return `<div class="reaction-item" style="${style}"><div class="reaction-header"><div class="reaction-name"><span class="reaction-badge">${MODE_NAMES[n.mode]||('모드 '+n.mode)}</span>${this.esc(n.title)}${failBadge}</div><div style="display:flex;gap:6px;"><button class="retry-note-btn" data-id="${this.esc(n.id)}">${retryLabel}</button><button class="delete-note-btn" data-id="${this.esc(n.id)}">삭제</button></div></div><div class="reaction-eq" style="border-left-color:var(--c-wrong)">${n.html}</div></div>`;
+    }).join('');
+  },
+
+  attachEventListeners(){
+    this.$.app.addEventListener('click',e=>{
+      const mt=e.target.closest('.mode-tab'),bb=e.target.closest('.blank-box'),kb=e.target.closest('.kb-key');
+      const st=e.target.closest('.section-tab');
+      if(st){this.setSection(st.dataset.section);this.feedback('tap');return;}
+      /* 새 판 알림 — 닫아도, 새로고침을 눌러도 "봤다"로 친다. 어느 쪽이든 내용을 본 뒤다. */
+      if(e.target.closest('#updateCloseBtn')){this.dismissUpdateBanner();return;}
+      if(e.target.closest('#updateReloadBtn')){
+        this.feedback('tap');
+        this.markVersionSeen();
+        /* 캐시를 건너뛰도록 판 번호를 주소에 달아 다시 부른다 — ?v=만으로는 index.html 자신이
+           캐시에 남아 옛 ?v=를 가리킨 채로 돌아올 수 있다. */
+        location.replace(location.pathname+'?v='+encodeURIComponent(APP_VERSION));
+        return;
+      }
+      const ch=e.target.closest('.choice-btn');
+      if(ch){this.pickChoice(ch.dataset.choice);return;}
+      /* 그림은 매번 다시 그려지므로 버튼에 직접 리스너를 달 수 없다 — 위임으로 받는다 */
+      const rp=e.target.closest('.dia-replay');
+      if(rp){this.replayDiagram(rp);return;}
+      const dp=e.target.closest('.dia-panel');
+      if(dp){this.openDiaZoom(dp);return;}
+      const th=e.target.closest('#themeBtn'),hi=e.target.closest('#hintBtn'),wn=e.target.closest('#wrongNoteBtn'),sa=e.target.closest('.show-answer-btn');
+      const snd=e.target.closest('#soundBtn'),hpt=e.target.closest('#hapticBtn'),lyt=e.target.closest('#layoutBtn');
+      const extR=e.target.closest('#exitRetryBtn'),pt=e.target.closest('#periodicBtn');
+      /* 아래 버튼들은 눌러도 진동이 없었다 — 여기서 값을 바꾸고 화면을 새로 그리기만 하고
+         소리·진동은 안 부르는 자리가 많았다. 탭·모드 전환처럼 흔한 동작일수록 안 울리는 게
+         바로 티가 난다("특정 버튼만 무시된다"). 화면을 바꾸는 모든 버튼에 tap을 맞춘다. */
+      if(mt){this.setMode(parseInt(mt.dataset.mode));this.feedback('tap');}
+      if(bb)this.setActiveBlank(bb.dataset.key);
+      if(kb)this.handleKeyPress(kb.dataset.key);
+      if(th){this.renderThemeList();this.openModal(this.$.themeModalOverlay);}
+      if(hi){this.openModal(this.$.hintModalOverlay);}
+      if(wn){this.renderWrongNotes();this.openModal(this.$.wrongNoteModalOverlay);}
+      if(sa)this.revealAnswers();
+      if(lyt) this.toggleWideMode();
+      if(pt){this.renderPeriodicTable();this.openModal(this.$.periodicModalOverlay);}
+      if(snd){
+        this.state.isSoundOn = !this.state.isSoundOn;
+        try{localStorage.setItem('chem_sound', this.state.isSoundOn);}catch(e){}
+        this.updateFeedbackBtns(); this.playSound('tap');
+      }
+      if(hpt){
+        this.state.isHapticOn = !this.state.isHapticOn;
+        try{localStorage.setItem('chem_haptic', this.state.isHapticOn);}catch(e){}
+        this.updateFeedbackBtns(); this.playHaptic('tap');
+        this.hapticHint();
+      }
+      if(extR){this.exitRetry();this.feedback('tap');}
+    });
+
+    document.getElementById('easterEggBtn').addEventListener('click',e=>{
+      e.preventDefault();
+      const x=e.clientX||window.innerWidth/2,y=e.clientY||50;
+      /* 이모지 일곱 개를 흩뿌리던 자리. 농담은 그대로 두되, 흩뿌리는 것은
+         이 앱이 내내 그리는 것 — 원자 — 로 바꾼다. 아이콘이 이미 있으니 그걸 쓴다. */
+      for(let i=0;i<35;i++){
+        const p=document.createElement('div');p.className='egg-particle';
+        p.innerHTML=this.icon('atom','lg');
+        p.style.transform='rotate('+Math.round(Math.random()*360)+'deg)';
+        p.style.left=x+'px';p.style.top=y+'px';
+        const a=Math.random()*Math.PI*2,v=60+Math.random()*120;
+        p.style.setProperty('--tx',Math.cos(a)*v+'px');p.style.setProperty('--ty',Math.sin(a)*v+'px');
+        /* 800 은 --dur-egg 를 손으로 옮겨 적은 값이었다. 토큰에서 읽으면 어긋날 일이 없고,
+           「움직임 줄이기」에서 1ms 로 떨어질 때도 조각이 화면에 남지 않는다. */
+        document.body.appendChild(p);setTimeout(()=>p.remove(),this.motionMs('--dur-egg'));
+      }
+      const fl=document.createElement('div');
+      Object.assign(fl.style,{position:'fixed',inset:0,zIndex:9999998,/* 자바스크립트에 마지막으로 남아 있던 하드코딩 색(분홍 그라디언트)이었다.
+           농담은 그대로 두되 색은 테마를 따라가게 한다 — 테마를 바꿔도 여기만 분홍인 건
+           「이 조각만 딴 앱에서 왔다」로 읽힌다. */
+        background:'var(--c-accent-2)',display:'flex',alignItems:'center',justifyContent:'center',opacity:0,transition:`opacity var(--dur-view) var(--ease-out)`,pointerEvents:'none'});
+      /* 이모지를 전부 지우던 라운드에서 이 하트도 예외 없이 같이 빠졌었다.
+         정작 이 이스터에그 자체는 그 라운드에서 "지켜야 할 자리"로 따로 남겨 뒀던 곳이라
+         하트도 함께 되돌린다 — 화면에 이모지가 있으면 안 된다는 기준은 평상시 UI 얘기지,
+         한 번씩 튀어나오는 장난에는 적용할 이유가 없다. */
+      fl.innerHTML='<div style="color:var(--c-on-accent-2);font-size:clamp(28px,9vw,80px);text-align:center;padding:0 24px;word-break:keep-all;white-space:normal">💖 깜짝이야! 💖</div>';
+      document.body.appendChild(fl);
+      /* 붙인 직후에 opacity 를 바꾸면 브라우저가 둘을 한 번에 처리해 전환이 안 걸린다.
+         50ms 를 세는 대신 다음 프레임을 기다린다 — 기기가 느려도 맞는 방법이다. */
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{fl.style.opacity=1;}));
+
+      setTimeout(()=>{
+        fl.style.opacity=0;
+        setTimeout(()=>{ fl.remove(); }, this.motionMs('--dur-view')+20);
+      },1200);
+    });
+
+    this.$.wrongNoteFilters.addEventListener('click',e=>{
+      const c=e.target.closest('.filter-chip');if(!c)return;
+      this.$.wrongNoteFilters.querySelectorAll('.filter-chip').forEach(x=>x.classList.remove('active'));
+      c.classList.add('active');this.state.noteFilter=c.dataset.filter;this.renderWrongNotes();
+      this.feedback('tap');
+    });
+    /* 창을 여는 버튼(themeBtn·hintBtn 등)은 전부 tap을 주면서, 닫는 X 버튼 넷은 하나도
+       안 울리고 있었다 — 여는 동작과 닫는 동작이 같은 무게의 탭인데 한쪽만 무음이었다. */
+    document.getElementById('hintModalClose').addEventListener('click',()=>this.closeModal(this.$.hintModalOverlay,{viaPointer:true}));
+    document.getElementById('diaModalClose').addEventListener('click',()=>this.closeModal(this.$.diaModalOverlay,{viaPointer:true}));
+    /* 참고 자료 정렬 탭 — 번호·가나다·원소·즐겨찾기(HINT_SORTS). 고른 탭만 바뀌고
+       목록은 buildModalList가 다시 그린다(칩도 그 안에서 다시 그려 active가 맞는 탭으로 옮겨간다). */
+    if(this.$.hintSortChips) this.$.hintSortChips.addEventListener('click',e=>{
+      const c=e.target.closest('.filter-chip[data-hint-sort]');if(!c)return;
+      this.feedback('tap');
+      this.state.hintSort=c.dataset.hintSort;
+      this.buildModalList();
+    });
+    /* 항목 각각의 북마크 버튼 — 목록이 정렬 바뀔 때마다 통째로 다시 그려지므로
+       항목 하나하나에 리스너를 달지 않고 목록 컨테이너에서 위임한다. */
+    this.$.reactionList.addEventListener('click',e=>{
+      const qb=e.target.closest('[data-quiz-mode]');
+      if(qb){ this.startFavoriteQuiz(parseInt(qb.dataset.quizMode)); return; }
+      const b=e.target.closest('.fav-btn[data-fav-key]');if(!b)return;
+      this.feedback('tap');
+      this.toggleHintFavorite(b.dataset.favKey);
+    });
+    document.getElementById('wrongNoteModalClose').addEventListener('click',()=>this.closeModal(this.$.wrongNoteModalOverlay,{viaPointer:true}));
+    document.getElementById('periodicModalClose').addEventListener('click',()=>this.closeModal(this.$.periodicModalOverlay,{viaPointer:true}));
+    document.getElementById('themeModalClose').addEventListener('click',()=>this.closeModal(this.$.themeModalOverlay,{viaPointer:true}));
+    this.$.themeList.addEventListener('click',e=>{
+      const opt=e.target.closest('.theme-opt');if(!opt)return;
+      /* 여기서 고른 것만 저장한다 — 이제부터는 폰 설정이 바뀌어도 이 선택이 이긴다 */
+      this.applyTheme(opt.dataset.theme, true);
+      /* 목록은 열어 둔 채로 표시만 갱신한다 — 바로 옆 테마와 비교해 보고 고를 수 있게 */
+      this.renderThemeList();
+      this.feedback('tap');
+    });
+    /* 어두운 배경 탭 시 모달 닫기 (인증 모달 제외) */
+    [this.$.hintModalOverlay,this.$.wrongNoteModalOverlay,this.$.periodicModalOverlay,this.$.themeModalOverlay,this.$.diaModalOverlay].forEach(ov=>{
+      ov.addEventListener('click',e=>{if(e.target===ov)this.closeModal(ov,{silent:true,viaPointer:true});});
+    });
+    document.getElementById('ptRotateBtn').addEventListener('click',()=>{
+      this.openPtFullscreen();
+      this.feedback('tap');
+    });
+    document.getElementById('ptFsClose').addEventListener('click',()=>{
+      this.closePtFullscreen();
+      this.feedback('tap');
+    });
+    /* 원소 칸 클릭 → 상세 설명 패널. 모달용/전체화면용 각각 델리게이션(콘텐츠가 매번 innerHTML로 새로 그려지므로) */
+    this.$.periodicContent.addEventListener('click',e=>{
+      const cell=e.target.closest('.pt-cell[data-z]'); if(!cell) return;
+      /* 손으로 누른 칸을 Tab 정거장으로 옮겨 둔다(초점은 주지 않는다 — 누를 때 링이
+         뜨면 안 된다). 마우스로 보던 칸에서 키보드로 이어 갈 수 있다. */
+      this.ptSetRoving(this.$.periodicContent, cell, false);
+      this.ptToggleDetail(this.$.ptDetailPanel, parseInt(cell.dataset.z));
+      this.feedback('tap');
+    });
+    const ptFsContent=document.getElementById('ptFsContent');
+    ptFsContent.addEventListener('click',e=>{
+      const cell=e.target.closest('.pt-cell[data-z]'); if(!cell) return;
+      this.ptSetRoving(ptFsContent, cell, false);
+      this.ptToggleDetail(this.$.ptFsDetailPanel, parseInt(cell.dataset.z));
+      this.feedback('tap');
+    });
+    /* 키보드 경로. 콘텐츠 요소 자체는 계속 살아 있으므로(안쪽 innerHTML만 갈린다) 한 번만 건다. */
+    this.setupPtKeys(this.$.periodicContent, this.$.ptDetailPanel);
+    this.setupPtKeys(ptFsContent, this.$.ptFsDetailPanel);
+    [this.$.ptDetailPanel,this.$.ptFsDetailPanel].forEach(panel=>{
+      panel.addEventListener('click',e=>{
+        if(!e.target.closest('.pt-detail-close')) return;
+        this.closePtDetail(panel);
+        this.feedback('tap');
+      });
+    });
+    this.$.simplePeriodicToggle.addEventListener('click',()=>{
+      this.state.isSimplePeriodic=!this.state.isSimplePeriodic;
+      try{localStorage.setItem('chem_pt_simple', this.state.isSimplePeriodic);}catch(e){}
+      this.$.simplePeriodicToggle.classList.toggle('on', this.state.isSimplePeriodic);
+      this.$.simplePeriodicToggle.setAttribute('aria-checked', this.state.isSimplePeriodic);
+      this.feedback('tap');
+      this.renderPeriodicTable();
+    });
+    this.$.simpleCategoryToggle.addEventListener('click',()=>{
+      this.state.isSimpleCategory=!this.state.isSimpleCategory;
+      try{localStorage.setItem('chem_pt_cat_simple', this.state.isSimpleCategory);}catch(e){}
+      this.$.simpleCategoryToggle.classList.toggle('on', this.state.isSimpleCategory);
+      this.$.simpleCategoryToggle.setAttribute('aria-checked', this.state.isSimpleCategory);
+      this.feedback('tap');
+      this.renderPeriodicTable();
+    });
+    document.getElementById('clearAllNotesBtn').addEventListener('click',()=>this.clearWrongNotes());
+    document.getElementById('retryPlaylistBtn').addEventListener('click',()=>this.startRetryPlaylist());
+
+
+    document.getElementById('timerBtns').addEventListener('click',e=>{
+      const b=e.target.closest('.timer-btn');if(!b)return;
+      this.state.timerDuration=parseInt(b.dataset.sec)*1000;
+      this.persist('chem_timer', this.state.timerDuration);
+      this.syncTimerBtns();
+      /* 지금 풀고 있는 문제에도 바로 적용한다. 예전에는 startTimer가 문제 시작 때 고정한
+         currentMaxTime만 보고 돌아서, 「무제한」을 눌러도 이 문제는 원래 시간에 만료돼
+         오답으로 기록됐다 — 학생 입장에서는 「시간을 껐는데 시간 초과로 틀렸다」였다.
+         이미 채점이 끝난 문제는 건드리지 않는다(타이머가 멈춰 있어야 할 자리다). */
+      if(!this.state.isAnswerChecked) this.startTimer();
+      this.feedback('tap');
+    });
+    this.$.wrongNoteList.addEventListener('click',e=>{
+      if(e.target.classList.contains('delete-note-btn')){this.feedback('tap');this.deleteWrongNote(e.target.dataset.id);}
+      if(e.target.classList.contains('retry-note-btn')){
+        this.feedback('tap');
+        const id=e.target.dataset.id;
+        const note=this.state.wrongNotes.find(n=>n.id===id);
+        if(note && isCardMode(note.mode)) this.viewFlashcardNote(note);
+        else this.startRetry(id);
+      }
+    });
+    document.getElementById('m6SaveWrongBtn').addEventListener('click',()=>this.m6SaveCurrentAsWrong());
+
+    document.getElementById('cycleWrap').addEventListener('click',e=>{
+      const diaBtn=e.target.closest('.dia-btn');
+      if(diaBtn){
+        this.state.showDiagram = diaBtn.dataset.dia==='on';
+        try{localStorage.setItem('chem_diagram', this.state.showDiagram);}catch(e){}
+        document.querySelectorAll('.dia-btn').forEach(x=>x.classList.toggle('active', x===diaBtn));
+        this.renderExplain();
+        this.feedback('tap');
+        return;
+      }
+      /* 하위 유형 버튼이 고르는 값은 모드 번호 그 자체다 — setMode가 그대로 처리한다 */
+      const subBtn=e.target.closest('.sub-btn');
+      if(subBtn){
+        this.setMode(parseInt(subBtn.dataset.sub));
+        this.feedback('tap');
+        return;
+      }
+      const dirBtn=e.target.closest('.dir-btn');
+      if(dirBtn){
+        document.querySelectorAll('.dir-btn').forEach(b=>b.classList.remove('active'));
+        dirBtn.classList.add('active');
+        this.state.m7Dir=dirBtn.dataset.dir;
+        /* 방향이 바뀌면 남은 순환 큐도 새 방향으로 다시 돌아야 하므로 큐부터 초기화 */
+        this.initCycleQueue();
+        this.generateQuestion();
+        this.feedback('tap');
+        return;
+      }
+      const btn=e.target.closest('.cycle-btn');if(!btn)return;
+      document.querySelectorAll('.cycle-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      this.state.isCycleMode=btn.dataset.cycle==='cycle';
+      /* 순환·랜덤을 손으로 누르면 즐겨찾기만 풀기는 끝난 것으로 본다 — startFavoriteQuiz가
+         켠 다음에도 계속 남아 있으면, 이 버튼을 다시 눌렀을 때 왜 즐겨찾기만 나오는지
+         알 수 없어 헷갈린다. 한 번 쓰고 끝나는 특수 모드로 둔다. */
+      this.state.favoriteOnly=false;
+      this.$.cycleProgressWrap.style.display=this.state.isCycleMode?'flex':'none';
+      this.updateStatBarVisibility();
+      this.initCycleQueue();
+      this.generateQuestion();
+      this.feedback('tap');
+    });
+
+    document.addEventListener('keydown',e=>{
+      /* 그림 칸(.dia-panel)에 포커스를 두고 Enter·Space를 누르면 확대해서 본다.
+         div라 실제 <button>이 아니므로(js/diagram.js panelAttrs) 클릭처럼 저절로 안
+         일어난다 — 직접 연결해 줘야 한다. 맨 위에서 먼저 본다: 플래시카드 모드의
+         Space=뒤집기 같은 아래 분기가 먼저 가로채면, 포커스가 카드 안 그림에 있어도
+         늘 카드만 뒤집히고 그림은 확대되지 않는다. */
+      if((e.key==='Enter'||e.key===' ')&&document.activeElement&&document.activeElement.classList.contains('dia-panel')){
+        e.preventDefault();this.openDiaZoom(document.activeElement);return;
+      }
+      const ptFs=document.getElementById('ptFullscreen');
+      if(ptFs.classList.contains('show')){
+        if(e.key==='Escape')this.closePtFullscreen();
+        /* 이 뷰는 .modal-overlay 가 아니라 아래 창 되감기에 걸리지 않는다 — 여기서 따로 감는다.
+           뒤(#app·창)는 전부 inert라 빠져나간 초점이 갈 곳이 브라우저 UI뿐이었다. */
+        else if(e.key==='Tab') this.trapTab(e, ptFs.querySelector('.pt-fs-rotor'));
+        return;
+      }
+      if(e.key==='Escape'){
+        /* 열려 있는 창 하나를 닫는다 — 어느 창인지 일일이 따질 필요가 없다 */
+        const openOv=this.openOverlay();
+        if(openOv){this.closeModal(openOv,{silent:true});return;}
+      }
+      /* 창 안에서 Tab이 끝에 닿으면 반대쪽 끝으로 감는다.
+         #app에 걸어 둔 inert가 뒤 본문으로 새는 것은 이미 막지만, 그것만으로는
+         마지막 요소에서 Tab을 누르면 초점이 브라우저 UI로 빠져나간다. 그리고 inert를
+         모르는 브라우저에서는 가둠 자체가 없다 — 그 둘을 여기서 함께 막는다. */
+      const tabOv=e.key==='Tab'?this.openOverlay():null;
+      if(tabOv){ this.trapTab(e, tabOv.querySelector('.modal-box')); return; }
+      /* 팝업이 떠 있는 동안은 아래 문제 풀이 단축키가 먹으면 안 된다 */
+      if(this.openOverlay())return;
+      if(document.getElementById('retryM6Card').style.display!=='none'){
+        /* 오답노트 재풀이 중 플래시카드 복습 카드 — 숨겨진 실제 mode6 세션이 아니라 이 카드를 조작 */
+        if(e.key===' '){e.preventDefault();document.getElementById('retryM6Flashcard').classList.toggle('flipped');}
+        return;
+      }
+      if(isCardMode(this.state.currentMode)&&this.$.mode6Wrap.classList.contains('m6-active')){
+        if(e.key==='ArrowRight')this.m6Next();
+        else if(e.key==='ArrowLeft')this.m6Prev();
+        else if(e.key===' '){e.preventDefault();this.m6Flip();}
+        return;
+      }
+      /* 버튼에 포커스를 두고 Enter·Space를 누르면 그 버튼이 눌려야 한다. 여기서 가로채면
+         보기 버튼으로 이동해 놓고 Enter를 눌러도 고르지 못하고 채점부터 되어, 키보드만으로는
+         보기를 바꿀 수 없었다. 브라우저 기본 동작에 맡긴다. */
+      const onBtn=document.activeElement&&document.activeElement.closest('button');
+      if(onBtn&&(e.key==='Enter'||e.key===' ')) return;
+      /* 브라우저 단축키의 숫자가 답에 꽂히면 안 된다. 노트북으로 푸는 학생이 글자가 작다고
+         Ctrl+0(확대 되돌리기)을 누르면 활성 칸에 「0」이 들어가 있었다 — 화면이 확대·축소되는
+         바람에 글자가 늘어난 것도 못 보고, 채점은 엄격 비교라 그대로 오답이 됐다. */
+      if(e.ctrlKey||e.metaKey||e.altKey) return;
+      if(e.key>='0'&&e.key<='9')this.handleKeyPress(`NUM_${e.key}`);
+      else if(e.key==='Backspace')this.handleKeyPress('DEL');
+      else if(e.key==='ArrowLeft')this.handleKeyPress('LEFT');
+      else if(e.key==='ArrowRight')this.handleKeyPress('RIGHT');
+      else if(e.key==='Enter')this.handleKeyPress(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut?'NEXT':'CONFIRM');
+    });
+
+    const m6o=document.getElementById('m6Outer');
+    let tx=0,th2=false;
+    m6o.addEventListener('touchstart',e=>{tx=e.touches[0].clientX;th2=false;},{passive:true});
+    /* 카드 안에 「다시 보기」 버튼과, 누르면 확대해서 보는 그림 칸(.dia-panel)이 들어가면서
+       탭 = 뒤집기와 겹쳤다. 둘 중 하나를 눌렀을 때는 뒤집지 않는다 — 애니메이션만 다시
+       보고 싶거나 그림을 확대해서 보고 싶은 것이지 카드를 뒤집으려던 게 아니다. */
+    const onDiaClick=e=>!!(e.target&&e.target.closest&&e.target.closest('.dia-replay, .dia-panel'));
+    m6o.addEventListener('touchend',e=>{
+      th2=true;const dx=e.changedTouches[0].clientX-tx;
+      if(Math.abs(dx)>50){if(dx<0)this.m6Next();else this.m6Prev();}
+      else if(!onDiaClick(e)) this.m6Flip();
+    });
+    m6o.addEventListener('click',e=>{if(!th2&&!onDiaClick(e))this.m6Flip();th2=false;});
+
+    document.getElementById('m6WrongNoteBtn').addEventListener('click',()=>{
+      this.feedback('tap');
+      this.renderWrongNotes();this.openModal(this.$.wrongNoteModalOverlay,{silent:true});
+    });
+    document.getElementById('retryM6Flashcard').addEventListener('click',e=>{
+      /* 카드 안의 「다시 보기」나 확대되는 그림 칸을 누른 것이면 뒤집지 않는다 —
+         그림 확대는 위임 처리 쪽(diaZoom)에 맡긴다 */
+      if(e.target.closest('.dia-replay, .dia-panel')) return;
+      this.feedback('tap');
+      const card=document.getElementById('retryM6Flashcard');
+      card.classList.toggle('flipped');
+      this.restartAnim(document.getElementById(card.classList.contains('flipped')?'retryM6BContent':'retryM6FContent'));
+    });
+    document.getElementById('retryM6KnowBtn').addEventListener('click',()=>this.retryFlashcardKnow());
+    document.getElementById('retryM6ForgotBtn').addEventListener('click',()=>this.retryFlashcardNext());
+    document.getElementById('m6NextBtn').addEventListener('click',()=>this.m6Next());
+    document.getElementById('m6PrevBtn').addEventListener('click',()=>this.m6Prev());
+    document.getElementById('m6ShuffleBtn').addEventListener('click',()=>this.m6Shuffle());
+    document.getElementById('m6TypeBtns').addEventListener('click',e=>{
+      const b=e.target.closest('.m6-opt-btn');if(!b)return;
+      document.querySelectorAll('#m6TypeBtns .m6-opt-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+      this.state.m6Type=b.dataset.val;this.m6GenCards();this.m6Render();
+      this.feedback('tap');
+    });
+    document.getElementById('m6OrderBtns').addEventListener('click',e=>{
+      const b=e.target.closest('.m6-opt-btn');if(!b)return;
+      document.querySelectorAll('#m6OrderBtns .m6-opt-btn').forEach(x=>x.classList.remove('active'));b.classList.add('active');
+      this.state.m6Order=b.dataset.val;this.m6Render();
+      this.feedback('tap');
+    });
+  },
+
+  /* ── 이온 되기 (MODE 9) ──
+     이온을 만드는 원소 + 이온이 되지 않는 18족을 한 풀에 담는다. 18족이 "이온이 되지 않는다"는
+     것 자체가 [9과11-04]의 학습 내용이라 오답 보기가 아니라 정답으로 나와야 한다. */
+  /* 보기를 고르면 그 문자열이 그대로 답이 된다. 다시 고를 수 있게 두고 확인은 따로 누르게 한다 —
+     잘못 눌렀는데 바로 채점되면 억울하다. */
+  pickChoice(val){
+    const q=this.state.currentQuestion;
+    if(!q||!q.choices) return;
+    if(this.state.isAnswerChecked&&!q.isTimedOut) return;
+    if(this.state.isLastWrongAttempt){this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};}
+    q.inputs[q.blanks[0].key]=val;
+    this.feedback('tap');
+    this.renderAll();
+  },
+  /* 결합 차수 문제는 공유 결합만 대상이고, 분자 안의 결합이 전부 같은 차수여야 답이 하나로 정해진다.
+     (지금 데이터는 전부 균일하지만 나중에 섞인 분자를 넣더라도 자동으로 걸러지게 해 둔다.) */
+  orderPool(){
+    if(!this._orderPool){
+      this._orderPool=BONDS.filter(b=>b.type==='covalent'&&
+        b.ligands.every(l=>l.pairs===b.ligands[0].pairs)&&BOND_ORDER_NAME[b.ligands[0].pairs]);
+    }
+    return this._orderPool;
+  },
+  ionPool(){
+    if(!this._ionPool){
+      this._ionPool=ION_FORMING.concat(ION_NOBLE.map(z=>({z,noble:true})));
+    }
+    return this._ionPool;
+  },
+  ionAnswerText(item){
+    if(item.noble) return '이온이 되지 않는다';
+    return `전자 ${item.n}개를 ${item.dir==='lose'?'잃는다':'얻는다'}`;
+  },
+  /* 오답 보기는 무작위가 아니라 학생이 실제로 하는 착각에서 만든다.
+     ① 방향 착각: 잃어야 하는데 얻는다고 생각
+     ② 옥텟 착각: 바깥 껍질에 2개뿐인 Mg가 6개를 "얻어서" 8을 채운다고 생각 (가장 흔한 오답)
+     ③ 18족도 이온이 된다고 생각
+     보기는 매번 섞어서 위치로 답을 외우지 못하게 한다.
+
+     숫자는 원자가 전자가 아니라 outerShellOf(실제로 껍질에 든 개수)로 만든다.
+     원자가 전자로 만들면 18족 보기가 「전자 0개를 잃는다」가 되어 보기 자체가 성립하지 않는다. */
+  ionChoices(item,answer){
+    const outer=outerShellOf(item.z);
+    const full=fullShellOf(item.z);
+    const set=new Set([answer]);
+    if(item.noble){
+      set.add(`전자 ${outer}개를 잃는다`);
+      set.add(`전자 ${outer}개를 얻는다`);
+      set.add('전자 1개를 얻는다');
+    }else{
+      const opp=item.dir==='lose'?'얻는다':'잃는다';
+      set.add(`전자 ${item.n}개를 ${opp}`);
+      const other=full-item.n;
+      if(other>0&&other!==item.n) set.add(`전자 ${other}개를 ${opp}`);
+      set.add('이온이 되지 않는다');
+      /* 수소는 full이 2라 옥텟 착각 보기가 정답과 겹쳐 사라진다. 대신 "꽉 찬 껍질이 2개니까
+         2개를 얻어야 한다"는, 껍질 정원과 주고받는 개수를 헷갈리는 착각을 보기로 쓴다. */
+      if(set.size<4) set.add(`전자 ${full}개를 ${item.dir==='lose'?'잃는다':'얻는다'}`);
+    }
+    const arr=[...set].slice(0,4).map(v=>{
+      const note=this.ionChoiceNote(item,v);
+      return note?{v,note}:v;
+    });
+    for(let i=arr.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[arr[i],arr[j]]=[arr[j],arr[i]];}
+    return arr;
+  },
+  /* 오답 보기가 "완전히 틀린 말"이 아닐 때는 왜 여기서는 답이 아닌지 한 줄 붙인다.
+     수소의 H⁺는 실제로 존재하고 산·염기에서 배우는 내용이라, 없는 것처럼 하면 그것도 거짓말이 된다. */
+  ionChoiceNote(item,v){
+    if(item.z===1&&v==='전자 1개를 잃는다') return '고2에서 다시 만나요';
+    return '';
+  },
+  /* 보기 항목은 문자열이거나 {v, note, swatch} 객체다. 채점·비교는 언제나 v 문자열로 한다. */
+  choiceValue(c){ return typeof c==='string'?c:c.v; },
+  /* 앙금 색 동그라미. 색 이름이 표에 없으면 아무것도 안 그린다(「앙금이 생기지 않는다」). */
+  swatch(colorName){
+    const c=PRECIP_COLORS[colorName];
+    return c?`<span class="ppt-sw" style="--sw:${c}"></span>`:'';
+  },
+  /* 「흰색 앙금」처럼 색 이름으로 시작하는 문구 앞에 그 색 동그라미를 붙인다 */
+  /* innerHTML 로 들어가는 값 중 **앱이 만들지 않은 것**에 씌운다.
+     오답 노트의 id·제목이 그대로 꽂히고 있었다. 실사용에서 아픈 쪽은 id 다 — 큰따옴표가
+     하나 들어가면 data-id 속성이 거기서 끊겨 삭제 버튼이 잘린 id 를 들게 되고,
+     목록에는 보이는데 **지울 수 없는 노트**가 된다(전체 삭제 말고는 방법이 없다).
+     같은 구멍으로 스크립트도 실행된다 — 지금은 제 브라우저 안의 일이지만, 노트 내보내기나
+     공유가 생기는 순간 바로 문제가 된다. 노트 본문(n.html)은 앱이 만든 반응식 조각이라
+     HTML 인 게 맞으므로 그대로 둔다. */
+  esc(v){ return String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); },
+  withSwatch(text){
+    const name=Object.keys(PRECIP_COLORS).find(k=>String(text).startsWith(k));
+    return (name?this.swatch(name):'')+text;
+  },
+  /* 지금 풀고 있는 모드가 속한 구역의 반응식. 기준은 state.section이 아니라 모드다 —
+     오답노트 재풀이에서는 모드가 먼저 바뀌고 구역 탭이 나중에 따라오므로, state.section을 보면
+     한 문제 동안 엉뚱한 구역의 반응식이 섞인다.
+     favoriteOnly가 켜져 있으면(startFavoriteQuiz) 즐겨찾기한 것만 남긴다 — 모드 1~4가
+     전부 이 한 곳을 거치므로 여기 한 줄만 더하면 넷 다 자동으로 즐겨찾기만 낸다.
+     묻기만 하는 함수로 둔다(상태를 건드리지 않는다) — 빈 풀을 어떻게 할지는 healFavoriteOnly가
+     정한다. 여기서 깃발을 내리게 했더니 "개수만 세어 보려고" 부른 자리에서까지 즐겨찾기가
+     꺼졌다(이온식 모드에서 반응식 풀을 넘겨다본 것만으로 풀렸다). */
+  rxPool(mode){
+    const list=reactionsInSection(sectionOf(mode===undefined?this.state.currentMode:mode));
+    return this.state.favoriteOnly ? list.filter(r=>this.state.hintFavorites.includes(r.name)) : list;
+  },
+  /* MODE 11(이온식 쓰기)의 풀 — rxPool과 같은 이유로 즐겨찾기 필터를 여기 한 곳에 둔다. */
+  ionWritePool(){
+    return this.state.favoriteOnly ? IONS_WRITE.filter(i=>this.state.hintFavorites.includes(i.name)) : IONS_WRITE;
+  },
+  /* 「즐겨찾기만 풀기」 도중에 별표를 하나도 안 남기고 지우면 낼 문제가 없다. 그대로 두면
+     출제 쪽이 빈 풀을 받아 없는 항목을 집고 화면이 멈춘다 — 풀을 손에 쥐기 '전에' 여기서
+     깃발을 내려 전체 풀로 돌려놓는다(받아 간 뒤에 고치면 늦다. 이미 빈 배열이다).
+     방금 별표를 다 지운 행동과도 앞뒤가 맞는 처리다.
+     어느 모드가 어느 풀을 보는지를 이 한 곳에 적어 둔다 — 반응식을 쓰지도 않는 모드에서
+     rxPool을 넘겨다보면 이온식 즐겨찾기가 애먼 이유로 꺼진다. */
+  healFavoriteOnly(){
+    if(!this.state.favoriteOnly) return;
+    const m=this.state.currentMode;
+    const n = m===11 ? this.ionWritePool().length
+            : (m>=1&&m<=4) ? this.rxPool().length : null;
+    if(n===0) this.state.favoriteOnly=false;
+  },
+  initCycleQueue(){
+    this.healFavoriteOnly();
+    const mode=this.state.currentMode;
+    /* 반응식 풀은 실제로 쓰는 가지에서만 부른다 — 예전엔 모드와 상관없이 여기서 무조건
+       한 번 불렀는데, 그 자체로는 탈이 없었어도 "안 쓰는 풀을 미리 집어 둔다"는 버릇이
+       남아 있으면 rxPool에 조건이 하나 붙는 순간(실제로 그럴 뻔했다) 이온식 모드가
+       엉뚱하게 휘말린다. 쓰는 자리에서만 집는다. */
+    let pool=[];
+    if(mode===5) pool=CHEMICALS.map((_,i)=>i);
+    else if(mode===7) pool=PT_QUIZ_ELEMENTS.map((_,i)=>i);
+    else if(mode===8) pool=SHELL_QUIZ_ELEMENTS.map((_,i)=>i);
+    else if(mode===9) pool=this.ionPool().map((_,i)=>i);
+    else if(mode===10) pool=BONDS.map((_,i)=>i);
+    else if(mode===11) pool=this.ionWritePool().map((_,i)=>i);
+    else if(mode===12) pool=this.orderPool().map((_,i)=>i);
+    else if(mode===13) pool=PRECIPITATES.map((_,i)=>i);
+    else if(mode===14) pool=ORBITAL_KINDS.map((_,i)=>i);
+    else if(mode===15) pool=ORBITAL_SHELLS.map((_,i)=>i);
+    /* 모드 1의 순환 큐는 「계수 템플릿 + 반응식」을 한 줄로 이어 붙인 것이다.
+       길이를 숫자로 박아 두면 반응식을 하나만 더해도 마지막 문제가 영영 안 나온다.
+       generateQuestion의 인덱스 산술(idx < COEF_TEMPLATES.length ? 템플릿 : 반응식)과 짝이라
+       한쪽만 고치면 큐 뒤쪽이 없는 반응식을 가리킨다 — 둘은 언제나 같은 배열을 봐야 한다. */
+    else if(mode===1){const rx=this.rxPool(mode);pool=Array.from({length: COEF_TEMPLATES.length+rx.length}, (_,i)=>i);}
+    else pool=this.rxPool(mode).map((_,i)=>i);
+    /* 여기서 풀이 비는 경우는 없다 — 맨 위 healFavoriteOnly가 "즐겨찾기가 텅 빈 채로
+       좁혀진 풀"을 먼저 걷어내고(깃발을 내려 전체 풀로 돌려놓는다), 나머지 풀은 붙박이다. */
+    for(let i=pool.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[pool[i],pool[j]]=[pool[j],pool[i]];}
+    this.state.cycleQueue=[...pool];
+    this.state.cycleTotal=pool.length;
+    this.rememberCycleQueue();
+    this.renderCycleProgress();
+  },
+
+  /* ── 모드마다 순환 진도를 따로 기억한다 ──
+     예전에는 순환 큐가 앱 전체에 하나뿐이라, 모드를 옮길 때마다 새로 짜였다. 그래서
+     반응식을 30/41까지 풀다가 플래시카드를 잠깐 보고 돌아오면 진도가 0으로 돌아갔다
+     (setMode의 주석은 그걸 막았다고 적고 있었지만, 막은 것은 「카드로 들어갈 때」뿐이고
+     정작 「돌아올 때」는 그대로 새로 짰다 — 주석이 약속한 결과가 안 나오던 자리다).
+     퀴즈 모드끼리 오갈 때도 마찬가지였다.
+
+     기억에는 큐 **그 배열 자체**를 넣는다(복사본이 아니다). 문제를 낼 때마다 큐를
+     shift 하는데, 복사본을 넣어 두면 그 뒤의 진행이 기억에 안 남아 「돌아오면 처음 그대로」가
+     된다 — 고치려던 것과 같은 증상이 된다.
+     풀이 달라진 경우(즐겨찾기를 지웠다든지)는 여기서 따로 보지 않는다. 문제를 낼 때
+     pickIndex가 길이로 어긋남을 잡아 다시 짠다 — 판단하는 곳이 둘이면 언젠가 갈린다. */
+  rememberCycleQueue(mode){
+    const m = mode===undefined ? this.state.currentMode : mode;
+    if(m===null||m===undefined) return;
+    this.state.cycleQueues[m] = { queue:this.state.cycleQueue, total:this.state.cycleTotal };
+  },
+  restoreCycleQueue(){
+    const saved = this.state.cycleQueues[this.state.currentMode];
+    /* 한 바퀴를 다 돈 큐(빈 배열)는 되살릴 것이 없다 — 새 바퀴를 짠다 */
+    if(saved && saved.queue.length){
+      this.state.cycleQueue = saved.queue;
+      this.state.cycleTotal = saved.total;
+      this.renderCycleProgress();
+      return;
+    }
+    this.initCycleQueue();
+  },
+
+  renderCycleProgress(){
+    if(!this.state.isCycleMode)return;
+    const done=this.state.cycleTotal-this.state.cycleQueue.length;
+    const total=this.state.cycleTotal;
+    if(this.$.cycleProgressText) this.$.cycleProgressText.textContent=`${done} / ${total}`;
+    if(this.$.cycleProgressFill) this.$.cycleProgressFill.style.transform=`scaleX(${total>0?done/total:0})`;
+  },
+
+  startTimer(){
+    clearInterval(this.state.timerInterval);
+    this.state.currentMaxTime=this.state.timerDuration;this.state.timerLeft=this.state.currentMaxTime;
+    this.$.timerBar.style.transition='none';this.$.timerBar.style.transform='scaleX(1)';this.$.timerBar.classList.remove('danger');
+
+    if(this.state.timerDuration === 0) return;
+
+    void this.$.timerBar.offsetWidth;this.$.timerBar.style.transition='';
+    let lt=Date.now();
+    this.state.timerInterval=setInterval(()=>{
+      /* 모달이 열려 있는 동안은 시간을 세지 않는다. 주기율표나 반응식 목록을 띄워 두면
+         뒤에서 제한시간이 만료돼 풀지도 않은 문제가 오답으로 기록됐다. */
+      if(document.querySelector('.modal-overlay.show')) {
+        lt = Date.now();
+        return;
+      }
+      if(this.state.isAnswerChecked){clearInterval(this.state.timerInterval);return;}
+      const now=Date.now();this.state.timerLeft-=(now-lt);lt=now;
+      if(this.state.timerLeft<=0){this.state.timerLeft=0;clearInterval(this.state.timerInterval);this.$.timerBar.style.transform='scaleX(0)';this.timeOutForceWrong();}
+      else{const p=(this.state.timerLeft/this.state.currentMaxTime)*100;this.$.timerBar.style.transform=`scaleX(${p/100})`;if(p<30)this.$.timerBar.classList.add('danger');}
+    },50);
+  },
+
+  timeOutForceWrong(){
+    this.feedback('error');
+    this.state.isAnswerRevealed=false;this.state.score.streak=0;this.state.score.wrong++;
+    const q=this.state.currentQuestion;q.isTimedOut=true;
+
+    if(!this.state.retryNoteId) {
+      this.generateBeautifulWrongNote(q);
+    } else {
+      const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
+      if(note) {
+        note.failCount = Math.min((note.failCount || 1) + 1, 3);
+        this.saveNotes();
+        this.renderWrongNotes();
+      }
+    }
+
+    this.renderAll(null);
+    this.$.resultBanner.className='result-banner wrong-banner show';
+    this.$.resultBanner.innerHTML=`<div style="display:flex;align-items:center;width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px"><span><span style="color:var(--c-wrong)">시간이 다 됐어요.</span> <span style="font-weight:400;margin-left:10px">마저 답을 넣어 봐요.</span></span><button class="show-answer-btn">정답 확인</button></div>`;
+  },
+
+  handleKeyPress(key){
+    if(key.startsWith('NUM_')||key.startsWith('ELEM_')||key.startsWith('CHG_')||key==='DEL'||key==='LEFT'||key==='RIGHT'){
+      if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)return;
+      /* 보기에서 고르는 문제는 답이 통째로 들어오므로 글자 단위 편집이 있으면 안 된다.
+         화면의 편집키는 숨기지만 물리 키보드는 그대로 살아 있어서, 「이온결합」을 고른 뒤
+         ⌫를 누르면 「이온결」이 되고 숫자를 누르면 「이온결합5」가 되어 오답 처리됐다.
+         입력 경로 자체를 여기서 막는다 — 숨기는 것만으로는 부족하다. */
+      if(this.state.currentQuestion?.choices) return;
+      const q=this.state.currentQuestion;if(!q||!q.activeKey)return;
+
+      const wasWrong=this.state.isLastWrongAttempt;
+      if(wasWrong){
+        this.state.isLastWrongAttempt=false;
+        this.state.wrongBlanks={};
+      }
+
+      this.feedback('tap');
+      q.cursor = q.cursor || {};
+      let val = q.inputs[q.activeKey] || '';
+      let pos = q.cursor[q.activeKey] !== undefined ? q.cursor[q.activeKey] : val.length;
+
+      /* 전하(^2- 등)는 화면에 ^ 없이 위첨자로만 그려진다(formatInput). 그래서 커서가 그
+         안으로 들어가면 화면에는 아무 표시가 없는데 ⌫가 ^ 하나만 지워, 글자 수는 그대로인
+         채 값이 H^+ → H+ 가 되고 그대로 오답이 됐다. 전하는 한 덩어리로 넘나든다 —
+         ⌫가 이미 그렇게 하고 있고(아래 DEL), 커서도 같은 규칙을 따라야 앞뒤가 맞는다. */
+      const chgAt = val.match(/\^\d*[+-]$/);
+      const chgStart = chgAt ? val.length - chgAt[0].length : -1;
+      /* Na·Cl 같은 두 글자 기호는 한 덩어리다 — ⌫는 이미 그렇게 지운다(아래 DEL).
+         ←/→만 한 글자씩 움직여서 커서가 기호 가운데에 설 수 있었고, 거기서 H를 넣으면
+         「NHa」, ⌫를 누르면 「a」가 남았다. 소문자 a는 키패드 어느 키로도 만들 수 없어
+         학생이 무엇을 눌러 이렇게 됐는지 되짚을 수가 없다. 셋이 같은 규칙을 쓴다. */
+      const pairBefore = p => p >= 2 && /[A-Z]/.test(val[p-2]) && /[a-z]/.test(val[p-1]);
+      const pairAt = p => p + 1 < val.length && /[A-Z]/.test(val[p]) && /[a-z]/.test(val[p+1]);
+      if(key === 'LEFT') {
+        if(chgStart >= 0 && pos > chgStart) q.cursor[q.activeKey] = chgStart;
+        else if(pos > 0) q.cursor[q.activeKey] = pos - (pairBefore(pos) ? 2 : 1);
+        else {
+          /* 칸의 맨 왼쪽에서 한 번 더 누르면 바로 이전 블랭크의 맨 끝으로 이동 */
+          const idx = q.blanks.findIndex(b=>b.key===q.activeKey);
+          if(idx > 0) {
+            const prevKey = q.blanks[idx-1].key;
+            q.activeKey = prevKey;
+            q.cursor[prevKey] = (q.inputs[prevKey]||'').length;
+          }
+        }
+      } else if(key === 'RIGHT') {
+        if(chgStart >= 0 && pos >= chgStart) q.cursor[q.activeKey] = val.length;
+        else if(pos < val.length) q.cursor[q.activeKey] = pos + (pairAt(pos) ? 2 : 1);
+        else {
+          /* 칸의 맨 오른쪽에서 한 번 더 누르면 바로 다음 블랭크의 맨 앞으로 이동 */
+          const idx = q.blanks.findIndex(b=>b.key===q.activeKey);
+          if(idx >= 0 && idx < q.blanks.length-1) {
+            const nextKey = q.blanks[idx+1].key;
+            q.activeKey = nextKey;
+            q.cursor[nextKey] = 0;
+          }
+        }
+      } else if(key.startsWith('NUM_') || key.startsWith('ELEM_')) {
+        /* 숫자 키와 원소 키는 똑같이 「커서 자리에 글자 하나」다 — 한 분기로 둔다.
+           따로 두면 한쪽만 고쳐져 갈라진다(실제로 아래 전하 규칙이 그렇게 어긋났다). */
+        const char = key.replace(/^(?:NUM|ELEM)_/, '');
+        /* 새 글자는 전하 앞(몸통 끝)까지만 들어간다. 전하는 늘 맨 끝에 하나뿐이라는
+           규칙이 CHG_ 쪽에만 있었던 탓에, H⁺에서 숫자를 누르면 H^+2 가 되고 그다음부터
+           전하 키가 몸통을 못 떼어내 ^가 하나 더 붙었다(H^+2^+ → 화면에는 H⁺²⁺).
+           그 값은 전하 키를 아무리 눌러도 그대로라 학생이 빠져나올 길이 없었다.
+           모드 11은 숫자 줄과 전하 줄이 나란히 있어 오타 한 번이면 닿는 자리다. */
+        const caret = val.indexOf('^');
+        if(caret >= 0 && pos > caret) pos = caret;
+        q.inputs[q.activeKey] = val.slice(0, pos) + char + val.slice(pos);
+        q.cursor[q.activeKey] = pos + char.length;
+      } else if(key.startsWith('CHG_')) {
+        /* 전하는 늘 맨 끝에 하나만 붙는다. 커서 위치와 무관하게 끝에 놓고, 이미 있으면 교체한다.
+           ^ 뒤를 통째로 바꾼다 — 끝에 붙은 전하만 떼어내면, 어쩌다 망가진 값에서는
+           교체가 아니라 덧붙이기가 되어 되돌릴 수가 없다. */
+        const body = val.replace(/\^.*$/, '');
+        q.inputs[q.activeKey] = body + '^' + key.replace('CHG_','');
+        q.cursor[q.activeKey] = q.inputs[q.activeKey].length;
+      } else if(key === 'DEL') {
+        if(pos > 0) {
+          let dl = 1;
+          let beforeCursor = val.slice(0, pos);
+          if(/[a-z]$/.test(beforeCursor) && beforeCursor.length >= 2 && /[A-Z]/.test(beforeCursor.slice(-2,-1))) dl = 2;
+          /* 전하는 '^2-'처럼 한 덩어리로 들어갔으니 지울 때도 한 덩어리로 지운다 */
+          const chg = beforeCursor.match(/\^\d*[+-]$/);
+          if(chg) dl = chg[0].length;
+          q.inputs[q.activeKey] = val.slice(0, pos - dl) + val.slice(pos);
+          q.cursor[q.activeKey] = pos - dl;
+        }
+      }
+
+      if(wasWrong) this.renderAll(); else this.renderEquation();
+
+    } else if(key==='CONFIRM'){
+      if(!this.state.isAnswerChecked||this.state.currentQuestion?.isTimedOut) {
+        const q=this.state.currentQuestion;
+        /* ── [BUG FIX LOW] 현재 칸 공백 여부와 무관하게 빈 칸 전체 탐색 ── */
+        if(q) {
+          const emptyB = q.blanks.find(b => !(q.inputs[b.key]));
+          if(emptyB) {
+            q.activeKey = emptyB.key;
+            q.cursor = q.cursor || {};
+            if(q.cursor[emptyB.key] === undefined) q.cursor[emptyB.key] = (q.inputs[emptyB.key]||'').length;
+            this.feedback('tap');
+            this.renderEquation();
+            /* 커서만 옮기고 조용히 돌아가면, 제한시간을 「무제한」으로 둔 학생이 한 칸을
+               모를 때 그 문제에서 빠져나갈 길이 없다 — 「다음 문제」는 채점 뒤에만 뜨고
+               「정답 확인」은 오답 배너 안에만 있다. 왜 안 넘어가는지라도 알려 준다. */
+            this.showToast('아직 비어 있는 칸이 있어요');
+            return;
+          }
+        }
+        this.checkAnswer();
+      }
+    } else if(key==='NEXT'){
+      this.feedback('tap');
+      if((this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut)||this.state.isLastWrongAttempt) {
+        if(this.state.isRetryPlaylistMode) {
+          if (this.state.isAnswerRevealed || this.state.isLastWrongAttempt) {
+            let skipped = this.state.retryPlaylist.shift();
+            this.state.retryPlaylist.push(skipped);
+            this.loadNextRetryPlaylistItem();
+          } else if (this.state.isAnswerChecked) {
+            this.loadNextRetryPlaylistItem();
+          }
+        } else if(this.state.retryNoteId) {
+          this.exitRetry();
+        } else {
+          this.generateQuestion();
+        }
+      }
+    }
+  },
+
+  setMode(mode, preserveCycle = false){
+    if(this.state.retryNoteId || this.state.isRetryPlaylistMode) {
+      /* 재풀이 중에 모드 탭을 누르면 재풀이에서 나간다. 예전에는 여기서 상태만 지웠는데,
+         마침 지금 모드의 탭을 누른 경우 바로 아래 "같은 모드면 반환"에 걸려 화면이
+         제한시간·출제 방식 줄이 사라진 채로 굳었고, 남아 있던 재풀이 문제가 정상 문제인 양
+         점수에 기록됐다. exitRetry가 화면 복구와 순환 큐 복원까지 하므로 그쪽으로 넘긴다. */
+      this.exitRetry();
+      if(this.state.currentMode===mode) return;  /* exitRetry가 이미 이 모드로 되돌려 놨다 */
+    }
+    if(this.state.currentMode===mode)return;
+
+    this.state.currentMode=mode;
+    /* 다른 구역의 모드로 바로 들어올 수 있다(오답노트 재풀이). 구역 표시를 먼저 맞춰야
+       활성 탭이 사라진 것처럼 보이지 않는다. */
+    const sec=sectionOf(mode);
+    if(sec && sec!==this.state.section){
+      this.state.section=sec;
+      try{localStorage.setItem('chem_section', sec);}catch(e){}
+      this.renderSectionTabs();
+      this.renderSectionNote();
+    }
+    this.renderModeTabs();
+    this.renderSubModeBtns();
+    /* 플래시카드는 구역마다 하나씩 있으므로 모드 번호로 판별하면 안 된다 */
+    const isCard=modeRoot(mode)&&modeRoot(mode).custom==='flashcard';
+    this.$.questionCard.style.display=isCard?'none':'';
+    this.$.keyboardWrap.style.display=isCard?'none':'';
+    this.$.timerSelectWrap.style.display=isCard?'none':'';
+    this.$.mode6Wrap.classList.toggle('m6-active', isCard);
+    this.$.cycleWrap.style.display=(!isCard)?'flex':'none';
+    this.$.cycleWrap.classList.toggle('m7', mode===7);
+    this.$.cycleWrap.classList.toggle('has-dia', this.hasDiagram({['isMode'+mode]:true}));
+    this.updateStatBarVisibility();
+
+    /* 플래시카드에는 순환 출제라는 게 없다 — 큐를 만들 이유가 없어 여기서 빠진다.
+       「카드를 잠깐 보고 돌아와도 진도가 남는 것」은 이 줄이 아니라 restoreCycleQueue가
+       한다(모드마다 큐를 기억한다). 예전 주석은 이 자리가 그걸 한다고 적고 있었는데,
+       들어갈 때만 막고 돌아올 때는 새로 짜서 결과가 같았다. */
+    if(isCard){clearInterval(this.state.timerInterval);this.m6GenCards();this.m6Render();return;}
+
+    if(!preserveCycle) this.restoreCycleQueue();
+    /* 원소 기호 키패드는 generateQuestion이 문제를 만든 뒤 syncElemRow로 맞춘다 (MODE 7은 출제 방향에 따라 달라짐) */
+    this.generateQuestion();
+  },
+
+  setActiveBlank(key){
+    if(this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut&&!this.state.isLastWrongAttempt)return;
+    const q=this.state.currentQuestion;if(q){
+      q.activeKey=key;
+      q.cursor = q.cursor || {};
+      if(q.cursor[key] === undefined) q.cursor[key] = (q.inputs[key]||'').length;
+      this.feedback('tap'); this.renderEquation();
+    }
+  },
+
+  generateQuestion(){
+    this.healFavoriteOnly();
+    this.state.isAnswerChecked=false;this.state.isAnswerRevealed=false;
+    this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};this.state.wrongAlreadyPenalized=false;
+    const q={blanks:[],inputs:{},isTimedOut:false};
+    const f2s=c=>{let s=c.coef>1?c.coef.toString():'';s+=fmtFormula(c.formula);return s;};
+
+    const useCycle=this.state.isCycleMode&&!isCardMode(this.state.currentMode);
+    /* 같은 문제가 연달아 나오지 않게 한다. 그런데 풀 항목의 name과 화면에 뜨는 q.name의 꼴이
+       다른 모드가 있어서 비교가 늘 빗나갔다 — 이온 되기 풀은 {z,n,dir}뿐이라 name이 아예 없고,
+       앙금 제목은 「은 이온 + 염화 이온」이며, 오비탈 제목은 「K 껍질 (n=1)」이다.
+       특히 오비탈은 문항이 4개뿐이라 회피가 안 되면 같은 문제가 바로 다시 나온다.
+       그래서 항목에서 비교할 이름을 꺼내는 함수를 받는다 — 그 모드가 q.name을 짓는 방식과
+       똑같이 지어야 한다(검증에서 연속 중복이 나오는지로 확인한다). */
+    const pickRandom=(pool,nameOf)=>{
+      const nameAt=nameOf||(it=>it&&it.name);
+      let idx=Math.floor(Math.random()*pool.length);
+      if(pool.length>1&&this.state.lastQuestionName){
+        let tries=0;
+        while(nameAt(pool[idx])===this.state.lastQuestionName&&tries<10){idx=Math.floor(Math.random()*pool.length);tries++;}
+      }
+      return idx;
+    };
+    /* 순환 큐가 들고 있는 것은 항목이 아니라 풀에서의 '자리 번호'다. 그래서 큐를 짠 뒤에
+       풀이 달라지면(즐겨찾기를 퀴즈 도중에 더하거나 빼면 바로 이렇게 된다) 번호가 없는
+       자리를 가리켜 pool[idx]가 undefined가 되고 문제 만들기가 통째로 죽었다.
+       길이가 달라진 것을 "풀이 바뀌었다"는 신호로 보고 큐를 새로 짠다 — 줄어든 경우(죽던
+       버그)와 늘어난 경우(새로 담은 것이 이번 바퀴에 영영 안 나오던 것) 둘 다 이걸로 잡힌다.
+       호출하는 모든 곳이 initCycleQueue가 번호를 매긴 바로 그 배열을 넘기므로(모드 1의
+       「계수 템플릿+반응식」 합본까지 포함) 길이 비교만으로 어긋남을 가려낼 수 있다. */
+    const pickIndex=(pool,nameOf)=>{
+      if(useCycle){
+        if(this.state.cycleQueue.length===0||this.state.cycleTotal!==pool.length) this.initCycleQueue();
+        return this.state.cycleQueue.shift();
+      }
+      return pickRandom(pool,nameOf);
+    };
+
+    switch(this.state.currentMode){
+      case 1:
+        let isTemplate = false; let rxIdx = 0;
+        /* 이 모드가 속한 구역의 반응식만 쓴다. 아래 인덱스 산술은 initCycleQueue가 만든 큐와
+           같은 배열을 가리켜야 하므로 둘 다 이 pool을 본다. */
+        const pool1 = this.rxPool();
+        if(useCycle) {
+          const idx = pickIndex(Array.from({length: COEF_TEMPLATES.length+pool1.length}, (_,i)=>i));
+          if(idx < COEF_TEMPLATES.length) { isTemplate = true; rxIdx = idx; }
+          else { isTemplate = false; rxIdx = idx - COEF_TEMPLATES.length; }
+        } else {
+          isTemplate = Math.random() < 0.5;
+          /* 계수 템플릿 쪽에는 중복 회피가 아예 없어서 7개짜리 풀에서 같은 문제가 연달아 나왔다.
+             템플릿은 이름이 label이고 반응식은 name이라 뽑는 함수에 그 차이만 알려 준다. */
+          rxIdx = isTemplate ? pickRandom(COEF_TEMPLATES, t=>t.label) : pickRandom(pool1);
+        }
+        if(isTemplate){
+          const tmpl = COEF_TEMPLATES[rxIdx];
+          const data = tmpl.gen(); q.name = tmpl.label; q.isAbstract = true;
+          q.displayReactants = data.fmt.map(f=>({...f})); q.displayProducts = data.fmtP.map(f=>({...f}));
+        } else {
+          const rx = pool1[rxIdx]; q.name = rx.name; q.isAbstract = false;
+          q.displayReactants = rx.reactants.map(f=>({...f})); q.displayProducts = rx.products.map(f=>({...f}));
+        }
+        q.displayReactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:r.coef.toString()}));
+        q.displayProducts.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:p.coef.toString()}));
+        q.type='계수 맞추기';
+        break;
+      case 2:{const rp=this.rxPool();const idx=pickIndex(rp);const rx=rp[idx];q.reaction=rx;q.name=rx.name;q.type='반응물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:false}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));break;}
+      case 3:{const rp=this.rxPool();const idx=pickIndex(rp);const rx=rp[idx];q.reaction=rx;q.name=rx.name;q.type='생성물 맞추기';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:false}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
+      /* 19(통합과학)·20(고2 화학)도 같은 「전체 반응식」이다. rxPool 이 지금 모드의
+         구역을 보므로 분기를 따로 둘 필요가 없다 — 풀만 달라진다. */
+      case 19: case 20:
+      case 4:{const rp=this.rxPool();const idx=pickIndex(rp);const rx=rp[idx];q.reaction=rx;q.name=rx.name;q.type='전체 반응식';q.isAbstract=false;q.displayReactants=rx.reactants.map(r=>({...r,isBlank:true}));q.displayProducts=rx.products.map(p=>({...p,isBlank:true}));rx.reactants.forEach((r,i)=>q.blanks.push({key:`R${i}`,answer:f2s(r)}));rx.products.forEach((p,i)=>q.blanks.push({key:`P${i}`,answer:f2s(p)}));break;}
+      case 5:{const idx=pickIndex(CHEMICALS);const c=CHEMICALS[idx];q.name=c.name;q.type='화학식 암기';q.isMode5=true;q.isAbstract=false;const fs=fmtFormula(c.formula);q.blanks.push({key:'M5',answer:fs});break;}
+      case 7:{
+        const idx=pickIndex(PT_QUIZ_ELEMENTS);const el=PT_QUIZ_ELEMENTS[idx];
+        q.type='주기·족 맞추기';q.isMode7=true;q.isAbstract=false;
+        /* q.name은 어느 방향이든 한글 원소명 — 중복 출제 회피(lastQuestionName)와 오답노트 제목이 이걸 쓴다 */
+        q.name=el.name;q.z=el.z;q.sym=el.sym;q.dir=this.state.m7Dir;
+        if(q.dir==='toElem'){
+          /* 역방향에서는 헤더에 q.name(=정답)을 그대로 띄우면 답이 새므로 문제 문구를 따로 둔다 */
+          q.sub=`${el.period}주기 ${el.group}족`;
+          q.blanks.push({key:'M7E',answer:el.sym});
+        }else{
+          q.blanks.push({key:'M7P',answer:String(el.period)});
+          q.blanks.push({key:'M7G',answer:String(el.group)});
+        }
+        break;
+      }
+      case 8:{
+        const idx=pickIndex(SHELL_QUIZ_ELEMENTS);const el=SHELL_QUIZ_ELEMENTS[idx];
+        q.type='원자가 전자';q.isMode8=true;q.isAbstract=false;
+        q.name=el.name;q.z=el.z;q.sym=el.sym;q.shells=shellsOf(el.z);
+        q.blanks.push({key:'M8',answer:String(valenceOf(el.z))});
+        break;
+      }
+      case 9:{
+        const pool=this.ionPool();
+        const idx=pickIndex(pool,it=>(ELEMENTS.find(x=>x.z===it.z)||{}).name);const item=pool[idx];
+        const el=ELEMENTS.find(x=>x.z===item.z);
+        q.type='이온 되기';q.isMode9=true;q.isAbstract=false;
+        q.name=el.name;q.z=el.z;q.sym=el.sym;q.shells=shellsOf(el.z);q.ion=item;
+        const ans=this.ionAnswerText(item);
+        q.choices=this.ionChoices(item,ans);
+        q.blanks.push({key:'M9',answer:ans});
+        break;
+      }
+      case 13:{
+        const idx=pickIndex(PRECIPITATES,p=>`${ionKo(p.a)} + ${ionKo(p.b)}`);const p=PRECIPITATES[idx];
+        q.type='앙금 생성';q.isMode13=true;q.isAbstract=false;
+        /* 제목은 오답노트 목록에 그대로 뜬다 — 식을 쓰면 ^가 노출되므로 한글 이름으로 짓는다 */
+        q.name=`${ionKo(p.a)} + ${ionKo(p.b)}`;q.pIdx=idx;q.pKey=`${p.a}|${p.b}`;
+        q.sub='두 이온을 섞으면?';
+        q.choices=[{v:'흰색 앙금',swatch:'흰색'},{v:'노란색 앙금',swatch:'노란색'},
+                   {v:'검은색 앙금',swatch:'검은색'},'앙금이 생기지 않는다'];
+        q.blanks.push({key:'M13',answer:p.none?'앙금이 생기지 않는다':p.color+' 앙금'});
+        break;
+      }
+      case 14:{
+        const idx=pickIndex(ORBITAL_KINDS,o=>`${o.kind} 오비탈`);const o=ORBITAL_KINDS[idx];
+        q.type='오비탈 개수';q.isMode14=true;q.isAbstract=false;
+        q.name=`${o.kind} 오비탈`;q.orb=o;
+        /* 헤더는 「s 오비탈」, 본문은 「[ ] 개」뿐이라 개수를 묻는지 전자 수를 묻는지 알 수 없었다.
+           q.sub로 넣으면 헤더의 원소·껍질 이름이 사라지므로 발문은 본문 앞에 붙인다. */
+        q.prompt='한 껍질에';
+        q.blanks.push({key:'M14',answer:String(o.count)});
+        break;
+      }
+      case 15:{
+        const idx=pickIndex(ORBITAL_SHELLS,o=>`${o.name} 껍질 (n=${o.n})`);const o=ORBITAL_SHELLS[idx];
+        q.type='껍질 최대 전자';q.isMode15=true;q.isAbstract=false;
+        q.name=`${o.name} 껍질 (n=${o.n})`;q.orb=o;
+        q.prompt='전자가 최대';
+        q.blanks.push({key:'M15',answer:String(o.max)});
+        break;
+      }
+      case 11:{
+        const iw=this.ionWritePool();const idx=pickIndex(iw);const it=iw[idx];
+        q.type='이온식 쓰기';q.isMode11=true;q.isAbstract=false;
+        q.name=it.name;
+        q.blanks.push({key:'M11',answer:it.f});
+        break;
+      }
+      case 12:{
+        const pool=this.orderPool();
+        /* 답이 세 가지뿐인데 분자 구성이 단일에 몰려 있어(6 : 2 : 1) 「단일결합」만 찍어도
+           3분의 2를 맞혔다. 분자를 고르기 전에 답(결합 차수)부터 고르고 그 안에서 분자를 뽑아
+           세 답이 고르게 나오게 한다. 직전과 같은 차수는 가능하면 피한다.
+           순환 출제에서는 큐가 이미 모든 분자를 한 바퀴 돌리므로 그대로 둔다. */
+        const idx=useCycle?pickIndex(pool):this.pickByBondOrder(pool);const bd=pool[idx];
+        q.type='결합 차수';q.isMode12=true;q.isAbstract=false;
+        q.name=bd.name;q.f=bd.f;q.bondName=bd.name;
+        q.choices=['단일결합','이중결합','삼중결합'];
+        q.blanks.push({key:'M12',answer:BOND_ORDER_NAME[bd.ligands[0].pairs]});
+        break;
+      }
+      case 10:{
+        const idx=pickIndex(BONDS);const bd=BONDS[idx];
+        q.type='결합 맞추기';q.isMode10=true;q.isAbstract=false;
+        q.name=bd.name;q.bondIdx=idx;q.bondName=bd.name;q.f=bd.f;
+        q.choices=['이온결합','공유결합'];
+        q.blanks.push({key:'M10',answer:bd.type==='ionic'?'이온결합':'공유결합'});
+        break;
+      }
+      default:{
+        /* 등록되지 않은 모드 — 저장된 설정이나 옛 오답노트에 남은 번호로 들어올 수 있다.
+           그대로 두면 blanks가 빈 문제로 렌더가 돌아 화면이 통째로 멈춘다. */
+        const fallback=(modesInSection(this.state.section)||[])[0]||1;
+        if(fallback!==this.state.currentMode){ this.setMode(fallback); return; }
+        q.type='문제를 만들 수 없습니다';q.name='다른 모드를 골라 주세요';q.isAbstract=false;
+        break;
+      }
+    }
+    this.state.lastQuestionName=q.name;
+    if(q.blanks.length>0)q.activeKey=q.blanks[0].key;
+    this.state.currentQuestion=q;
+    this.syncElemRow(this.state.currentMode,q);
+    this.renderCycleProgress();
+    this.renderAll();this.startTimer();
+    this.markFresh();
+  },
+  /* 새 문제가 들어왔다는 신호. 지금까지는 글자만 소리 없이 갈렸다 — 답을 맞히고 다음으로
+     넘어갔는지, 같은 문제가 그대로인지 화면이 말해 주지 않았다.
+     자리는 그대로 두고 4px만 올라오며 나타난다. 문제를 읽는 눈높이가 흔들리면 안 된다.
+     **여기서만** 부른다. renderAll은 키를 누를 때마다 도는데 그때마다 다시 뜨면 글자가 떤다. */
+  markFresh(){
+    const els=[document.getElementById('questionHeader'), this.$.equationDisplay].filter(Boolean);
+    els.forEach(el=>{ el.style.animationName='none'; });
+    if(els[0]) void els[0].offsetWidth;
+    els.forEach(el=>{ el.style.animationName=''; });
+  },
+
+  /* 틀렸을 때 화면이 해야 하는 일 — 오답 경로 네 곳이 똑같이 부른다.
+     예전에는 같은 일곱 줄이 세 군데에 복사돼 있었고, 네 번째(시간 초과 뒤 오답)에는
+     그중 절반만 있었다. 그래서 제한시간이 지난 뒤 틀리면 **어느 칸이 틀렸는지 화면이
+     말해 주지 않았다** — 칸이 넷인 반응식 문제에서는 그게 곧 "다시 다 지워 보라"는 뜻이다.
+     한 곳으로 모으면 이 종류의 누락이 구조적으로 생기지 않는다.
+     · 타이머를 멈춘다: 안 멈추면 틀린 뒤 화면을 그대로 두었을 때 제한시간이 다시 만료되며
+       같은 문제의 오답 횟수가 한 번 더 올라갔다.
+     · isLastWrongAttempt: 다음 키를 누르는 순간 빨간 표시를 지우라는 표시다(handleKeyPress). */
+  showWrongBlanks(q, ce){
+    clearInterval(this.state.timerInterval);
+    this.state.wrongBlanks={};
+    q.blanks.forEach(b=>{if((q.inputs[b.key]||'')!==b.answer)this.state.wrongBlanks[b.key]=true;});
+    q.coefOneErrorFlag=ce;
+    this.state.isLastWrongAttempt=true;
+    this.state.isAnswerChecked=false;
+    this.renderAll(false);
+  },
+  checkAnswer(){
+    const q=this.state.currentQuestion;if(!q)return;
+    let ok=true,ce=false;
+    /* '1'+정답 오입력은 계수 생략 규칙을 놓친 것. 정답이 애초에 숫자인 모드에서는
+       (예: 7족 답에 17을 입력) 오작동하므로 MODES의 noCoefWarning으로 끈다.
+       정답이 숫자로 시작하는 칸도 마찬가지다 — 정답 3CO₂에 계수를 13으로 잘못 세어
+       「13CO2」를 치면 '1'+'3CO2'와 같아져 「계수 1은 적지 않아요」가 떴다. 1을 쓴 적이
+       없는 학생에게는 무슨 말인지 알 수 없는 안내다. */
+    const skipCoefWarn=!!(modeRoot(this.state.currentMode)||{}).noCoefWarning;
+    q.blanks.forEach(b=>{const v=q.inputs[b.key]||'';if(v!==b.answer){ok=false;if(!skipCoefWarn&&!/^\d/.test(b.answer)&&v==='1'+b.answer)ce=true;}});
+
+    if(this.state.isRetryPlaylistMode) {
+      if(ok) {
+        if(q.isTimedOut) {
+          this.feedback('success');
+          /* ── [BUG FIX HIGH] 타임아웃 후 정답 시 플레이리스트에서 제거 ── */
+          this.state.retryPlaylist.shift();
+          this.state.isAnswerChecked=true;
+          q.isTimedOut=false;
+          clearInterval(this.state.timerInterval);
+          this.renderAll('retry_timeout_correct');
+        } else {
+          this.feedback('success');
+          this.deleteWrongNote(this.state.retryNoteId);
+          this.state.retryPlaylist.shift();
+          this.state.isAnswerChecked=true;
+          clearInterval(this.state.timerInterval);
+          if (this.state.retryPlaylist.length > 0) {
+            this.renderAll('retry_playlist_correct_next');
+          } else {
+            this.renderAll('retry_playlist_correct_done');
+          }
+        }
+      } else {
+        this.feedback('error');
+        if(!q.isTimedOut) {
+          const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
+          if(note) {
+            note.failCount = Math.min((note.failCount || 1) + 1, 3);
+            this.saveNotes();
+            this.renderWrongNotes();
+          }
+        }
+        this.showWrongBlanks(q, ce);
+      }
+      return;
+    }
+
+    if(this.state.retryNoteId) {
+      if(ok) {
+        if(q.isTimedOut) {
+          this.feedback('success');
+          this.state.isAnswerChecked=true;
+          q.isTimedOut=false;
+          clearInterval(this.state.timerInterval);
+          this.renderAll('retry_timeout_correct');
+        } else {
+          this.feedback('success');
+          this.deleteWrongNote(this.state.retryNoteId);
+          this.restoreAfterRetry();
+          this.state.isAnswerChecked=true;
+          clearInterval(this.state.timerInterval);
+          this.renderAll('retry_correct');
+        }
+      } else {
+        this.feedback('error');
+        if(!q.isTimedOut) {
+          const note = this.state.wrongNotes.find(n => n.id === this.state.retryNoteId);
+          if(note) {
+            note.failCount = Math.min((note.failCount || 1) + 1, 3);
+            this.saveNotes();
+            this.renderWrongNotes();
+          }
+        }
+        this.showWrongBlanks(q, ce);
+      }
+      return;
+    }
+
+    if(q.isTimedOut){
+      if(!ok){this.feedback('error'); this.showWrongBlanks(q, ce);}
+      else{this.feedback('success'); this.state.isAnswerChecked=true;q.isTimedOut=false;this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};clearInterval(this.state.timerInterval);this.renderAll('timeout_correct');}
+    }else{
+      clearInterval(this.state.timerInterval);
+      if(ok){
+        this.feedback('success');
+        if(!this.state.isLastWrongAttempt){this.state.score.streak++;this.state.score.correct++;}
+        this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};
+        this.state.isAnswerChecked=true;
+        this.renderAll(true);
+      }else{
+        this.feedback('error');
+        if(!this.state.wrongAlreadyPenalized){
+          this.state.score.streak=0;this.state.score.wrong++;
+          this.generateBeautifulWrongNote(q);
+          this.state.wrongAlreadyPenalized=true;
+        }
+        this.showWrongBlanks(q, ce);
+      }
+    }
+  },
+
+  generateBeautifulWrongNote(q){
+    const fmt=side=>side.map(c=>(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+fmtFormula(c.formula,true)+this.phaseHTML(c.phase)).join(' <span class="eq-plus">+</span> ');
+    let h='';
+    if(q.isMode5){h=`<span class="eq-text eq-answer">${this.formatInput(q.blanks[0].answer)}</span>`;}
+    else if(q.isMode7){
+      const el=PT_QUIZ_ELEMENTS.find(e=>e.z===q.z);
+      h=`<span class="eq-text eq-answer">${q.sym} · ${el?`${el.period}주기 ${el.group}족`:''}</span>`;
+    }
+    else if(q.isMode13){
+      const p=this.precipOf(q);
+      h=`<span class="eq-text eq-answer eq-answer-sm">`+
+        `${this.formatInput(p.a)} + ${this.formatInput(p.b)} → `+
+        (p.none?'앙금 없음':`${this.fmtFormulaStr(p.f)}${this.phaseHTML('↓')} (${p.name}, ${p.color})`)+`</span>`;
+    }
+    else if(q.isMode14||q.isMode15){
+      h=`<span class="eq-text eq-answer eq-answer-sm">${q.name} · ${q.blanks[0].answer}개</span>`;
+    }
+    else if(q.isMode11||q.isMode12){
+      h=`<span class="eq-text eq-answer">`+
+        (q.isMode12?`${this.fmtFormulaStr(q.f)} · `:'')+
+        `${this.formatInput(q.blanks[0].answer)}</span>`;
+    }
+    else if(q.isMode10){
+      const bd=BONDS[q.bondIdx];
+      h=`<span class="eq-text eq-answer eq-answer-sm">${this.fmtFormulaStr(bd.f)} · ${q.blanks[0].answer}</span>`;
+    }
+    else if(q.isMode8||q.isMode9){
+      /* 껍질 배치를 같이 남겨야 나중에 노트만 봐도 왜 그 답인지 알 수 있다 */
+      h=`<span class="eq-text eq-answer eq-answer-sm">${q.sym} (${(q.shells||[]).join('-')}) · ${q.blanks[0].answer}</span>`;
+    }
+    else if(q.isAbstract===true){
+      const r=q.displayReactants.map((c,i)=>{const bd=q.blanks.find(b=>b.key===`R${i}`); return(bd?`<span class="eq-text">${bd.answer}</span>`:'')+this.formatFormula(c.formula)+this.phaseHTML(c.phase);}).join(' <span class="eq-plus">+</span> ');
+      const p=q.displayProducts.map((c,i)=>{const bd=q.blanks.find(b=>b.key===`P${i}`); return(bd?`<span class="eq-text">${bd.answer}</span>`:'')+this.formatFormula(c.formula)+this.phaseHTML(c.phase);}).join(' <span class="eq-plus">+</span> ');
+      h=`${r} <span class="eq-arrow">→</span> ${p}`;
+    }else{const rx=REACTIONS.find(r=>r.name===q.name);if(rx)h=`${fmt(rx.reactants)} <span class="eq-arrow">→</span> ${fmt(rx.products)}`;}
+    this.saveWrongNote(this.state.currentMode,q.name,h,q);
+  },
+
+  revealAnswers(){
+    this.feedback('tap');
+    this.state.isAnswerRevealed=true;this.state.isAnswerChecked=true;
+    this.state.isLastWrongAttempt=false;this.state.wrongBlanks={};
+    if(this.state.currentQuestion)this.state.currentQuestion.isTimedOut=false;
+    clearInterval(this.state.timerInterval);this.renderAll(false);
+  },
+
+  /* ── 해설 그림 ──
+     정답을 확인한 뒤에만 띄운다. 그림이 먼저 보이면 답이 새기 때문이다.
+     [10통과1-02-03] 해설이 결합 이유를 "전자껍질 모형을 이용한 전자배치를 통해" 설명하라고
+     명시하므로, 이 그림은 정답을 알려주는 장식이 아니라 왜 그런지를 보여주는 본문이다. */
+  /* 오답노트는 오래 남는다. 배열 인덱스를 저장해 두면 BONDS 순서를 바꾼 순간
+     옛 노트가 다른 물질로 바뀐다. 이름으로 찾고, 이름이 없는 옛 노트만 인덱스로 되돌린다. */
+  bondOf(q){ return BONDS.find(x=>x.name===q.bondName) || BONDS[q.bondIdx]; },
+  precipOf(q){ return PRECIPITATES.find(p=>`${p.a}|${p.b}`===q.pKey) || PRECIPITATES[q.pIdx]; },
+  /* 결합 차수별로 나눠 담고 차수를 먼저 고른다 — 분자 수가 아니라 답이 고르게 나오도록 */
+  pickByBondOrder(pool){
+    const groups={};
+    pool.forEach((b,i)=>{ const k=b.ligands[0].pairs; (groups[k]=groups[k]||[]).push(i); });
+    const all=Object.keys(groups);
+    const rest=all.filter(k=>k!==String(this.state.lastBondOrder));
+    const from=rest.length?rest:all;
+    const k=from[Math.floor(Math.random()*from.length)];
+    this.state.lastBondOrder=k;
+    const g=groups[k];
+    return g[Math.floor(Math.random()*g.length)];
+  },
+  hasDiagram(q){ return !!(q&&(q.isMode8||q.isMode9||q.isMode10||q.isMode12||q.isMode13||q.isMode14||q.isMode15)); },
+  renderExplain(){
+    const box=document.getElementById('explainBox');
+    if(!box) return;
+    const q=this.state.currentQuestion;
+    const revealed=this.state.isAnswerChecked&&!q?.isTimedOut;
+    if(!revealed||!this.state.showDiagram||!this.hasDiagram(q)){box.innerHTML='';return;}
+    if(q.isMode10) box.innerHTML=bondDiagramHTML(this.bondOf(q));
+    else if(q.isMode13){
+      const p=this.precipOf(q);
+      box.innerHTML=`<div class="dia-wrap"><p class="dia-exp">`+(p.none
+        ? `${this.formatInput(p.a)} + ${this.formatInput(p.b)} → <b>앙금이 생기지 않는다</b>. `+
+          `1족 이온이나 질산 이온이 든 염은 물에 잘 녹기 때문이다.`
+        : `${this.formatInput(p.a)} + ${this.formatInput(p.b)} → <b>${this.fmtFormulaStr(p.f)}${this.phaseHTML('↓')}</b> `+
+          `(${p.name}) — ${this.swatch(p.color)}<b>${p.color}</b> 앙금이 가라앉는다.`+
+          `<span class="later-note">화학식 뒤의 <b>↓</b>는 물에 안 녹고 가라앉는 앙금이라는 표시다. `+
+          `기체가 되어 빠져나갈 때는 <b>↑</b>를 쓴다.</span>`)+`</p></div>`;
+    }
+    else if(q.isMode14){
+      const o=q.orb;
+      /* d는 3번째(M), f는 4번째(N) 껍질부터 생긴다. 그냥 "한 껍질에"라고 쓰면
+         K·L 껍질에도 d 오비탈이 있는 것처럼 읽힌다. */
+      const where=o.from>1?`${'KLMN'[o.from-1]} 껍질(n=${o.from})부터 `:'';
+      box.innerHTML=`<div class="dia-wrap"><p class="dia-exp">`+
+        `<b>${o.kind}</b> 오비탈은 ${where}한 껍질에 <b>${o.count}개</b>씩 있고, `+
+        `오비탈 하나에 전자가 2개씩 들어가므로 모두 <b>${o.max}개</b>를 담는다.</p></div>`;
+    }
+    else if(q.isMode15){
+      const o=q.orb;
+      box.innerHTML=`<div class="dia-wrap"><p class="dia-exp">`+
+        `${o.name} 껍질은 <b>${o.make}</b> 오비탈로 이루어져 최대 <b>${o.max}개</b>다. `+
+        `2×${o.n}<sup>2</sup> = ${o.max} — 껍질에 2·8·18·32가 들어가는 이유가 이것이다.</p></div>`;
+    }
+    else if(q.isMode12) box.innerHTML=covalentDiagramHTML(this.bondOf(q),{order:true});
+    else{
+      /* 이온 되기에서는 이온이 되는 "과정"을 보여줘야 "왜 그 답인지"가 보인다 */
+      box.innerHTML=(q.isMode8?shellDiagramHTML(q.z):ionFormingDiagramHTML(q.z,q.ion))+
+        `<p class="dia-exp">${q.isMode8?this.valenceExplain(q):this.ionExplain(q)}</p>`;
+    }
+  },
+  /* 「다시 보기」 — 같은 HTML을 다시 넣으면 요소가 새로 만들어져 CSS 애니메이션이
+     처음부터 재생된다. 별도 재생 제어가 필요 없다.
+
+     예전에는 무조건 renderExplain()을 불렀는데, 그건 퀴즈 화면의 해설 상자만 다시 그린다.
+     같은 버튼이 플래시카드 안에도 들어가므로 카드에서는 눌러도 아무 일이 없었다.
+     버튼이 들어 있는 상자를 찾아 그 상자만 다시 그린다. */
+  replayDiagram(btn){
+    this.feedback('tap');
+    const host=btn&&btn.closest('#explainBox, .m6-face, #retryM6FContent, #retryM6BContent');
+    if(!host||host.id==='explainBox'){ this.renderExplain(); return; }
+    this.restartAnim(host);
+  },
+  /* 그림을 눌러 크게 보기 — SVG 안 <text>는 viewBox 배율만큼 화면에서 줄어드는데,
+     폭이 좁을수록 더 줄어든다(검토-대기-목록.md 안건 1 — 320px 폰에서 이온 결합
+     그림 글자가 실제로 7~8px였다). 그림마다 좌표가 다 얽혀 있어 배치 자체를 바꾸는
+     대신(diagram.js 파일 머리말 주석 참고), 이 배율을 1:1로 되돌리는 쪽을 택했다 —
+     viewBox 폭만큼 그대로 CSS px 폭을 주면 14px·16px로 선언한 글자가 그 크기 그대로
+     그려진다. 화면보다 넓으면 가로로 밀어서 본다(#diaModalContent, 주기율표 일반
+     보기와 같은 방식). 원본을 옮기지 않고 사본을 넣는다 — 원본이 사라지면 뒤에서
+     다시 열었을 때(예: 오답노트) 그 자리가 비어 있게 된다. */
+  openDiaZoom(panel){
+    const svg=panel.querySelector('svg.dia'); if(!svg) return;
+    this.feedback('tap');
+    /* .dia-panel의 내용물(캡션 + svg)만 가져온다 — role="button"·tabindex는 바깥 칸에
+       붙어 있어(panelAttrs) 같이 딸려 오지 않는다. 확대 보기 안에는 더 누를 게 없으므로
+       그걸로 충분하다. */
+    this.$.diaModalContent.innerHTML=panel.innerHTML;
+    const clone=this.$.diaModalContent.querySelector('svg.dia');
+    const w=svg.viewBox.baseVal.width;
+    if(clone && w) clone.style.width=w+'px';
+    this.openModal(this.$.diaModalOverlay,{silent:true});
+  },
+  /* ── 창 여닫기 한 쌍 ──
+     예전에는 여는 코드 5벌, 닫는 코드가 X·Escape·배경 탭으로 갈라져 15벌쯤 흩어져 있었다.
+     그 상태로 초점 처리를 붙이면 반드시 어딘가를 빠뜨리므로 먼저 한 곳으로 모은다.
+
+     왜 초점을 가둬야 하나: 창이 떠도 초점은 연 버튼에 그대로 남고 Tab이 덮개를 무시하고
+     뒤 페이지를 계속 걸어갔다. 실제로 테마 창을 연 채 Tab→Enter로 뒤에 있는 「무제한」
+     제한시간 버튼이 눌렸다 — 학생 눈에는 아무 일도 안 일어난 것처럼 보이고, 창을 닫고 나서야
+     시간이 바뀐 걸 안다. 읽어 주는 기계 쪽에서는 창이 떴다는 사실 자체를 모른 채 뒤 본문을
+     계속 읽는다.
+
+     inert는 #app에만 건다 — 창들은 <main> 밖 body 직속이라야 이게 성립한다(index.html 참고).
+     inert를 모르는 브라우저를 위해 Tab 순환은 따로 직접 처리한다(keydown). */
+  /* 창 안에서 Tab이 들를 수 있는 것들, 화면 순서대로.
+     [href]로 훑으면 아이콘의 <use href="#i-...">까지 잡혔다 — SVG는 초점을 받지 못하는데
+     이것이 목록 맨 앞에 서면 openModal도 Tab 되감기도 여기에 초점을 주려다 실패해서,
+     창이 열려도 초점이 body에 남고 Tab을 아무리 눌러도 제자리였다(1024px 주기율표 창:
+     회전 버튼이 화면 밖으로 숨는 폭이라 그 안의 <use>가 첫 자리였다 — 키보드로는
+     창 전체를 쓸 수 없었다). 링크만 노린다.
+     보이는지 판정도 offsetParent로는 안 된다 — position:fixed 요소는 보여도 null이고,
+     display:none인 버튼 안의 SVG는 offsetParent 자체가 없어(undefined) 되레 통과했다.
+     실제로 배치된 상자가 있는지(getClientRects)로 본다. */
+  focusablesIn(box){
+    return [...box.querySelectorAll('button,a[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')]
+      .filter(el=>!el.disabled && el.getClientRects().length>0);
+  },
+  /* 상자 안에서 Tab이 끝에 닿으면 반대쪽 끝으로 감는다. 창(.modal-box)과 회전 뷰(.pt-fs-rotor)가
+     같은 규칙을 쓴다 — 둘 다 「뒤는 inert로 잠갔고 이 상자만 살아 있다」는 같은 상황이다. */
+  trapTab(e,box){
+    const f=box?this.focusablesIn(box):[];
+    if(!f.length){ e.preventDefault(); return; }
+    const first=f[0], last=f[f.length-1], cur=document.activeElement;
+    if(e.shiftKey && (cur===first||!box.contains(cur))){ e.preventDefault(); last.focus(); }
+    else if(!e.shiftKey && (cur===last||!box.contains(cur))){ e.preventDefault(); first.focus(); }
+  },
+  openModal(overlay, opts){
+    const o=opts||{};
+    if(!o.silent) this.feedback('tap');
+    /* 창에서 나간 뒤 초점을 어디로 돌려줄지. 창 위에 창이 겹치는 경우는 이 앱에 없다. */
+    this._lastFocus = document.activeElement;
+    overlay.classList.add('show');
+    /* 막 열린 창은 잠깐 「손가락으로」 닫히지 않는다(TAP_GUARD_MS).
+       320·360px에서는 헤더가 4열이 되면서 오답노트 버튼이 첫 줄 오른쪽 끝으로 가는데,
+       그 자리가 창의 닫기 X와 겹친다(실측 겹침 973px²·947px² — 갤럭시 기본 폭대다).
+       그래서 버튼을 빠르게 두 번 누르면 첫 번째로 열린 창이 두 번째 손가락에 그대로
+       닫혔다. 80·150·250ms 간격 전부에서 그랬다 — 학생에게는 「안 열린다」로 보인다.
+       막는 것은 X·바깥 누르기뿐이고 Esc는 그대로 통한다 — 키보드는 겹칠 일이 없고,
+       열자마자 Esc가 안 먹으면 그쪽이 더 이상하다.
+       창 전체의 pointer-events를 끄는 방법은 쓰지 않는다: 열려 있는데 못 누르는 창이
+       되어, 「창이 실제로 보이고 누를 수 있는가」를 보는 검사(selfcheck)와도 부딪힌다. */
+    overlay._openedAt=Date.now();
+    this.$.app.setAttribute('inert','');
+    const box=overlay.querySelector('.modal-box');
+    const f=box?this.focusablesIn(box):[];
+    /* 첫 컨트롤은 닫기 X다 — 창에서 나가는 문을 손에 쥐여 주고 시작한다.
+       누를 것이 하나도 없는 창(그림 확대)은 상자 자체에 초점을 준다. */
+    if(f.length) f[0].focus();
+    else if(box){ box.setAttribute('tabindex','-1'); box.focus(); }
+  },
+  closeModal(overlay, opts){
+    const o=opts||{};
+    if(!overlay.classList.contains('show')) return;
+    /* 방금 연 창을 손가락으로 닫으려는 것은 「열어 준 버튼을 한 번 더 누른 것」이다 */
+    if(o.viaPointer && Date.now()-(overlay._openedAt||0) < TAP_GUARD_MS) return;
+    if(!o.silent) this.feedback('tap');
+    overlay.classList.remove('show');
+    /* 아직 열려 있는 창이 없을 때만 본문을 되살린다 */
+    if(!document.querySelector('.modal-overlay.show')) this.$.app.removeAttribute('inert');
+    const back=this._lastFocus;
+    this._lastFocus=null;
+    /* 연 버튼이 그새 사라졌을 수 있다(목록을 다시 그리는 창이 있다) */
+    if(back && document.contains(back) && back.getClientRects().length>0) back.focus();
+  },
+  /* 지금 열려 있는 창 (없으면 null) */
+  openOverlay(){ return document.querySelector('.modal-overlay.show'); },
+
+  /* 상자 안의 애니메이션을 처음부터 다시 재생한다.
+     **DOM을 다시 만들지 않는다.** 예전에는 innerHTML을 자기 자신으로 다시 넣어 요소를
+     새로 만들었는데, 그 대가가 컸다:
+       · 카드 면(.m6-face)은 overflow-y:auto인 스크롤러다. 안을 새로 만들면 스크롤이 0으로
+         돌아가, 긴 해설을 읽으려고 내려 둔 화면이 카드를 뒤집는 순간 툭 위로 올라갔다.
+       · 뒤집는 바로 그 프레임에 HTML을 통째로 새로 파싱한다(그림 카드는 SVG 전체).
+     애니메이션만 되감으면 되는 일이었다. cancel() 뒤 play()면 CSS 애니메이션이 처음부터
+     다시 돈다 — 요소는 그대로 있으므로 스크롤도, 포커스도, 진행 중인 전환도 그대로다. */
+  restartAnim(host){
+    if(!host) return;
+    /* animation-name을 잠깐 none으로 껐다 되돌리면 CSS 애니메이션이 처음부터 다시 돈다.
+       사이에 강제 리플로우가 한 번 있어야 한다 — 없으면 브라우저가 두 변경을 한 번에 묶어
+       아무 일도 일어나지 않는다.
+
+       왜 하필 animation-name인가: 그림의 전자는 인라인 style에 animation-delay를 갖고 있다
+       (전자마다 0.3초씩 밀려 들어와야 몇 개가 움직였는지 셀 수 있다). `animation` 단축 속성을
+       건드리면 그 delay까지 함께 지워져 전자가 한꺼번에 출발한다. 장축(longhand) 하나만 만진다.
+
+       왜 Animation API(cancel+play)가 아닌가: CSS가 만든 애니메이션을 cancel하면 요소에서
+       떨어져 나가 play해도 돌아오지 않았다(검사가 잡았다). 이 방법은 CSS에 그대로 맡긴다. */
+    const els = host.querySelectorAll('*');
+    els.forEach(el => { el.style.animationName = 'none'; });
+    void host.offsetHeight;
+    els.forEach(el => { el.style.animationName = ''; });
+  },
+  /* 원자가 전자 해설 — 18족 답이 0인 이유를 여기서 설명하지 않으면
+     껍질에 8개가 그려져 있는데 답은 0이라 학생 눈에는 오류로 보인다. */
+  valenceExplain(q){
+    const outer=outerShellOf(q.z), v=valenceOf(q.z), shell='KLMN'[q.shells.length-1];
+    if(v===0)
+      return `${josa(q.name,'은','는')} 바깥 껍질(${shell})에 전자가 <b>${outer}개</b> 있어 이미 꽉 찼다. `+
+             `꽉 찬 껍질의 전자는 결합에 쓰이지 않으므로 <b>원자가 전자는 0개</b>다.`;
+    return `${josa(q.name,'은','는')} 바깥 껍질(${shell})에 전자가 <b>${outer}개</b> 있고 `+
+           `${outer===1?'이 전자가':'이 전자들이'} 결합에 참여하므로, <b>원자가 전자는 ${v}개</b>다.`;
+  },
+  /* 이온 되기 해설 — 주고받는 개수가 "그냥 외우는 숫자"가 아니라
+     비활성 기체와 같은 배치가 되는 개수라는 점이 핵심이다. */
+  ionExplain(q){
+    const ion=q.ion;
+    if(!ion) return '';
+    if(ion.noble)
+      return `${josa(q.name,'은','는')} 바깥 껍질이 이미 꽉 차 <b>원자가 전자가 0개</b>다. `+
+             `주고받을 전자가 없으니 <b>이온이 되지 않는다</b>.`;
+    const target=ionTargetNoble(ion);
+    const like=target?`<b>${target.name}(${target.sym})과 같은 배치</b>`:'꽉 찬 배치';
+    /* 예전에는 「전자를 잃으면 껍질에 남는 전자가 없다 → 그러니 얻는다」고 적었는데,
+       이건 성립하지 않는 논리다. 전자를 잃은 것이 바로 H⁺이고 산에서 배우는 실제 이온이다.
+       여기서 보는 쪽이 어느 쪽인지만 분명히 하고, 다른 쪽도 있다는 사실을 감추지 않는다. */
+    if(q.z===1)
+      return `수소는 바깥 껍질에 전자가 <b>1개</b> 있다. 전자 <b>1개를 얻어</b> K 껍질을 전자 2개로 채우면 `+
+             `${like}가 되어 안정해진다 — 금속과 만날 때 이렇게 된다. `+
+             `<span class="later-note">반대로 전자를 잃어 H<sup>+</sup>가 되는 길도 있다. 산을 배울 때 다시 나온다.</span>`;
+    return `원자가 전자 <b>${valenceOf(q.z)}개</b>인 ${josa(q.name,'은','는')} 전자 <b>${ion.n}개</b>를 `+
+           `${ion.dir==='lose'?'내주면':'받으면'} ${like}가 되어 안정해진다.`;
+  },
+  renderAll(isCorrect=null){
+    this.renderScore();this.renderQuestionHeader();this.renderEquation();this.renderKeyboard();this.renderExplain();
+    if(this.state.currentQuestion&&this.state.currentQuestion.isTimedOut&&!this.state.isAnswerChecked&&isCorrect===null){}
+    else if(isCorrect!==null)this.renderResultBanner(isCorrect);
+    else this.$.resultBanner.className='result-banner';
+  },
+
+  renderScore(){
+    const{streak,correct,wrong}=this.state.score;
+    const bump=el=>{el.classList.add('bump');setTimeout(()=>el.classList.remove('bump'),this.motionMs('--dur-tap'));};
+    if(this.$.streakCount.textContent!==streak.toString()){this.$.streakCount.textContent=streak;bump(this.$.streakCount);}
+    if(this.$.totalCorrect.textContent!==correct.toString()){this.$.totalCorrect.textContent=correct;bump(this.$.totalCorrect);}
+    if(this.$.totalWrong.textContent!==wrong.toString()){this.$.totalWrong.textContent=wrong;bump(this.$.totalWrong);}
+    /* 연속 3·5·10 에서 불 이모지를 하나씩 늘려 붙이던 자리.
+       판에 박힌 게임화 장치이고, 숫자가 이미 「연속 7」이라고 말하고 있다.
+       편집 체계에서 연속을 세는 방법은 숫자와 그 아래 괘선이지 불꽃이 아니다. */
+  },
+
+  /* 연속·맞음·틀림은 저장도 안 되는 세션 카운터라 늘 칸을 차지하고 있을 필요가 없다 —
+     맞혔을 때 결과 배너가 "연속 N번째예요"로 이미 한 번 더 알려 준다(renderResultBanner).
+     그래서 순환 모드(정해진 문제 수를 한 바퀴 도는 것)일 때만 띄운다 — 진행률 표시와
+     같은 조건(isCycleMode && 카드 모드 아님, :1271의 useCycle 참고)을 그대로 쓴다.
+     카드 모드는 채점을 안 하므로 직전 퀴즈 점수가 그대로 남아 있어도 의미가 없다. */
+  updateStatBarVisibility(){
+    const show=this.state.isCycleMode&&!isCardMode(this.state.currentMode);
+    this.$.statBar.style.display=show?'flex':'none';
+  },
+
+  /* q.sub는 q.name이 곧 정답이라 헤더에 띄울 수 없는 문제(MODE 7 역방향)를 위한 대체 문구 */
+  /* 하위 유형이 생기면서 모드 번호와 탭이 1:1이 아니게 됐다("MODE 9"인데 9번 탭이 없음).
+     번호 대신 모드 이름을 띄운다 — MODE_NAMES가 "이온 만들기 · 이온 되기"처럼 하위 유형까지 담는다. */
+  renderQuestionHeader(){const q=this.state.currentQuestion;if(!q)return;this.$.qLabel.textContent=MODE_NAMES[this.state.currentMode]||q.type;this.$.qSubLabel.textContent=q.sub||q.name;},
+
+  renderEquation(){
+    const q=this.state.currentQuestion;if(!q){this.$.equationDisplay.innerHTML='';return;}
+    if(q.isMode5){this.$.equationDisplay.innerHTML=this.renderBlankBox('M5',q.blanks[0].answer);return;}
+    /* MODE 7은 반응식이 아니라서 아래 반응물/생성물 렌더링 경로를 절대 타면 안 된다 (displayReactants가 없음) */
+    if(q.isMode7){
+      if(q.dir==='toElem'){
+        this.$.equationDisplay.innerHTML=`<span class="eq-term">${this.renderBlankBox('M7E',q.blanks[0].answer)}</span>`;
+      }else{
+        const b=q.blanks;
+        this.$.equationDisplay.innerHTML=
+          `<span class="eq-term"><span class="eq-text">${q.sym}</span></span>`+
+          `<span class="eq-term">${this.renderBlankBox('M7P',b[0].answer)}<span class="eq-text eq-unit">주기</span></span>`+
+          `<span class="eq-term">${this.renderBlankBox('M7G',b[1].answer)}<span class="eq-text eq-unit">족</span></span>`;
+      }
+      return;
+    }
+    /* MODE 8·9도 반응식이 아니다 — 전자껍질 배치를 보여주고 그 위에서 묻는다.
+       배치를 보여주는 게 핵심이다. 외운 답을 떠올리는 게 아니라 그림에서 세도록 하는 게
+       [9과11-04]가 요구하는 접근이다. */
+    if(q.isMode13){
+      const p=this.precipOf(q);
+      this.$.equationDisplay.innerHTML=
+        `<span class="eq-term"><span class="eq-text">${this.formatInput(p.a)}</span></span>`+
+        `<span class="eq-plus">+</span>`+
+        `<span class="eq-term"><span class="eq-text">${this.formatInput(p.b)}</span></span>`+
+        `<span class="eq-arrow">→</span>`+
+        `<span class="eq-term">${this.renderBlankBox('M13',q.blanks[0].answer,'choice')}</span>`;
+      return;
+    }
+    if(q.isMode14||q.isMode15){
+      const key=q.isMode14?'M14':'M15';
+      this.$.equationDisplay.innerHTML=
+        (q.prompt?`<span class="eq-term"><span class="eq-text eq-unit">${q.prompt}</span></span>`:'')+
+        `<span class="eq-term">${this.renderBlankBox(key,q.blanks[0].answer)}<span class="eq-text eq-unit">개</span></span>`;
+      return;
+    }
+    if(q.isMode11){
+      this.$.equationDisplay.innerHTML=`<span class="eq-term">${this.renderBlankBox('M11',q.blanks[0].answer)}</span>`;
+      return;
+    }
+    if(q.isMode12){
+      this.$.equationDisplay.innerHTML=
+        `<span class="eq-term"><span class="eq-text">${this.fmtFormulaStr(q.f)}</span></span>`+
+        `<span class="eq-term">${this.renderBlankBox('M12',q.blanks[0].answer,'choice')}</span>`;
+      return;
+    }
+    if(q.isMode10){
+      this.$.equationDisplay.innerHTML=
+        `<span class="eq-term"><span class="eq-text">${this.fmtFormulaStr(q.f)}</span></span>`+
+        `<span class="eq-term">${this.renderBlankBox('M10',q.blanks[0].answer,'choice')}</span>`;
+      return;
+    }
+    if(q.isMode8||q.isMode9){
+      const shells=`<span class="shell-line">${q.shells.map((n,i)=>`<span class="shell-cell"><span class="shell-n">${'KLMN'[i]}</span>${n}</span>`).join('')}</span>`;
+      const head=`<span class="eq-term"><span class="eq-text">${q.sym}</span></span>${shells}`;
+      if(q.isMode8){
+        this.$.equationDisplay.innerHTML=head+
+          `<span class="eq-term">${this.renderBlankBox('M8',q.blanks[0].answer)}<span class="eq-text eq-unit">개</span></span>`;
+      }else{
+        this.$.equationDisplay.innerHTML=head+
+          `<span class="eq-term">${this.renderBlankBox('M9',q.blanks[0].answer,'choice')}</span>`;
+      }
+      return;
+    }
+    const fc=(list,pre)=>list.map((c,i)=>{
+      const key=`${pre}${i}`,bd=q.blanks.find(b=>b.key===key);
+      let term, blanked=false;
+      if(this.state.currentMode===1)term=bd?this.renderBlankBox(key,bd.answer)+this.formatFormula(c.formula):this.formatFormula(c.formula);
+      else if(c.isBlank||bd){term=this.renderBlankBox(key,bd?bd.answer:'');blanked=true;}
+      else term=(c.coef>1?`<span class="eq-text">${c.coef}</span>`:'')+this.formatFormula(c.formula);
+      /* 화학식이 빈칸이면 채점 전까지 ↓·↑를 붙이지 않는다. 「생성물 맞추기」에서 두 생성물 중
+         하나에만 ↓가 붙어 있으면 그게 앙금이라고 알려 주는 꼴이라 문제가 쉬워진다. */
+      if(!blanked||this.state.isAnswerChecked) term += this.phaseHTML(c.phase);
+      /* equation-display가 flex라 첨자(<sub>)까지 개별 flex 아이템이 되어 가운데 정렬+간격이 생기는 걸 방지:
+         한 항 전체를 inline-block으로 감싸 flex 아이템 단위를 "항"으로 고정 */
+      return `<span class="eq-term">${term}</span>`;
+    }).join(' <span class="eq-plus">+</span> ');
+    this.$.equationDisplay.innerHTML=`${fc(q.displayReactants,'R')} <span class="eq-arrow">→</span> ${fc(q.displayProducts,'P')}`;
+  },
+
+  /* '^' 뒤는 전하라 위첨자로 올린다. '^'는 화면에 그리지 않는다 —
+     전하 키가 넣어 주는 경계 표시일 뿐이고, 이게 있어야 SO4^2-를 SO₄²⁻로 확정해서 읽을 수 있다.
+     빼기 기호는 하이픈이 아니라 진짜 빼기표(−)로 그린다. */
+  formatInput(s, cursorPos = -1) {
+    if(!s) s = '';
+    const caret = s.indexOf('^');
+    let html = '';
+    for(let i=0; i<=s.length; i++){
+      if(cursorPos === i) html += '<b style="border-left:2px solid var(--c-accent-1); animation:blink 1s step-end infinite; margin-right:-2px; vertical-align:middle; display:inline-block; height:1em"></b>';
+      if(i<s.length){
+        let c = s[i];
+        if(c === '^') continue;
+        if(caret >= 0 && i > caret){ html += `<sup>${c === '-' ? '−' : c}</sup>`; continue; }
+        let isCoef = true;
+        for(let j=0; j<=i; j++) if(/[a-zA-Z]/.test(s[j])) isCoef = false;
+        if(/\d/.test(c) && !isCoef) html += `<sub>${c}</sub>`;
+        else html += c;
+      }
+    }
+    return html;
+  },
+
+  /* extraCls: 보기 답처럼 한글 문장이 들어가는 칸은 'choice'를 넘겨 폭이 늘어나게 한다 */
+  renderBlankBox(key,answer,extraCls){
+    const q=this.state.currentQuestion;
+    let inp=q.inputs[key]||'';
+    let cls='blank-box'+(extraCls?' '+extraCls:'');
+    let isActive = q.activeKey===key && (!this.state.isAnswerChecked||q.isTimedOut);
+
+    if(isActive) cls+=' active';
+
+    let disp='';
+    if(this.state.isAnswerChecked&&!q.isTimedOut){
+      const ok=inp===answer;cls+=ok?' correct':' wrong';
+      /* 보기형 답은 화학식이 아니라 한글 문구다 — 색 이름으로 시작하면 동그라미를 앞에 붙인다 */
+      const fmt=v=>extraCls==='choice'?this.withSwatch(v):this.formatInput(v);
+      if(this.state.isAnswerRevealed&&!ok)disp=fmt(answer);
+      else disp=fmt(inp);
+    }else if(this.state.isLastWrongAttempt&&(this.state.wrongBlanks||{})[key]){
+      cls+=' wrong';
+      disp=this.formatInput(inp, isActive ? (q.cursor && q.cursor[key] !== undefined ? q.cursor[key] : inp.length) : -1);
+    }else{
+      if(inp===''&&(!this.state.isAnswerChecked||q.isTimedOut))cls+=' placeholder';
+      disp=this.formatInput(inp, isActive ? (q.cursor && q.cursor[key] !== undefined ? q.cursor[key] : inp.length) : -1);
+    }
+    return`<span class="${cls}" data-key="${key}">${disp}</span>`;
+  },
+
+  renderResultBanner(isCorrect){
+    if(isCorrect==='retry_playlist_correct_next'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=this.icon('check','sm')+' 맞았어요. 다음 오답 문제로 넘어가요.';}
+    else if(isCorrect==='retry_playlist_correct_done'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=this.icon('check','sm')+' 오답 노트를 다 풀었어요.';}
+    else if(isCorrect==='retry_timeout_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=this.icon('check','sm')+' 맞았어요. 시간이 지나서 오답 노트에는 남겨 둬요.';}
+    else if(isCorrect==='retry_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=this.icon('check','sm')+' 맞았어요. 오답 노트에서 지웠어요.';}
+    else if(isCorrect==='timeout_correct'){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=this.icon('check','sm')+' 시간은 지났지만 맞았어요.';}
+    else if(isCorrect===true){this.$.resultBanner.className='result-banner correct-banner show';this.$.resultBanner.innerHTML=this.icon('check','sm')+` 맞았어요. 연속 ${this.state.score.streak}번째예요.`;}
+    else{
+      this.$.resultBanner.className='result-banner wrong-banner show';
+      let w='';if(this.state.currentQuestion.coefOneErrorFlag)w=`<div style="color:var(--c-wrong);font-size:13px;margin-bottom:8px;width:100%">화학에서 계수 1은 적지 않아요.</div>`;
+      if(this.state.isAnswerRevealed)this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%">틀렸어요. 답을 보여 줄게요.</div>`;
+      else if(this.state.isRetryPlaylistMode) this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px"><span>틀렸어요. 계속 풀거나 건너뛸 수 있어요.</span><button class="show-answer-btn">정답 확인</button></div>`;
+      else this.$.resultBanner.innerHTML=`${w}<div style="display:flex;align-items:center;width:100%;justify-content:space-between;flex-wrap:wrap;gap:8px"><span>틀렸어요.</span><button class="show-answer-btn">정답 확인</button></div>`;
+    }
+  },
+
+  /* 보기 버튼은 q.choices가 있을 때만 나오고, 그때는 숫자·원소 줄을 숨긴다.
+     고른 값을 q.inputs에 넣는 것으로 끝나므로 채점 엔진은 문자열 비교 그대로다. */
+  renderChoiceRow(){
+    const q=this.state.currentQuestion;
+    const row=document.getElementById('choiceRow'), label=document.getElementById('choiceRowLabel');
+    const on=!!(q&&q.choices);
+    row.style.display=on?'grid':'none';
+    label.style.display=on?'block':'none';
+    document.getElementById('numRow').style.display=on?'none':'grid';
+    document.getElementById('numRowLabel').style.display=on?'none':'block';
+    /* 편집키도 같이 숨긴다 — 보기 답은 통째로 들어오므로 글자를 지우거나 커서를 옮길 일이 없고,
+       눌리면 답이 깨진다. (물리 키보드는 handleKeyPress에서 따로 막는다.) */
+    document.querySelectorAll('.kb-edit').forEach(b=>{b.style.display=on?'none':'flex';});
+    if(!on){row.innerHTML='';return;}
+    const key=q.blanks[0].key, picked=q.inputs[key];
+    const locked=this.state.isAnswerChecked&&!q.isTimedOut;
+    row.innerHTML=q.choices.map(c=>{
+      const v=this.choiceValue(c), note=typeof c==='string'?'':c.note;
+      const sw=(typeof c==='string'?false:c.swatch)?this.swatch(c.swatch):'';
+      return `<button class="choice-btn${v===picked?' picked':''}"${locked?' disabled':''} data-choice="${v}">`+
+             `<span class="choice-main">${sw}${v}</span>`+
+             (note?`<span class="choice-note">${note}</span>`:'')+`</button>`;
+    }).join('');
+  },
+  renderKeyboard(){
+    const done=this.state.isAnswerChecked&&!this.state.currentQuestion?.isTimedOut;
+    const wrongPending=this.state.isLastWrongAttempt;
+    this.renderChoiceRow();
+    this.$.confirmBtn.style.display=done?'none':'flex';
+    this.$.nextBtn.style.display=(done||wrongPending)?'flex':'none';
+  },
+
+  /* ── MODE 6 ── */
+  /* 아이콘 한 줄. 정의는 index.html 의 <symbol> 에 한 번만 있고 여기서는 가리키기만 한다.
+     크기·굵기·색은 CSS(.ic)가 정하므로 여기에 숫자가 없다. aria-hidden 인 이유:
+     아이콘 옆에는 늘 글자가 있거나 버튼에 aria-label 이 있어서, 읽어 주는 기계에는
+     같은 말이 두 번 들리면 안 된다. */
+  icon(name, size){
+    return '<svg class="ic' + (size ? ' ic-' + size : '') + '" aria-hidden="true" focusable="false">' +
+           '<use href="#i-' + name + '"></use></svg>';
+  },
+  m6Fmt(side){return side.map(r=>(r.coef>1?r.coef:'')+fmtFormula(r.formula,true)+this.phaseHTML(r.phase)).join(' + ');},
+  /* 카드 유형(t)에서 카드 배열만 순수하게 만들어낸다 — 오답노트 재풀이(renderRetryFlashcard)에서도
+     실제 mode6 세션 상태(state.m6Cards/m6Index)를 건드리지 않고 재사용하기 위해 분리 */
+  /* 카드 유형 정의 — 구역마다 다루는 내용이 다르므로 MODES[n].cards로 어떤 유형을 쓸지 고른다 */
+  m6TypeLabel(t){ return cardType(t).label; },
+  /* secId를 받는 이유: 오답노트 재풀이는 저장된 노트의 모드로 카드를 다시 만드는데,
+     그때 화면의 현재 모드는 딴 구역일 수 있다. 현재 모드로 거르면 저장해 둔 카드를 못 찾는다. */
+  m6BuildCards(t, secId){
+    const sec = secId || sectionOf(this.state.currentMode);
+    const rx = reactionsInSection(sec);
+    let cards=[];
+    if(t==='bond'){
+      cards=BONDS.map(b=>({fhtml:`<span class="m6-korean">${b.name}</span><div class="m6-formula m6-sub-formula">${this.fmtFormulaStr(b.f)}</div>`,
+        btag:b.type==='ionic'?'이온 결합':'공유 결합',bhtml:bondDiagramHTML(b)}));
+    }
+    else if(t==='group'){
+      cards=PT_QUIZ_ELEMENTS.map(e=>({fhtml:`<span class="m6-korean">${e.name} (${e.sym})</span>`,
+        bhtml:`<span class="m6-formula">${e.period}주기 ${e.group}족</span>`}));
+    }
+    else if(t==='ion'){
+      cards=IONS_WRITE.map(i=>({fhtml:`<span class="m6-korean">${i.name}</span>`,
+        bhtml:`<span class="m6-formula">${this.formatInput(i.f)}</span>`}));
+    }
+    else if(t==='order'){
+      cards=this.orderPool().map(b=>({fhtml:`<span class="m6-korean">${b.name}</span><div class="m6-formula m6-sub-formula">${this.fmtFormulaStr(b.f)}</div>`,
+        bhtml:`<span class="m6-formula">${BOND_ORDER_NAME[b.ligands[0].pairs]}</span>`}));
+    }
+    else if(t==='precip'){
+      /* 앙금이 생기는 카드와 안 생기는 카드는 뒷면 이름이 달라야 뒤집기 전에 답이 새지 않는다.
+         색은 글자로만 쓰지 않고 동그라미를 같이 붙인다 — 「흰색 앙금」과 「노란색 앙금」은
+         실험에서 눈으로 가리는 것이라 색 이름만 외우면 정작 시험관을 보고는 못 고른다.
+         퀴즈 모드 13이 쓰는 swatch()를 그대로 쓴다. 여기서 색을 따로 적으면 언젠가 어긋난다. */
+      cards=PRECIPITATES.map(p=>({fhtml:`<span class="m6-formula">${this.formatInput(p.a)} + ${this.formatInput(p.b)}</span>`,
+        btag:p.none?'앙금 없음':'앙금',
+        bhtml:`<span class="m6-formula">${p.none?'물에 잘 녹아 앙금이 생기지 않는다':`${this.fmtFormulaStr(p.f)}${this.phaseHTML('↓')}<br><span style="font-size:.8em">${p.name} · ${this.swatch(p.color)}${p.color}</span>`}</span>`}));
+    }
+    else if(t==='orbital'){
+      cards=ORBITAL_SHELLS.map(o=>({ftag:'껍질',fhtml:`<span class="m6-korean">${o.name} 껍질 (n=${o.n})</span>`,
+        bhtml:`<span class="m6-formula">${o.max}개<br><span style="font-size:.6em">${o.make} · 2×${o.n}²</span></span>`}))
+        .concat(ORBITAL_KINDS.map(o=>({ftag:'오비탈',fhtml:`<span class="m6-korean">${o.kind} 오비탈</span>`,
+        btag:'개수 · 최대 전자',bhtml:`<span class="m6-formula">${o.count}개 · 전자 ${o.max}개</span>`})));
+    }
+    else if(t==='full'){cards=rx.map(r=>({fhtml:`<span class="m6-korean">${r.name}</span>`,bhtml:`<span class="m6-formula">${this.m6Fmt(r.reactants)} → ${this.m6Fmt(r.products)}</span>`}));}
+    else if(t==='reactant'){cards=rx.map(r=>({fhtml:`<span class="m6-korean">${r.name}</span>`,bhtml:`<span class="m6-formula">${this.m6Fmt(r.reactants)}</span>`}));}
+    else if(t==='product'){cards=rx.map(r=>({fhtml:`<span class="m6-korean">${r.name}</span>`,bhtml:`<span class="m6-formula">${this.m6Fmt(r.products)}</span>`}));}
+    else{cards=CHEMICALS.map(c=>({fhtml:`<span class="m6-korean">${c.name}</span>`,bhtml:`<span class="m6-formula">${fmtFormula(c.formula,true)}</span>`}));}
+    /* 앞뒤 이름은 유형에서 온다. 카드가 따로 정한 것만 그대로 둔다(앙금 유무, 오비탈 두 갈래). */
+    const d=cardType(t);
+    return cards.map(c=>({ftag:d.front,btag:d.back,...c}));
+  },
+  /* 구역마다 쓸 수 있는 카드 유형이 다르다. MODES[n].cards에서 버튼을 만들고,
+     현재 유형이 그 구역에 없으면 첫 번째로 되돌린다(다른 구역 유형이 남아 빈 카드가 되는 걸 막는다). */
+  m6SyncTypes(){
+    const root=modeRoot(this.state.currentMode);
+    const list=(root&&root.cards)||['full','reactant','product','formula'];
+    if(!list.includes(this.state.m6Type)) this.state.m6Type=list[0];
+    document.getElementById('m6TypeBtns').innerHTML=list.map(t=>
+      `<button class="m6-opt-btn${t===this.state.m6Type?' active':''}" data-val="${t}">${this.m6TypeLabel(t)}</button>`
+    ).join('');
+    this.m6SyncOrder();
+  },
+  /* 「먼저 보기」 라벨은 카드 유형에서 나온다. 값(korean/formula)은 그대로 둔다 —
+     이미 저장된 오답노트가 이 값을 담고 있어서 바꾸면 복원이 깨진다.
+     korean = 앞면부터, formula = 뒷면부터라는 뜻이고, 라벨만 유형에 맞게 붙인다. */
+  m6SyncOrder(){
+    const d=cardType(this.state.m6Type);
+    const f=d.btnFront||d.front, b=d.btnBack||d.back;
+    document.getElementById('m6OrderBtns').innerHTML=
+      `<button class="m6-opt-btn${this.state.m6Order==='korean'?' active':''}" data-val="korean">${f} 먼저</button>`+
+      `<button class="m6-opt-btn${this.state.m6Order==='formula'?' active':''}" data-val="formula">${b} 먼저</button>`;
+  },
+  m6GenCards(){
+    this.m6SyncTypes();
+    this.state.m6Cards=this.m6BuildCards(this.state.m6Type);this.state.m6Index=0;this.state.m6Flipped=false;
+  },
+  m6Render(dir){
+    const{m6Cards,m6Index,m6Order}=this.state;const card=m6Cards[m6Index];if(!card)return;
+    const isKorFirst=m6Order==='korean';
+    document.getElementById('m6FTag').textContent=isKorFirst?card.ftag:card.btag;
+    document.getElementById('m6FContent').innerHTML=isKorFirst?card.fhtml:card.bhtml;
+    document.getElementById('m6BTag').textContent=isKorFirst?card.btag:card.ftag;
+    document.getElementById('m6BContent').innerHTML=isKorFirst?card.bhtml:card.fhtml;
+    this.state.m6Flipped=false;document.getElementById('m6Card').classList.remove('flipped');
+    document.getElementById('m6Counter').textContent=`${m6Index+1} / ${m6Cards.length}`;
+    document.getElementById('m6PFill').style.transform=`scaleX(${(m6Index+1)/m6Cards.length})`;
+    this.m6SyncSaveBtn();
+    if(dir){const o=document.getElementById('m6Outer'),cls=dir==='next'?'m6-slide-r':'m6-slide-l';o.classList.remove('m6-slide-r','m6-slide-l');void o.offsetWidth;o.classList.add(cls);}
+  },
+  /* 카드는 앞·뒷면 HTML을 한꺼번에 넣어 둔다. 그래서 그림이 든 면의 애니메이션은
+     뒤집기도 전에 뒤에서 이미 다 끝나 있었다 — 뒤집으면 볼 게 없었다.
+     그래서 **이제 보이게 되는 면**의 애니메이션만 그 시점에 되감는다.
+     안 보이는 면은 건드리지 않는다. 되감기는 DOM을 새로 만들지 않으므로(restartAnim 참고)
+     읽던 스크롤 위치도 그대로 남는다. */
+  m6Flip(){
+    this.feedback('tap');
+    this.state.m6Flipped=!this.state.m6Flipped;
+    document.getElementById('m6Card').classList.toggle('flipped',this.state.m6Flipped);
+    this.restartAnim(document.getElementById(this.state.m6Flipped?'m6BContent':'m6FContent'));
+  },
+  m6Next(){this.feedback('tap'); this.state.m6Index=(this.state.m6Index+1)%this.state.m6Cards.length;this.m6Render('next');},
+  m6Prev(){this.feedback('tap'); this.state.m6Index=(this.state.m6Index-1+this.state.m6Cards.length)%this.state.m6Cards.length;this.m6Render('prev');},
+  m6Shuffle(){this.feedback('tap'); const c=[...this.state.m6Cards];for(let i=c.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[c[i],c[j]]=[c[j],c[i]];}this.state.m6Cards=c;this.state.m6Index=0;this.m6Render();},
+
+  M6_SAVE_LABEL:'이 카드 오답노트에 저장',
+  /* 카드 → 오답노트 저장용 {title, html} (저장·저장여부 판정 공용) */
+  m6CardNoteData(card){
+    const title=card.fhtml.replace(/<[^>]+>/g,'').trim()||card.ftag;
+    /* 앞/뒤를 2단으로 쌓지 않고 "앞 → 뒤" 한 줄로 압축 (반응식 노트와 높이가 비슷해지도록) */
+    const html=`<div class="m6-note-row">${card.fhtml}<span class="eq-arrow">→</span>${card.bhtml}</div>`;
+    return {title,html};
+  },
+  /* 저장된 노트가 가리키는 카드를 찾는다. 카드 앞면이 곧 그 카드의 신원이다
+     (같은 유형 안에서 앞면은 겹치지 않는다). 앞면이 없는 옛 노트만 인덱스로 되돌린다. */
+  m6FindCard(cards, q){
+    if(q && q.cardFront){
+      const i = cards.findIndex(c => c.fhtml === q.cardFront);
+      if(i >= 0) return i;
+    }
+    /* 못 찾았을 때 옛 노트의 cardIndex로 되돌아가는 것은 「무작위 카드」와 같다 —
+       그 번호는 저장 당시 섞인 순서에서의 자리라 지금 배열과 아무 관계가 없다.
+       첫 카드로 여는 편이 낫다: 적어도 늘 같은 자리고, 학생이 무슨 일이 났는지 안다. */
+    return 0;
+  },
+  m6CurrentSaved(){
+    const card=this.state.m6Cards[this.state.m6Index];if(!card)return false;
+    const {html}=this.m6CardNoteData(card);
+    return this.state.wrongNotes.some(n=>isCardMode(n.mode)&&n.html===html);
+  },
+  m6SyncSaveBtn(){
+    const btn=document.getElementById('m6SaveWrongBtn');if(!btn)return;
+    if(this.m6CurrentSaved()){
+      btn.innerHTML=this.icon('check','sm')+' 오답노트에 저장됨';
+      btn.classList.add('saved');
+      btn.disabled=true;
+    }else{
+      btn.innerHTML=this.icon('bookmark','sm')+' '+this.M6_SAVE_LABEL;
+      btn.classList.remove('saved');
+      btn.disabled=false;
+    }
+  },
+  m6SaveCurrentAsWrong(){
+    const card=this.state.m6Cards[this.state.m6Index];if(!card)return;
+    if(this.m6CurrentSaved()){this.feedback('tap');return;} /* 이미 저장됨 → 중복 저장 방지 */
+    const {title,html}=this.m6CardNoteData(card);
+    /* cardIndex는 "섞인 배열에서 몇 번째"라 복원할 때(원래 순서로 다시 만든다) 다른 카드가 열렸다.
+       카드 앞면 자체를 저장해 그 카드를 찾는다. cardIndex는 옛 노트 복원용으로만 남긴다 —
+       그렇게 적어 두고도 새 노트에 계속 써 넣고 있었다. 앞면을 못 찾는 순간(다음 판에서 카드
+       HTML이 조금만 바뀌어도 그렇게 된다) 그 「섞인 번호」가 살아나 엉뚱한 카드를 연다. */
+    const qData={m6Type:this.state.m6Type,m6Order:this.state.m6Order,
+                 cardFront:card.fhtml,title};
+    this.saveWrongNote(this.state.currentMode,title,html,qData,false);
+    this.feedback('success');
+    this.m6SyncSaveBtn();
+  },
+  viewFlashcardNote(note){
+    this.closeModal(this.$.wrongNoteModalOverlay,{silent:true});
+    /* 플래시카드는 구역마다 하나씩(6·16·17·18) 있으므로 6번으로 고정하면 안 된다.
+       고2 「이온식」 카드를 저장해 놓고 다시보기를 누르면 중학 반응식 카드가 떴다. */
+    this.setMode(note.mode);
+    const q=note.qData||{};
+    this.state.m6Type=q.m6Type||'full';
+    this.state.m6Order=q.m6Order||'korean';
+    /* 유형·먼저보기 버튼은 m6GenCards가 상태를 보고 다시 그린다 — 여기서 따로 켤 필요가 없다 */
+    this.m6GenCards();
+    this.state.m6Index=this.m6FindCard(this.state.m6Cards,q);
+    this.m6Render();
+  },
+
+  formatFormula(f){return fmtFormula(f,true);},
+  /* 앙금(↓)·기체(↑) 표기. 화학식 뒤에 별도 span으로 붙는다 —
+     학생이 입력하는 답(f2s)에는 절대 들어가지 않는다. 채점은 coef와 formula만 본다. */
+  phaseHTML(ph){ return ph?`<span class="eq-phase" aria-hidden="true">${ph}</span>`:''; },
+  /* BONDS의 화학식은 'CaCl2' 같은 문자열이다 — 숫자를 아래첨자로 바꾼다 */
+  fmtFormulaStr(s){return String(s).replace(/(\d+)/g,'<sub>$1</sub>');},
+  /* ── 테마 ──
+     화면에 붙는 테마 클래스는 항상 한 개다. 새 것을 붙이기 전에 나머지를 전부 떼므로
+     테마를 여러 번 바꿔도 이전 테마의 변수가 남아 섞이지 않는다. */
+  /* 첫 방문에 쓸 테마를 폰 설정에서 고른다. 「잘 안 보인다」는 설정이 색보다 급하므로 먼저 본다.
+     matchMedia가 없는 낡은 환경에서는 그냥 기본값으로 떨어진다. */
+  systemTheme(){
+    try{
+      if(window.matchMedia('(prefers-contrast: more)').matches) return 'contrast';
+      if(window.matchMedia('(prefers-color-scheme: light)').matches) return 'note';
+    }catch(e){}
+    return THEME_DEFAULT;
+  },
+  /* persist: 학생이 직접 고른 것인가. 첫 화면을 그릴 때(폰 설정을 따라 고른 것)는 저장하지 않는다 —
+     저장해 버리면 그 뒤로 폰을 밝게 바꿔도 앱은 영영 어두운 채로 남고, 「내가 고른 것」과
+     「그날 폰이 그랬던 것」을 구분할 수 없게 된다. */
+  applyTheme(id, persist){
+    const t=themeMeta(id);
+    this.state.theme=t.id;
+    /* 클래스는 <html>에 붙인다 — 화면 전체 바탕색이 <html> 배경에서 오기 때문(css/style.css 참고) */
+    /* 등록처에서 빠진 테마(옛 theme-dark 같은 것)가 <html>에 남아 있으면
+       THEMES 를 도는 것만으로는 절대 안 지워진다 — 목록에 없으니 순회가 닿지 않는다.
+       theme- 로 시작하는 것을 먼저 싹 걷고 하나만 붙인다. */
+    const de=document.documentElement;
+    Array.from(de.classList).filter(c=>c.indexOf('theme-')===0).forEach(c=>de.classList.remove(c));
+    de.classList.add('theme-'+t.id);
+    if(persist){ try{localStorage.setItem('chem_theme',t.id);}catch(e){} }
+    /* 폰 주소창 색. index.html 의 meta 둘은 prefers-color-scheme 으로 갈리는데 그건 **OS 설정**
+       이지 학생이 **고른 테마**가 아니다. 그래서 밝은 폰에서 어두운 테마를 고르면 화면은
+       어두운데 주소창만 밝은 색으로 남았다. 실제 바탕색을 읽어 그대로 맞춘다 — 팔레트가
+       바뀌어도 여기를 다시 고칠 일이 없다. */
+    try{
+      const bg=getComputedStyle(document.documentElement).getPropertyValue('--c-bg').trim();
+      if(bg) document.querySelectorAll('meta[name="theme-color"]').forEach(m=>{
+        m.removeAttribute('media'); m.setAttribute('content', bg);
+      });
+    }catch(e){}
+    /* 열려 있는 상세 패널의 헤더 색은 테마별 팔레트를 쓰므로, 테마 전환 시 다시 그려 새 팔레트를 즉시 반영 */
+    [this.$.ptDetailPanel,this.$.ptFsDetailPanel].forEach(panel=>{
+      if(panel&&panel.classList.contains('open')){
+        const e=ELEMENTS.find(x=>x.z===parseInt(panel.dataset.z));
+        if(e) panel.querySelector('.pt-detail-content').innerHTML=this.ptDetailHTML(e);
+      }
+    });
+  },
+  /* 지금 테마가 밝은 배경인가 — 주기율표 분류 색을 어느 쪽으로 고를지에 쓴다 */
+  isLightTheme(){ return !!themeMeta(this.state.theme).light; },
+  renderThemeList(){
+    this.$.themeList.innerHTML=THEMES.map(t=>{
+      const on=t.id===this.state.theme;
+      /* 미리보기 네 칸: 글자·강조·맞음·틀림. 배경은 조각 자체가 깔고 있다 */
+      const sw=['--c-text-primary','--c-accent-1','--c-correct','--c-wrong']
+        .map(v=>`<span style="background:var(${v})"></span>`).join('');
+      return `<button type="button" class="theme-opt${on?' active':''}" data-theme="${t.id}" aria-current="${on}">
+        <span class="theme-swatch theme-pv theme-${t.id}" aria-hidden="true">${sw}</span>
+        <span>
+          <span class="theme-opt-name">${t.label}</span>
+          <span class="theme-opt-hint">${t.hint}</span>
+        </span>
+        <span class="theme-opt-check">${on?this.icon('check','sm'):''}</span>
+      </button>`;
+    }).join('');
+  },
+
+  /* ── 주기율표 ── */
+  /* 성질 간소화가 켜져 있으면 전이 금속·란타넘족·악티늄족·전이 후 금속을 "금속" 하나로
+     본다(PT_SIMPLE_CAT_MAP). 칸 색·범례·상세 패널의 「분류」가 전부 이 한 곳을 거친다 —
+     따로 판단하면 셋 중 하나가 토글을 안 따라가는 사고가 난다. */
+  ptCatOf(e){ return this.state.isSimpleCategory ? (PT_SIMPLE_CAT_MAP[e.cat]||e.cat) : e.cat; },
+  /* 지금 표에 분류 색 칸으로 그려지는 원소들. 범례와 표가 같은 목록을 봐야 「칸이 하나도
+     없는 범례」가 안 생긴다 — 간략히 보기(1~20번 + 7종)에는 전이 금속·란타넘족·악티늄족·
+     성질 미확인에 해당하는 칸이 하나도 없는데 범례에는 그 넷이 그대로 있었다. 320px에서
+     범례가 먹는 80px 중 절반이 화면에 없는 색을 설명한 셈이고, 중학생은 「란타넘족은
+     어디 있지」 하고 표를 뒤진다.
+     불꽃 반응 줄(ptFlameCellHTML)은 분류 색이 아니라 실제 불꽃 색으로 칠하므로 여기
+     넣지 않는다 — 넣으면 구리 칸이 없는데 「전이 금속」 범례가 남는다. */
+  ptShownElements(){
+    return this.state.isSimplePeriodic
+      ? ELEMENTS.filter(e=>(e.z<=20||PT_SIMPLE_EXTRA_Z.includes(e.z))&&!e.f)
+      : ELEMENTS;
+  },
+  ptLegendHTML(){
+    const list = this.state.isSimpleCategory ? PT_CATEGORIES_SIMPLE : PT_CATEGORIES;
+    const shown = new Set(this.ptShownElements().map(e=>this.ptCatOf(e)));
+    return `<div class="pt-legend">${list.filter(([cls])=>shown.has(cls)).map(([cls,label])=>`<span class="pt-legend-item"><span class="pt-legend-swatch pt-cat-${cls}"></span>${label}</span>`).join('')}</div>`;
+  },
+  /* 칸은 <div>지만 눌러서 상세를 여는 버튼이다 — 역할과 이름을 붙여 줘야 키보드·보조기기에서
+     같은 일을 할 수 있다(같은 앱의 그림 칸이 이미 DIA.panelAttrs()로 이렇게 한다).
+     tabindex는 -1로 두고 표 전체에 Tab 정거장 하나만 남긴다(ptInitRoving) — 칸마다 정거장을
+     두면 118번을 눌러야 표를 빠져나가고, 그 사이 창의 다른 컨트롤에 닿을 방법이 없다.
+     표 안에서는 화살표로 옮긴다(ptFocusNeighbor) — 2차원 격자의 표준 조작이다. */
+  ptCellHTML(e,col,row){
+    const pos = (col!=null && row!=null) ? `grid-column:${col};grid-row:${row}` : '';
+    return `<div class="pt-cell pt-cat-${this.ptCatOf(e)}" data-z="${e.z}" style="${pos}" role="button" tabindex="-1" aria-label="${e.z}. ${e.name} (${e.sym})" title="${e.z}. ${e.name} (${e.sym})"><span class="pt-z">${e.z}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
+  },
+  /* 원소 칸과 동일한 레이아웃(pt-z/pt-sym/pt-name)을 재사용하되, 배경을 족 색상 대신 실제 불꽃 반응 색으로,
+     맨 위 숫자 칸은 원자번호 대신 색 이름으로 바꿔서 보여준다 */
+  ptFlameCellHTML(e,fc){
+    return `<div class="pt-cell" data-z="${e.z}" style="background:${fc.color}" role="button" tabindex="-1" aria-label="${e.name}(${e.sym}) 불꽃 반응: ${fc.label}색" title="${e.name}(${e.sym}) 불꽃 반응: ${fc.label}색"><span class="pt-z">${fc.label}</span><span class="pt-sym">${e.sym}</span><span class="pt-name">${e.name}</span></div>`;
+  },
+  /* 표 본체 HTML 생성 (모달·전체화면 공용). 1열/1행은 주기·족 번호 라벨용이라 원소는 +1 오프셋 배치 */
+  ptTableHTML(){
+    const simple=this.state.isSimplePeriodic;
+    let cells='';
+    if(simple){
+      cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:9px;line-height:1.1;text-align:center">족<br>주기</div>`;
+      const groupLabels=[1,2,13,14,15,16,17,18];
+      groupLabels.forEach((g,i)=>{cells+=`<div class="pt-axis pt-axis-group" style="grid-column:${i+2};grid-row:1">${g}족</div>`;});
+      [1,2,3,4,5,6].forEach(p=>{cells+=`<div class="pt-axis pt-axis-period" style="grid-column:1;grid-row:${p+1}">${p}주기</div>`;});
+      this.ptShownElements().forEach(e=>{
+        const col=(e.group<=2?e.group:e.group-10)+1;
+        cells+=this.ptCellHTML(e,col,e.period+1);
+      });
+      let extraHTML='';
+      PT_FLAME_COLORS.forEach(fc=>{
+        const e=ELEMENTS.find(el=>el.z===fc.z);if(e)extraHTML+=this.ptFlameCellHTML(e,fc);
+      });
+      return {
+        grid:`<div class="pt-grid pt-simple" style="grid-template-columns:40px repeat(8,1fr);grid-template-rows:repeat(7,1fr)">${cells}</div>`,
+        extra:`<hr class="pt-extra-divider"><div class="pt-extra-label">불꽃 반응 색</div><div class="pt-extra-row">${extraHTML}</div>`
+      };
+    }
+    cells+=`<div class="pt-axis" style="grid-column:1;grid-row:1;font-size:9px;line-height:1.1;text-align:center">족<br>주기</div>`;
+    for(let g=1;g<=18;g++){cells+=`<div class="pt-axis pt-axis-group" style="grid-column:${g+1};grid-row:1">${g}</div>`;}
+    for(let p=1;p<=7;p++){cells+=`<div class="pt-axis pt-axis-period" style="grid-column:1;grid-row:${p+1}">${p}</div>`;}
+    ELEMENTS.filter(e=>!e.f).forEach(e=>{cells+=this.ptCellHTML(e,e.group+1,e.period+1);});
+    cells+=`<div class="pt-cell pt-placeholder" style="grid-column:4;grid-row:7">57~71</div>`;
+    cells+=`<div class="pt-cell pt-placeholder" style="grid-column:4;grid-row:8">89~103</div>`;
+    ELEMENTS.filter(e=>e.f).forEach(e=>{
+      const row=e.period===6?9:10,col=3+e.f;
+      cells+=this.ptCellHTML(e,col,row);
+    });
+    return {
+      grid:`<div class="pt-grid" style="grid-template-columns:56px repeat(18,1fr);grid-template-rows:repeat(10,1fr)">${cells}</div>`,
+      extra:''
+    };
+  },
+  renderPeriodicTable(){
+    const t=this.ptTableHTML();
+    this.$.periodicContent.innerHTML=`${this.ptLegendHTML()}<div class="pt-scroll">${t.grid}</div>${t.extra}`;
+    this.closePtDetail(this.$.ptDetailPanel);
+    this.ptInitRoving(this.$.periodicContent, this.$.ptDetailPanel);
+    /* 매번 innerHTML을 새로 쓰므로 .pt-scroll도 매번 새 요소다 — 리스너를 다시 건다.
+       (오래된 요소에 붙어 있던 리스너는 그 요소와 함께 버려지므로 쌓이지 않는다.) */
+    this.setupPtDrag(this.$.periodicContent.querySelector('.pt-scroll'), this.$.periodicContent);
+  },
+  /* 회전(전체화면) 없이 보는 보통 창 — 표가 옆으로도 넘쳐 .pt-scroll이 overflow-x:auto다.
+     그런데 기기에 따라 이 칸이 세로 제스처까지 먼저 붙잡아, 정작 세로 스크롤을 맡은
+     바깥 .modal-content(vBox)로 넘기지 못하는 경우가 있다 — overflow-y:hidden을 명시해도
+     마찬가지인 기기가 있었다(사용자 보고로 확인). 네이티브 스크롤의 축 판정에 기대는
+     대신, 손가락이 움직인 만큼 두 칸의 scrollLeft/scrollTop을 직접 옮긴다 — 브라우저가
+     "이 제스처는 가로다/세로다"를 판단할 필요 자체가 없어지므로 기기마다 달라질 여지가 없다.
+     작게 움직인 것(탭)은 그대로 둬서 칸 클릭(ptToggleDetail)이 안 깨지게 한다.
+
+     손을 떼면 그 자리에서 뚝 멈추던 것도 여기서 같이 고친다 — 최근 100ms 표본으로 속도를
+     구해 관성을 준다. 새로 만들지 않고 이 표(회전 보기)가 이미 쓰던 ptPanFling과 같은
+     감쇠 상수(decel=0.994)·정지 문턱(30)을 그대로 가져다 쓴다 — 같은 표인데 회전 여부에
+     따라 관성이 다른 느낌이면 그게 더 이상하다. */
+  setupPtDrag(hBox, vBox){
+    if(!hBox || !vBox) return;
+    let sx=0, sy=0, startL=0, startT=0, dragging=false, moved=false, hist=[];
+    hBox.addEventListener('touchstart', e=>{
+      if(e.touches.length!==1){ dragging=false; return; }
+      cancelAnimationFrame(this._ptDragRAF); this._ptDragRAF=null;
+      sx=e.touches[0].clientX; sy=e.touches[0].clientY;
+      startL=hBox.scrollLeft; startT=vBox.scrollTop;
+      dragging=true; moved=false;
+      hist=[{l:startL, t:startT, time:performance.now()}];
+    }, {passive:true});
+    hBox.addEventListener('touchmove', e=>{
+      if(!dragging || e.touches.length!==1) return;
+      const dx=e.touches[0].clientX-sx, dy=e.touches[0].clientY-sy;
+      /* 4px 문턱 — 그 밑에서는 탭일 수 있으니 네이티브에 맡긴다. 넘는 순간부터는
+         끝까지 이 손으로 직접 옮긴다(중간에 다시 네이티브로 돌아가면 뚝뚝 끊겨 보인다). */
+      if(!moved){ if(Math.hypot(dx,dy)<4) return; moved=true; }
+      hBox.scrollLeft=startL-dx;
+      vBox.scrollTop=startT-dy;
+      e.preventDefault();
+      /* 최근 표본만 남긴다 — 손 뗄 때 속도는 "방금 움직인 방향"이어야지 제스처 시작부터의
+         평균이면 안 된다(ptPanFling 쪽 같은 이유). */
+      const now=performance.now();
+      hist.push({l:hBox.scrollLeft, t:vBox.scrollTop, time:now});
+      while(hist.length>2 && now-hist[0].time>100) hist.shift();
+    }, {passive:false});
+    const release=()=>{
+      if(!dragging) return;
+      dragging=false;
+      if(moved && hist.length>=2){
+        const a=hist[0], b=hist[hist.length-1], dt=(b.time-a.time)/1000;
+        if(dt>0) this.ptDragFling(hBox, vBox, (b.l-a.l)/dt, (b.t-a.t)/dt);
+      }
+      moved=false; hist=[];
+    };
+    hBox.addEventListener('touchend', release, {passive:true});
+    hBox.addEventListener('touchcancel', release, {passive:true});
+  },
+  /* 던진 방향으로 속도를 갖고 더 가다가 감속해 멈춘다 — ptPanFling과 같은 물리다.
+     다른 점은 경계 처리뿐이다: 여긴 지도처럼 당겨 보는 자리가 아니라 순수 목록
+     스크롤이라 고무줄이 필요 없다 — scrollLeft/scrollTop 자체가 0과 최댓값에서
+     알아서 멈춰 준다. 끝에 닿은 축의 속도만 0으로 죽인다 — 안 죽이면 속도가 허공에
+     계속 쌓이다가 반대로 움직일 때 죽었던 속도가 되살아난 것처럼 보인다. */
+  ptDragFling(hBox, vBox, vx, vy){
+    cancelAnimationFrame(this._ptDragRAF);
+    const decel=0.994;
+    let lastT=performance.now();
+    const step=(now)=>{
+      const dt=Math.min(32, now-lastT); lastT=now;
+      if(Math.hypot(vx,vy)<30){ this._ptDragRAF=null; return; }
+      hBox.scrollLeft+=vx*dt/1000;
+      vBox.scrollTop+=vy*dt/1000;
+      const decayFrame=Math.pow(decel, dt);
+      vx*=decayFrame; vy*=decayFrame;
+      if(hBox.scrollLeft<=0 || hBox.scrollLeft>=hBox.scrollWidth-hBox.clientWidth) vx=0;
+      if(vBox.scrollTop<=0 || vBox.scrollTop>=vBox.scrollHeight-vBox.clientHeight) vy=0;
+      this._ptDragRAF=requestAnimationFrame(step);
+    };
+    this._ptDragRAF=requestAnimationFrame(step);
+  },
+  openPtFullscreen(){
+    const t=this.ptTableHTML();
+    const content=document.getElementById('ptFsContent');
+    content.innerHTML=`${t.grid}${t.extra}`;
+    this.ptInitRoving(content, this.$.ptFsDetailPanel);
+    /* 여는 순간에는 확대 레이어에 전환을 걸지 않는다 — 여는 전환(.pt-fullscreen)과 겹쳐
+       표가 두 번 움직이는 것처럼 보인다. 확대/축소 전환은 그때그때 따로 건다. */
+    content.style.transition='';
+    clearTimeout(this._ptFitTimer); clearTimeout(this._ptResetTimer); clearTimeout(this._ptCloseTimer);
+    /* reserve: 상세 패널이 아래를 덮는 높이. 화면이 돌아가 다시 계산할 때도 이 값을 써야
+       패널을 열어 둔 채로 기기를 돌렸을 때 확보해 둔 자리가 사라지지 않는다. */
+    this.ptZoom={scale:1,tx:0,ty:0,baseFit:1,vpW:1,vpH:1,layerH:1,cw:1,ch:1,reserve:0};
+    const fs=document.getElementById('ptFullscreen');
+    /* 닫히는 도중에 다시 열 수 있다 — 접히던 것을 도로 펴야 하므로 닫기 표시를 먼저 뗀다 */
+    fs.classList.remove('pt-closing');
+    fs.classList.add('show');
+    /* 회전 뷰는 .modal-overlay 가 아니라서 openModal 의 초점 가둠 밖에 있었다. 그 결과
+       여기서 Tab 을 누르면 뒤에 깔린 주기율표 창의 컨트롤(전부 이 뷰에 가려 안 보인다)로
+       초점이 걸어갔고, 보이지도 않는 「간략히 보기」가 눌리면 상태만 바뀐 채 표는 118칸
+       그대로라 다음 배치 계산에서 표가 구석의 작은 덩어리로 찌그러졌다.
+       뷰가 열려 있는 동안에는 뒤를 통째로 잠근다 — 창(#app 밖의 .modal-overlay)까지. */
+    this._ptFsLastFocus=document.activeElement;
+    this.$.app.setAttribute('inert','');
+    document.querySelectorAll('.modal-overlay').forEach(ov=>ov.setAttribute('inert',''));
+    const fsClose=document.getElementById('ptFsClose');
+    if(fsClose) fsClose.focus();
+    /* 배율은 여는 이 순간에만 1로 되돌린다 — 그 밖의 재계산(상세 열기, 화면 회전)에서
+       말없이 버리면 확대해 둔 것이 툭 풀린다. */
+    this.layoutPtFullscreen(0, true);
+  },
+  closePtFullscreen(){
+    const fs=document.getElementById('ptFullscreen');
+    if(!fs.classList.contains('show')) return;
+    clearTimeout(this._ptFitTimer); clearTimeout(this._ptResetTimer); clearTimeout(this._ptCloseTimer);
+    /* 닫는 동안만 .pt-closing을 붙인다. 이게 있어야 회전자가 「가로인 채로 접히는」 쪽으로 가고,
+       없으면 닫힘 기본 상태(세로)로 90도를 되감아 버린다.
+       .show를 떼는 것과 같은 프레임에 붙여야 한 번의 전환으로 이어진다. */
+    fs.classList.add('pt-closing');
+    fs.classList.remove('show');
+    /* 잠금은 바로 푼다 — 접히는 애니메이션을 기다리면 그동안 뒤가 먹통으로 남는다.
+       주기율표 창이 아직 열려 있으면 #app 은 그 창의 몫으로 계속 잠가 둔다. */
+    document.querySelectorAll('.modal-overlay[inert]').forEach(ov=>ov.removeAttribute('inert'));
+    if(!this.openOverlay()) this.$.app.removeAttribute('inert');
+    const back=this._ptFsLastFocus; this._ptFsLastFocus=null;
+    if(back && document.contains(back) && back.getClientRects().length>0) back.focus();
+    /* 전환이 끝난 뒤에 뒷정리한다. 지금 바로 상세를 닫으면 접히는 화면 안에서
+       패널이 따로 접히는 게 보여 두 동작이 겹친다. 시간은 CSS에서 읽으므로 어긋나지 않는다. */
+    this._ptCloseTimer=setTimeout(()=>{
+      /* 전환 없이 한 번에 닫힘 기본 상태로 돌려놓는다 — 강제 리플로우가 그 사이에 있어야
+         브라우저가 두 변경을 묶지 않고 새 값을 전환 없이 확정한다. */
+      fs.classList.add('pt-instant');
+      fs.classList.remove('pt-closing');
+      void fs.offsetWidth;
+      fs.classList.remove('pt-instant');
+      const rotor=document.querySelector('.pt-fs-rotor');
+      if(rotor) rotor.classList.remove('pt-detail-open');
+      this.closePtDetail(this.$.ptFsDetailPanel);
+    }, this.motionMs('--dur-view-out')+20);
+  },
+  /* 원소 상세 설명 패널: 기호·이름·원자번호 헤더 + desc 본문.
+     기호·이름 글자색은 주기율표 칸의 분류 색(PT_CAT_COLORS)과 맞춰 어떤 칸을 눌렀는지 한눈에 이어지게 함 */
+  ptDetailHTML(e){
+    const palette=this.isLightTheme()?PT_CAT_COLORS_LIGHT:PT_CAT_COLORS;
+    const catKey=this.ptCatOf(e);
+    const catColor=palette[catKey]||'var(--c-accent-1)';
+    /* 이 앱이 문제로 묻는 값들 — 주기·족(모드 7), 원자가 전자(모드 8), 이온(모드 9·11) —
+       을 설명 문단보다 먼저 보여 준다. 예전에는 원자번호·기호·이름과 줄글뿐이라,
+       정작 학생이 확인하고 싶은 숫자가 화면에 없었다.
+       값은 전부 문제의 정답을 만드는 함수에서 그대로 가져온다(shellsOf·valenceOf·ELEMENTS).
+       따로 적어 두면 언젠가 정답과 어긋나는데, 교육용에서 그건 허용할 수 없다. */
+    const cat=((this.state.isSimpleCategory?PT_CATEGORIES_SIMPLE:PT_CATEGORIES).find(([c])=>c===catKey)||[,''])[1];
+    /* 란타넘족·악티늄족 30종은 족 번호가 없다 — 주기율표가 이들을 3족 자리에 묶어
+       따로 떼어 놓기 때문이고, 번호를 안 매기는 게 맞다. 그대로 찍으면 「undefined족」이
+       화면에 나온다(실제로 냈고 검사가 잡았다). 없는 값은 그 사실을 적는다. */
+    const groupText = e.group ? `${e.group}족` : '3족 자리에 함께 둔다';
+    const rows=[['주기',`${e.period}주기`],['족',groupText],['분류',cat]];
+    /* 껍질 배치는 1~20번에서만 교과서와 일치한다(shellsOf 주석 참고) — 그 밖에는 적지 않는다.
+       모르는 값을 그럴듯하게 채우는 것보다 비워 두는 편이 낫다. */
+    if(e.z<=20){
+      const sh=shellsOf(e.z);
+      rows.push(['전자 배치', sh.map((n,i)=>`<b>${'KLMN'[i]}</b> ${n}`).join(' · ')]);
+      rows.push(['원자가 전자', `${valenceOf(e.z)}개`]);
+      /* 이온 설명은 모드 9의 정답 문구를 그대로 쓴다(ionAnswerText) — 여기서 따로 쓰면
+         언젠가 문제의 정답과 말이 달라진다. 이온식은 앱의 위첨자 렌더러에 맡긴다. */
+      const ion=ION_FORMING.find(x=>x.z===e.z);
+      if(ion){
+        const sym=ion.noble ? '' :
+          this.formatInput(`${e.sym}^${ion.n>1?ion.n:''}${ion.dir==='lose'?'+':'-'}`)+' — ';
+        rows.push(['이온', sym + this.ionAnswerText(ion)]);
+      }
+    }
+    const facts=`<dl class="pt-facts">${rows.map(([k,v])=>
+      `<div class="pt-fact"><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl>`;
+    return `<div class="pt-detail-head"><span class="pt-detail-z">${e.z}</span><span class="pt-detail-sym" style="color:${catColor}">${e.sym}</span><span class="pt-detail-name" style="color:${catColor}">${e.name}</span><button class="pt-detail-close" aria-label="닫기">${this.icon('close')}</button></div>${facts}<p class="pt-detail-desc">${e.desc||''}</p>`;
+  },
+  /* ── 표 안의 키보드 이동 (roving tabindex) ── */
+  /* 표를 다시 그릴 때마다 Tab 정거장을 첫 칸 하나로 되돌린다. 상세가 열려 있으면 그 칸을
+     정거장으로 삼는다 — 토글을 건드려 표가 새로 그려져도 보던 자리를 잃지 않는다. */
+  ptInitRoving(root,panel){
+    if(!root) return;
+    const cells=root.querySelectorAll('.pt-cell[data-z]');
+    if(!cells.length) return;
+    const z=panel&&panel.classList.contains('open')?panel.dataset.z:'';
+    const cur=z?root.querySelector(`.pt-cell[data-z="${z}"]`):null;
+    this.ptSetRoving(root, cur||cells[0], false);
+  },
+  ptSetRoving(root,cell,focus){
+    root.querySelectorAll('.pt-cell[data-z]').forEach(el=>{el.tabIndex=-1;});
+    cell.tabIndex=0;
+    if(focus) cell.focus();
+  },
+  /* 화살표로 옆 칸 찾기. 자리 판단에 화면 좌표(getBoundingClientRect)를 쓰지 않는다 —
+     회전 뷰는 상자 전체가 90도 돌아가 있어서 화면의 「오른쪽」이 표에서는 아래가 된다.
+     offsetLeft/offsetTop은 변형 전 배치 좌표라 두 화면에서 같은 뜻으로 읽힌다.
+     같은 줄을 먼저 다 보고, 그 줄에 아무것도 없을 때만 다른 줄로 넘어간다. 거리만 재서
+     한 번에 고르면 주기율표처럼 줄 안에 큰 빈칸이 있는 표에서 어긋난다 — 수소에서 →를
+     누르면 같은 1주기의 헬륨(8칸 옆)보다 바로 아래 베릴륨이 가까워서 그리로 샜다. */
+  ptFocusNeighbor(root,cur,dir){
+    const rel=el=>{let x=0,y=0,n=el;while(n&&n!==root){x+=n.offsetLeft;y+=n.offsetTop;n=n.offsetParent;}return {x:x+el.offsetWidth/2,y:y+el.offsetHeight/2};};
+    const horiz = dir==='left'||dir==='right';
+    const c=rel(cur);
+    /* 「같은 줄」의 허용 오차 — 칸 하나의 절반. 란타넘족 줄처럼 칸 크기가 달라도 따라간다. */
+    const tol=Math.max(4,(horiz?cur.offsetHeight:cur.offsetWidth)/2);
+    let inLine=null,inDist=Infinity,off=null,offScore=Infinity;
+    root.querySelectorAll('.pt-cell[data-z]').forEach(el=>{
+      if(el===cur) return;
+      const r=rel(el), dx=r.x-c.x, dy=r.y-c.y;
+      const along = dir==='right'?dx : dir==='left'?-dx : dir==='down'?dy : -dy;
+      if(along<=1) return;
+      const across = Math.abs(horiz?dy:dx);
+      if(across<=tol){ if(along<inDist){inDist=along;inLine=el;} }
+      else{ const sc=along+across*3; if(sc<offScore){offScore=sc;off=el;} }
+    });
+    const best=inLine||off;
+    if(best) this.ptSetRoving(root,best,true);
+  },
+  /* 칸에 초점이 있을 때의 키. 이 리스너는 문서 전체 keydown보다 먼저 지나가므로
+     (칸 → 이 컨테이너 → document 순서로 거품이 올라간다) 창이 열려 있으면 아래 단축키로
+     내려가는 길이 막혀 있어도 여기서는 처리된다. */
+  setupPtKeys(root,panel){
+    root.addEventListener('keydown',e=>{
+      const cell=e.target.closest&&e.target.closest('.pt-cell[data-z]');
+      if(!cell) return;
+      const dir={ArrowRight:'right',ArrowLeft:'left',ArrowDown:'down',ArrowUp:'up'}[e.key];
+      if(dir){ e.preventDefault(); this.ptFocusNeighbor(root,cell,dir); return; }
+      if(e.key==='Home'||e.key==='End'){
+        const cells=root.querySelectorAll('.pt-cell[data-z]');
+        if(cells.length){ e.preventDefault(); this.ptSetRoving(root, e.key==='Home'?cells[0]:cells[cells.length-1], true); }
+        return;
+      }
+      /* div라 클릭처럼 저절로 안 일어난다 — Space는 화면이 밀리지 않게 기본 동작을 막는다 */
+      if(e.key==='Enter'||e.key===' '){
+        e.preventDefault();
+        this.ptToggleDetail(panel, parseInt(cell.dataset.z));
+        this.feedback('tap');
+      }
+    });
+  },
+  /* 같은 칸을 다시 클릭하면 닫히고, 다른 칸을 클릭하면 내용을 교체 — 패널 하나당 항상 하나만 열림 */
+  ptToggleDetail(panel,z){
+    if(!panel) return;
+    const e=ELEMENTS.find(x=>x.z===z); if(!e) return;
+    if(panel.classList.contains('open') && panel.dataset.z===String(z)){
+      this.closePtDetail(panel); return;
+    }
+    panel.querySelector('.pt-detail-content').innerHTML=this.ptDetailHTML(e);
+    panel.dataset.z=z;
+    panel.classList.add('open');
+    this.ptSyncDetailSpace(panel);
+  },
+  closePtDetail(panel){
+    if(!panel) return;
+    panel.classList.remove('open');
+    panel.dataset.z='';
+    this.ptSyncDetailSpace(panel);
+  },
+  /* 패널이 열리면 그리드 하단 일부를 덮으므로, 덮인 칸도 계속 클릭 가능하도록 여유 공간을 확보한다.
+     모달은 스크롤 컨테이너에 패딩을 줘서 스크롤로 덮인 칸을 피할 수 있게 하고,
+     전체화면은 스크롤이 없으므로 뷰포트 맞춤 배율(baseFit)을 다시 계산해 표 전체를 살짝 축소한다
+     (칸의 실측 픽셀 크기·폰트 계산에는 관여하지 않아 fullscreen 레이아웃의 기존 안정성을 해치지 않음). */
+  ptSyncDetailSpace(panel){
+    const isOpen=panel.classList.contains('open');
+    const box=panel.querySelector('.pt-detail-content');
+    /* offsetHeight로 잰다. 이유가 둘이다.
+       · scrollHeight는 내용의 자연 높이라 max-height로 잘리는 상한을 무시한다 — 긴 설명이 붙은
+         원소에서 실제보다 훨씬 큰 값이 나와, 그만큼을 표에서 빼앗아 표가 실처럼 찌부러졌다.
+       · getBoundingClientRect는 회전 뷰에서 90° 돌아간 **화면 좌표계**의 바깥 상자를 준다.
+         돌아간 요소에서는 높이 자리에 로컬 가로가 들어와 156px짜리 패널이 844px로 읽혔다.
+       offsetHeight는 변환과 무관한 레이아웃 높이라 상한도 지키고 회전에도 흔들리지 않는다. */
+    const h=isOpen ? box.offsetHeight : 0;
+    if(panel===this.$.ptDetailPanel){
+      this.$.periodicContent.style.paddingBottom = h ? (h+16)+'px' : '';
+    } else if(panel===this.$.ptFsDetailPanel && document.getElementById('ptFullscreen').classList.contains('show')){
+      /* layoutPtFullscreen이 다시 계산하는 배율(baseFit)은 transform으로 즉시 적용되므로,
+         잠깐 transition을 걸어 표 전체가 뚝 끊기지 않고 부드럽게 커지고/줄어들게 한다.
+         타이머는 ptZoomReset과 따로 둔다 — 하나를 같이 쓰면 리셋 직후 패널을 토글했을 때
+         한쪽이 다른 쪽의 타이머를 지워 transition이 켜진 채로 남고, 그 상태로 핀치를 하면
+         손가락을 늦게 따라오는 고무줄 같은 느낌이 난다. */
+      const fsEl=document.getElementById('ptFsContent');
+      /* 상세를 열면 표에 남는 세로가 절반 아래로 떨어진다. 그 좁은 자리를 불꽃 반응 줄까지
+         나눠 쓰면 정작 표가 못 읽을 만큼 작아진다 — 상세를 보는 동안에는 곁다리를 접는다.
+         레이아웃을 재기 **전에** 접어야 그만큼이 표 몫으로 돌아간다. */
+      const rotor=document.querySelector('.pt-fs-rotor');
+      if(rotor) rotor.classList.toggle('pt-detail-open', isOpen);
+      /* 여기 .3s/ease 가 인라인으로 박혀 있었다 — CSS 밖이라 토큰 검사에도 안 걸리고,
+         「움직임 줄이기」를 켠 사람에게도 그대로 0.3초를 움직였다. 뒤따르던 320 도
+         그 숫자를 손으로 맞춘 값이라 한쪽만 바뀌면 전환이 도중에 끊긴다. 둘 다 토큰에서 읽는다. */
+      fsEl.style.transition='transform var(--dur-move) var(--ease-move)';
+      clearTimeout(this._ptFitTimer);
+      this._ptFitTimer=setTimeout(()=>{fsEl.style.transition='';},this.motionMs('--dur-move')+20);
+      this.layoutPtFullscreen(h);
+    }
+  },
+  /* 회전 뷰의 열 폭·행 높이·폰트를 실측 픽셀 하나(cell)로 통일 계산해 인라인 적용.
+     같은 cell 값에서 열폭·행높이·폰트를 전부 파생시켜 어떤 화면에서도 서로 맞물리게 한다.
+     gap(4px)까지 정산해 실제 콘텐츠가 뷰포트를 넘지 않게 하고, 넘으면 baseFit로 축소해
+     기본 배율(scale=1)에서 항상 전부 보이게 만든다. */
+  layoutPtFullscreen(reserveBottom=0, resetScale=false){
+    const scrollEl=document.getElementById('ptFsContent');
+    const grid=scrollEl.querySelector('.pt-grid');
+    if(!grid) return;
+    const vp=document.getElementById('ptFsViewport');
+    const title=document.querySelector('.pt-fs-title');
+    const root=document.documentElement;
+    const appW=parseFloat(getComputedStyle(root).getPropertyValue('--app-w'))||window.innerWidth;
+    const appH=parseFloat(getComputedStyle(root).getPropertyValue('--app-h'))||window.innerHeight;
+    const pad=32; /* .pt-fs-rotor padding:16px 상하좌우 */
+    const gap=4;  /* .pt-grid gap:4px */
+    const titleH=(title?title.offsetHeight:32)+10; /* 10 = title margin-bottom */
+    const availW=Math.max(200, appH-pad);        /* 회전 전 가로(=appH) → 열이 늘어서는 축 */
+    const availH=Math.max(160, appW-pad-titleH); /* 회전 전 세로(=appW) → 행 높이를 제한하는 축 */
+    const simple=this.state.isSimplePeriodic;
+    const cols=simple?9:19, rows=simple?7:10;
+    const labelPx=simple?36:48;
+    /* 열/행 사이 gap을 빼고 남는 폭·높이를 셀 개수로 나눠야 실제로 안 넘친다 */
+    const cellByW=(availW-labelPx-(cols-1)*gap)/(cols-1);
+    const cellByH=(availH-(rows-1)*gap)/rows;
+    const cell=Math.max(28, Math.min(cellByW, cellByH, 64));
+    grid.style.gridTemplateColumns=`${labelPx}px repeat(${cols-1},${cell}px)`;
+    grid.style.gridTemplateRows=`repeat(${rows},${cell}px)`;
+    /* 번호/기호/이름 세 폰트를 각자 독립 비율로 정하면(예전 방식) 합계가 칸 높이를 넘어서
+       가운데 기호 행이 짜부러지며 이름과 겹칠 수 있다 — 번호·기호는 고정 px 행으로 못박고
+       (그래야 이름이 아무리 커도 이 둘은 절대 밀리지 않음), 이름은 남는 공간에서 폰트를
+       역산한 뒤 그 폰트가 실제로 필요로 하는 높이(2줄×line-height)를 다시 계산해 행에
+       반영한다 — "이 정도 공간이 있으니 이 폰트려니" 식 어림값이 아니라 최종 폰트 크기에서
+       거꾸로 필요 높이를 구해야 line-clamp:2 박스 실측과 항상 맞아떨어진다. */
+    const padY=1; /* 회전 뷰 전용 .pt-fs-scroll .pt-cell padding:1px 2px와 짝 */
+    const contentH=cell-2*padY;
+    const zH=Math.max(7, Math.round(cell*.13));
+    const symH=Math.max(10, Math.round(cell*.30));
+    const nameBudget=Math.max(8, contentH-zH-symH);
+    const nameLH=1.05;
+    /* 하한이 4px였다 — 「읽히든 말든 반드시 그린다」는 뜻이라 320·360px에서 한글 이름이
+       4px로 찍혔다. 4px 한글은 글자가 아니라 얼룩이고, 크게 보려고 회전한 화면에서
+       하필 이름이 제일 안 읽혔다.
+       읽히지 않을 바에는 접고 그 자리를 기호에 준다 — 이름은 칸을 눌러 상세에서 읽으면
+       되지만 기호는 표에서 바로 읽혀야 하는 것이다. 7px이 이 앱이 그림 안 글자에 쓰는
+       하한과 같다(js/selfcheck.js checkSvgText 참고). */
+    const NAME_FLOOR=7;
+    const rawName=Math.floor(nameBudget/(2*nameLH));
+    const showName=rawName>=NAME_FLOOR;
+    const nameFs=showName?rawName:0;
+    const nameH=showName?Math.ceil(nameFs*nameLH*2)+1:0; /* 실제 폰트 기준 필요 높이 + 1px 서브픽셀 안전마진 */
+    /* 이름을 접었으면 그 몫만큼 기호를 키운다(칸 높이의 절반까지) */
+    const symPx=showName?Math.max(9,symH-1):Math.max(9,Math.min(Math.round(cell*.5),symH-1+nameBudget));
+    scrollEl.style.setProperty('--pt-fs-sym', symPx+'px');
+    scrollEl.style.setProperty('--pt-fs-name', nameFs+'px');
+    scrollEl.classList.toggle('pt-fs-noname', !showName);
+    /* 자리표시(「57~71」·「89~103」)는 글자 크기가 화면 폭에서 오고 칸 크기는 여기서 나와,
+       둘이 이어져 있지 않아 회전 뷰에서 「89~10」처럼 잘렸다. 가장 긴 6글자가 칸에 들어가는
+       크기로 맞춘다 — 고정폭 글꼴이라 글자 하나가 대략 0.6em 이다. 하한은 이 앱이 그림 안
+       글자에 쓰는 것과 같은 7px 이고, 그 아래로는 어차피 못 읽으므로 더 줄이지 않는다
+       (대신 해당 원소들이 바로 아래 줄에 그대로 있어서 정보가 사라지지는 않는다). */
+    scrollEl.style.setProperty('--pt-fs-ph', Math.max(7, Math.min(13, Math.floor(cell/(6*0.62))))+'px');
+    scrollEl.style.setProperty('--pt-fs-z', Math.max(6,zH-1)+'px');
+    scrollEl.style.setProperty('--pt-cell-zh', zH+'px');
+    scrollEl.style.setProperty('--pt-cell-symh', symH+'px');
+    scrollEl.style.setProperty('--pt-cell-nameh', nameH+'px');
+    /* 주입·사이징 후 실제 콘텐츠를 실측해 baseFit 산출.
+       전에는 그리드와 불꽃반응 행 둘만 더하고 사이의 구분선·제목 줄은 빼먹었다 —
+       실제 콘텐츠가 계산보다 12px쯤 커서 세로 중앙이 그만큼 위로 밀리고, 딱 맞춰 놓았다는
+       배율에서도 아래가 조금 잘렸다. 자식을 전부 훑어 바깥 여백까지 더한다
+       (flex 컨테이너라 위아래 margin이 서로 상쇄되지 않고 그대로 자리를 차지한다). */
+    let cw=0, ch=0;
+    for(const el of scrollEl.children){
+      const cs=getComputedStyle(el);
+      /* 접힌 자식은 상자가 없다. 그런데 getComputedStyle은 display:none이어도 지정된 margin을
+         그대로 돌려주므로, 거르지 않으면 있지도 않은 여백을 세어 표를 그만큼 작게 만든다. */
+      if(cs.display==='none') continue;
+      ch+=el.offsetHeight+(parseFloat(cs.marginTop)||0)+(parseFloat(cs.marginBottom)||0);
+      cw=Math.max(cw, el.offsetWidth);
+    }
+    if(!ch){ cw=grid.offsetWidth; ch=grid.offsetHeight; }
+    const z=this.ptZoom||(this.ptZoom={scale:1,tx:0,ty:0});
+    /* 상세 패널이 덮는 높이. 화면이 돌아 다시 계산할 때(reserveBottom 없이 불릴 때)도
+       패널이 열려 있으면 그 자리를 계속 비워 둬야 한다. */
+    if(arguments.length) z.reserve=reserveBottom; else reserveBottom=z.reserve||0;
+    const vpW=vp.clientWidth||1, layerH=vp.clientHeight||1;
+    /* 패널이 화면을 다 먹어 표가 실처럼 찌부러지는 것을 막는다 — 표 몫으로 최소 45%는 남긴다 */
+    reserveBottom=Math.min(reserveBottom, layerH*0.55);
+    const vpH=Math.max(80, layerH-reserveBottom);
+    z.baseFit=Math.min(vpW/cw, vpH/ch, 1);
+    /* vpH는 "표를 얼마에 맞출까"이고 layerH는 "CSS가 무엇을 기준으로 가운데 두는가"다.
+       .pt-fs-scroll은 height:100%에 justify-content:center라 언제나 layerH를 기준으로 삼는다.
+       예전에는 clampPtZoom이 줄인 vpH로 중앙 오프셋을 계산해, 패널을 열면 표가 세로로만
+       (가로는 안 줄이므로) S·reserve/2만큼 미끄러졌다. 둘을 따로 들고 있어야 어긋나지 않는다. */
+    z.vpW=vpW; z.vpH=vpH; z.layerH=layerH; z.cw=cw; z.ch=ch;
+    if(resetScale) z.scale=1;
+    this.clampPtZoom(); this.applyPtZoom();
+  },
+  /* tx/ty가 허용되는 범위. clampPtZoom(하드 클램프)과 applyPtZoom의 고무줄 저항이
+     같은 경계를 써야 어긋나지 않는다 — 그래서 계산을 여기 한 곳에만 둔다. */
+  ptZoomBounds(){
+    const z=this.ptZoom; if(!z) return null;
+    const S=z.baseFit*z.scale, vpW=z.vpW, vpH=z.vpH, cw=z.cw, ch=z.ch;
+    const rw=cw*S, rh=ch*S;
+    /* 중앙정렬 오프셋은 CSS가 실제로 가운데를 잡는 기준(레이어 전체 높이)에서 구해야 한다.
+       패널이 덮은 만큼 줄인 vpH로 구하면 그 차이의 절반만큼 표가 위로 밀린다. */
+    const ox=(vpW-cw)/2*S, oy=((z.layerH||vpH)-ch)/2*S;
+    const bx = rw<=vpW ? {min:(vpW-rw)/2-ox, max:(vpW-rw)/2-ox} : {min:vpW-rw-ox, max:-ox};
+    const by = rh<=vpH ? {min:(vpH-rh)/2-oy, max:(vpH-rh)/2-oy} : {min:vpH-rh-oy, max:-oy};
+    return {bx, by, vpW, vpH};
+  },
+  /* 경계를 넘은 만큼 점점 세게 눌러 되돌린다 — 손 밑에서 툭 멈추면 "죽었다"로 읽히고,
+     계속 저항하며 늘어나면 "여기까지가 끝이다"가 자연스럽게 전해진다.
+     constant가 작을수록 뻣뻣하다. overshoot의 부호를 그대로 갖고 나온다. */
+  ptRubberband(overshoot, dim, constant=0.55){
+    return (overshoot*dim*constant)/(dim+constant*Math.abs(overshoot));
+  },
+  /* 줌 레이어에 transform 적용. transform만 바꾸므로 리페인트/리플로우 없이 GPU 합성만.
+     translate3d(3D 변환)로 오버레이가 열려 있는 동안 레이어를 상시 승격시켜, will-change를
+     껐다 켤 때 생기던 승격/강등 재래스터화 플래시(=이따금 깜빡임)를 없앤다.
+
+     z.tx/z.ty는 "논리적" 위치다 — 팬 중에는 경계를 넘어도 그대로 누적된다(clampPtZoom을
+     안 부르므로). 여기서 렌더링할 때만 경계 밖이면 고무줄 저항을 입힌다. 그래서 손가락이
+     계속 미는 동안은 점점 뻣뻣해지다가, 손을 떼면(ptSettlePan) 진짜 경계 안으로 튕겨 들어간다. */
+  applyPtZoom(){
+    const z=this.ptZoom; if(!z) return;
+    const S=z.baseFit*z.scale;
+    const b=this.ptZoomBounds();
+    let tx=z.tx, ty=z.ty;
+    if(b){
+      if(tx<b.bx.min) tx=b.bx.min+this.ptRubberband(tx-b.bx.min, b.vpW);
+      else if(tx>b.bx.max) tx=b.bx.max+this.ptRubberband(tx-b.bx.max, b.vpW);
+      if(ty<b.by.min) ty=b.by.min+this.ptRubberband(ty-b.by.min, b.vpH);
+      else if(ty>b.by.max) ty=b.by.max+this.ptRubberband(ty-b.by.max, b.vpH);
+    }
+    document.getElementById('ptFsContent').style.transform=`translate3d(${tx}px,${ty}px,0) scale(${S})`;
+  },
+  /* 콘텐츠가 뷰포트를 벗어나지 않게 tx/ty를 실제로(논리값째) 경계 안으로 되돌린다.
+     핀치·리사이즈·리셋처럼 "지금 바로 결정돼야 하는" 경우에 쓴다. 팬 중에는 안 쓴다 —
+     팬은 고무줄처럼 늘어나야 하므로 논리값을 경계 밖에 그대로 둔다(applyPtZoom 참고). */
+  clampPtZoom(){
+    const z=this.ptZoom; const b=this.ptZoomBounds(); if(!z||!b) return;
+    z.tx=Math.min(b.bx.max,Math.max(b.bx.min,z.tx));
+    z.ty=Math.min(b.by.max,Math.max(b.by.min,z.ty));
+  },
+  ptZoomReset(){
+    const z=this.ptZoom; if(!z) return;
+    const el=document.getElementById('ptFsContent');
+    el.style.transition='transform var(--dur-move) var(--ease-move)';
+    clearTimeout(this._ptResetTimer);
+    this._ptResetTimer=setTimeout(()=>{el.style.transition='';}, this.motionMs('--dur-move')+20);
+    z.scale=1; this.clampPtZoom(); this.applyPtZoom();
+    this.feedback('tap');
+  },
+  /* 손을 뗀 뒤 경계 밖(고무줄이 늘어난 상태)이면 논리값을 경계로 되돌리고 전환으로 튕겨 들어간다.
+     관성 도중에 경계에 걸려도 결국 여기로 온다 — ptPanFling이 속도가 다 죽으면 부른다. */
+  ptSettlePan(){
+    /* 취소만으로는 부족하다 — cancelAnimationFrame은 이미 실행 중인(막 콜백에 들어온) 프레임의
+       ID는 못 무른다. 여기로 오는 한쪽 경로가 바로 그 프레임 안(step의 속도<30 분기)이라,
+       ID를 null로도 비워야 "지금 날아가는 중이냐"를 묻는 자리(재잡기 판단 등)가 계속
+       "그렇다"로 잘못 답하지 않는다. */
+    cancelAnimationFrame(this._ptFlingRAF); this._ptFlingRAF=null;
+    const z=this.ptZoom; const b=this.ptZoomBounds(); if(!z||!b) return;
+    const inBounds = z.tx>=b.bx.min-.5&&z.tx<=b.bx.max+.5&&z.ty>=b.by.min-.5&&z.ty<=b.by.max+.5;
+    if(inBounds){ this.applyPtZoom(); return; }
+    const el=document.getElementById('ptFsContent');
+    this.clampPtZoom();
+    el.style.transition='transform var(--dur-move) var(--ease-move)';
+    this.applyPtZoom();
+    clearTimeout(this._ptSettleTimer);
+    this._ptSettleTimer=setTimeout(()=>{ el.style.transition=''; }, this.motionMs('--dur-move')+20);
+  },
+  /* 던진 방향으로 속도를 갖고 더 가다가 감속해 멈춘다 — 관성. 벽에 부딪히면 그 프레임부터
+     속도를 크게 깎는다(고무줄이 이미 applyPtZoom에서 시각적으로 눌러 주므로, 여기서는
+     "계속 뚫고 나가지 않게"만 하면 된다). 거의 멈추면 ptSettlePan이 마무리한다. */
+  ptPanFling(vx, vy){
+    const z=this.ptZoom; if(!z) return;
+    cancelAnimationFrame(this._ptFlingRAF);
+    const decel=0.994;
+    let lastT=performance.now();
+    const step=(now)=>{
+      const dt=Math.min(32, now-lastT); lastT=now;
+      if(Math.hypot(vx,vy)<30){ this.ptSettlePan(); return; }
+      z.tx+=vx*dt/1000; z.ty+=vy*dt/1000;
+      const decayFrame=Math.pow(decel, dt);
+      vx*=decayFrame; vy*=decayFrame;
+      const b=this.ptZoomBounds();
+      if(b){
+        if(z.tx<b.bx.min||z.tx>b.bx.max) vx*=0.62;
+        if(z.ty<b.by.min||z.ty>b.by.max) vy*=0.62;
+      }
+      this.applyPtZoom();
+      this._ptFlingRAF=requestAnimationFrame(step);
+    };
+    this._ptFlingRAF=requestAnimationFrame(step);
+  },
+  /* 팬을 놓았을 때 — 이미 경계 밖(고무줄 상태)이면 관성 없이 바로 튕겨 들어가고
+     (늘어난 채로 또 날아가면 이상하다), 경계 안이면 마지막 속도로 관성을 준다. */
+  ptPanRelease(vx, vy){
+    const z=this.ptZoom; const b=this.ptZoomBounds(); if(!z||!b) return;
+    const outOfBounds = z.tx<b.bx.min-.5||z.tx>b.bx.max+.5||z.ty<b.by.min-.5||z.ty>b.by.max+.5;
+    if(outOfBounds || (!vx&&!vy)) this.ptSettlePan();
+    else this.ptPanFling(vx, vy);
+  },
+  /* 회전 뷰 자체 핀치/팬/더블탭 줌 — 네이티브 줌(고정+회전 요소 재래스터화로 버벅/깜빡) 대신
+     transform:scale만 GPU로 걸어 매끈하게. 화면 좌표를 90° 역회전해 가로(로컬) 공간으로 매핑. */
+  setupPtZoom(){
+    const vp=document.getElementById('ptFsViewport');
+    const rotor=document.querySelector('.pt-fs-rotor');
+    if(!vp||!rotor) return;
+    let mode=null, startDist=0, startScale=1, focal=null, lastMid=null, lastPan=null, lastTap=0, lastTapPt=null, tapStart=null;
+    let panHist=[];
+    /* 손가락을 대는 순간 transform 전환을 끈다. 상세 패널 토글이나 배율 리셋이 걸어 둔
+       transition이 살아 있는 채로 핀치를 시작하면 표가 손가락을 0.3초 늦게 따라와
+       고무줄처럼 물컹거린다 — 직접 조작 중에는 전환이 있으면 안 된다.
+       관성이나 스냅백이 도는 중에 다시 잡을 수도 있다 — 그때는 **목표값이 아니라 지금 화면에
+       실제로 보이는 값**에서 이어받아야 한다. 목표값에서 시작하면 잡는 순간 화면이 튄다. */
+    const grabNow=()=>{
+      clearTimeout(this._ptFitTimer); clearTimeout(this._ptResetTimer); clearTimeout(this._ptSettleTimer);
+      cancelAnimationFrame(this._ptFlingRAF); this._ptFlingRAF=null;
+      const el=document.getElementById('ptFsContent');
+      if(!el) return;
+      if(el.style.transition){
+        const m=new DOMMatrixReadOnly(getComputedStyle(el).transform);
+        const z=this.ptZoom;
+        if(z){ z.tx=m.m41; z.ty=m.m42; if(z.baseFit) z.scale=m.a/z.baseFit; }
+      }
+      el.style.transition='';
+    };
+    const dist=(a,b)=>Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+    const mid=(a,b)=>({x:(a.clientX+b.clientX)/2,y:(a.clientY+b.clientY)/2});
+    /* 화면 좌표 → 뷰포트 로컬(가로 공간) 좌표. rotor는 화면 중앙 고정(회전 원점=바운딩 중심).
+       rotate(90°)의 역: 화면 오프셋(ox,oy) → 로컬(oy,-ox). rotor 바운딩 폭=appW, 높이=appH이고
+       rotor 로컬 폭=appH·높이=appW라 중앙기준→좌상단기준 보정은 각각 r.height/2, r.width/2. */
+    const toLocal=(cx,cy)=>{
+      const r=rotor.getBoundingClientRect();
+      const ox=cx-(r.left+r.width/2), oy=cy-(r.top+r.height/2);
+      return { x:(oy+r.height/2)-vp.offsetLeft, y:(-ox+r.width/2)-vp.offsetTop };
+    };
+    vp.addEventListener('touchstart',e=>{
+      grabNow();
+      if(e.touches.length===2){
+        mode='pinch'; startDist=dist(e.touches[0],e.touches[1])||1;
+        startScale=this.ptZoom.scale;
+        const m0=mid(e.touches[0],e.touches[1]); focal=toLocal(m0.x,m0.y); lastMid=m0;
+        e.preventDefault();
+      } else if(e.touches.length===1){
+        const now=Date.now(), t0=e.touches[0];
+        /* 더블탭은 「배율을 되돌린다」는 뜻이다. 두 가지를 안 보고 있었다.
+           하나, 배율이 1이면 되돌릴 것이 없다. 그런데도 더블탭으로 가로채서, 1을 1로 만드는
+           일을 하면서 두 번째 탭만 삼켰다 — 화면에서는 「눌렀는데 아무 일도 안 일어난다」다.
+           둘, 어느 자리를 눌렀는지. 그래서 주기·족을 견주려고 옆 칸을 빠르게 짚으면(이 화면에서
+           제일 흔한 동작이다) 두 번째 칸이 안 열렸다 — 나트륨 누르고 150ms 뒤 마그네슘을
+           눌러도 상세는 나트륨 그대로였다.
+           같은 자리를 두 번 누른 것일 때만 더블탭으로 본다. 16px는 같은 자리를 노린 손가락이
+           흔들리는 폭이고, 회전 뷰의 칸(22~34px)보다 작아 옆 칸을 짚은 것과 갈린다. */
+        const near = lastTapPt && Math.hypot(t0.clientX-lastTapPt.x, t0.clientY-lastTapPt.y) < 16;
+        if(this.ptZoom.scale>1.001 && now-lastTap<300 && near){
+          lastTap=0; lastTapPt=null; mode=null; this.ptZoomReset(); e.preventDefault(); return;
+        }
+        lastTap=now; lastTapPt={x:t0.clientX,y:t0.clientY};
+        if(this.ptZoom.scale>1.001){
+          mode='pan'; lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY}; e.preventDefault();
+          panHist=[{tx:this.ptZoom.tx,ty:this.ptZoom.ty,t:performance.now()}];
+          /* 확대 상태에서는 touchstart가 preventDefault돼 합성 click이 안 나므로, 이동이 거의 없는
+             짧은 터치를 직접 "탭"으로 간주해 상세 패널을 연다(아래 touchmove/end 참고). */
+          tapStart={x:e.touches[0].clientX,y:e.touches[0].clientY,t:Date.now()};
+        }
+        else { mode=null; }
+      }
+    },{passive:false});
+    vp.addEventListener('touchmove',e=>{
+      const z=this.ptZoom;
+      if(mode==='pinch'&&e.touches.length===2){
+        const d=dist(e.touches[0],e.touches[1]);
+        const ns=Math.max(1,Math.min(4,startScale*(d/startDist)));
+        const S0=z.baseFit*z.scale, S1=z.baseFit*ns;
+        z.tx=focal.x-(focal.x-z.tx)*(S1/S0);
+        z.ty=focal.y-(focal.y-z.ty)*(S1/S0);
+        z.scale=ns;
+        const m=mid(e.touches[0],e.touches[1]);
+        z.tx+=(m.y-lastMid.y); z.ty+=-(m.x-lastMid.x); lastMid=m; /* 두 손가락 드래그=팬 */
+        this.clampPtZoom(); this.applyPtZoom(); e.preventDefault();
+        tapStart=null;
+      } else if(mode==='pan'&&e.touches.length===1){
+        const dx=e.touches[0].clientX-lastPan.x, dy=e.touches[0].clientY-lastPan.y;
+        lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY};
+        /* 팬 중에는 클램프하지 않는다 — 논리값이 경계를 넘어가야 applyPtZoom의 고무줄이
+           그만큼 저항해 보인다(경계를 넘을수록 점점 뻣뻣해진다). 손을 떼면 ptPanRelease가
+           경계 안으로 되돌리거나(늘어난 상태) 관성을 준다(경계 안이면). */
+        z.tx+=dy; z.ty+=-dx; this.applyPtZoom(); e.preventDefault();
+        /* 최근 표본만 남긴다 — 손 뗄 때 속도는 "방금 움직인 방향"이어야지 제스처 시작부터의
+           평균이면 안 된다(중간에 방향을 바꿨을 수 있다). */
+        const now=performance.now();
+        panHist.push({tx:z.tx,ty:z.ty,t:now});
+        while(panHist.length>2 && now-panHist[0].t>100) panHist.shift();
+        if(tapStart && Math.hypot(e.touches[0].clientX-tapStart.x,e.touches[0].clientY-tapStart.y)>8) tapStart=null;
+      }
+    },{passive:false});
+    const end=e=>{
+      if(tapStart && Date.now()-tapStart.t<300){
+        const el=document.elementFromPoint(tapStart.x,tapStart.y);
+        const cell=el&&el.closest('.pt-cell[data-z]');
+        if(cell){
+          this.ptSetRoving(document.getElementById('ptFsContent'), cell, false);
+          this.ptToggleDetail(this.$.ptFsDetailPanel, parseInt(cell.dataset.z));
+        }
+      }
+      tapStart=null;
+      if(e.touches.length===0){
+        const wasPan=mode==='pan';
+        if(this.ptZoom.scale<=1.001){ this.ptZoom.scale=1; this.clampPtZoom(); this.applyPtZoom(); }
+        else if(wasPan){
+          let vx=0,vy=0;
+          if(panHist.length>=2){
+            const a=panHist[0], last=panHist[panHist.length-1], dt=(last.t-a.t)/1000;
+            if(dt>0){ vx=(last.tx-a.tx)/dt; vy=(last.ty-a.ty)/dt; }
+          }
+          this.ptPanRelease(vx,vy);
+        }
+        mode=null; panHist=[];
+      } else if(e.touches.length===1&&mode==='pinch'){
+        mode=this.ptZoom.scale>1.001?'pan':null;
+        lastPan={x:e.touches[0].clientX,y:e.touches[0].clientY};
+        panHist=[{tx:this.ptZoom.tx,ty:this.ptZoom.ty,t:performance.now()}];
+      }
+    };
+    vp.addEventListener('touchend',end,{passive:false});
+    vp.addEventListener('touchcancel',end,{passive:false});
+    vp.addEventListener('gesturestart',e=>e.preventDefault());
+  }
+};
+
+document.addEventListener('DOMContentLoaded',()=>App.init());
